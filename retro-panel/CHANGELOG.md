@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.0.4] - 2026-03-22
+
+### Added
+- **Configuration page** (`/config`) — web-based entity picker served by the add-on itself:
+  - Browse ALL Home Assistant entities with live search and domain filter pills
+  - Select entities with checkboxes; up/down arrows to reorder
+  - Edit label and icon for each selected entity
+  - Panel settings (title, columns, theme, kiosk mode, refresh interval)
+  - Save button writes config via Supervisor API, reloads instantly
+- `hassio_api: true` — grants Supervisor token for config save and entity list
+- Gear icon (⚙) in panel header links to config page; hidden in kiosk mode
+- `SupervisorClient` async proxy for Supervisor API (`get_all_states`, `save_options`)
+
 ## [1.0.3] - 2026-03-22
 
 ### Fixed

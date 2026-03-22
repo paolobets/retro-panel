@@ -1,5 +1,5 @@
 name: "Retro Panel"
-version: "1.0.3"
+version: "1.0.4"
 slug: "retro_panel"
 description: >-
   Touch-optimized kiosk dashboard for Home Assistant.
@@ -17,6 +17,7 @@ panel_icon: mdi:tablet-dashboard
 panel_title: Retro Panel
 startup: services
 init: false
+hassio_api: true
 options:
   ha_url: "http://homeassistant.local:8123"
   ha_token: ""

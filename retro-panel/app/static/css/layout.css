@@ -105,6 +105,25 @@
   color: var(--color-text-primary);
 }
 
+/* Config gear link (hidden in kiosk mode via JS) */
+.header-action {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  font-size: 1.3rem;
+  padding: 6px;
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.header-action:hover {
+  color: var(--color-text-primary);
+}
+
 /* Connection status indicator */
 .status-dot {
   width: 10px;

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Retro Panel — Configuration</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/config.css">
+</head>
+<body class="theme-dark">
+
+  <header id="cfg-header">
+    <a id="back-btn" href=".">&#8592; Panel</a>
+    <h1>Configure</h1>
+    <button id="save-btn">Save</button>
+  </header>
+
+  <div id="cfg-loading">Loading&#8230;</div>
+
+  <main id="cfg-main" style="display:none">
+
+    <!-- Panel Settings -->
+    <div class="cfg-section">
+      <h2>Panel Settings</h2>
+
+      <div class="cfg-field">
+        <label for="cfg-title">Title</label>
+        <input id="cfg-title" type="text" placeholder="Home" maxlength="100">
+      </div>
+      <div class="cfg-field">
+        <label for="cfg-columns">Columns</label>
+        <select id="cfg-columns">
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+        </select>
+      </div>
+      <div class="cfg-field">
+        <label for="cfg-theme">Theme</label>
+        <select id="cfg-theme">
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+          <option value="auto">Auto (device)</option>
+        </select>
+      </div>
+      <div class="cfg-field">
+        <label for="cfg-kiosk">Kiosk Mode</label>
+        <input id="cfg-kiosk" type="checkbox">
+      </div>
+      <div class="cfg-field">
+        <label for="cfg-refresh">Refresh (sec)</label>
+        <input id="cfg-refresh" type="number" min="5" max="300" value="30">
+      </div>
+    </div>
+
+    <!-- Entity Picker -->
+    <div class="cfg-section">
+      <h2>Add Entities</h2>
+      <input id="entity-search" type="search" placeholder="Search by name or entity ID&#8230;" autocomplete="off">
+      <div id="domain-filters"></div>
+      <div id="entity-list"></div>
+    </div>
+
+    <!-- Selected Entities -->
+    <div class="cfg-section">
+      <h2>Selected Entities (<span id="selected-count">0</span>)</h2>
+      <div id="selected-list"></div>
+    </div>
+
+    <!-- Save status -->
+    <div id="save-status"></div>
+
+  </main>
+
+  <script type="module" src="js/config.js"></script>
+</body>
+</html>
