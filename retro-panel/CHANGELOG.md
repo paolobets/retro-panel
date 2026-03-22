@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.3] - 2026-03-22
+
+### Fixed
+- Remove `init-retropanel` oneshot s6 service: in s6-overlay v3, `up`
+  files for oneshot services are executed via execlineb which ignores
+  the shebang — `bashio::log.info` was being exec'd as a program name,
+  causing exit 127 and preventing the container from starting
+
 ## [1.0.2] - 2026-03-22
 
 ### Fixed

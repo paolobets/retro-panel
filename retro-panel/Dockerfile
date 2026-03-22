@@ -13,10 +13,8 @@ COPY rootfs/ /
 
 # Ensure s6 scripts are executable
 RUN chmod a+x /etc/s6-overlay/s6-rc.d/retropanel/run \
-    && chmod a+x /etc/s6-overlay/s6-rc.d/init-retropanel/up \
     && find /etc/s6-overlay/s6-rc.d -name "type" -exec chmod 644 {} \; \
-    && find /etc/s6-overlay/s6-rc.d/user/contents.d -type f -exec chmod 644 {} \; \
-    && find /etc/s6-overlay/s6-rc.d/retropanel/dependencies.d -type f -exec chmod 644 {} \;
+    && find /etc/s6-overlay/s6-rc.d/user/contents.d -type f -exec chmod 644 {} \;
 
 # Internal port (accessed only via HA Ingress proxy)
 EXPOSE 7654
