@@ -105,7 +105,7 @@
   color: var(--color-text-primary);
 }
 
-/* Config gear link (hidden in kiosk mode via JS) */
+/* Config gear link — always visible */
 .header-action {
   color: var(--color-text-secondary);
   text-decoration: none;

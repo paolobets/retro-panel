@@ -124,11 +124,7 @@ function applyConfig(config) {
     body.classList.add('kiosk');
   }
 
-  // Hide config link in kiosk mode so users cannot exit the dashboard
-  var configLink = document.querySelector('#config-link');
-  if (configLink) {
-    configLink.style.display = config.kiosk_mode ? 'none' : '';
-  }
+  // Config link is always visible — needed to access settings even in kiosk mode
 
   // Panel title
   const titleEl = qs('#panel-title');
