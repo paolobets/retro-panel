@@ -31,7 +31,7 @@ jobs:
     needs: lint
     strategy:
       matrix:
-        arch: [aarch64, amd64, armhf, armv7]
+        arch: [aarch64, amd64]
     steps:
       - name: Checkout
         uses: actions/checkout@v4

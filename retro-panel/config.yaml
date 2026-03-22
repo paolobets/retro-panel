@@ -7,27 +7,16 @@ description: >-
   Works on iOS 15 Safari, old Android browsers, and any legacy device.
 url: "https://github.com/paolobets/retro-panel"
 homeassistant: "2023.1.0"
-stage: stable
 image: "ghcr.io/paolobets/{arch}-retro-panel"
 arch:
   - aarch64
   - amd64
-  - armhf
-  - armv7
 ingress: true
 ingress_port: 7654
-ingress_stream: false
 panel_icon: mdi:tablet-dashboard
 panel_title: Retro Panel
 startup: services
-boot: auto
 init: false
-protected: true
-apparmor: true
-homeassistant_api: false
-hassio_api: false
-auth_api: false
-map: []
 options:
   ha_url: "http://homeassistant.local:8123"
   ha_token: ""
