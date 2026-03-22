@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.8] - 2026-03-22
+
+### Fixed
+- **BUG CRITICO**: `entity_id: entity` nel schema causava silent skip dell'add-on da parte di
+  HA Supervisor (tipo non supportato) — l'add-on spariva dalla lista degli installabili.
+  Ripristinato `entity_id: str`.
+- Default `columns` corretto da intero `3` a stringa `"3"` per coerenza con il tipo `list(2|3|4)`.
+
 ## [1.0.7] - 2026-03-22
 
 ### Fixed
