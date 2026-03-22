@@ -86,7 +86,7 @@ class HAClient:
         for eid, result in zip(entity_ids, results):
             if isinstance(result, Exception):
                 logger.warning("Failed to fetch state for %s: %s", eid, result)
-                output.append({"entity_id": eid, "state": "unavailable", "attributes": {}, "error": str(result)})
+                output.append({"entity_id": eid, "state": "unavailable", "attributes": {}})
             else:
                 output.append(result)
         return output

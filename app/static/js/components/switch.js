@@ -38,8 +38,14 @@ export function createTile(entityConfig) {
   function handleTap() {
     const currentState = tile.dataset.state || 'off';
     const service = currentState === 'on' ? 'turn_off' : 'turn_on';
+    // Optimistic update: reflect expected state immediately
+    const nextState = service === 'turn_on' ? 'on' : 'off';
+    updateTile(tile, { state: nextState, attributes: {} });
+
     callService('switch', service, { entity_id }).catch(err => {
       console.error('[switch] Service call failed:', err);
+      // Revert to previous state on failure
+      updateTile(tile, { state: currentState, attributes: {} });
     });
   }
 

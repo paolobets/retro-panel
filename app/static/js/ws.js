@@ -29,7 +29,11 @@ export function connectWS(onStateChanged, onConnect, onDisconnect) {
 
   function getWsUrl() {
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${proto}//${location.host}/ws`;
+    // Preserve HA Ingress path prefix so the WS request reaches our handler.
+    // Direct:  http://192.168.1.10:7654/       → ws://192.168.1.10:7654/ws
+    // Ingress: https://HA:8123/api/hassio_ingress/TOKEN/ → wss://HA:8123/api/hassio_ingress/TOKEN/ws
+    const base = location.pathname.replace(/\/+$/, '');
+    return proto + '//' + location.host + base + '/ws';
   }
 
   function connect() {
