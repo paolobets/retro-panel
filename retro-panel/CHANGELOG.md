@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.12] - 2026-03-22
+
+### Fixed
+- **Backend no longer crashes on startup** if HA is unreachable — server starts anyway,
+  the panel UI is reachable, error shown in tile grid instead of connection refused.
+- **Entities removed from HA config schema** — saved in `/data/entities.json` instead of
+  `options.json`, so they survive saves from the HA config tab and are never lost.
+- Panel shows title + error message instead of blank page if API calls fail.
+
 ## [1.0.11] - 2026-03-22
 
 ### Fixed

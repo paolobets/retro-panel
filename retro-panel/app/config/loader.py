@@ -149,7 +149,18 @@ def load_config() -> PanelConfig:
     except (TypeError, ValueError):
         columns = 3
 
-    raw_entities: list[dict] = raw.get("entities", [])
+    # Entities are stored in /data/entities.json (not in options.json)
+    # so they survive changes to the HA add-on config tab.
+    entities_file = Path("/data/entities.json")
+    if entities_file.exists():
+        try:
+            raw_entities: list[dict] = json.loads(entities_file.read_text(encoding="utf-8"))
+        except Exception as exc:
+            logger.warning("Failed to read %s: %s — using empty entity list", entities_file, exc)
+            raw_entities = []
+    else:
+        # Fall back to options.json for backwards compatibility with older versions
+        raw_entities: list[dict] = raw.get("entities", [])
     entities: list[EntityConfig] = []
     for idx, ent in enumerate(raw_entities):
         try:

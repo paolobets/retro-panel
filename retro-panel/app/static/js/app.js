@@ -221,8 +221,19 @@ async function boot() {
 
   } catch (err) {
     console.error('[app] Boot failed:', err);
-    const loadingEl = qs('#loading-screen .loading-text');
-    if (loadingEl) loadingEl.textContent = 'Failed to load. Check add-on configuration.';
+    // Show panel so at least the title and gear icon are visible
+    const panelEl = qs('#panel');
+    if (panelEl) panelEl.classList.remove('hidden');
+    const loadingScreen = qs('#loading-screen');
+    if (loadingScreen) loadingScreen.style.display = 'none';
+    const grid = qs('#tile-grid');
+    if (grid) {
+      var errMsg = document.createElement('p');
+      errMsg.className = 'loading-text';
+      errMsg.style.cssText = 'grid-column:1/-1;text-align:center;padding:60px 20px;';
+      errMsg.textContent = 'Cannot connect to Home Assistant. Check add-on logs.';
+      grid.appendChild(errMsg);
+    }
   }
 }
 

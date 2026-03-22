@@ -341,8 +341,13 @@ async def main() -> None:
     logger.info("Validating Home Assistant connection…")
     conn_ok, conn_err = await validate_ha_connection(ha_client)
     if not conn_ok:
-        logger.critical("Cannot connect to Home Assistant: %s", conn_err)
-        raise SystemExit(1)
+        # Log the error but do NOT exit — the server must start so the UI is reachable.
+        # REST endpoints will return 502 until HA is reachable; WS proxy retries with backoff.
+        logger.warning(
+            "Cannot reach Home Assistant at startup (%s). "
+            "The server will start anyway and retry connections in the background.",
+            conn_err,
+        )
 
     ws_proxy = WSProxy(ha_client=ha_client, config=config)
 

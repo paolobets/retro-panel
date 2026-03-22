@@ -1,19 +1,22 @@
-"""POST /api/config — saves entity list via Supervisor API and reloads in-memory config."""
+"""POST /api/config — saves entity list to /data/entities.json and reloads in-memory config."""
 
 from __future__ import annotations
 
+import json
 import logging
 import re
+from pathlib import Path
 
 from aiohttp import web
 
 logger = logging.getLogger(__name__)
 
 _ENTITY_ID_RE = re.compile(r"^[a-z_]+\.[a-z0-9_]+$")
+_ENTITIES_FILE = Path("/data/entities.json")
 
 
 async def save_config(request: web.Request) -> web.Response:
-    """Accept a new entity list, save it via Supervisor, reload in-memory config."""
+    """Accept a new entity list, write to /data/entities.json, reload in-memory config."""
     try:
         body = await request.json()
     except Exception:
@@ -45,37 +48,21 @@ async def save_config(request: web.Request) -> web.Response:
             ent["col"] = int(item["col"])
         entities.append(ent)
 
-    # Build full options from in-memory config — ha_url/ha_token never come from the request
-    config = request.app["config"]
-    options = {
-        "ha_url": config.ha_url,
-        "ha_token": config.ha_token,
-        "panel_title": config.title,
-        "columns": config.columns,
-        "theme": config.theme,
-        "kiosk_mode": config.kiosk_mode,
-        "refresh_interval": config.refresh_interval,
-        "entities": entities,
-    }
-
-    supervisor_client = request.app.get("supervisor_client")
-    if supervisor_client is None:
-        return web.json_response({"error": "Supervisor client not available"}, status=503)
-
     try:
-        await supervisor_client.save_options(options)
+        _ENTITIES_FILE.write_text(
+            json.dumps(entities, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
     except Exception as exc:
-        logger.error("Failed to save config via Supervisor: %s", exc)
-        return web.json_response({"error": "Failed to save configuration"}, status=502)
+        logger.error("Failed to write %s: %s", _ENTITIES_FILE, exc)
+        return web.json_response({"error": "Failed to save entities file"}, status=500)
 
-    logger.info("Config saved via Supervisor: %d entities", len(entities))
+    logger.info("Entities saved to %s: %d entities", _ENTITIES_FILE, len(entities))
 
     # Reload in-memory config so /api/panel-config returns updated entities immediately
     try:
         from config.loader import load_config
         request.app["config"] = load_config()
-        logger.info("In-memory config reloaded after save")
     except Exception as exc:
-        logger.warning("Config saved but in-memory reload failed: %s", exc)
+        logger.warning("Entities saved but in-memory reload failed: %s", exc)
 
     return web.json_response({"ok": True, "entities": len(entities)})
