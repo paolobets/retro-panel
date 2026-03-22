@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.6] - 2026-03-22
+
+### Changed
+- **Entity picker in HA config tab**: `entity_id` schema type changed from `str` to `entity`,
+  enabling the native Home Assistant entity picker dropdown in the add-on configuration tab
+- Removed web-based configuration page (`/config`) and all related backend code
+  (`handlers_entities`, `handlers_config_save`, `supervisor_client`)
+- Removed `hassio_api: true` — Supervisor API no longer required
+- Removed gear icon from panel header (configuration is now done via the HA add-on config tab)
+
 ## [1.0.4] - 2026-03-22
 
 ### Added
