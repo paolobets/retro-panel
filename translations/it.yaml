@@ -1,0 +1,25 @@
+configuration:
+  ha_url:
+    name: URL Home Assistant
+    description: L'URL della tua istanza Home Assistant (es. http://192.168.1.10:8123)
+  ha_token:
+    name: Token di Accesso
+    description: Crealo in HA Profilo → Token di Accesso a Lunga Durata
+  panel_title:
+    name: Titolo Pannello
+    description: Il titolo mostrato in cima al pannello
+  columns:
+    name: Colonne Griglia
+    description: Numero di colonne (2, 3 o 4). Usa 3 per iPad in verticale.
+  theme:
+    name: Tema
+    description: Tema visivo - dark, light, o auto (segue le preferenze del dispositivo)
+  kiosk_mode:
+    name: Modalità Kiosk
+    description: Abilita la modalità kiosk - ottimizzata per uso continuo su tablet a muro
+  refresh_interval:
+    name: Intervallo Aggiornamento Fallback
+    description: Frequenza in secondi per recuperare gli stati se WebSocket si disconnette
+  entities:
+    name: Entità
+    description: Lista di entità Home Assistant da mostrare sul pannello

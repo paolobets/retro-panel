@@ -1,0 +1,159 @@
+"""
+Async HTTP and WebSocket client for the Home Assistant REST API.
+The HA token is kept entirely server-side and never returned to callers.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+from typing import Any, Optional
+
+import aiohttp
+
+logger = logging.getLogger(__name__)
+
+_REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=10)
+
+
+class HAClient:
+    """Async client for the Home Assistant REST and WebSocket APIs.
+
+    The ``ha_token`` is stored internally and is never included in any
+    value returned to callers.
+    """
+
+    def __init__(self, ha_url: str, ha_token: str) -> None:
+        self._ha_url: str = ha_url.rstrip("/")
+        self.__ha_token: str = ha_token  # name-mangled; never logged
+        self._session: Optional[aiohttp.ClientSession] = None
+
+    def _get_session(self) -> aiohttp.ClientSession:
+        """Return the shared ClientSession, creating it lazily on first call."""
+        if self._session is None or self._session.closed:
+            self._session = aiohttp.ClientSession(
+                headers={
+                    "Authorization": f"Bearer {self.__ha_token}",
+                    "Content-Type": "application/json",
+                },
+                timeout=_REQUEST_TIMEOUT,
+            )
+        return self._session
+
+    async def close(self) -> None:
+        """Close the underlying aiohttp session gracefully."""
+        if self._session and not self._session.closed:
+            await self._session.close()
+            logger.info("HAClient session closed")
+
+    async def ping(self) -> bool:
+        """Verify connectivity by calling GET /api/ on the HA instance."""
+        url = f"{self._ha_url}/api/"
+        session = self._get_session()
+        try:
+            async with session.get(url) as resp:
+                if resp.status == 401:
+                    raise PermissionError("HA returned 401 Unauthorized")
+                return resp.status == 200
+        except aiohttp.ClientConnectorError as exc:
+            raise ConnectionRefusedError(str(exc)) from exc
+        except asyncio.TimeoutError as exc:
+            raise TimeoutError("Request to HA timed out") from exc
+
+    async def get_state(self, entity_id: str) -> dict[str, Any]:
+        """Fetch the current state of a single entity."""
+        url = f"{self._ha_url}/api/states/{entity_id}"
+        session = self._get_session()
+        try:
+            async with session.get(url) as resp:
+                if resp.status == 401:
+                    raise PermissionError("HA returned 401 Unauthorized")
+                if resp.status == 404:
+                    raise ValueError(f"Entity '{entity_id}' not found in HA")
+                resp.raise_for_status()
+                data: dict = await resp.json()
+                return _sanitize_state(data)
+        except aiohttp.ClientConnectorError as exc:
+            raise ConnectionRefusedError(str(exc)) from exc
+        except asyncio.TimeoutError as exc:
+            raise TimeoutError(f"Request for entity '{entity_id}' timed out") from exc
+
+    async def get_all_states(self, entity_ids: list[str]) -> list[dict[str, Any]]:
+        """Fetch states for multiple entities concurrently."""
+        tasks = [self.get_state(eid) for eid in entity_ids]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        output: list[dict[str, Any]] = []
+        for eid, result in zip(entity_ids, results):
+            if isinstance(result, Exception):
+                logger.warning("Failed to fetch state for %s: %s", eid, result)
+                output.append({"entity_id": eid, "state": "unavailable", "attributes": {}, "error": str(result)})
+            else:
+                output.append(result)
+        return output
+
+    async def call_service(
+        self,
+        domain: str,
+        service: str,
+        data: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Call a Home Assistant service."""
+        url = f"{self._ha_url}/api/services/{domain}/{service}"
+        session = self._get_session()
+        try:
+            async with session.post(url, json=data) as resp:
+                if resp.status == 401:
+                    raise PermissionError("HA returned 401 Unauthorized")
+                if 400 <= resp.status < 500:
+                    body = await resp.text()
+                    raise ValueError(f"HA returned {resp.status}: {body}")
+                resp.raise_for_status()
+                result = await resp.json()
+                return {"states": result}
+        except aiohttp.ClientConnectorError as exc:
+            raise ConnectionRefusedError(str(exc)) from exc
+        except asyncio.TimeoutError as exc:
+            raise TimeoutError(f"Service call {domain}.{service} timed out") from exc
+
+    async def ws_connect(self) -> aiohttp.ClientWebSocketResponse:
+        """Open a WebSocket connection to the HA WebSocket API with auth handshake."""
+        ws_url = self._ha_url.replace("http://", "ws://").replace("https://", "wss://")
+        ws_url = f"{ws_url}/api/websocket"
+        session = self._get_session()
+
+        try:
+            ws = await session.ws_connect(ws_url, heartbeat=30)
+
+            # Step 1: expect auth_required
+            msg = await asyncio.wait_for(ws.receive_json(), timeout=10)
+            if msg.get("type") != "auth_required":
+                raise ConnectionError(f"Unexpected HA WS message during handshake: {msg}")
+
+            # Step 2: send token
+            await ws.send_json({"type": "auth", "access_token": self.__ha_token})
+
+            # Step 3: expect auth_ok
+            msg = await asyncio.wait_for(ws.receive_json(), timeout=10)
+            if msg.get("type") == "auth_invalid":
+                raise PermissionError("HA WebSocket auth rejected (auth_invalid)")
+            if msg.get("type") != "auth_ok":
+                raise ConnectionError(f"Unexpected HA WS auth response: {msg}")
+
+            logger.info("HA WebSocket authenticated successfully")
+            return ws
+
+        except aiohttp.ClientConnectorError as exc:
+            raise ConnectionRefusedError(str(exc)) from exc
+        except asyncio.TimeoutError as exc:
+            raise TimeoutError("HA WebSocket handshake timed out") from exc
+
+
+def _sanitize_state(raw: dict[str, Any]) -> dict[str, Any]:
+    """Return only safe fields from an HA state dict."""
+    return {
+        "entity_id": raw.get("entity_id", ""),
+        "state": raw.get("state", "unknown"),
+        "attributes": raw.get("attributes", {}),
+        "last_changed": raw.get("last_changed", ""),
+        "last_updated": raw.get("last_updated", ""),
+    }

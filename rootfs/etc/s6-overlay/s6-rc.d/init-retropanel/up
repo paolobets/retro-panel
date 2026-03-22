@@ -1,0 +1,4 @@
+#!/usr/bin/with-contenv bashio
+bashio::log.info "Retro Panel starting..."
+bashio::log.info "HA URL: $(bashio::config 'ha_url')"
+bashio::log.info "Panel title: $(bashio::config 'panel_title')"

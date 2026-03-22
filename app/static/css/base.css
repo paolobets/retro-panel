@@ -1,0 +1,66 @@
+/* ============================================================
+   base.css — Reset, CSS custom properties, global typography
+   ============================================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Colors — overridden by themes.css */
+  --color-bg: #121212;
+  --color-surface: #1e1e1e;
+  --color-surface-2: #2a2a2a;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #aaaaaa;
+  --color-accent: #2196f3;
+  --color-on: #4caf50;
+  --color-off: #555555;
+  --color-danger: #f44336;
+  --color-warning: #ff9800;
+  --color-unavailable: #444444;
+
+  /* Spacing & shape */
+  --radius: 14px;
+  --radius-sm: 8px;
+  --gap: 12px;
+  --header-height: 60px;
+
+  /* Typography */
+  --font-size-label: 13px;
+  --font-size-value: 26px;
+  --font-size-small: 11px;
+  --font-size-icon: 28px;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Segoe UI",
+               Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Prevent tap highlight flash on iOS */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Kiosk mode: prevent text selection */
+.kiosk * {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Utility */
+.hidden {
+  display: none !important;
+}

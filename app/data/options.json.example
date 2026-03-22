@@ -1,0 +1,41 @@
+{
+  "ha_url": "http://192.168.1.10:8123",
+  "ha_token": "YOUR_LONG_LIVED_ACCESS_TOKEN_HERE",
+  "panel_title": "Home",
+  "columns": 3,
+  "theme": "dark",
+  "kiosk_mode": true,
+  "refresh_interval": 30,
+  "entities": [
+    {
+      "entity_id": "light.living_room",
+      "label": "Living Room",
+      "icon": "bulb"
+    },
+    {
+      "entity_id": "light.kitchen",
+      "label": "Kitchen",
+      "icon": "bulb"
+    },
+    {
+      "entity_id": "switch.tv_power",
+      "label": "TV",
+      "icon": "toggle"
+    },
+    {
+      "entity_id": "alarm_control_panel.home",
+      "label": "Alarm",
+      "icon": "shield"
+    },
+    {
+      "entity_id": "sensor.living_room_temperature",
+      "label": "Temperature",
+      "icon": "thermometer"
+    },
+    {
+      "entity_id": "binary_sensor.front_door",
+      "label": "Front Door",
+      "icon": "door"
+    }
+  ]
+}

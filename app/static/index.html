@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Retro Panel">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#121212">
+  <title>Retro Panel</title>
+
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body class="theme-dark">
+
+  <!-- Loading Screen -->
+  <div id="loading-screen">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <p class="loading-text">Loading…</p>
+    </div>
+  </div>
+
+  <!-- Main Panel -->
+  <div id="panel" class="hidden">
+
+    <!-- Disconnect Banner -->
+    <div id="disconnect-banner" class="hidden">
+      <span class="banner-dot"></span>
+      Reconnecting…
+    </div>
+
+    <!-- Header -->
+    <header id="panel-header">
+      <h1 id="panel-title">Retro Panel</h1>
+      <div id="connection-status" class="status-dot status-connected" title="Connected"></div>
+    </header>
+
+    <!-- Tile Grid -->
+    <main id="tile-grid" style="--columns: 3;"></main>
+
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
