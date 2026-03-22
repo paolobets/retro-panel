@@ -33,11 +33,12 @@ After installing the add-on, go to the **Configuration** tab and fill in:
 
 ## Adding entities
 
-Each entity in the list supports these fields:
+In the **Configuration** tab of the add-on, scroll to the **Entities** section
+and click **Add entity**. Each entry has these fields:
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `entity_id` | Yes | The HA entity ID (e.g. `light.living_room`) |
+| `entity_id` | Yes | Pick from the dropdown (native HA entity picker) |
 | `label` | No | Display name. Auto-detected from entity_id if omitted |
 | `icon` | No | Icon name. Auto-detected from domain if omitted |
 | `row` | No | Grid row (for manual positioning) |
@@ -54,6 +55,9 @@ Each entity in the list supports these fields:
 | `alarm_control_panel` | PIN keypad, Arm Home, Arm Away, Disarm |
 
 ### Configuration example
+
+In the HA Configuration tab, add one entry per entity using the entity picker
+dropdown. The YAML equivalent (for reference) looks like:
 
 ```yaml
 entities:

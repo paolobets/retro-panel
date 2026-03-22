@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.7] - 2026-03-22
+
+### Fixed
+- Restore Documentation tab (DOCS.md updated to reflect entity picker workflow)
+
+### Changed
+- No functional changes — version bump to trigger HA update notification
+
 ## [1.0.6] - 2026-03-22
 
 ### Changed
