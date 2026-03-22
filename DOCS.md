@@ -165,5 +165,5 @@ is lost and disappears automatically when it reconnects.
 
 ## Support
 
-- **GitHub Issues:** `https://github.com/YOUR_GITHUB_USERNAME/retro-panel/issues`
+- **GitHub Issues:** `https://github.com/paolobets/retro-panel/issues`
 - **Home Assistant Community:** search "Retro Panel" in the Add-ons category

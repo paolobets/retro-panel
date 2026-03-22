@@ -7,6 +7,6 @@ squash: false
 labels:
   org.opencontainers.image.title: "Retro Panel"
   org.opencontainers.image.description: "Touch-optimized HA kiosk dashboard for legacy browsers"
-  org.opencontainers.image.source: "https://github.com/YOUR_GITHUB_USERNAME/retro-panel"
+  org.opencontainers.image.source: "https://github.com/paolobets/retro-panel"
   org.opencontainers.image.licenses: "MIT"
-  org.opencontainers.image.authors: "YOUR_GITHUB_USERNAME"
+  org.opencontainers.image.authors: "paolobets"

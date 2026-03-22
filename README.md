@@ -8,19 +8,19 @@
 [![Supports armhf][armhf-badge]][armhf-url]
 [![Supports armv7][armv7-badge]][armv7-url]
 
-[release-badge]: https://img.shields.io/github/v/release/YOUR_GITHUB_USERNAME/retro-panel?style=flat-square
-[release-url]: https://github.com/YOUR_GITHUB_USERNAME/retro-panel/releases
-[license-badge]: https://img.shields.io/github/license/YOUR_GITHUB_USERNAME/retro-panel?style=flat-square
+[release-badge]: https://img.shields.io/github/v/release/paolobets/retro-panel?style=flat-square
+[release-url]: https://github.com/paolobets/retro-panel/releases
+[license-badge]: https://img.shields.io/github/license/paolobets/retro-panel?style=flat-square
 [ha-badge]: https://img.shields.io/badge/Home%20Assistant-2023.1%2B-blue?style=flat-square
 [ha-url]: https://www.home-assistant.io/
 [aarch64-badge]: https://img.shields.io/badge/aarch64-yes-green?style=flat-square
 [amd64-badge]: https://img.shields.io/badge/amd64-yes-green?style=flat-square
 [armhf-badge]: https://img.shields.io/badge/armhf-yes-green?style=flat-square
 [armv7-badge]: https://img.shields.io/badge/armv7-yes-green?style=flat-square
-[aarch64-url]: https://github.com/YOUR_GITHUB_USERNAME/retro-panel
-[amd64-url]: https://github.com/YOUR_GITHUB_USERNAME/retro-panel
-[armhf-url]: https://github.com/YOUR_GITHUB_USERNAME/retro-panel
-[armv7-url]: https://github.com/YOUR_GITHUB_USERNAME/retro-panel
+[aarch64-url]: https://github.com/paolobets/retro-panel
+[amd64-url]: https://github.com/paolobets/retro-panel
+[armhf-url]: https://github.com/paolobets/retro-panel
+[armv7-url]: https://github.com/paolobets/retro-panel
 
 ---
 
@@ -66,7 +66,7 @@ In Home Assistant, go to:
 Add the following URL:
 
 ```
-https://github.com/YOUR_GITHUB_USERNAME/retro-panel
+https://github.com/paolobets/retro-panel
 ```
 
 ### Step 2 — Install the add-on
