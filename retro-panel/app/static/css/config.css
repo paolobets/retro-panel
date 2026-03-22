@@ -1,0 +1,277 @@
+/* ============================================================
+   config.css — Entity picker configuration page
+   ============================================================ */
+
+/* Override base.css overflow:hidden so the config page scrolls */
+html, body { overflow: auto; height: auto; }
+
+/* ---- Header ---- */
+#cfg-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  height: 56px;
+  padding: 0 16px;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-surface-2);
+  gap: 12px;
+}
+
+#back-link {
+  color: var(--color-accent);
+  text-decoration: none;
+  font-size: 15px;
+  white-space: nowrap;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#cfg-title {
+  flex: 1;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+#save-btn {
+  background-color: var(--color-accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 8px 18px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
+}
+#save-btn:disabled { opacity: 0.5; cursor: default; }
+
+/* ---- Body ---- */
+#cfg-body {
+  padding: 16px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* ---- Search ---- */
+#search-wrap {
+  margin-bottom: 10px;
+}
+
+#search-input {
+  width: 100%;
+  padding: 11px 14px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-surface-2);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-size: 16px;
+  outline: none;
+  -webkit-appearance: none;
+}
+#search-input::placeholder { color: var(--color-text-secondary); }
+#search-input:focus { border-color: var(--color-accent); }
+
+/* ---- Domain filter pills ---- */
+#domain-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.filter-btn {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-surface-2);
+  border-radius: 20px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  padding: 6px 14px;
+  cursor: pointer;
+  min-height: 36px;
+  -webkit-tap-highlight-color: transparent;
+}
+.filter-btn.active {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+/* ---- Entity list ---- */
+#entity-list {
+  border: 1px solid var(--color-surface-2);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: 24px;
+  max-height: 340px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.entity-row {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-surface-2);
+  background-color: var(--color-surface);
+  gap: 10px;
+}
+.entity-row:last-child { border-bottom: none; }
+.entity-row--selected { opacity: 0.45; }
+
+.entity-domain {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  min-width: 64px;
+  flex-shrink: 0;
+}
+
+.entity-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.entity-name {
+  display: block;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.entity-id-label {
+  display: block;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.add-btn {
+  background-color: var(--color-accent);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.entity-check {
+  color: var(--color-on);
+  font-size: 16px;
+  flex-shrink: 0;
+  width: 30px;
+  text-align: center;
+}
+
+/* ---- Selected section ---- */
+#selected-section {
+  margin-bottom: 40px;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: 10px;
+}
+
+.section-hint {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+  opacity: 0.7;
+}
+
+#selected-list {
+  border: 1px solid var(--color-surface-2);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.selected-row {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-surface-2);
+  background-color: var(--color-surface);
+  gap: 10px;
+}
+.selected-row:last-child { border-bottom: none; }
+
+.selected-id {
+  flex: 1;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.selected-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.reorder-btn, .remove-btn {
+  background: var(--color-surface-2);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  width: 34px;
+  height: 34px;
+  font-size: 15px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.remove-btn { color: var(--color-danger); }
+
+/* ---- Placeholders & feedback ---- */
+.cfg-placeholder {
+  padding: 20px;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  background-color: var(--color-surface);
+}
+
+.cfg-error {
+  padding: 20px;
+  text-align: center;
+  color: var(--color-danger);
+  font-size: 14px;
+  background-color: var(--color-surface);
+}
+
+#save-feedback {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--color-danger);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 100;
+  max-width: calc(100vw - 40px);
+  text-align: center;
+}

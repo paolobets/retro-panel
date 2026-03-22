@@ -120,13 +120,23 @@ def load_config() -> PanelConfig:
 
     raw: dict = json.loads(raw_text)
 
-    ha_url: str = raw.get("ha_url", "").rstrip("/")
+    ha_url: str = (raw.get("ha_url") or "").strip().rstrip("/")
     if not ha_url:
-        raise ValueError("'ha_url' is required in options.json")
+        # Default to internal HA hostname — works inside HA add-on containers
+        ha_url = "http://homeassistant:8123"
+        logger.info("ha_url not configured, using internal default: %s", ha_url)
 
-    ha_token: str = raw.get("ha_token", "").strip()
+    ha_token: str = (raw.get("ha_token") or "").strip()
     if not ha_token:
-        raise ValueError("'ha_token' is required in options.json")
+        # Auto-detect from Supervisor-injected env var (requires hassio_api: true)
+        ha_token = os.environ.get("SUPERVISOR_TOKEN", "")
+        if ha_token:
+            logger.info("ha_token not configured, using SUPERVISOR_TOKEN from environment")
+        else:
+            raise ValueError(
+                "'ha_token' is not configured and SUPERVISOR_TOKEN is not available. "
+                "Set ha_token in the add-on configuration."
+            )
 
     columns_raw = raw.get("columns", 3)
     try:

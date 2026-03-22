@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Retro Panel — Settings</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <link rel="stylesheet" href="css/config.css">
+</head>
+<body class="theme-dark">
+
+  <header id="cfg-header">
+    <a href="./" id="back-link" title="Back to panel">&#8592; Panel</a>
+    <h1 id="cfg-title">Entities</h1>
+    <button id="save-btn" type="button">Save</button>
+  </header>
+
+  <div id="cfg-body">
+
+    <!-- Search + filter -->
+    <div id="search-wrap">
+      <input id="search-input" type="text"
+        placeholder="Search entities…"
+        autocomplete="off" autocorrect="off"
+        autocapitalize="off" spellcheck="false">
+    </div>
+    <div id="domain-filters">
+      <button class="filter-btn active" type="button" data-domain="">All</button>
+      <button class="filter-btn" type="button" data-domain="light">Lights</button>
+      <button class="filter-btn" type="button" data-domain="switch">Switches</button>
+      <button class="filter-btn" type="button" data-domain="sensor">Sensors</button>
+      <button class="filter-btn" type="button" data-domain="binary_sensor">Binary</button>
+      <button class="filter-btn" type="button" data-domain="alarm_control_panel">Alarm</button>
+    </div>
+
+    <!-- Available entities -->
+    <div id="entity-list">
+      <p class="cfg-placeholder">Loading…</p>
+    </div>
+
+    <!-- Selected entities -->
+    <div id="selected-section">
+      <h2 class="section-title">
+        Selected <span id="selected-count">0</span>
+        <span class="section-hint">— tap ↑ ↓ to reorder, ✕ to remove</span>
+      </h2>
+      <div id="selected-list">
+        <p class="cfg-placeholder">No entities selected.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="save-feedback" class="hidden"></div>
+
+  <script src="js/config-api.js"></script>
+  <script src="js/config.js"></script>
+</body>
+</html>

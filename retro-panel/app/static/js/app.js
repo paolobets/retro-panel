@@ -75,6 +75,15 @@ function renderGrid(config, states) {
   grid.innerHTML = '';
   grid.style.setProperty('--columns', String(config.columns));
 
+  if (config.entities.length === 0) {
+    var msg = document.createElement('p');
+    msg.className = 'loading-text';
+    msg.style.cssText = 'grid-column:1/-1;text-align:center;padding:60px 20px;';
+    msg.textContent = config.title + ' — No entities configured. Open Settings (⚙) to add entities.';
+    grid.appendChild(msg);
+    return;
+  }
+
   config.entities.forEach(function(entityConfig) {
     const domain = getDomain(entityConfig.entity_id);
     const component = COMPONENTS[domain];

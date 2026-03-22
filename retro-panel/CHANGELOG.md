@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.0.10] - 2026-03-22
+
+### Added
+- **Entity picker** web page (`/config`) — gear icon (⚙) in the panel header opens
+  a search/filter UI to browse all HA entities and build the entity list visually
+- Domain filter pills (Lights, Switches, Sensors, Binary, Alarm) and live text search
+- Up/Down reorder and remove buttons for the selected entity list
+- Save writes directly via Supervisor API; panel-config reloads in-memory immediately
+
+### Changed
+- **Token auto-detection**: `ha_token` is now optional — if left empty the add-on
+  automatically uses the `SUPERVISOR_TOKEN` injected by HA Supervisor (`hassio_api: true`)
+- **URL auto-detection**: `ha_url` defaults to `http://homeassistant:8123` if left empty
+- Empty panel now shows the configured title + a "Open Settings" hint instead of a blank page
+
 ## [1.0.9] - 2026-03-22
 
 ### Fixed
