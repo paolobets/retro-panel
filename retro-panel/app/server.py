@@ -158,20 +158,22 @@ async def security_headers_middleware(
     else:
         response = await handler(request)
 
-    # Clickjacking protection
-    response.headers["X-Frame-Options"] = "DENY"
     # Prevent MIME sniffing
     response.headers["X-Content-Type-Options"] = "nosniff"
     # No referrer sent to external origins
     response.headers["Referrer-Policy"] = "no-referrer"
-    # CSP: only allow same-origin resources; unsafe-inline needed for inline styles
+    # CSP: allow HA Ingress to embed this page in an iframe.
+    # X-Frame-Options is intentionally NOT set — it would block the HA Ingress iframe.
+    # frame-ancestors uses the HA origin so only the HA instance can embed us.
+    ha_url: str = getattr(request.app.get("config"), "ha_url", "")
+    frame_ancestors = ha_url.rstrip("/") if ha_url else "'self'"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self'; "
+        "script-src 'self' 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline'; "
         "img-src 'self' data:; "
         "connect-src 'self' ws: wss:; "
-        "frame-ancestors 'none';"
+        f"frame-ancestors {frame_ancestors} 'self';"
     )
 
     # Restricted CORS: allow the HA origin for local dev (not wildcard)

@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.0.13] - 2026-03-22
+
+### Fixed
+- **Blank page / "connection refused" on iOS Safari (iPad Air 2)**: Removed
+  `X-Frame-Options: DENY` and changed CSP `frame-ancestors` from `'none'` to
+  the configured HA origin. HA Ingress loads the add-on UI in an `<iframe>` —
+  the previous headers were blocking it, causing a blank page on desktop and
+  "connection refused" on iOS Safari.
+- **Static assets returning 404**: CSS and JS paths in `index.html` and
+  `config.html` were relative (`css/base.css`, `js/app.js`) and resolved to
+  `/css/…` / `/js/…` which are not served. Changed to `static/css/…` and
+  `static/js/…` so they hit the `/static/` route correctly through Ingress.
+
 ## [1.0.12] - 2026-03-22
 
 ### Fixed
