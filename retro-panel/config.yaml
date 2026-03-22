@@ -1,5 +1,5 @@
 name: "Retro Panel"
-version: "1.0.10"
+version: "1.0.11"
 slug: "retro_panel"
 description: >-
   Touch-optimized kiosk dashboard for Home Assistant.
@@ -28,7 +28,7 @@ options:
   refresh_interval: 30
   entities: []
 schema:
-  ha_url: url
+  ha_url: url?
   ha_token: password?
   panel_title: str
   columns: "list(2|3|4)"

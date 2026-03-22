@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.11] - 2026-03-22
+
+### Fixed
+- SUPERVISOR_TOKEN is not a valid HA Core token — route all calls through the
+  Supervisor proxy (`http://supervisor/core`) when token is auto-detected.
+  Previously the add-on crashed with 401 Unauthorized on startup.
+- `ha_url` schema marked optional (`url?`) — auto-set to Supervisor proxy when not configured.
+
 ## [1.0.10] - 2026-03-22
 
 ### Added
