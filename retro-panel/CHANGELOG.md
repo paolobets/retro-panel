@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.9] - 2026-03-22
+
+### Fixed
+- Default `ha_url` changed from `http://homeassistant.local:8123` to `http://homeassistant:8123`.
+  The `.local` mDNS hostname does not resolve inside Docker add-on containers;
+  `homeassistant` is the correct internal hostname set up by HA Supervisor.
+
 ## [1.0.8] - 2026-03-22
 
 ### Fixed

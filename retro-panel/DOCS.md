@@ -20,7 +20,7 @@ After installing the add-on, go to the **Configuration** tab and fill in:
 
 | Option | Description | Example |
 |--------|-------------|---------|
-| **HA URL** | Your HA instance URL | `http://192.168.1.10:8123` |
+| **HA URL** | Your HA instance URL | `http://homeassistant:8123` or `http://192.168.1.10:8123` |
 | **HA Token** | The token you just created | `eyJ0eXAi...` |
 | **Panel Title** | Title shown at the top | `Casa` |
 | **Columns** | Grid columns: `2`, `3`, or `4` | `3` |
