@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Background -->
+  <rect width="128" height="128" rx="24" fill="#1a1a1a"/>
+  <!-- Tablet outline -->
+  <rect x="20" y="18" width="88" height="68" rx="6" fill="none" stroke="#00d084" stroke-width="3"/>
+  <!-- Screen -->
+  <rect x="26" y="24" width="76" height="56" rx="3" fill="#0f0f0f"/>
+  <!-- Tile grid (3x2) -->
+  <rect x="30" y="28" width="20" height="18" rx="2" fill="#00d084" opacity="0.9"/>
+  <rect x="54" y="28" width="20" height="18" rx="2" fill="#252525"/>
+  <rect x="78" y="28" width="20" height="18" rx="2" fill="#00d084" opacity="0.7"/>
+  <rect x="30" y="50" width="20" height="18" rx="2" fill="#252525"/>
+  <rect x="54" y="50" width="20" height="18" rx="2" fill="#00d084" opacity="0.5"/>
+  <rect x="78" y="50" width="20" height="18" rx="2" fill="#252525"/>
+  <!-- Home button / stand -->
+  <line x1="50" y1="96" x2="78" y2="96" stroke="#444" stroke-width="2" stroke-linecap="round"/>
+  <line x1="64" y1="96" x2="64" y2="108" stroke="#444" stroke-width="2"/>
+  <line x1="48" y1="108" x2="80" y2="108" stroke="#00d084" stroke-width="2" stroke-linecap="round"/>
+</svg>

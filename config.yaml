@@ -21,6 +21,8 @@ panel_title: Retro Panel
 startup: services
 boot: auto
 init: false
+protected: true
+apparmor: true
 homeassistant_api: false
 hassio_api: false
 auth_api: false

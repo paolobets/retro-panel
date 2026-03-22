@@ -1,0 +1,83 @@
+#include <tunables/global>
+
+# Retro Panel — AppArmor profile
+# Python 3.11 + aiohttp kiosk dashboard server
+# Allows: TCP networking, read /app & /data/options.json, write stdout/stderr
+# Denies: filesystem writes outside /tmp, raw sockets, privileged ops
+
+profile retro_panel flags=(attach_disconnected,mediate_deleted) {
+
+  #include <abstractions/base>
+  #include <abstractions/python>
+  #include <abstractions/nameservice>
+
+  # ── Python interpreter ──────────────────────────────────────────────────────
+  /usr/bin/python3{,.*}           mrix,
+  /usr/local/bin/python3{,.*}     mrix,
+  /usr/bin/python{,.*}            mrix,
+
+  # ── Python standard library and site-packages ───────────────────────────────
+  /usr/lib/python3{,.*}/          r,
+  /usr/lib/python3{,.*}/**        mr,
+  /usr/local/lib/python3{,.*}/    r,
+  /usr/local/lib/python3{,.*}/**  mr,
+  /usr/lib/x86_64-linux-gnu/**    mr,
+  /usr/lib/aarch64-linux-gnu/**   mr,
+  /usr/lib/arm-linux-gnueabihf/** mr,
+  /usr/lib/armv7l-linux-gnueabihf/** mr,
+
+  # ── Application files (read-only) ──────────────────────────────────────────
+  /app/                           r,
+  /app/**                         r,
+
+  # ── Add-on data: options.json (read-only) ──────────────────────────────────
+  /data/                          r,
+  /data/options.json              r,
+
+  # ── Temporary files (aiohttp uses /tmp for async internals) ────────────────
+  /tmp/                           rw,
+  /tmp/**                         rw,
+
+  # ── Logging: stdout/stderr only ────────────────────────────────────────────
+  /dev/stdout                     w,
+  /dev/stderr                     w,
+  /dev/null                       rw,
+  /dev/urandom                    r,
+  /dev/random                     r,
+
+  # ── Proc: minimal read for Python runtime ──────────────────────────────────
+  @{PROC}/sys/kernel/random/uuid  r,
+  @{PROC}/@{pid}/fd/              r,
+  @{PROC}/@{pid}/maps             r,
+  @{PROC}/@{pid}/status           r,
+  @{PROC}/meminfo                 r,
+
+  # ── Network: TCP only (listen :7654, connect to HA REST + WebSocket) ────────
+  network inet  stream,
+  network inet6 stream,
+  network inet  dgram,   # DNS resolution
+  network unix  stream,
+
+  # ── System libraries ────────────────────────────────────────────────────────
+  /lib/**                         mr,
+  /usr/share/zoneinfo/**          r,
+  /etc/localtime                  r,
+  /etc/hosts                      r,
+  /etc/resolv.conf                r,
+  /etc/nsswitch.conf              r,
+  /etc/ssl/certs/**               r,
+  /etc/ssl/openssl.cnf            r,
+  /usr/share/ca-certificates/**   r,
+
+  # ── Explicitly deny dangerous operations ────────────────────────────────────
+  deny /proc/sysrq-trigger        w,
+  deny /proc/sys/kernel/**        w,
+  deny /sys/**                    w,
+  deny /boot/**                   rwklx,
+  deny /home/**                   rwklx,
+  deny /root/**                   rwklx,
+  deny /etc/shadow                rwklx,
+  deny /etc/passwd                w,
+  deny @{PROC}/@{pid}/mem         rw,
+
+}

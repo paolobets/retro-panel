@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.0.2] - 2026-03-22
+
+### Security
+- **APPARMOR**: Added custom `apparmor.txt` profile — restricts container to TCP networking,
+  read-only `/app` and `/data/options.json`, write-only stdout/stderr; denies all filesystem
+  writes outside `/tmp`, raw sockets, and privileged kernel operations
+- **PROTECTED**: Added `protected: true` to `config.yaml` — prevents disabling add-on
+  protection via the Supervisor API
+
+### Distribution
+- Added `DOCS.md` — documentation displayed in HA add-on UI (configuration reference,
+  entity examples, kiosk mode, troubleshooting)
+- Updated `README.md` — community add-on format with badges and custom repository instructions
+- Updated translations (en/it) with verbose option descriptions shown in HA config UI
+- Added `.github/workflows/builder.yaml` — automated multi-arch Docker build + GHCR publish
+- Added `icon.svg` / `logo.svg` — visual assets for Add-on Store (convert to PNG before release)
+- Added `LICENSE` (MIT) and `.gitignore`
+- `config.yaml`: added `homeassistant: "2023.1.0"`, `stage: stable`, `label` now optional
+
 ## [1.0.1] - 2026-03-22
 
 ### Security (post-audit fixes)
