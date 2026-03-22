@@ -1,0 +1,6 @@
+# Force LF line endings for all s6-overlay scripts and shell files
+retro-panel/rootfs/**        text eol=lf
+retro-panel/rootfs/**/*.sh   text eol=lf
+*.yaml                       text eol=lf
+*.json                       text eol=lf
+Dockerfile                   text eol=lf

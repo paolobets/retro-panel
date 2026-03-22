@@ -76,6 +76,10 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/${{ matrix.arch }}-retro-panel:latest
           build-args: |
             BUILD_FROM=${{ matrix.build_from }}
+          labels: |
+            io.hass.type=addon
+            io.hass.arch=${{ matrix.arch }}
+            io.hass.version=${{ steps.version.outputs.version }}
 
   # ── Create GitHub Release on tag push ──────────────────────────────────────
   release:
