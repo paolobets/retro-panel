@@ -2,22 +2,17 @@
 
 ## [1.0.2] - 2026-03-22
 
-### Security
-- **APPARMOR**: Added custom `apparmor.txt` profile — restricts container to TCP networking,
-  read-only `/app` and `/data/options.json`, write-only stdout/stderr; denies all filesystem
-  writes outside `/tmp`, raw sockets, and privileged kernel operations
-- **PROTECTED**: Added `protected: true` to `config.yaml` — prevents disabling add-on
-  protection via the Supervisor API
-
-### Distribution
-- Added `DOCS.md` — documentation displayed in HA add-on UI (configuration reference,
-  entity examples, kiosk mode, troubleshooting)
-- Updated `README.md` — community add-on format with badges and custom repository instructions
-- Updated translations (en/it) with verbose option descriptions shown in HA config UI
-- Added `.github/workflows/builder.yaml` — automated multi-arch Docker build + GHCR publish
-- Added `icon.svg` / `logo.svg` — visual assets for Add-on Store (convert to PNG before release)
-- Added `LICENSE` (MIT) and `.gitignore`
-- `config.yaml`: added `homeassistant: "2023.1.0"`, `stage: stable`, `label` now optional
+### Fixed
+- Remove `apparmor.txt`: HA Supervisor auto-applies the file even without `apparmor: true`,
+  blocking `/init` (s6-overlay entrypoint) and preventing the add-on from starting
+- Fix CI pipeline: migrate from deprecated `home-assistant/builder` action to
+  `docker/build-push-action@v6`, fix branch trigger (`main` → `master`), add
+  `packages: write` permission, update base image to Python 3.12-alpine3.21
+- Add `image:` field to config.yaml so Supervisor pulls pre-built image from ghcr.io
+  instead of attempting a local build (which always fails on HA OS)
+- Remove deprecated/invalid config.yaml fields flagged by addon linter
+- Drop deprecated armhf/armv7 architectures (removed in HA 2025.12)
+- Add `.gitattributes` to enforce LF line endings on rootfs scripts
 
 ## [1.0.1] - 2026-03-22
 
