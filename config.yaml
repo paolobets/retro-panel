@@ -1,11 +1,13 @@
-name: Retro Panel
-version: "1.0.0"
-slug: retro_panel
+name: "Retro Panel"
+version: "1.0.1"
+slug: "retro_panel"
 description: >-
   Touch-optimized kiosk dashboard for Home Assistant.
-  Compatible with iOS 15 Safari and legacy browsers.
-  Perfect for wall-mounted tablets and always-on displays.
-url: https://github.com/placeholder/retro-panel
+  Designed for wall-mounted tablets and always-on displays.
+  Works on iOS 15 Safari, old Android browsers, and any legacy device.
+url: "https://github.com/YOUR_GITHUB_USERNAME/retro-panel"
+homeassistant: "2023.1.0"
+stage: stable
 arch:
   - aarch64
   - amd64
@@ -13,6 +15,7 @@ arch:
   - armv7
 ingress: true
 ingress_port: 7654
+ingress_stream: false
 panel_icon: mdi:tablet-dashboard
 panel_title: Retro Panel
 startup: services
@@ -41,7 +44,7 @@ schema:
   refresh_interval: "int(5,300)"
   entities:
     - entity_id: str
-      label: str
+      label: str?
       icon: str?
       row: int?
       col: int?

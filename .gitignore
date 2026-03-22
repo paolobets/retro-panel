@@ -1,13 +1,21 @@
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
-.env
 .venv/
 venv/
-*.egg-info/
-dist/
-build/
-.DS_Store
-*.log
+.env
+
+# Local dev config (contains real ha_token — never commit)
 app/data/options.json
 data/options.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
