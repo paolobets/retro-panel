@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.2.2] - 2026-03-23
+
+### Fixed
+- **Per-entity visibility toggle not persisted** — `hidden` field was dropped by `_parse_item()` on save and omitted from `_serialize_item()` on load. Items toggled invisible in Settings reappeared after save. Fixed in backend (save + serialize) and loader dataclass.
+- **Entity-registry-hidden devices included in area import** — Jinja2 template now cross-references `area_entities()` against `states` (which excludes disabled/hidden entities from the HA entity registry), replacing the previous `attributes.hidden` attribute-only check.
+- **Alarm tile cramped on landscape tablet** — alarm tile now spans full grid width always (`grid-column: 1 / -1`) and uses a two-column layout in landscape orientation (keypad on right, status/PIN/actions on left).
+
+### Added
+- **Expanded icon set** — `format.js` adds: sun, battery, lightning, plug, fan, lock, vacuum, camera, bell, blinds, person, computer, heating, cooling, speaker, water. Auto-detection in `loader.py` extended with domains: cover → blinds, fan, lock, vacuum, camera, climate, media_player, person, humidifier; keywords: lock, fan, smoke, vibration, window, blind, plug, socket, presence, occupancy, camera, heating, cooling.
+- **More room icons** — added dining, laundry, balcony, gym, attic, entry, server, kids to the room icon picker.
+
 ## [1.2.1] - 2026-03-23
 
 ### Changed

@@ -35,7 +35,16 @@ _ICON_MAP: list[tuple[str, str]] = [
     ("light.", "bulb"),
     ("switch.", "toggle"),
     ("alarm_control_panel.", "shield"),
-    ("cover.", "door"),
+    ("cover.", "blinds"),
+    ("fan.", "fan"),
+    ("lock.", "lock"),
+    ("vacuum.", "vacuum"),
+    ("camera.", "camera"),
+    ("climate.", "thermometer"),
+    ("media_player.", "tv"),
+    ("person.", "person"),
+    ("humidifier.", "droplet"),
+    ("input_boolean.", "toggle"),
 ]
 
 _KEYWORD_MAP: list[tuple[str, str]] = [
@@ -48,6 +57,19 @@ _KEYWORD_MAP: list[tuple[str, str]] = [
     ("grid", "lightning"),
     ("power", "lightning"),
     ("energy", "lightning"),
+    ("lock", "lock"),
+    ("fan", "fan"),
+    ("smoke", "bell"),
+    ("vibration", "bell"),
+    ("window", "blinds"),
+    ("blind", "blinds"),
+    ("plug", "plug"),
+    ("socket", "plug"),
+    ("presence", "person"),
+    ("occupancy", "person"),
+    ("camera", "camera"),
+    ("heating", "heating"),
+    ("cooling", "cooling"),
 ]
 
 _DOMAIN_FALLBACK: dict[str, str] = {
@@ -73,6 +95,7 @@ class EntityConfig:
     entity_id: str
     label: str
     icon: str
+    hidden: bool = False
     row: Optional[int] = None
     col: Optional[int] = None
 
@@ -203,7 +226,8 @@ def _parse_entity(raw: dict) -> EntityConfig:
         raw.get("label", "").strip()
         or entity_id.replace("_", " ").split(".")[-1].title()
     )
-    return EntityConfig(entity_id=entity_id, label=label, icon=icon)
+    hidden: bool = bool(raw.get("hidden", False))
+    return EntityConfig(entity_id=entity_id, label=label, icon=icon, hidden=hidden)
 
 
 def _parse_energy_flow(raw: dict) -> EnergyFlowConfig:

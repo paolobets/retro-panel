@@ -19,9 +19,10 @@ _EXCLUDED_DOMAINS = frozenset({
 })
 
 _TEMPLATE = """\
+{% set active_ids = states | map(attribute='entity_id') | list %}
 {% set ns = namespace(r=[]) %}
 {% for a in areas() %}
-{% set ents = area_entities(a) | list %}
+{% set ents = area_entities(a) | select('in', active_ids) | list %}
 {% set ns.r = ns.r + [{'id': a, 'name': area_name(a), 'entity_ids': ents}] %}
 {% endfor %}
 {{ ns.r | tojson }}"""
@@ -33,7 +34,7 @@ async def get_ha_areas(request: web.Request) -> web.Response:
     Each entry: {id, name, entity_ids: [...]}
     Entity ids are filtered:
     - removes excluded domains
-    - removes hidden entities (attributes.hidden == true)
+    - removes hidden/disabled entities (cross-referenced against active states)
     """
     ha_client = request.app["ha_client"]
     try:
@@ -43,18 +44,6 @@ async def get_ha_areas(request: web.Request) -> web.Response:
         logger.error("Failed to fetch HA areas: %s", exc)
         return web.json_response({"error": str(exc)}, status=502)
 
-    # Also get all entity states so we can filter hidden ones
-    try:
-        all_states = await ha_client.get_all_entity_states()
-        hidden_ids: set[str] = {
-            s["entity_id"]
-            for s in all_states
-            if s.get("attributes", {}).get("hidden") is True
-        }
-    except Exception as exc:
-        logger.warning("Could not fetch entity states for hidden filter: %s", exc)
-        hidden_ids = set()
-
     result = []
     for area in areas:
         if not isinstance(area, dict):
@@ -63,8 +52,6 @@ async def get_ha_areas(request: web.Request) -> web.Response:
         for eid in area.get("entity_ids") or []:
             domain = eid.split(".")[0] if "." in eid else ""
             if domain in _EXCLUDED_DOMAINS:
-                continue
-            if eid in hidden_ids:
                 continue
             entity_ids.append(eid)
         result.append({

@@ -32,18 +32,26 @@
   };
 
   var ROOM_ICONS = {
-    home:     '\uD83C\uDFE0',
-    living:   '\uD83D\uDECB',
-    bedroom:  '\uD83D\uDECC',
-    kitchen:  '\uD83C\uDF73',
-    bathroom: '\uD83D\uDEB0',
-    garden:   '\uD83C\uDF3F',
-    garage:   '\uD83D\uDE97',
-    office:   '\uD83D\uDCBB',
-    energy:   '\u26A1',
-    security: '\uD83D\uDD12',
-    climate:  '\uD83C\uDF21',
-    lights:   '\uD83D\uDCA1',
+    home:      '\uD83C\uDFE0',   // 🏠
+    living:    '\uD83D\uDECB',   // 🛋
+    bedroom:   '\uD83D\uDECC',   // 🛌
+    kitchen:   '\uD83C\uDF73',   // 🍳
+    bathroom:  '\uD83D\uDEB0',   // 🚰
+    garden:    '\uD83C\uDF3F',   // 🌿
+    garage:    '\uD83D\uDE97',   // 🚗
+    office:    '\uD83D\uDCBB',   // 💻
+    energy:    '\u26A1',         // ⚡
+    security:  '\uD83D\uDD12',   // 🔒
+    climate:   '\uD83C\uDF21',   // 🌡
+    lights:    '\uD83D\uDCA1',   // 💡
+    dining:    '\uD83C\uDF7D',   // 🍽 dining room
+    laundry:   '\uD83D\uDEBF',   // 🚿 laundry / utility
+    balcony:   '\uD83C\uDF04',   // 🌄 balcony / terrace
+    gym:       '\uD83C\uDFCB',   // 🏋 gym / sport
+    attic:     '\uD83C\uDFD7',   // 🏗 attic / storage
+    entry:     '\uD83D\uDEAA',   // 🚪 entrance / hallway
+    server:    '\uD83D\uDDA5',   // 🖥 server / tech room
+    kids:      '\uD83E\uDDE8',   // 🧸 kids room
   };
 
   function getRoomIcon(iconName) {

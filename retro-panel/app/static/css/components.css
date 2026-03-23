@@ -193,11 +193,30 @@
   cursor: default;
   min-height: 200px;
   padding: 18px;
+  grid-column: 1 / -1;
   transition: border-color 0.3s ease, background-color 0.3s ease;
 }
 
 .tile.alarm-tile:active {
   transform: none;
+}
+
+/* Landscape: split keypad right, info+actions left */
+@media (orientation: landscape) and (min-width: 600px) {
+  .tile.alarm-tile {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto auto auto;
+    column-gap: 24px;
+    align-items: start;
+    min-height: auto;
+  }
+  .tile.alarm-tile .tile-top         { grid-column: 1; grid-row: 1; }
+  .tile.alarm-tile .tile-label       { grid-column: 1; grid-row: 2; }
+  .tile.alarm-tile .alarm-pin-display{ grid-column: 1; grid-row: 3; }
+  .tile.alarm-tile .alarm-error      { grid-column: 1; grid-row: 4; }
+  .tile.alarm-tile .alarm-actions    { grid-column: 1; grid-row: 5; }
+  .tile.alarm-tile .alarm-keypad     { grid-column: 2; grid-row: 1 / 6; align-self: center; }
 }
 
 .alarm-tile.alarm-disarmed { border-color: var(--color-on); }

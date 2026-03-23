@@ -17,6 +17,7 @@ def _serialize_item(item) -> dict:
             "entity_id": ec.entity_id,
             "label": ec.label,
             "icon": ec.icon,
+            "hidden": ec.hidden,
         }
     elif item.type == "energy_flow" and item.energy_flow is not None:
         ef = item.energy_flow
