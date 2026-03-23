@@ -21,10 +21,10 @@
 
   <!-- Section tabs -->
   <div id="cfg-tabs">
-    <button class="cfg-tab active" type="button" data-tab="overview">&#127968; Overview</button>
-    <button class="cfg-tab" type="button" data-tab="rooms">&#127968; Rooms</button>
-    <button class="cfg-tab" type="button" data-tab="scenarios">&#127917; Scenarios</button>
-    <button class="cfg-tab" type="button" data-tab="header">&#128268; Header</button>
+    <button class="cfg-tab active" type="button" data-tab="overview">Overview</button>
+    <button class="cfg-tab" type="button" data-tab="rooms">Rooms</button>
+    <button class="cfg-tab" type="button" data-tab="scenarios">Scenarios</button>
+    <button class="cfg-tab" type="button" data-tab="header">Header</button>
   </div>
 
   <div id="cfg-body">
@@ -93,29 +93,13 @@
               autocapitalize="words" spellcheck="false">
           </div>
           <div class="field-row">
-            <label class="field-label" for="room-icon-select">Icon</label>
-            <select id="room-icon-select" class="field-select">
-              <option value="home">&#127968; Home</option>
-              <option value="living">&#128715; Living room</option>
-              <option value="bedroom">&#128716; Bedroom</option>
-              <option value="kids">&#129960; Kids room</option>
-              <option value="kitchen">&#127859; Kitchen</option>
-              <option value="dining">&#127869; Dining room</option>
-              <option value="bathroom">&#128688; Bathroom</option>
-              <option value="laundry">&#128703; Laundry</option>
-              <option value="garden">&#127807; Garden</option>
-              <option value="balcony">&#127748; Balcony</option>
-              <option value="garage">&#128663; Garage</option>
-              <option value="entry">&#128682; Entry / Hallway</option>
-              <option value="office">&#128187; Office</option>
-              <option value="gym">&#127947; Gym</option>
-              <option value="attic">&#127959; Attic / Storage</option>
-              <option value="server">&#128421; Server room</option>
-              <option value="energy">&#9889; Energy</option>
-              <option value="security">&#128274; Security</option>
-              <option value="climate">&#127777; Climate</option>
-              <option value="lights">&#128161; Lights</option>
-            </select>
+            <label class="field-label">Icon</label>
+            <input id="room-icon-value" type="hidden" value="home">
+            <button id="room-icon-btn" type="button" class="icon-picker-btn">
+              <span id="room-icon-preview" class="icon-picker-btn-icon"></span>
+              <span id="room-icon-name" class="icon-picker-btn-label">Home</span>
+              <span class="icon-picker-chevron" aria-hidden="true">&#8250;</span>
+            </button>
           </div>
         </div>
 
@@ -282,6 +266,18 @@
       <input id="ef-grid" type="text" readonly>
       <input id="ef-home" type="text" readonly>
     </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       ICON PICKER (room icon selection)
+       ══════════════════════════════════════════════ -->
+  <section id="icon-picker" class="cfg-overlay hidden">
+    <div id="icon-picker-header">
+      <button id="icon-picker-cancel-btn" type="button" class="action-btn-outline">Cancel</button>
+      <h2 class="section-title" style="margin:0;">Room icon</h2>
+      <div style="width:80px;"></div>
+    </div>
+    <div id="icon-grid"></div>
   </section>
 
   <div id="save-feedback" class="hidden"></div>

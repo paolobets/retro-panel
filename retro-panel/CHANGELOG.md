@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.2.7] - 2026-03-23
+
+### Fixed
+- **Entity registry KeyError on malformed entries** — the set comprehension that builds `hidden_or_disabled` used `e["entity_id"]` (direct access). A registry entry missing the `entity_id` field would raise `KeyError`, caught by the outer `except`, silently zeroing the entire filter set and making all hidden entities visible. Changed to `e.get("entity_id")` with a truthiness guard so malformed entries are skipped individually. Applied to both `handlers_entities.py` and `handlers_areas.py`.
+
+### Changed
+- **Unified icon system across the entire app** — config page and dashboard panel now use the same MDI SVG icon set everywhere. Previously the Settings page used emoji (hardcoded HTML entities) while the panel used MDI SVGs.
+  - **Tab buttons** (`Overview`, `Rooms`, `Scenarios`, `Header`): emoji replaced by MDI SVG icons injected at runtime via `window.RP_MDI`
+  - **Room icon picker**: `<select>` with emoji options replaced by a custom full-screen icon grid overlay (same pattern as entity/sensor pickers). Each icon shows the MDI SVG at 28 px with a text label. Selected icon highlighted with accent border and background tint. 4-column grid on phone, 5-column on wide tablet.
+  - `balcony` room icon corrected from `'tree'` (duplicate of garden) to `'floor-plan'`
+  - Added `--color-accent-bg` CSS token to `base.css` for consistent tinted backgrounds
+
+### Added
+- **Unit test suite** — `tests/test_handlers_entities.py` with 16 pytest-asyncio tests covering all filter scenarios: visible entity, `hidden_by` user/integration, `disabled_by` user/integration, registry unavailable fallback, legacy `attributes.hidden`, malformed registry entry, unregistered entity, domain filter, invalid domain filter, missing HA client, states fetch failure, sort order.
+
 ## [1.2.6] - 2026-03-23
 
 ### Fixed

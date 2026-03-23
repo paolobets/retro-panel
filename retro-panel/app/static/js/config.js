@@ -299,14 +299,67 @@
     kitchen: 'stove', bathroom: 'shower', garden: 'tree',
     garage: 'garage', office: 'laptop', energy: 'lightning-bolt',
     security: 'shield-home', climate: 'thermometer', lights: 'lightbulb',
-    dining: 'silverware-fork-knife', laundry: 'washing-machine', balcony: 'tree',
+    dining: 'silverware-fork-knife', laundry: 'washing-machine', balcony: 'floor-plan',
     gym: 'dumbbell', attic: 'warehouse', entry: 'door',
     server: 'desktop-tower', kids: 'toy-brick',
+  };
+
+  var ROOM_LABELS = {
+    home: 'Home', living: 'Living', bedroom: 'Bedroom', kids: 'Kids',
+    kitchen: 'Kitchen', dining: 'Dining', bathroom: 'Bath', laundry: 'Laundry',
+    garden: 'Garden', balcony: 'Balcony', garage: 'Garage', entry: 'Entry',
+    office: 'Office', gym: 'Gym', attic: 'Attic', server: 'Server',
+    energy: 'Energy', security: 'Security', climate: 'Climate', lights: 'Lights',
   };
 
   function getRoomEmoji(icon) {
     var mdiName = ROOM_MDI_MAP[icon] || 'home';
     return window.RP_MDI ? window.RP_MDI(mdiName, 20) : (icon || '\uD83C\uDFE0');
+  }
+
+  function updateIconPreview(iconKey) {
+    var preview = qs('room-icon-preview');
+    var nameEl = qs('room-icon-name');
+    var mdiName = ROOM_MDI_MAP[iconKey] || 'home';
+    if (preview && window.RP_MDI) { preview.innerHTML = window.RP_MDI(mdiName, 22); }
+    if (nameEl) { nameEl.textContent = ROOM_LABELS[iconKey] || iconKey; }
+  }
+
+  function openIconPicker() {
+    var room = activeRoomObj();
+    var currentIcon = (room && room.icon) || 'home';
+    renderIconGrid(currentIcon);
+    showOverlay('icon-picker');
+  }
+
+  function renderIconGrid(selectedIcon) {
+    var container = qs('icon-grid');
+    if (!container) { return; }
+    var html = '';
+    var keys = Object.keys(ROOM_MDI_MAP);
+    for (var i = 0; i < keys.length; i++) {
+      var key = keys[i];
+      var mdiName = ROOM_MDI_MAP[key];
+      var label = ROOM_LABELS[key] || key;
+      var isSel = key === selectedIcon;
+      html += '<button class="icon-grid-item' + (isSel ? ' icon-grid-item--selected' : '') + '" type="button" data-icon="' + key + '">';
+      html += window.RP_MDI ? window.RP_MDI(mdiName, 28) : '';
+      html += '<span class="icon-grid-label">' + esc(label) + '</span>';
+      html += '</button>';
+    }
+    container.innerHTML = html;
+    container.querySelectorAll('.icon-grid-item').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var iconKey = this.getAttribute('data-icon');
+        var room = activeRoomObj();
+        if (room) { room.icon = iconKey; }
+        var iconValue = qs('room-icon-value');
+        if (iconValue) { iconValue.value = iconKey; }
+        updateIconPreview(iconKey);
+        renderRoomsList();
+        hideOverlay();
+      });
+    });
   }
 
   function addRoom() {
@@ -333,11 +386,12 @@
 
     // Populate fields
     var titleInput = qs('room-title-input');
-    var iconSelect = qs('room-icon-select');
+    var iconValue = qs('room-icon-value');
     var editorTitle = qs('room-editor-title');
     if (titleInput) { titleInput.value = room.title; }
-    if (iconSelect) { iconSelect.value = room.icon || 'home'; }
+    if (iconValue) { iconValue.value = room.icon || 'home'; }
     if (editorTitle) { editorTitle.textContent = room.title; }
+    updateIconPreview(room.icon || 'home');
 
     renderRoomItemsList();
   }
@@ -371,7 +425,7 @@
   function commitRoomIcon() {
     var room = activeRoomObj();
     if (!room) { return; }
-    room.icon = (qs('room-icon-select') && qs('room-icon-select').value) || 'home';
+    room.icon = (qs('room-icon-value') && qs('room-icon-value').value) || 'home';
   }
 
   function deleteRoom() {
@@ -1026,7 +1080,7 @@
 
   // ── Overlay management ─────────────────────────────────────────────────────
 
-  var OVERLAYS = ['entity-picker', 'sensor-picker', 'scenario-picker', 'energy-editor'];
+  var OVERLAYS = ['entity-picker', 'sensor-picker', 'scenario-picker', 'energy-editor', 'icon-picker'];
 
   function showOverlay(id) {
     for (var i = 0; i < OVERLAYS.length; i++) {
@@ -1130,8 +1184,16 @@
         if (el) { el.innerHTML = '<p class="cfg-error">Failed to load: ' + esc(err.message) + '</p>'; }
       });
 
-    // ── Tab buttons ────────────────────────────────────────────────────────
+    // ── Tab buttons — inject MDI icons and wire clicks ────────────────────
+    var TAB_ICONS = { overview: 'home', rooms: 'floor-plan', scenarios: 'palette', header: 'thermometer' };
     document.querySelectorAll('.cfg-tab').forEach(function (btn) {
+      var tab = btn.getAttribute('data-tab');
+      if (window.RP_MDI && TAB_ICONS[tab]) {
+        var iconSpan = document.createElement('span');
+        iconSpan.className = 'cfg-tab-icon';
+        iconSpan.innerHTML = window.RP_MDI(TAB_ICONS[tab], 18);
+        btn.insertBefore(iconSpan, btn.firstChild);
+      }
       btn.addEventListener('click', function () {
         switchTab(this.getAttribute('data-tab'));
       });
@@ -1170,8 +1232,11 @@
       roomTitleInput.addEventListener('keydown', function (e) { if (e.keyCode === 13) { this.blur(); } });
     }
 
-    var roomIconSelect = qs('room-icon-select');
-    if (roomIconSelect) { roomIconSelect.addEventListener('change', commitRoomIcon); }
+    var roomIconBtn = qs('room-icon-btn');
+    if (roomIconBtn) { roomIconBtn.addEventListener('click', openIconPicker); }
+
+    var iconPickerCancelBtn = qs('icon-picker-cancel-btn');
+    if (iconPickerCancelBtn) { iconPickerCancelBtn.addEventListener('click', hideOverlay); }
 
     var roomAddEntityBtn = qs('room-add-entity-btn');
     if (roomAddEntityBtn) { roomAddEntityBtn.addEventListener('click', function () { openEntityPicker('room'); }); }

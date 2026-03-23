@@ -16,6 +16,7 @@
   --color-text-primary: #ffffff;
   --color-text-secondary: #aaaaaa;
   --color-accent: #2196f3;
+  --color-accent-bg: rgba(33, 150, 243, 0.10);
   --color-on: #4caf50;
   --color-off: #555555;
   --color-danger: #f44336;

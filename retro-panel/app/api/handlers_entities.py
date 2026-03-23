@@ -46,7 +46,9 @@ async def get_all_entities(request: web.Request) -> web.Response:
         registry = await ha_client.get_entity_registry()
         hidden_or_disabled = {
             e["entity_id"] for e in registry
-            if isinstance(e, dict) and (e.get("hidden_by") or e.get("disabled_by"))
+            if isinstance(e, dict)
+            and e.get("entity_id")
+            and (e.get("hidden_by") or e.get("disabled_by"))
         }
         logger.debug("Entity registry: %d hidden/disabled entries", len(hidden_or_disabled))
     except Exception as exc:
