@@ -43,7 +43,8 @@ window.SensorComponent = (function () {
     tile.dataset.isBinary = isBinary ? 'true' : 'false';
 
     var top = DOM.createElement('div', 'tile-top');
-    var iconEl = DOM.createElement('span', 'tile-icon', FMT.getIcon(icon));
+    var iconEl = DOM.createElement('span', 'tile-icon');
+    iconEl.innerHTML = FMT.getIcon(icon, 28, entity_id);
     top.appendChild(iconEl);
 
     var bottom = DOM.createElement('div', 'tile-bottom');

@@ -16,11 +16,12 @@ window.SwitchComponent = (function () {
     var DOM = window.RP_DOM;
     var FMT = window.RP_FMT;
 
-    var tile = DOM.createElement('div', 'tile state-off');
+    var tile = DOM.createElement('div', 'tile entity-switch state-off');
     tile.dataset.entityId = entity_id;
 
     var top = DOM.createElement('div', 'tile-top');
-    var iconEl = DOM.createElement('span', 'tile-icon', FMT.getIcon(icon));
+    var iconEl = DOM.createElement('span', 'tile-icon');
+    iconEl.innerHTML = FMT.getIcon(icon, 28, entity_id);
     var toggle = DOM.createElement('div', 'tile-toggle');
     toggle.appendChild(DOM.createElement('div', 'tile-toggle-thumb'));
     top.appendChild(iconEl);

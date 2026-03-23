@@ -35,8 +35,21 @@
     water:       'water',
   };
 
-  function getIcon(iconName, size) {
-    var mdiName = DOMAIN_ICONS[iconName] || 'circle';
+  var _DOMAIN_FALLBACK = {
+    light:               'bulb',
+    switch:              'toggle',
+    sensor:              'thermometer',
+    binary_sensor:       'circle',
+    alarm_control_panel: 'shield',
+  };
+
+  function getIcon(iconName, size, entityId) {
+    var key = iconName;
+    if (!key && entityId) {
+      var domain = entityId.split('.')[0];
+      key = _DOMAIN_FALLBACK[domain] || 'circle';
+    }
+    var mdiName = DOMAIN_ICONS[key] || 'circle';
     if (window.RP_MDI) {
       return window.RP_MDI(mdiName, size || 28);
     }

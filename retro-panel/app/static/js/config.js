@@ -132,7 +132,10 @@
         html += '<button class="edit-energy-btn action-btn-sm" type="button" data-idx="' + i + '" data-ctx="' + esc(context) + '">Edit</button>';
         html += '<button class="remove-btn" type="button" data-idx="' + i + '" data-ctx="' + esc(context) + '">\u2715</button>';
       } else {
+        html += '<div class="selected-entity-info">';
         html += '<span class="selected-id">' + esc(item.entity_id) + '</span>';
+        html += '<input type="text" class="item-label-input" placeholder="Display name\u2026" value="' + esc(item.label || '') + '" data-idx="' + i + '" data-ctx="' + esc(context) + '">';
+        html += '</div>';
         html += '<div class="selected-actions">';
         html += '<button class="item-visibility-btn" type="button" title="' + (isHidden ? 'Show' : 'Hide') + '" data-idx="' + i + '" data-ctx="' + esc(context) + '">' + (isHidden ? '\uD83D\uDC41\uFE0F' : '\uD83D\uDC41') + '</button>';
         if (i > 0) {
@@ -181,6 +184,17 @@
         var idx = parseInt(this.getAttribute('data-idx'), 10);
         var ctx = this.getAttribute('data-ctx');
         openEnergyEditor(ctx, idx);
+      });
+    });
+
+    container.querySelectorAll('.item-label-input').forEach(function (input) {
+      input.addEventListener('change', function () {
+        var idx = parseInt(this.getAttribute('data-idx'), 10);
+        var ctx = this.getAttribute('data-ctx');
+        var items = getItemsForContext(ctx);
+        if (items[idx]) {
+          items[idx].label = this.value.trim();
+        }
       });
     });
   }
@@ -445,7 +459,14 @@
             }
           }
           if (!exists) {
-            room.items.push({ type: 'entity', entity_id: eid, label: '', icon: '', hidden: false });
+            var autoLabel = '';
+            for (var m = 0; m < allEntities.length; m++) {
+              if (allEntities[m].entity_id === eid) {
+                autoLabel = allEntities[m].friendly_name || '';
+                break;
+              }
+            }
+            room.items.push({ type: 'entity', entity_id: eid, label: autoLabel, icon: '', hidden: false });
             added++;
           }
         }
@@ -694,7 +715,7 @@
     var items = contextItems();
     if (!items) { return; }
     if (isEntityInContext(entityId)) { return; }
-    items.push({ type: 'entity', entity_id: entityId, label: friendlyName || '', icon: '' });
+    items.push({ type: 'entity', entity_id: entityId, label: friendlyName || '', icon: '', hidden: false });
     refreshItemsList(pickerContext === 'overview' ? 'overview' : 'room');
     renderEntityList();
   }

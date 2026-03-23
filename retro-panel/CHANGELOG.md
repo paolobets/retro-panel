@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.2.6] - 2026-03-23
+
+### Fixed
+- **Tile icons rendered as raw SVG markup** — `DOM.createElement` passes the third argument as `textContent`, which escapes HTML. All tile components (`light.js`, `switch.js`, `sensor.js`) were passing the SVG string from `FMT.getIcon()` as text, causing the raw `<svg>…` markup to appear as visible text on tiles. Fixed by creating the icon element separately and setting its `innerHTML` to the SVG string, matching the existing correct pattern used in the sidebar.
+- **All tile icons showing generic circle** — the `icon` field in stored entity items is always `''`, so `FMT.getIcon('')` fell back to the `circle` MDI icon for every entity. Added a `_DOMAIN_FALLBACK` map in `format.js` and updated `getIcon(iconName, size, entityId)` to infer the icon from the entity's domain when `iconName` is empty (light → bulb, switch → toggle, sensor → thermometer, binary_sensor → circle, alarm → shield).
+- **Hidden/disabled HA entities visible in entity picker** — `GET /api/entities` only checked `attributes.hidden`, which is a legacy flag rarely used by modern HA. Entities hidden or disabled via the HA UI (`hidden_by` / `disabled_by` in the entity registry) were still returned. Now cross-references `/api/config/entity_registry` using the same pattern as `handlers_areas.py`. Falls back gracefully to attribute-only filtering if the registry endpoint fails.
+- **`switch` tiles missing entity-type class** — `switch.js` built tiles with `'tile state-off'` without the `entity-switch` class needed for semantic CSS selectors, making switch tiles unstyled.
+
+### Added
+- **Editable entity display name in Settings** — each entity row in the Overview and Room items lists now has an inline text input for a user-friendly display name. The name is stored as `item.label` in the config and shown as the tile label on the dashboard. When importing entities from a HA area, the `friendly_name` from HA is auto-populated as the initial label.
+
 ## [1.2.5] - 2026-03-23
 
 ### Fixed

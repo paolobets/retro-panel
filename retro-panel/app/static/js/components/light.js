@@ -23,7 +23,8 @@ window.LightComponent = (function () {
 
     // Top row: icon + iOS pill toggle
     var top = DOM.createElement('div', 'tile-top');
-    var iconEl = DOM.createElement('span', 'tile-icon', FMT.getIcon(icon));
+    var iconEl = DOM.createElement('span', 'tile-icon');
+    iconEl.innerHTML = FMT.getIcon(icon, 28, entity_id);
     var toggle = DOM.createElement('div', 'tile-toggle');
     toggle.appendChild(DOM.createElement('div', 'tile-toggle-thumb'));
     top.appendChild(iconEl);
