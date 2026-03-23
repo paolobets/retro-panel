@@ -1,4 +1,9 @@
-"""GET /api/entities — returns HA entity list for the config page entity picker."""
+"""GET /api/entities — returns HA entity list for the config page entity picker.
+
+Uses ha_client (the main HA connection) instead of a separate supervisor_client,
+so it shares the same authenticated session and URL that the rest of the add-on
+already uses successfully.
+"""
 
 from __future__ import annotations
 
@@ -15,14 +20,14 @@ _ALLOWED_DOMAINS = frozenset({
 
 async def get_all_entities(request: web.Request) -> web.Response:
     """Return all HA entities in allowed domains, sorted by entity_id."""
-    supervisor_client = request.app.get("supervisor_client")
-    if supervisor_client is None:
-        return web.json_response({"error": "Supervisor client not available"}, status=503)
+    ha_client = request.app.get("ha_client")
+    if ha_client is None:
+        return web.json_response({"error": "HA client not available"}, status=503)
 
     try:
-        states = await supervisor_client.get_all_states()
+        states = await ha_client.get_all_entity_states()
     except Exception as exc:
-        logger.error("Failed to fetch states from Supervisor: %s", exc)
+        logger.error("Failed to fetch entity states from HA: %s", exc)
         return web.json_response({"error": "Failed to fetch entities from HA"}, status=502)
 
     entities = []

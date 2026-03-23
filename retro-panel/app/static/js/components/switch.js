@@ -1,87 +1,82 @@
 /**
  * switch.js — Switch entity tile component
  * Simple toggle, no brightness control.
- * ES2017-compatible, iOS 15 Safari safe.
+ * No ES modules — loaded as regular script. iOS 15 Safari safe.
+ *
+ * Exposes globally: window.SwitchComponent = { createTile, updateTile }
  */
+window.SwitchComponent = (function () {
+  'use strict';
 
-import { createElement } from '../utils/dom.js';
-import { getIcon } from '../utils/format.js';
-import { callService } from '../api.js';
+  function createTile(entityConfig) {
+    var entity_id = entityConfig.entity_id;
+    var label = entityConfig.label;
+    var icon = entityConfig.icon;
 
-/**
- * Create a tile element for a switch entity.
- * @param {object} entityConfig  { entity_id, label, icon }
- * @returns {HTMLElement}
- */
-export function createTile(entityConfig) {
-  const { entity_id, label, icon } = entityConfig;
+    var DOM = window.RP_DOM;
+    var FMT = window.RP_FMT;
 
-  const tile = createElement('div', 'tile state-off');
-  tile.dataset.entityId = entity_id;
+    var tile = DOM.createElement('div', 'tile state-off');
+    tile.dataset.entityId = entity_id;
 
-  const top = createElement('div', 'tile-top');
-  const iconEl = createElement('span', 'tile-icon', getIcon(icon));
-  const indicator = createElement('span', 'tile-toggle-indicator');
-  top.appendChild(iconEl);
-  top.appendChild(indicator);
+    var top = DOM.createElement('div', 'tile-top');
+    var iconEl = DOM.createElement('span', 'tile-icon', FMT.getIcon(icon));
+    var indicator = DOM.createElement('span', 'tile-toggle-indicator');
+    top.appendChild(iconEl);
+    top.appendChild(indicator);
 
-  const bottom = createElement('div', 'tile-bottom');
-  const valueEl = createElement('span', 'tile-value', 'Off');
-  const labelEl = createElement('span', 'tile-label', label);
-  bottom.appendChild(valueEl);
-  bottom.appendChild(labelEl);
+    var bottom = DOM.createElement('div', 'tile-bottom');
+    var valueEl = DOM.createElement('span', 'tile-value', 'Off');
+    var labelEl = DOM.createElement('span', 'tile-label', label);
+    bottom.appendChild(valueEl);
+    bottom.appendChild(labelEl);
 
-  tile.appendChild(top);
-  tile.appendChild(bottom);
+    tile.appendChild(top);
+    tile.appendChild(bottom);
 
-  // Toggle on tap
-  function handleTap() {
-    const currentState = tile.dataset.state || 'off';
-    const service = currentState === 'on' ? 'turn_off' : 'turn_on';
-    // Optimistic update: reflect expected state immediately
-    const nextState = service === 'turn_on' ? 'on' : 'off';
-    updateTile(tile, { state: nextState, attributes: {} });
+    function handleTap() {
+      var currentState = tile.dataset.state || 'off';
+      var service = currentState === 'on' ? 'turn_off' : 'turn_on';
+      var nextState = service === 'turn_on' ? 'on' : 'off';
+      // Optimistic update
+      updateTile(tile, { state: nextState, attributes: {} });
 
-    callService('switch', service, { entity_id }).catch(err => {
-      console.error('[switch] Service call failed:', err);
-      // Revert to previous state on failure
-      updateTile(tile, { state: currentState, attributes: {} });
+      window.callService('switch', service, { entity_id: entity_id }).catch(function (err) {
+        console.error('[switch] Service call failed:', err);
+        updateTile(tile, { state: currentState, attributes: {} });
+      });
+    }
+
+    tile.addEventListener('touchend', function (e) {
+      e.preventDefault();
+      handleTap();
     });
+
+    tile.addEventListener('click', function () {
+      if (!('ontouchstart' in window)) handleTap();
+    });
+
+    return tile;
   }
 
-  tile.addEventListener('touchend', function(e) {
-    e.preventDefault();
-    handleTap();
-  });
+  function updateTile(tile, stateObj) {
+    var state = stateObj.state;
+    tile.dataset.state = state;
 
-  tile.addEventListener('click', function(e) {
-    if (!('ontouchstart' in window)) handleTap();
-  });
+    var valueEl = tile.querySelector('.tile-value');
+    tile.classList.remove('state-on', 'state-off', 'state-unavailable');
 
-  return tile;
-}
-
-/**
- * Update a switch tile in-place with new state.
- * @param {HTMLElement} tile
- * @param {{ state: string, attributes: object }} stateObj
- */
-export function updateTile(tile, stateObj) {
-  const { state } = stateObj;
-  tile.dataset.state = state;
-
-  const valueEl = tile.querySelector('.tile-value');
-
-  tile.classList.remove('state-on', 'state-off', 'state-unavailable');
-
-  if (state === 'on') {
-    tile.classList.add('state-on');
-    valueEl.textContent = 'On';
-  } else if (state === 'unavailable') {
-    tile.classList.add('state-unavailable');
-    valueEl.textContent = 'N/A';
-  } else {
-    tile.classList.add('state-off');
-    valueEl.textContent = 'Off';
+    if (state === 'on') {
+      tile.classList.add('state-on');
+      valueEl.textContent = 'On';
+    } else if (state === 'unavailable') {
+      tile.classList.add('state-unavailable');
+      valueEl.textContent = 'N/A';
+    } else {
+      tile.classList.add('state-off');
+      valueEl.textContent = 'Off';
+    }
   }
-}
+
+  return { createTile: createTile, updateTile: updateTile };
+}());

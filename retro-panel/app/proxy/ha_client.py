@@ -115,6 +115,26 @@ class HAClient:
         except asyncio.TimeoutError as exc:
             raise TimeoutError(f"Service call {domain}.{service} timed out") from exc
 
+    async def get_all_entity_states(self) -> list[dict[str, Any]]:
+        """Fetch ALL entity states from HA (used by the entity picker config page).
+
+        Uses a larger timeout than individual state fetches because the full
+        state dump can be sizable on instances with many entities.
+        """
+        url = f"{self._ha_url}/api/states"
+        session = self._get_session()
+        timeout = aiohttp.ClientTimeout(total=30)
+        try:
+            async with session.get(url, timeout=timeout) as resp:
+                if resp.status == 401:
+                    raise PermissionError("HA returned 401 Unauthorized")
+                resp.raise_for_status()
+                return await resp.json()
+        except aiohttp.ClientConnectorError as exc:
+            raise ConnectionRefusedError(str(exc)) from exc
+        except asyncio.TimeoutError as exc:
+            raise TimeoutError("Request for all entity states timed out") from exc
+
     async def ws_connect(self) -> aiohttp.ClientWebSocketResponse:
         """Open a WebSocket connection to the HA WebSocket API with auth handshake."""
         ws_url = self._ha_url.replace("http://", "ws://").replace("https://", "wss://")

@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.0.14] - 2026-03-23
+
+### Fixed
+- **iPad / WKWebView: panel stuck on loading spinner forever** — converted all
+  frontend JS from ES modules (`type="module"` + `import`/`export`) to regular
+  ordered `<script>` tags with IIFE-namespaced globals. iOS Safari in the HA
+  companion app (WKWebView) silently fails to execute ES module graphs in
+  cross-origin iframes, causing `boot()` to never run and the loading screen to
+  never disappear. Regular scripts are universally compatible.
+- **Config page 502 "Failed to load entities"** — the entity picker now uses
+  `ha_client.get_all_entity_states()` instead of the separate `supervisor_client`.
+  The main HA client already has the correct authenticated session; a second
+  client caused spurious connection failures. The new method also uses a 30 s
+  timeout (vs 15 s) to handle large HA instances with many entities.
+- **fetch() hanging indefinitely on iOS** — added `AbortController` with 20 s
+  timeout to every `apiFetch` call so a hung network request always resolves
+  (with an error) instead of blocking the boot sequence forever.
+- **Content-Type on GET requests** — removed `Content-Type: application/json`
+  header from GET calls; it is semantically incorrect and can trigger unneeded
+  CORS preflight in certain iOS Safari / WKWebView contexts.
+
 ## [1.0.13] - 2026-03-22
 
 ### Fixed

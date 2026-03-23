@@ -1,101 +1,97 @@
 /**
  * ws.js — WebSocket client with automatic reconnection
- * ES2017-compatible, no external dependencies.
- * iOS 15 Safari: WebSocket close event fires reliably.
+ * No ES modules — loaded as regular script. iOS 15 Safari safe.
+ *
+ * Exposes globally: connectWS
  */
+(function () {
+  'use strict';
 
-const BACKOFF = [1000, 2000, 4000, 8000, 16000, 30000];
+  var BACKOFF = [1000, 2000, 4000, 8000, 16000, 30000];
 
-/**
- * Connect to the backend WebSocket and handle reconnection.
- *
- * @param {function(string, object): void} onStateChanged
- *   Called when a state_changed event is received.
- *   Arguments: (entityId, newState)
- *
- * @param {function(): void} onConnect
- *   Called when WebSocket connects (or reconnects) successfully.
- *
- * @param {function(): void} onDisconnect
- *   Called when WebSocket disconnects unexpectedly.
- *
- * @returns {{ close: function(): void }}  Control object to stop reconnection.
- */
-export function connectWS(onStateChanged, onConnect, onDisconnect) {
-  let ws = null;
-  let attempt = 0;
-  let stopped = false;
-  let reconnectTimer = null;
+  /**
+   * Connect to the backend WebSocket and handle reconnection.
+   *
+   * @param {function(string, object): void} onStateChanged
+   * @param {function(): void} onConnect
+   * @param {function(): void} onDisconnect
+   * @returns {{ close: function(): void }}
+   */
+  function connectWS(onStateChanged, onConnect, onDisconnect) {
+    var ws = null;
+    var attempt = 0;
+    var stopped = false;
+    var reconnectTimer = null;
 
-  function getWsUrl() {
-    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    // Preserve HA Ingress path prefix so the WS request reaches our handler.
-    // Direct:  http://192.168.1.10:7654/       → ws://192.168.1.10:7654/ws
-    // Ingress: https://HA:8123/api/hassio_ingress/TOKEN/ → wss://HA:8123/api/hassio_ingress/TOKEN/ws
-    const base = location.pathname.replace(/\/+$/, '');
-    return proto + '//' + location.host + base + '/ws';
-  }
-
-  function connect() {
-    if (stopped) return;
-
-    try {
-      ws = new WebSocket(getWsUrl());
-    } catch (err) {
-      console.error('[WS] Failed to create WebSocket:', err);
-      scheduleReconnect();
-      return;
+    function getWsUrl() {
+      var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      // Preserve HA Ingress path prefix so the WS request reaches our handler.
+      var base = location.pathname.replace(/\/+$/, '');
+      return proto + '//' + location.host + base + '/ws';
     }
 
-    ws.onopen = function() {
-      attempt = 0;  // reset backoff on success
-      console.info('[WS] Connected');
-      onConnect();
-    };
+    function connect() {
+      if (stopped) return;
 
-    ws.onmessage = function(event) {
-      let msg;
       try {
-        msg = JSON.parse(event.data);
+        ws = new WebSocket(getWsUrl());
       } catch (err) {
-        console.warn('[WS] Failed to parse message:', event.data);
+        console.error('[WS] Failed to create WebSocket:', err);
+        scheduleReconnect();
         return;
       }
 
-      if (msg.type === 'state_changed' && msg.entity_id && msg.new_state) {
-        onStateChanged(msg.entity_id, msg.new_state);
-      }
-    };
+      ws.onopen = function () {
+        attempt = 0;
+        console.info('[WS] Connected');
+        onConnect();
+      };
 
-    ws.onclose = function(event) {
-      console.info('[WS] Closed (code=%d, clean=%s)', event.code, event.wasClean);
-      if (!stopped) {
-        onDisconnect();
-        scheduleReconnect();
-      }
-    };
+      ws.onmessage = function (event) {
+        var msg;
+        try {
+          msg = JSON.parse(event.data);
+        } catch (err) {
+          console.warn('[WS] Failed to parse message:', event.data);
+          return;
+        }
+        if (msg.type === 'state_changed' && msg.entity_id && msg.new_state) {
+          onStateChanged(msg.entity_id, msg.new_state);
+        }
+      };
 
-    ws.onerror = function(err) {
-      // onerror is always followed by onclose on iOS Safari; let onclose handle it
-      console.warn('[WS] Error event');
+      ws.onclose = function (event) {
+        console.info('[WS] Closed (code=%d, clean=%s)', event.code, event.wasClean);
+        if (!stopped) {
+          onDisconnect();
+          scheduleReconnect();
+        }
+      };
+
+      ws.onerror = function () {
+        // onerror is always followed by onclose on iOS Safari; let onclose handle it
+        console.warn('[WS] Error event');
+      };
+    }
+
+    function scheduleReconnect() {
+      if (stopped) return;
+      var delay = BACKOFF[Math.min(attempt, BACKOFF.length - 1)];
+      console.info('[WS] Reconnecting in %dms (attempt %d)\u2026', delay, attempt + 1);
+      attempt++;
+      reconnectTimer = setTimeout(connect, delay);
+    }
+
+    connect();
+
+    return {
+      close: function () {
+        stopped = true;
+        if (reconnectTimer) clearTimeout(reconnectTimer);
+        if (ws) ws.close();
+      },
     };
   }
 
-  function scheduleReconnect() {
-    if (stopped) return;
-    const delay = BACKOFF[Math.min(attempt, BACKOFF.length - 1)];
-    console.info('[WS] Reconnecting in %dms (attempt %d)…', delay, attempt + 1);
-    attempt++;
-    reconnectTimer = setTimeout(connect, delay);
-  }
-
-  connect();
-
-  return {
-    close: function() {
-      stopped = true;
-      if (reconnectTimer) clearTimeout(reconnectTimer);
-      if (ws) ws.close();
-    },
-  };
-}
+  window.connectWS = connectWS;
+}());

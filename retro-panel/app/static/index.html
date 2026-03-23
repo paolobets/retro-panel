@@ -46,6 +46,19 @@
 
   </div>
 
-  <script type="module" src="static/js/app.js"></script>
+  <!--
+    Scripts loaded in dependency order — NO type="module".
+    ES module imports are incompatible with iOS Safari in WKWebView iframes
+    (HA companion app). Regular scripts are universally compatible.
+  -->
+  <script src="static/js/utils/dom.js"></script>
+  <script src="static/js/utils/format.js"></script>
+  <script src="static/js/api.js"></script>
+  <script src="static/js/ws.js"></script>
+  <script src="static/js/components/light.js"></script>
+  <script src="static/js/components/switch.js"></script>
+  <script src="static/js/components/sensor.js"></script>
+  <script src="static/js/components/alarm.js"></script>
+  <script src="static/js/app.js"></script>
 </body>
 </html>
