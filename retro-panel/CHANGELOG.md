@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.1] - 2026-03-23
+
+### Changed
+- Sidebar: Settings icon moved to bottom (icon-only); collapse toggle left-aligned
+- Sidebar: Individual rooms replaced by a collapsible "Rooms ›" submenu with back arrow
+- Config — Overview: section title now editable (stored as `overview.title` in v3 schema)
+- Config — Rooms: reorder arrows (↑↓) per room row; room editor has "Import from area" button
+- Config — Items: per-entity visibility toggle (eye icon) hides item in panel without deleting it
+- Config — Header sensors: picker is now multi-select (stays open, checkmarks, Done button)
+
 ## [1.2.0] - 2026-03-23
 
 ### Added
