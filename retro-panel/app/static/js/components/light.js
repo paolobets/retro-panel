@@ -18,7 +18,7 @@ window.LightComponent = (function () {
     var DOM = window.RP_DOM;
     var FMT = window.RP_FMT;
 
-    var tile = DOM.createElement('div', 'tile state-off');
+    var tile = DOM.createElement('div', 'tile entity-light state-off');
     tile.dataset.entityId = entity_id;
 
     // Top row: icon + iOS pill toggle

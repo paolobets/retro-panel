@@ -22,6 +22,13 @@
   --color-warning: #ff9800;
   --color-unavailable: #444444;
 
+  /* Semantic entity colors */
+  --color-light-on: #FFB700;
+  --color-light-on-bg: rgba(255, 183, 0, 0.12);
+  --color-binary-alert: #FF6B00;
+  --color-temp-fill: #ef6c00;
+  --color-humidity-fill: #1e88e5;
+
   /* Spacing & shape */
   --radius: 14px;
   --radius-sm: 8px;

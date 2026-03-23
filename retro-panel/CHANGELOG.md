@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.4] - 2026-03-23
+
+### Changed
+- **Semantic entity colors** — tile colors now vary by entity type instead of using a single generic green for all "ON" states, inspired by Apple Home visual language:
+  - **Lights** (`entity-light`): amber `#FFB700` border, icon, toggle, and background tint when ON
+  - **Binary sensor alerts** (`entity-sensor` + `sensor-alert`): orange `#FF6B00` icon and border when a motion/door/window/moisture/smoke/vibration sensor is triggered
+  - **Climate fill bar colors** moved to CSS tokens (`--color-temp-fill`, `--color-humidity-fill`) — no more hardcoded hex values in JS
+- Added semantic color tokens to `base.css`: `--color-light-on`, `--color-light-on-bg`, `--color-binary-alert`, `--color-temp-fill`, `--color-humidity-fill`
+
 ## [1.2.3] - 2026-03-23
 
 ### Fixed

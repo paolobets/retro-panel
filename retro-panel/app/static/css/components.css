@@ -52,6 +52,43 @@
   opacity: 0.60;
 }
 
+/* ---- Entity-type semantic colors ---- */
+
+/* Light ON: amber instead of generic green */
+.tile.entity-light.state-on {
+  border-color: var(--color-light-on);
+}
+
+.tile.entity-light.state-on::before {
+  background-color: var(--color-light-on);
+}
+
+.tile.entity-light.state-on .tile-icon {
+  color: var(--color-light-on);
+}
+
+.tile.entity-light.state-on .tile-toggle {
+  background: var(--color-light-on);
+}
+
+/* Binary sensor alert: orange for motion/open/smoke/moisture */
+.tile.entity-sensor.sensor-alert {
+  border-color: var(--color-binary-alert);
+}
+
+.tile.entity-sensor.sensor-alert::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: var(--color-binary-alert);
+  opacity: 0.10;
+  pointer-events: none;
+}
+
+.tile.entity-sensor.sensor-alert .tile-icon {
+  color: var(--color-binary-alert);
+}
+
 /* State: unavailable */
 .tile.state-unavailable {
   opacity: 0.35;

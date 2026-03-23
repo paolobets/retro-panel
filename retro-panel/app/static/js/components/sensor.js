@@ -17,10 +17,16 @@ window.SensorComponent = (function () {
     humidity:    { min: 0, max: 100 },   // 0–100 %
   };
 
-  // CSS color variable for the fill bar tint
+  // CSS variable references for the fill bar tint (defined in base.css)
   var CLIMATE_COLOR = {
-    temperature: '#ef6c00',   // warm orange
-    humidity:    '#1e88e5',   // cool blue
+    temperature: 'var(--color-temp-fill)',
+    humidity:    'var(--color-humidity-fill)',
+  };
+
+  // Binary sensor device classes that represent an "alert" when ON
+  var BINARY_ALERT_CLASSES = {
+    door: true, window: true, motion: true,
+    moisture: true, smoke: true, vibration: true,
   };
 
   function createTile(entityConfig) {
@@ -32,7 +38,7 @@ window.SensorComponent = (function () {
     var DOM = window.RP_DOM;
     var FMT = window.RP_FMT;
 
-    var tile = DOM.createElement('div', 'tile sensor-tile state-off');
+    var tile = DOM.createElement('div', 'tile sensor-tile entity-sensor state-off');
     tile.dataset.entityId = entity_id;
     tile.dataset.isBinary = isBinary ? 'true' : 'false';
 
@@ -70,6 +76,11 @@ window.SensorComponent = (function () {
       var deviceClass = attributes.device_class;
       valueEl.textContent = window.RP_FMT.getBinarySensorLabel(state, deviceClass);
       tile.classList.add(state === 'on' ? 'state-on' : 'state-off');
+      if (state === 'on' && deviceClass && BINARY_ALERT_CLASSES[deviceClass]) {
+        tile.classList.add('sensor-alert');
+      } else {
+        tile.classList.remove('sensor-alert');
+      }
     } else {
       // Climate sensor: temperature or humidity gets fill bar + large value
       var dc = attributes.device_class;
