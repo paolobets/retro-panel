@@ -544,5 +544,3 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Hide config link in kiosk mode */
-.kiosk #config-link { display: none; }
