@@ -124,11 +124,37 @@
     <!-- ── Energy Flow Card Configurator ── -->
     <section id="energy-editor" class="hidden">
       <div id="energy-header">
-        <h2 class="section-title">Power Flow Card</h2>
+        <h2 class="section-title">&#9889; Power Flow Card</h2>
         <button id="energy-done-btn" type="button" class="action-btn">Done</button>
       </div>
-      <p class="cfg-hint">Map each sensor role to a Home Assistant entity. Leave empty to hide that element.</p>
-      <div id="energy-fields">
+      <p class="cfg-hint">Map each sensor role to a HA entity. Leave empty to hide that element.</p>
+
+      <!-- Wizard step indicator -->
+      <div id="energy-wizard-steps">
+        <div class="wizard-step active" data-step="0">1</div>
+        <div class="wizard-step-line"></div>
+        <div class="wizard-step" data-step="1">2</div>
+        <div class="wizard-step-line"></div>
+        <div class="wizard-step" data-step="2">3</div>
+        <div class="wizard-step-line"></div>
+        <div class="wizard-step" data-step="3">4</div>
+        <div class="wizard-step-line"></div>
+        <div class="wizard-step" data-step="4">5</div>
+      </div>
+
+      <!-- One wizard step shown at a time -->
+      <div id="energy-wizard-body">
+        <!-- Step content injected by JS -->
+      </div>
+
+      <div id="energy-wizard-nav">
+        <button id="energy-prev-btn" type="button" class="action-btn-outline hidden">&#8592; Back</button>
+        <button id="energy-next-btn" type="button" class="action-btn">Next &#8594;</button>
+        <button id="energy-finish-btn" type="button" class="action-btn hidden">&#10003; Confirm</button>
+      </div>
+
+      <!-- Legacy compact view (shown after wizard completed once) -->
+      <div id="energy-fields" class="hidden">
         <div class="field-row">
           <label class="field-label" for="ef-solar">Solar production</label>
           <input id="ef-solar" type="text" class="field-input entity-input"
@@ -171,7 +197,7 @@
         </div>
       </div>
       <p class="cfg-hint" style="margin-top:8px;">
-        For ZCS Azzurro or other inverters: positive battery_power = charging, negative = discharging.
+        ZCS Azzurro, SMA, Fronius, etc.: positive battery_power = charging, negative = discharging.
         Positive grid_power = importing from grid, negative = exporting.
       </p>
     </section>

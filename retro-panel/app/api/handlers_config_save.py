@@ -131,10 +131,14 @@ async def save_config(request: web.Request) -> web.Response:
         _ENTITIES_FILE, len(pages), total_entities,
     )
 
-    # Reload in-memory config so the panel reflects changes immediately
+    # Reload in-memory config and update the WS proxy entity filter
     try:
         from config.loader import load_config
-        request.app["config"] = load_config()
+        new_config = load_config()
+        request.app["config"] = new_config
+        ws_proxy = request.app.get("ws_proxy")
+        if ws_proxy is not None:
+            ws_proxy.update_config(new_config)
     except Exception as exc:
         logger.warning("Config saved but in-memory reload failed: %s", exc)
 

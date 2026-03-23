@@ -391,38 +391,199 @@
 
   function pickSensor(entityId) {
     if (sensorPickerTarget) {
-      var input = qs(sensorPickerTarget);
+      var target = sensorPickerTarget;
+      sensorPickerTarget = null;
+
+      // Wizard mode: target ends with '__wizard'
+      var wizardSuffix = '__wizard';
+      if (target.slice(-wizardSuffix.length) === wizardSuffix) {
+        var fieldId = target.slice(0, -wizardSuffix.length);
+        wizardValues[fieldId] = entityId;
+        // Sync to legacy hidden input
+        var inp = qs(fieldId);
+        if (inp) { inp.value = entityId; }
+        showSection('energy-editor');
+        renderWizardStep(wizardStep);
+        return;
+      }
+
+      // Legacy mode: target is the input id
+      var input = qs(target);
       if (input) { input.value = entityId; }
     }
-    sensorPickerTarget = null;
     showSection('energy-editor');
   }
 
-  // ---- Energy card editor ----
+  // ---- Energy card wizard ----
+
+  var WIZARD_STEPS = [
+    {
+      field: 'ef-solar',
+      title: 'Step 1 of 5 — Solar Production',
+      icon: '\u2600',
+      description: 'Select the sensor that measures how much power your solar panels are currently producing (in Watts).\n\nLook for names like:\n• sensor.solar_power\n• sensor.pv_power\n• sensor.inverter_output_power\n• sensor.zcs_azzurro_power_pv\n\nTip: search "pv" or "solar" in the picker below.',
+      placeholder: 'sensor.solar_power',
+      searchHint: 'solar pv',
+    },
+    {
+      field: 'ef-batt-soc',
+      title: 'Step 2 of 5 — Battery State of Charge',
+      icon: '\uD83D\uDD0B',
+      description: 'Select the sensor that shows the battery charge level as a percentage (0–100%).\n\nLook for names like:\n• sensor.battery_soc\n• sensor.battery_level\n• sensor.bms_state_of_charge\n• sensor.zcs_azzurro_battery_soc\n\nTip: search "soc" or "battery" + "percent" in the picker.',
+      placeholder: 'sensor.battery_soc',
+      searchHint: 'battery soc',
+    },
+    {
+      field: 'ef-batt-pwr',
+      title: 'Step 3 of 5 — Battery Power',
+      icon: '\u26A1',
+      description: 'Select the sensor that shows battery charge/discharge power in Watts.\n\nConvention used by this card:\n• Positive value (+W) = battery is charging\n• Negative value (−W) = battery is discharging\n\nLook for names like:\n• sensor.battery_power\n• sensor.battery_charge_discharge_power\n• sensor.zcs_azzurro_battery_power\n\nIf your inverter reports separate charge/discharge sensors, pick the one that goes negative when discharging.',
+      placeholder: 'sensor.battery_power',
+      searchHint: 'battery power',
+    },
+    {
+      field: 'ef-grid',
+      title: 'Step 4 of 5 — Grid Power',
+      icon: '\uD83C\uDFED',
+      description: 'Select the sensor that measures power exchange with the electrical grid (in Watts).\n\nConvention used by this card:\n• Positive value (+W) = importing from grid (buying)\n• Negative value (−W) = exporting to grid (selling)\n\nLook for names like:\n• sensor.grid_power\n• sensor.meter_power\n• sensor.zcs_azzurro_power_grid\n\nTip: search "grid" or "meter" in the picker.',
+      placeholder: 'sensor.grid_power',
+      searchHint: 'grid meter',
+    },
+    {
+      field: 'ef-home',
+      title: 'Step 5 of 5 — Home Consumption',
+      icon: '\uD83C\uDFE0',
+      description: 'Select the sensor that shows total power consumption of your home (in Watts).\n\nThis is often calculated automatically by your inverter or energy meter.\n\nLook for names like:\n• sensor.home_consumption\n• sensor.house_load\n• sensor.load_power\n• sensor.zcs_azzurro_power_load\n\nTip: search "load" or "consumption" or "house" in the picker.',
+      placeholder: 'sensor.home_consumption',
+      searchHint: 'load consumption house',
+    },
+  ];
+
+  var wizardStep = 0;
+  // wizardValues: { field_id: entity_id_string }
+  var wizardValues = {
+    'ef-solar': '', 'ef-batt-soc': '', 'ef-batt-pwr': '', 'ef-grid': '', 'ef-home': '',
+  };
 
   function openEnergyEditor(itemIdx) {
     energyEditIdx = itemIdx;
     var page = activePage();
     var item = (itemIdx !== null && page) ? page.items[itemIdx] : null;
 
-    // Populate fields
-    qs('ef-solar').value    = (item && item.solar_power)   || '';
-    qs('ef-batt-soc').value = (item && item.battery_soc)   || '';
-    qs('ef-batt-pwr').value = (item && item.battery_power) || '';
-    qs('ef-grid').value     = (item && item.grid_power)    || '';
-    qs('ef-home').value     = (item && item.home_power)    || '';
+    // If editing an existing card, pre-populate wizard values
+    wizardValues = {
+      'ef-solar':   (item && item.solar_power)   || '',
+      'ef-batt-soc':(item && item.battery_soc)   || '',
+      'ef-batt-pwr':(item && item.battery_power) || '',
+      'ef-grid':    (item && item.grid_power)    || '',
+      'ef-home':    (item && item.home_power)    || '',
+    };
 
+    // Also populate legacy compact fields (in case sensor picker uses them)
+    qs('ef-solar').value    = wizardValues['ef-solar'];
+    qs('ef-batt-soc').value = wizardValues['ef-batt-soc'];
+    qs('ef-batt-pwr').value = wizardValues['ef-batt-pwr'];
+    qs('ef-grid').value     = wizardValues['ef-grid'];
+    qs('ef-home').value     = wizardValues['ef-home'];
+
+    wizardStep = 0;
     showSection('energy-editor');
+    renderWizardStep(0);
+  }
+
+  function renderWizardStep(step) {
+    var stepDef = WIZARD_STEPS[step];
+    var body = qs('energy-wizard-body');
+    if (!body || !stepDef) { return; }
+
+    var currentVal = wizardValues[stepDef.field] || '';
+
+    var html = '';
+    html += '<div class="wizard-step-card">';
+    html += '<div class="wizard-step-icon">' + stepDef.icon + '</div>';
+    html += '<h3 class="wizard-step-title">' + esc(stepDef.title) + '</h3>';
+    html += '<p class="wizard-step-desc">' + esc(stepDef.description).replace(/\n/g, '<br>') + '</p>';
+    html += '<div class="wizard-field-row">';
+    html += '<div class="wizard-selected-label">';
+    if (currentVal) {
+      html += '<span class="wizard-selected-value">&#10003; ' + esc(currentVal) + '</span>';
+    } else {
+      html += '<span class="wizard-selected-empty">No sensor selected (optional)</span>';
+    }
+    html += '</div>';
+    if (currentVal) {
+      html += '<button class="clear-sensor-btn" type="button" id="wizard-clear-btn" title="Clear">&#10005;</button>';
+    }
+    html += '</div>';
+    html += '<button class="action-btn" type="button" id="wizard-pick-btn" style="width:100%;margin-top:10px;">&#128269; Search and select sensor</button>';
+    html += '</div>';
+
+    body.innerHTML = html;
+
+    // Bind pick button
+    var pickBtn = document.getElementById('wizard-pick-btn');
+    if (pickBtn) {
+      pickBtn.addEventListener('click', function () {
+        // Pre-fill search with hint keywords
+        sensorSearchText = '';
+        var searchEl = qs('sensor-search-input');
+        if (searchEl) { searchEl.value = ''; }
+        // Temporarily override sensorPickerTarget to write to wizardValues
+        sensorPickerTarget = stepDef.field + '__wizard';
+        var titleEl = qs('sensor-picker-title');
+        if (titleEl) {
+          titleEl.textContent = stepDef.title.replace('Step ? of 5 — ', '').replace(/Step \d of 5 — /, '');
+        }
+        showSection('sensor-picker');
+        renderSensorList();
+      });
+    }
+
+    var clearBtn = document.getElementById('wizard-clear-btn');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function () {
+        wizardValues[stepDef.field] = '';
+        // Also clear legacy input
+        var input = qs(stepDef.field);
+        if (input) { input.value = ''; }
+        renderWizardStep(step);
+      });
+    }
+
+    // Update step indicators
+    var stepIndicators = document.querySelectorAll('.wizard-step');
+    for (var i = 0; i < stepIndicators.length; i++) {
+      var s = stepIndicators[i];
+      s.classList.remove('active', 'done');
+      var sIdx = parseInt(s.getAttribute('data-step'), 10);
+      if (sIdx < step) { s.classList.add('done'); }
+      else if (sIdx === step) { s.classList.add('active'); }
+    }
+
+    // Nav buttons
+    var prevBtn = qs('energy-prev-btn');
+    var nextBtn = qs('energy-next-btn');
+    var finishBtn = qs('energy-finish-btn');
+
+    if (prevBtn) { step > 0 ? prevBtn.classList.remove('hidden') : prevBtn.classList.add('hidden'); }
+    if (nextBtn) { step < WIZARD_STEPS.length - 1 ? nextBtn.classList.remove('hidden') : nextBtn.classList.add('hidden'); }
+    if (finishBtn) { step === WIZARD_STEPS.length - 1 ? finishBtn.classList.remove('hidden') : finishBtn.classList.add('hidden'); }
   }
 
   function commitEnergyCard() {
+    // Sync wizardValues to legacy inputs before reading
+    for (var f in wizardValues) {
+      var inp = qs(f);
+      if (inp) { inp.value = wizardValues[f]; }
+    }
+
     var item = {
       type: 'energy_flow',
-      solar_power:    (qs('ef-solar').value    || '').trim(),
-      battery_soc:    (qs('ef-batt-soc').value || '').trim(),
-      battery_power:  (qs('ef-batt-pwr').value || '').trim(),
-      grid_power:     (qs('ef-grid').value     || '').trim(),
-      home_power:     (qs('ef-home').value     || '').trim(),
+      solar_power:    wizardValues['ef-solar']   || '',
+      battery_soc:    wizardValues['ef-batt-soc'] || '',
+      battery_power:  wizardValues['ef-batt-pwr'] || '',
+      grid_power:     wizardValues['ef-grid']    || '',
+      home_power:     wizardValues['ef-home']    || '',
     };
 
     var page = activePage();
@@ -600,9 +761,35 @@
       });
     }
 
-    // Energy done
+    // Energy done (header button — also commits)
     var energyDoneBtn = qs('energy-done-btn');
     if (energyDoneBtn) { energyDoneBtn.addEventListener('click', commitEnergyCard); }
+
+    // Wizard navigation
+    var energyPrevBtn = qs('energy-prev-btn');
+    if (energyPrevBtn) {
+      energyPrevBtn.addEventListener('click', function () {
+        if (wizardStep > 0) {
+          wizardStep -= 1;
+          renderWizardStep(wizardStep);
+        }
+      });
+    }
+
+    var energyNextBtn = qs('energy-next-btn');
+    if (energyNextBtn) {
+      energyNextBtn.addEventListener('click', function () {
+        if (wizardStep < WIZARD_STEPS.length - 1) {
+          wizardStep += 1;
+          renderWizardStep(wizardStep);
+        }
+      });
+    }
+
+    var energyFinishBtn = qs('energy-finish-btn');
+    if (energyFinishBtn) {
+      energyFinishBtn.addEventListener('click', commitEnergyCard);
+    }
 
     // Pick-sensor buttons (🔍) next to each energy field
     var pickBtns = document.querySelectorAll('.pick-sensor-btn');

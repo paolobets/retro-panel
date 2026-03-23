@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.1.3] - 2026-03-23
+
+### Added
+- **Energy card setup wizard** — step-by-step 5-screen wizard guides user through mapping
+  each sensor role (Solar, Battery SOC, Battery Power, Grid, Home) with clear descriptions,
+  sign conventions (positive = charging/importing), and example entity_id names for popular
+  inverters (ZCS Azzurro, SMA, Fronius). Integrated sensor picker 🔍 on each step.
+  Breadcrumb step indicator (●●●●●) highlights current and completed steps.
+
+### Fixed
+- **WebSocket state updates broken after config save** — `WSProxy._entity_ids` was computed
+  once at startup using only `entity`-type items. Newly added entities (and all energy flow
+  sensors) silently received no real-time updates until the add-on restarted. Added
+  `WSProxy.update_config()` called from `POST /api/config` to refresh the filter immediately.
+- **Energy flow sensors excluded from WS filter** — `config.entities` only returned
+  entity-type items; energy sensor entity_ids were never subscribed. Fixed via
+  `config.all_entity_ids` which includes all 5 energy flow sensor fields.
+
 ## [1.1.2] - 2026-03-23
 
 ### Added

@@ -27,11 +27,16 @@ class WSProxy:
 
     def __init__(self, ha_client: "HAClient", config: "PanelConfig") -> None:
         self._ha_client = ha_client
-        self._config = config
-        self._entity_ids: frozenset[str] = frozenset(e.entity_id for e in config.entities)
+        self._entity_ids: frozenset[str] = frozenset(config.all_entity_ids)
         self._clients: set[aiohttp.web.WebSocketResponse] = set()
         self._running: bool = False
         self._ha_ws: Optional[aiohttp.ClientWebSocketResponse] = None
+
+    def update_config(self, config: "PanelConfig") -> None:
+        """Update the entity filter after a config save — must be called whenever
+        /api/config is saved so new entities receive WebSocket state updates."""
+        self._entity_ids = frozenset(config.all_entity_ids)
+        logger.info("WSProxy entity filter updated: %d entity IDs", len(self._entity_ids))
 
     def add_client(self, ws: "aiohttp.web.WebSocketResponse") -> None:
         """Register a new browser WebSocket client."""
