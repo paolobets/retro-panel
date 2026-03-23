@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.1.2] - 2026-03-23
+
+### Added
+- **Sensor picker for Power Flow Card** — each sensor role (Solar, Battery SOC/Power,
+  Grid, Home) now has a 🔍 button that opens a searchable sensor list instead of
+  requiring manual entity_id typing. Shows device_class and unit for easy identification.
+  A ✕ button clears the field. Inputs are read-only to prevent typos.
+- **Hidden entity filter** — `/api/entities` now skips entities with
+  `attributes.hidden == true` (user-hidden via HA YAML or UI). Keeps the picker
+  clean by showing only visible, actionable entities.
+- `/api/entities?domain=sensor` query parameter — returns only sensor-domain entities,
+  used by the energy card sensor picker to avoid showing lights/switches/etc.
+
 ## [1.1.1] - 2026-03-23
 
 ### Fixed

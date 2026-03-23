@@ -404,6 +404,76 @@ html, body { overflow: auto; height: auto; }
 .entity-input {
   font-size: 13px;
   font-family: 'Courier New', monospace;
+  background-color: var(--color-surface-2);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  cursor: default;
+  color: var(--color-text-primary);
+}
+
+.entity-input:focus { outline: none; }
+
+/* Pick + clear buttons next to energy fields */
+.pick-sensor-btn, .clear-sensor-btn {
+  background: var(--color-surface-2);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  width: 34px;
+  height: 34px;
+  font-size: 15px;
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  font-family: inherit;
+}
+
+.pick-sensor-btn { color: var(--color-accent); }
+.clear-sensor-btn { color: var(--color-danger); font-size: 13px; }
+
+/* Sensor picker section */
+#sensor-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+#sensor-search-wrap {
+  margin-bottom: 10px;
+}
+
+#sensor-search-input {
+  width: 100%;
+  padding: 11px 14px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-surface-2);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-size: 16px;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+#sensor-search-input::placeholder { color: var(--color-text-secondary); }
+#sensor-search-input:focus { border-color: var(--color-accent); }
+
+#sensor-list {
+  border: 1px solid var(--color-surface-2);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  max-height: 380px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 16px;
+}
+
+/* Entity meta info (device_class · unit) */
+.entity-meta {
+  font-style: normal;
+  font-size: 10px;
+  color: var(--color-accent);
+  opacity: 0.8;
 }
 
 .cfg-hint {

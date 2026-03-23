@@ -18,10 +18,13 @@
   // ---- Application state ----
   var pages = [];
   var activePageIdx = 0;
-  var allEntities = [];       // from /api/entities
+  var allEntities = [];       // from /api/entities (non-hidden only)
+  var allSensors = [];        // from /api/entities?domain=sensor
   var filterDomain = '';
   var searchText = '';
   var energyEditIdx = null;   // index in items of the energy card being edited (null = adding new)
+  var sensorPickerTarget = null;  // input element id being filled by sensor picker
+  var sensorSearchText = '';
 
   // ---- Helpers ----
 
@@ -293,7 +296,7 @@
   // ---- Section visibility ----
 
   function showSection(id) {
-    var sections = ['page-editor', 'entity-picker', 'energy-editor'];
+    var sections = ['page-editor', 'entity-picker', 'sensor-picker', 'energy-editor'];
     for (var i = 0; i < sections.length; i++) {
       var el = qs(sections[i]);
       if (el) {
@@ -304,6 +307,95 @@
         }
       }
     }
+  }
+
+  // ---- Sensor picker (for energy card fields) ----
+
+  var ENERGY_FIELD_LABELS = {
+    'ef-solar':   'Solar production',
+    'ef-batt-soc':'Battery SOC (%)',
+    'ef-batt-pwr':'Battery power (W)',
+    'ef-grid':    'Grid power (W)',
+    'ef-home':    'Home consumption (W)',
+  };
+
+  function openSensorPicker(targetInputId) {
+    sensorPickerTarget = targetInputId;
+    sensorSearchText = '';
+
+    var titleEl = qs('sensor-picker-title');
+    if (titleEl) {
+      titleEl.textContent = 'Select: ' + (ENERGY_FIELD_LABELS[targetInputId] || targetInputId);
+    }
+
+    var searchEl = qs('sensor-search-input');
+    if (searchEl) { searchEl.value = ''; }
+
+    showSection('sensor-picker');
+    renderSensorList();
+
+    // Focus search on open
+    if (searchEl) {
+      setTimeout(function () { searchEl.focus(); }, 100);
+    }
+  }
+
+  function renderSensorList() {
+    var container = qs('sensor-list');
+    if (!container) { return; }
+
+    var filtered = allSensors.filter(function (e) {
+      if (!sensorSearchText) { return true; }
+      var hay = (e.entity_id + ' ' + (e.friendly_name || '') + ' ' + (e.device_class || '')).toLowerCase();
+      return hay.indexOf(sensorSearchText) !== -1;
+    });
+
+    if (allSensors.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">Loading sensors…</p>';
+      return;
+    }
+
+    if (filtered.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">No sensors found.</p>';
+      return;
+    }
+
+    var html = '';
+    for (var i = 0; i < filtered.length; i++) {
+      var e = filtered[i];
+      var meta = '';
+      if (e.device_class) { meta += e.device_class; }
+      if (e.unit)         { meta += (meta ? ' · ' : '') + e.unit; }
+      html += '<div class="entity-row sensor-pick-row"'
+        + ' data-id="' + esc(e.entity_id) + '"'
+        + ' data-name="' + esc(e.friendly_name || '') + '">';
+      html += '<span class="entity-info">';
+      html += '<span class="entity-name">' + esc(e.friendly_name || e.entity_id) + '</span>';
+      html += '<span class="entity-id-label">' + esc(e.entity_id);
+      if (meta) { html += ' <em class="entity-meta">(' + esc(meta) + ')</em>'; }
+      html += '</span>';
+      html += '</span>';
+      html += '<button class="add-btn sensor-pick-select" type="button"'
+        + ' data-id="' + esc(e.entity_id) + '">&#10003;</button>';
+      html += '</div>';
+    }
+    container.innerHTML = html;
+
+    var selectBtns = container.querySelectorAll('.sensor-pick-select');
+    for (var j = 0; j < selectBtns.length; j++) {
+      selectBtns[j].addEventListener('click', function () {
+        pickSensor(this.getAttribute('data-id'));
+      });
+    }
+  }
+
+  function pickSensor(entityId) {
+    if (sensorPickerTarget) {
+      var input = qs(sensorPickerTarget);
+      if (input) { input.value = entityId; }
+    }
+    sensorPickerTarget = null;
+    showSection('energy-editor');
   }
 
   // ---- Energy card editor ----
@@ -383,6 +475,11 @@
   // ---- Init ----
 
   function init() {
+    // Load sensors for energy picker (async, independent)
+    cfgFetchSensors()
+      .then(function (sensors) { allSensors = sensors || []; })
+      .catch(function (err) { console.warn('[config] Could not load sensors:', err.message); });
+
     Promise.all([cfgFetchPanelConfig(), cfgFetchEntities()])
       .then(function (results) {
         var panelCfg = results[0];
@@ -506,6 +603,41 @@
     // Energy done
     var energyDoneBtn = qs('energy-done-btn');
     if (energyDoneBtn) { energyDoneBtn.addEventListener('click', commitEnergyCard); }
+
+    // Pick-sensor buttons (🔍) next to each energy field
+    var pickBtns = document.querySelectorAll('.pick-sensor-btn');
+    for (var pi = 0; pi < pickBtns.length; pi++) {
+      pickBtns[pi].addEventListener('click', function () {
+        openSensorPicker(this.getAttribute('data-for'));
+      });
+    }
+
+    // Clear-sensor buttons (✕) next to each energy field
+    var clearBtns = document.querySelectorAll('.clear-sensor-btn');
+    for (var ci = 0; ci < clearBtns.length; ci++) {
+      clearBtns[ci].addEventListener('click', function () {
+        var input = qs(this.getAttribute('data-for'));
+        if (input) { input.value = ''; }
+      });
+    }
+
+    // Sensor picker search
+    var sensorSearchEl = qs('sensor-search-input');
+    if (sensorSearchEl) {
+      sensorSearchEl.addEventListener('input', function () {
+        sensorSearchText = this.value.toLowerCase();
+        renderSensorList();
+      });
+    }
+
+    // Sensor picker cancel
+    var sensorCancelBtn = qs('sensor-picker-cancel-btn');
+    if (sensorCancelBtn) {
+      sensorCancelBtn.addEventListener('click', function () {
+        sensorPickerTarget = null;
+        showSection('energy-editor');
+      });
+    }
 
     // Save
     var saveBtn = qs('save-btn');

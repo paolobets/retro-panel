@@ -104,6 +104,23 @@
       </div>
     </section>
 
+    <!-- ── Sensor Picker (inline, used by energy editor fields) ── -->
+    <section id="sensor-picker" class="hidden">
+      <div id="sensor-picker-header">
+        <h2 class="section-title" id="sensor-picker-title">Select sensor</h2>
+        <button id="sensor-picker-cancel-btn" type="button" class="action-btn">Cancel</button>
+      </div>
+      <div id="sensor-search-wrap">
+        <input id="sensor-search-input" type="text"
+          placeholder="Search sensors…"
+          autocomplete="off" autocorrect="off"
+          autocapitalize="off" spellcheck="false">
+      </div>
+      <div id="sensor-list">
+        <p class="cfg-placeholder">Loading sensors…</p>
+      </div>
+    </section>
+
     <!-- ── Energy Flow Card Configurator ── -->
     <section id="energy-editor" class="hidden">
       <div id="energy-header">
@@ -116,31 +133,41 @@
           <label class="field-label" for="ef-solar">Solar production</label>
           <input id="ef-solar" type="text" class="field-input entity-input"
             placeholder="sensor.solar_power" autocomplete="off" autocorrect="off"
-            autocapitalize="none" spellcheck="false">
+            autocapitalize="none" spellcheck="false" readonly>
+          <button class="pick-sensor-btn" type="button" data-for="ef-solar" title="Search sensor">&#128269;</button>
+          <button class="clear-sensor-btn" type="button" data-for="ef-solar" title="Clear">&#10005;</button>
         </div>
         <div class="field-row">
           <label class="field-label" for="ef-batt-soc">Battery SOC (%)</label>
           <input id="ef-batt-soc" type="text" class="field-input entity-input"
             placeholder="sensor.battery_soc" autocomplete="off" autocorrect="off"
-            autocapitalize="none" spellcheck="false">
+            autocapitalize="none" spellcheck="false" readonly>
+          <button class="pick-sensor-btn" type="button" data-for="ef-batt-soc" title="Search sensor">&#128269;</button>
+          <button class="clear-sensor-btn" type="button" data-for="ef-batt-soc" title="Clear">&#10005;</button>
         </div>
         <div class="field-row">
           <label class="field-label" for="ef-batt-pwr">Battery power (W)</label>
           <input id="ef-batt-pwr" type="text" class="field-input entity-input"
             placeholder="sensor.battery_power" autocomplete="off" autocorrect="off"
-            autocapitalize="none" spellcheck="false">
+            autocapitalize="none" spellcheck="false" readonly>
+          <button class="pick-sensor-btn" type="button" data-for="ef-batt-pwr" title="Search sensor">&#128269;</button>
+          <button class="clear-sensor-btn" type="button" data-for="ef-batt-pwr" title="Clear">&#10005;</button>
         </div>
         <div class="field-row">
           <label class="field-label" for="ef-grid">Grid power (W)</label>
           <input id="ef-grid" type="text" class="field-input entity-input"
             placeholder="sensor.grid_power" autocomplete="off" autocorrect="off"
-            autocapitalize="none" spellcheck="false">
+            autocapitalize="none" spellcheck="false" readonly>
+          <button class="pick-sensor-btn" type="button" data-for="ef-grid" title="Search sensor">&#128269;</button>
+          <button class="clear-sensor-btn" type="button" data-for="ef-grid" title="Clear">&#10005;</button>
         </div>
         <div class="field-row">
           <label class="field-label" for="ef-home">Home consumption (W)</label>
           <input id="ef-home" type="text" class="field-input entity-input"
             placeholder="sensor.home_consumption" autocomplete="off" autocorrect="off"
-            autocapitalize="none" spellcheck="false">
+            autocapitalize="none" spellcheck="false" readonly>
+          <button class="pick-sensor-btn" type="button" data-for="ef-home" title="Search sensor">&#128269;</button>
+          <button class="clear-sensor-btn" type="button" data-for="ef-home" title="Clear">&#10005;</button>
         </div>
       </div>
       <p class="cfg-hint" style="margin-top:8px;">

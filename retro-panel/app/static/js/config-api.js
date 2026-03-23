@@ -18,6 +18,13 @@ function cfgFetchEntities() {
   });
 }
 
+function cfgFetchSensors() {
+  return fetch('api/entities?domain=sensor').then(function (r) {
+    if (!r.ok) { throw new Error('Failed to load sensors (' + r.status + ')'); }
+    return r.json();
+  });
+}
+
 /**
  * Save the full pages structure.
  * pages: array of { id, title, icon, items: [{type, ...}] }
