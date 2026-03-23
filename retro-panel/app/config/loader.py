@@ -2,15 +2,22 @@
 Loads and parses /data/options.json injected by HA Supervisor at runtime.
 Falls back to ./data/options.json for local development.
 
-Entity layout is stored in /data/entities.json (v2 schema):
-  { "version": 2, "pages": [ { "id", "title", "icon", "items": [...] } ] }
+Entity layout is stored in /data/entities.json (v3 schema):
+  {
+    "version": 3,
+    "header_sensors": [{"entity_id", "icon", "label"}],
+    "overview": {"items": [...]},
+    "rooms": [{"id", "title", "icon", "hidden", "items": [...]}],
+    "scenarios": [{"entity_id", "title", "icon"}]
+  }
 
 Each item is one of:
-  { "type": "entity", "entity_id", "label", "icon" }
-  { "type": "energy_flow", "solar_power", "battery_soc", "battery_power",
-    "grid_power", "home_power" }
+  {"type": "entity", "entity_id", "label", "icon"}
+  {"type": "energy_flow", "solar_power", "battery_soc", "battery_power",
+   "grid_power", "home_power"}
 
-v1 flat arrays (plain list of entity dicts) are migrated automatically.
+v2 pages format is auto-migrated: first page -> overview, other pages -> discarded.
+v1 flat arrays are migrated to overview items.
 """
 
 from __future__ import annotations
@@ -50,24 +57,19 @@ _DOMAIN_FALLBACK: dict[str, str] = {
 
 
 def _detect_icon(entity_id: str) -> str:
-    """Auto-detect an icon name from the entity_id domain and keywords."""
     for prefix, icon in _ICON_MAP:
         if entity_id.startswith(prefix):
             return icon
-
     lower = entity_id.lower()
     for keyword, icon in _KEYWORD_MAP:
         if keyword in lower:
             return icon
-
     domain = entity_id.split(".")[0] if "." in entity_id else ""
     return _DOMAIN_FALLBACK.get(domain, "circle")
 
 
 @dataclass
 class EntityConfig:
-    """Configuration for a single entity displayed on the panel."""
-
     entity_id: str
     label: str
     icon: str
@@ -77,42 +79,50 @@ class EntityConfig:
 
 @dataclass
 class EnergyFlowConfig:
-    """Sensor mappings for the Power Flow Card.
-
-    Each field is an optional HA entity_id for that power/soc sensor.
-    Positive grid_power = importing from grid; negative = exporting.
-    Positive battery_power = charging; negative = discharging.
-    """
-
-    solar_power: str = ""    # W — production from solar panels
-    battery_soc: str = ""    # % — battery state of charge
-    battery_power: str = ""  # W — charge(+) / discharge(-)
-    grid_power: str = ""     # W — import(+) / export(-)
-    home_power: str = ""     # W — total home consumption
+    solar_power: str = ""
+    battery_soc: str = ""
+    battery_power: str = ""
+    grid_power: str = ""
+    home_power: str = ""
 
 
 @dataclass
-class PageItem:
-    """A single item in a page: either an entity tile or an energy flow card."""
-
+class SectionItem:
+    """A single item in any section: entity tile or energy flow card."""
     type: str  # "entity" | "energy_flow"
     entity_config: Optional[EntityConfig] = None
     energy_flow: Optional[EnergyFlowConfig] = None
 
 
 @dataclass
-class PageConfig:
-    """Configuration for a single page/tab shown in the bottom navigation bar."""
+class HeaderSensor:
+    """Mini sensor displayed in the header bar."""
+    entity_id: str
+    icon: str = ""
+    label: str = ""
 
+
+@dataclass
+class ScenarioConfig:
+    """A scene or script that can be activated from the Scenarios section."""
+    entity_id: str
+    title: str
+    icon: str = "\U0001f3ad"  # 🎭
+
+
+@dataclass
+class RoomConfig:
+    """A room/area with its own entity grid."""
     id: str
     title: str
     icon: str = "home"
-    items: List[PageItem] = field(default_factory=list)
+    hidden: bool = False
+    items: List[SectionItem] = field(default_factory=list)
 
 
 @dataclass
 class PanelConfig:
-    """Top-level configuration for the Retro Panel add-on."""
+    """Top-level configuration for Retro Panel v3."""
 
     ha_url: str
     ha_token: str
@@ -121,21 +131,31 @@ class PanelConfig:
     theme: str
     kiosk_mode: bool
     refresh_interval: int
-    pages: List[PageConfig] = field(default_factory=list)
+    header_sensors: List[HeaderSensor] = field(default_factory=list)
+    overview_items: List[SectionItem] = field(default_factory=list)
+    rooms: List[RoomConfig] = field(default_factory=list)
+    scenarios: List[ScenarioConfig] = field(default_factory=list)
+
+    # --------------- backward compat helpers ---------------
 
     @property
     def entities(self) -> list[EntityConfig]:
-        """All entity configs across all pages (legacy property)."""
+        """All EntityConfig across overview + rooms (legacy property)."""
         result: list[EntityConfig] = []
-        for page in self.pages:
-            for item in page.items:
-                if item.type == "entity" and item.entity_config is not None:
-                    result.append(item.entity_config)
+        for item in self._all_items():
+            if item.type == "entity" and item.entity_config is not None:
+                result.append(item.entity_config)
         return result
+
+    def _all_items(self) -> list[SectionItem]:
+        items: list[SectionItem] = list(self.overview_items)
+        for room in self.rooms:
+            items.extend(room.items)
+        return items
 
     @property
     def all_entity_ids(self) -> list[str]:
-        """All entity_ids referenced anywhere (entities + energy flow sensors)."""
+        """All entity_ids referenced anywhere (entities + energy sensors + header sensors)."""
         seen: set[str] = set()
         ids: list[str] = []
 
@@ -144,20 +164,17 @@ class PanelConfig:
                 seen.add(eid)
                 ids.append(eid)
 
-        for page in self.pages:
-            for item in page.items:
-                if item.type == "entity" and item.entity_config is not None:
-                    _add(item.entity_config.entity_id)
-                elif item.type == "energy_flow" and item.energy_flow is not None:
-                    ef = item.energy_flow
-                    for eid in (
-                        ef.solar_power,
-                        ef.battery_soc,
-                        ef.battery_power,
-                        ef.grid_power,
-                        ef.home_power,
-                    ):
-                        _add(eid)
+        for item in self._all_items():
+            if item.type == "entity" and item.entity_config is not None:
+                _add(item.entity_config.entity_id)
+            elif item.type == "energy_flow" and item.energy_flow is not None:
+                ef = item.energy_flow
+                for eid in (ef.solar_power, ef.battery_soc, ef.battery_power, ef.grid_power, ef.home_power):
+                    _add(eid)
+
+        for hs in self.header_sensors:
+            _add(hs.entity_id)
+
         return ids
 
 
@@ -166,41 +183,29 @@ class PanelConfig:
 # ---------------------------------------------------------------------------
 
 def _resolve_config_path() -> Path:
-    """Return the path to options.json, preferring the HA Supervisor location."""
     supervisor_path = Path("/data/options.json")
     if supervisor_path.exists():
         return supervisor_path
     local_path = Path("./data/options.json")
     if local_path.exists():
         return local_path
-    return supervisor_path  # will raise a clear error on read
+    return supervisor_path
 
 
 def _parse_entity(raw: dict) -> EntityConfig:
-    """Parse a single entity dict into an EntityConfig."""
     entity_id: str = raw.get("entity_id", "").strip()
     if not entity_id:
         raise ValueError(f"Entity entry is missing 'entity_id': {raw!r}")
-
     provided_icon: str = raw.get("icon", "").strip()
     icon = provided_icon if provided_icon else _detect_icon(entity_id)
-
     label: str = (
         raw.get("label", "").strip()
         or entity_id.replace("_", " ").split(".")[-1].title()
     )
-
-    return EntityConfig(
-        entity_id=entity_id,
-        label=label,
-        icon=icon,
-        row=raw.get("row"),
-        col=raw.get("col"),
-    )
+    return EntityConfig(entity_id=entity_id, label=label, icon=icon)
 
 
 def _parse_energy_flow(raw: dict) -> EnergyFlowConfig:
-    """Parse energy flow sensor mapping from a raw dict."""
     return EnergyFlowConfig(
         solar_power=str(raw.get("solar_power") or "").strip(),
         battery_soc=str(raw.get("battery_soc") or "").strip(),
@@ -210,75 +215,145 @@ def _parse_energy_flow(raw: dict) -> EnergyFlowConfig:
     )
 
 
-def _parse_page(raw: dict, idx: int) -> PageConfig:
-    """Parse a single page dict from the v2 format."""
-    page_id = str(raw.get("id") or f"page_{idx}").strip()
-    title = str(raw.get("title") or f"Page {idx + 1}").strip()
+def _parse_section_item(raw: dict, idx: int, context: str) -> Optional[SectionItem]:
+    """Parse a single item dict. Returns None on unknown/invalid type."""
+    item_type = str(raw.get("type") or "entity").strip()
+    if item_type == "entity":
+        try:
+            ec = _parse_entity(raw)
+            return SectionItem(type="entity", entity_config=ec)
+        except ValueError as exc:
+            logger.warning("%s item %d invalid, skipping: %s", context, idx, exc)
+            return None
+    elif item_type == "energy_flow":
+        ef = _parse_energy_flow(raw)
+        return SectionItem(type="energy_flow", energy_flow=ef)
+    else:
+        logger.warning("%s item %d has unknown type %r, skipping", context, idx, item_type)
+        return None
+
+
+def _parse_items(raw_list: list, context: str) -> list[SectionItem]:
+    items: list[SectionItem] = []
+    for idx, raw in enumerate(raw_list or []):
+        if isinstance(raw, dict):
+            item = _parse_section_item(raw, idx, context)
+            if item is not None:
+                items.append(item)
+    return items
+
+
+def _parse_room(raw: dict, idx: int) -> RoomConfig:
+    room_id = str(raw.get("id") or f"room_{idx}").strip()
+    title = str(raw.get("title") or f"Room {idx + 1}").strip()
     icon = str(raw.get("icon") or "home").strip()
-
-    items: list[PageItem] = []
-    for item_idx, item_raw in enumerate(raw.get("items") or []):
-        item_type = str(item_raw.get("type") or "entity").strip()
-        if item_type == "entity":
-            try:
-                ec = _parse_entity(item_raw)
-                items.append(PageItem(type="entity", entity_config=ec))
-            except ValueError as exc:
-                logger.warning(
-                    "Page %r item %d is invalid, skipping: %s", page_id, item_idx, exc
-                )
-        elif item_type == "energy_flow":
-            ef = _parse_energy_flow(item_raw)
-            items.append(PageItem(type="energy_flow", energy_flow=ef))
-        else:
-            logger.warning(
-                "Page %r item %d has unknown type %r, skipping", page_id, item_idx, item_type
-            )
-
-    return PageConfig(id=page_id, title=title, icon=icon, items=items)
+    hidden = bool(raw.get("hidden", False))
+    items = _parse_items(raw.get("items") or [], f"room[{room_id}]")
+    return RoomConfig(id=room_id, title=title, icon=icon, hidden=hidden, items=items)
 
 
-def _migrate_v1_flat(raw_entities: list) -> list[PageConfig]:
-    """Migrate v1 flat entity list to a single v2 page."""
-    items: list[PageItem] = []
+def _parse_header_sensor(raw: dict) -> Optional[HeaderSensor]:
+    eid = str(raw.get("entity_id") or "").strip()
+    if not eid:
+        return None
+    return HeaderSensor(
+        entity_id=eid,
+        icon=str(raw.get("icon") or "").strip(),
+        label=str(raw.get("label") or "").strip(),
+    )
+
+
+def _parse_scenario(raw: dict) -> Optional[ScenarioConfig]:
+    eid = str(raw.get("entity_id") or "").strip()
+    if not eid:
+        return None
+    return ScenarioConfig(
+        entity_id=eid,
+        title=str(raw.get("title") or eid.split(".")[-1].replace("_", " ").title()).strip(),
+        icon=str(raw.get("icon") or "\U0001f3ad").strip(),
+    )
+
+
+def _migrate_v1_flat(raw_entities: list) -> list[SectionItem]:
+    """Migrate v1 flat entity list to overview items."""
+    items: list[SectionItem] = []
     for idx, ent in enumerate(raw_entities):
         try:
-            items.append(PageItem(type="entity", entity_config=_parse_entity(ent)))
+            items.append(SectionItem(type="entity", entity_config=_parse_entity(ent)))
         except (ValueError, AttributeError) as exc:
-            logger.warning("v1 entity at index %d is invalid, skipping: %s", idx, exc)
+            logger.warning("v1 entity at index %d invalid, skipping: %s", idx, exc)
+    return items
 
-    return [PageConfig(id="page_main", title="Home", icon="home", items=items)]
+
+def _migrate_v2_pages(pages_raw: list) -> list[SectionItem]:
+    """Migrate v2 pages format: take first page items as overview items."""
+    if not pages_raw:
+        return []
+    first = pages_raw[0]
+    if not isinstance(first, dict):
+        return []
+    return _parse_items(first.get("items") or [], "v2-migration")
 
 
-def _load_pages(entities_file: Path, options_fallback: list) -> list[PageConfig]:
-    """Load pages from /data/entities.json with v1 migration."""
+def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
+    list[SectionItem],     # overview_items
+    list[RoomConfig],      # rooms
+    list[ScenarioConfig],  # scenarios
+    list[HeaderSensor],    # header_sensors
+]:
+    """Load layout from /data/entities.json, migrating older formats."""
+    empty = ([], [], [], [])
+
     if entities_file.exists():
         try:
             raw = json.loads(entities_file.read_text(encoding="utf-8"))
         except Exception as exc:
-            logger.warning("Failed to read %s: %s — using empty pages", entities_file, exc)
-            return []
+            logger.warning("Failed to read %s: %s — using empty layout", entities_file, exc)
+            return empty
 
-        # v2 format: dict with "version" key
+        # v3 format
+        if isinstance(raw, dict) and raw.get("version") == 3:
+            overview_items = _parse_items(
+                (raw.get("overview") or {}).get("items") or [], "overview"
+            )
+            rooms: list[RoomConfig] = []
+            for idx, room_raw in enumerate(raw.get("rooms") or []):
+                if isinstance(room_raw, dict):
+                    rooms.append(_parse_room(room_raw, idx))
+            scenarios: list[ScenarioConfig] = []
+            for s_raw in raw.get("scenarios") or []:
+                if isinstance(s_raw, dict):
+                    sc = _parse_scenario(s_raw)
+                    if sc is not None:
+                        scenarios.append(sc)
+            header_sensors: list[HeaderSensor] = []
+            for hs_raw in raw.get("header_sensors") or []:
+                if isinstance(hs_raw, dict):
+                    hs = _parse_header_sensor(hs_raw)
+                    if hs is not None:
+                        header_sensors.append(hs)
+            return overview_items, rooms, scenarios, header_sensors
+
+        # v2 format: migrate first page to overview
         if isinstance(raw, dict) and raw.get("version") == 2:
-            pages: list[PageConfig] = []
-            for page_idx, page_raw in enumerate(raw.get("pages") or []):
-                pages.append(_parse_page(page_raw, page_idx))
-            return pages
+            logger.info("Migrating v2 pages format to v3")
+            overview_items = _migrate_v2_pages(raw.get("pages") or [])
+            return overview_items, [], [], []
 
         # v1 format: plain list
         if isinstance(raw, list):
-            logger.info("Migrating v1 entities.json to v2 pages format")
-            return _migrate_v1_flat(raw)
+            logger.info("Migrating v1 flat entities format to v3")
+            return _migrate_v1_flat(raw), [], [], []
 
-        logger.warning("Unrecognised entities.json format, using empty pages")
-        return []
-    else:
-        # Fall back to options.json entities (very old installs)
-        if options_fallback:
-            logger.info("No entities.json found, migrating entities from options.json")
-            return _migrate_v1_flat(options_fallback)
-        return []
+        logger.warning("Unrecognised entities.json format, using empty layout")
+        return empty
+
+    # Fall back to options.json entities
+    if options_fallback:
+        logger.info("No entities.json found, migrating from options.json")
+        return _migrate_v1_flat(options_fallback), [], [], []
+
+    return empty
 
 
 # ---------------------------------------------------------------------------
@@ -307,17 +382,14 @@ def load_config() -> PanelConfig:
         ha_token = os.environ.get("SUPERVISOR_TOKEN", "")
         if ha_token:
             ha_url = "http://supervisor/core"
-            logger.info(
-                "ha_token not set — using SUPERVISOR_TOKEN via Supervisor proxy (%s)", ha_url
-            )
+            logger.info("ha_token not set — using SUPERVISOR_TOKEN via Supervisor proxy (%s)", ha_url)
         else:
             raise ValueError(
-                "'ha_token' is not configured and SUPERVISOR_TOKEN is not available. "
-                "Set ha_token in the add-on configuration."
+                "'ha_token' is not configured and SUPERVISOR_TOKEN is not available."
             )
     elif not ha_url:
         ha_url = "http://homeassistant:8123"
-        logger.info("ha_url not configured, using internal default: %s", ha_url)
+        logger.info("ha_url not configured, using default: %s", ha_url)
 
     columns_raw = raw.get("columns", 3)
     try:
@@ -327,10 +399,14 @@ def load_config() -> PanelConfig:
 
     entities_file = Path("/data/entities.json")
     options_entities = raw.get("entities", [])
-    pages = _load_pages(entities_file, options_entities if isinstance(options_entities, list) else [])
+    overview_items, rooms, scenarios, header_sensors = _load_layout(
+        entities_file,
+        options_entities if isinstance(options_entities, list) else [],
+    )
 
-    total_entities = sum(
-        1 for page in pages for item in page.items if item.type == "entity"
+    total_entities = sum(1 for it in overview_items if it.type == "entity")
+    total_entities += sum(
+        1 for room in rooms for it in room.items if it.type == "entity"
     )
 
     config = PanelConfig(
@@ -341,16 +417,19 @@ def load_config() -> PanelConfig:
         theme=raw.get("theme", "dark"),
         kiosk_mode=bool(raw.get("kiosk_mode", False)),
         refresh_interval=int(raw.get("refresh_interval", 30) or 30),
-        pages=pages,
+        header_sensors=header_sensors,
+        overview_items=overview_items,
+        rooms=rooms,
+        scenarios=scenarios,
     )
 
     logger.info(
-        "Config loaded: title=%r, columns=%d, pages=%d, entities=%d, theme=%r, kiosk=%s",
+        "Config loaded: title=%r, columns=%d, overview=%d entities, rooms=%d, scenarios=%d, theme=%r",
         config.title,
         config.columns,
-        len(config.pages),
         total_entities,
+        len(rooms),
+        len(scenarios),
         config.theme,
-        config.kiosk_mode,
     )
     return config

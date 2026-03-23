@@ -34,27 +34,45 @@
       Reconnecting…
     </div>
 
-    <!-- Header -->
-    <header id="panel-header">
-      <h1 id="panel-title">Retro Panel</h1>
-      <span id="panel-clock"></span>
-      <div id="connection-status" class="status-dot status-connected" title="Connected"></div>
-      <a id="config-link" href="config" class="header-action" title="Settings" aria-label="Configure entities">&#9881;</a>
-    </header>
+    <!-- Sidebar -->
+    <nav id="sidebar">
+      <!-- Toggle button -->
+      <button id="sidebar-toggle" type="button" aria-label="Toggle sidebar" title="Toggle menu">
+        <span class="sidebar-toggle-icon">&#9776;</span>
+      </button>
 
-    <!-- Tile Grid -->
-    <main id="tile-grid" style="--columns: 3;"></main>
+      <!-- Settings gear (top of sidebar) -->
+      <a id="config-link" href="config" class="sidebar-settings" title="Settings" aria-label="Settings">
+        <span class="sidebar-item-icon">&#9881;</span>
+        <span class="sidebar-item-label">Settings</span>
+      </a>
 
-    <!-- Bottom Tab Bar (populated by app.js) -->
-    <nav id="tab-bar"></nav>
+      <div class="sidebar-divider"></div>
 
+      <!-- Navigation items (populated by JS) -->
+      <div id="sidebar-nav"></div>
+    </nav>
+
+    <!-- Main area (header + content) -->
+    <div id="main-area">
+
+      <!-- Header -->
+      <header id="panel-header">
+        <h1 id="panel-title">Retro Panel</h1>
+        <div id="header-info">
+          <span id="panel-date"></span>
+          <span id="panel-clock"></span>
+        </div>
+        <div id="header-sensors"></div>
+        <div id="connection-status" class="status-dot status-connected" title="Connected"></div>
+      </header>
+
+      <!-- Content area (section grids rendered here) -->
+      <main id="content-area"></main>
+
+    </div>
   </div>
 
-  <!--
-    Scripts loaded in dependency order — NO type="module".
-    ES module imports are incompatible with iOS Safari in WKWebView iframes
-    (HA companion app). Regular scripts are universally compatible.
-  -->
   <script src="static/js/utils/dom.js"></script>
   <script src="static/js/utils/format.js"></script>
   <script src="static/js/api.js"></script>
@@ -64,6 +82,7 @@
   <script src="static/js/components/sensor.js"></script>
   <script src="static/js/components/alarm.js"></script>
   <script src="static/js/components/energy.js"></script>
+  <script src="static/js/components/scenario.js"></script>
   <script src="static/js/app.js"></script>
 </body>
 </html>

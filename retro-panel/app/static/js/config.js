@@ -1,13 +1,11 @@
 /**
- * config.js — Page manager logic for Retro Panel config page.
+ * config.js — Settings page logic for Retro Panel v1.2
  *
- * State shape:
- *   pages = [
- *     { id, title, icon, items: [
- *       { type: 'entity', entity_id, label, icon }
- *       { type: 'energy_flow', solar_power, battery_soc, battery_power, grid_power, home_power }
- *     ]}
- *   ]
+ * Manages four sections:
+ *   overview  — items on the main home screen
+ *   rooms     — per-room entity grids
+ *   scenarios — scenes/scripts
+ *   header    — mini sensor chips in the top bar
  *
  * Plain IIFE — no ES modules. iOS 15 / legacy browser compatible.
  * Depends on config-api.js loaded before this script.
@@ -15,88 +13,105 @@
 (function () {
   'use strict';
 
-  // ---- Application state ----
-  var pages = [];
-  var activePageIdx = 0;
-  var allEntities = [];       // from /api/entities (non-hidden only)
-  var allSensors = [];        // from /api/entities?domain=sensor
-  var filterDomain = '';
-  var searchText = '';
-  var energyEditIdx = null;   // index in items of the energy card being edited (null = adding new)
-  var sensorPickerTarget = null;  // input element id being filled by sensor picker
-  var sensorSearchText = '';
+  // ── State ──────────────────────────────────────────────────────────────────
 
-  // ---- Helpers ----
+  // v3 data model
+  var state = {
+    overview:       { items: [] },
+    rooms:          [],           // [{id, title, icon, hidden, items:[]}]
+    scenarios:      [],           // [{entity_id, title, icon}]
+    header_sensors: [],           // [{entity_id, icon, label}]
+  };
+
+  var allEntities  = [];   // from /api/entities
+  var allSensors   = [];   // from /api/entities?domain=sensor
+  var allScenarios = [];   // scenes + scripts
+
+  // Entity picker state
+  var pickerContext   = null;  // 'overview' | 'room' | 'header'
+  var filterDomain    = '';
+  var searchText      = '';
+  var sensorPickerTarget = null;
+  var sensorSearchText   = '';
+  var scenarioSearchText = '';
+
+  // Room editor state
+  var editingRoomId = null;
+
+  // Energy wizard state
+  var energyContext = null;   // 'overview' | 'room'
+  var energyItemIdx = null;   // index in the target items array (null = new)
+  var wizardStep    = 0;
+  var wizardValues  = { 'ef-solar': '', 'ef-batt-soc': '', 'ef-batt-pwr': '', 'ef-grid': '', 'ef-home': '' };
+
+  // Active config tab
+  var activeTab = 'overview';
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
 
   function qs(id) { return document.getElementById(id); }
 
   function esc(s) {
     return String(s || '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  function genId() {
-    return 'page_' + Math.random().toString(36).slice(2, 9);
-  }
+  function genId() { return 'room_' + Math.random().toString(36).slice(2, 9); }
 
-  function activePage() {
-    return pages[activePageIdx] || null;
-  }
-
-  // ---- Page tab rendering ----
-
-  function renderPageTabs() {
-    var container = qs('page-tabs');
-    if (!container) { return; }
-    container.innerHTML = '';
-
-    for (var i = 0; i < pages.length; i++) {
-      (function (idx) {
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'page-tab-btn' + (idx === activePageIdx ? ' active' : '');
-        btn.textContent = pages[idx].title || 'Page ' + (idx + 1);
-        btn.addEventListener('click', function () { selectPage(idx); });
-        container.appendChild(btn);
-      })(i);
+  function activeRoomItems() {
+    for (var i = 0; i < state.rooms.length; i++) {
+      if (state.rooms[i].id === editingRoomId) { return state.rooms[i].items; }
     }
+    return [];
   }
 
-  function selectPage(idx) {
-    activePageIdx = idx;
-    showSection('page-editor');
-    renderPageTabs();
-    renderPageEditor();
+  function activeRoomObj() {
+    for (var i = 0; i < state.rooms.length; i++) {
+      if (state.rooms[i].id === editingRoomId) { return state.rooms[i]; }
+    }
+    return null;
   }
 
-  // ---- Page editor rendering ----
-
-  function renderPageEditor() {
-    var page = activePage();
-    if (!page) { return; }
-
-    var titleInput = qs('page-title-input');
-    var iconSelect = qs('page-icon-select');
-    if (titleInput) { titleInput.value = page.title; }
-    if (iconSelect) { iconSelect.value = page.icon || 'home'; }
-
-    renderItemsList();
+  function contextItems() {
+    if (pickerContext === 'overview') { return state.overview.items; }
+    if (pickerContext === 'room')     { return activeRoomItems(); }
+    return [];
   }
 
-  function renderItemsList() {
-    var page = activePage();
-    var container = qs('items-list');
-    var countEl = qs('items-count');
-    if (!container || !page) { return; }
+  // ── Tab navigation ─────────────────────────────────────────────────────────
 
-    var items = page.items || [];
-    if (countEl) { countEl.textContent = String(items.length); }
+  function switchTab(tabId) {
+    activeTab = tabId;
 
-    if (items.length === 0) {
-      container.innerHTML = '<p class="cfg-placeholder">No items yet. Add entities or an Energy Card below.</p>';
+    var tabs = document.querySelectorAll('.cfg-tab');
+    for (var i = 0; i < tabs.length; i++) {
+      tabs[i].classList.toggle('active', tabs[i].getAttribute('data-tab') === tabId);
+    }
+
+    var sections = ['overview', 'rooms', 'scenarios', 'header'];
+    for (var j = 0; j < sections.length; j++) {
+      var el = qs('tab-' + sections[j]);
+      if (el) { el.classList.toggle('hidden', sections[j] !== tabId); }
+    }
+
+    // Close room editor when leaving rooms tab
+    if (tabId !== 'rooms') { closeRoomEditor(); }
+  }
+
+  // ── Overview items ─────────────────────────────────────────────────────────
+
+  function renderOverviewItems() {
+    var container = qs('overview-items-list');
+    if (!container) { return; }
+    renderItemsList(container, state.overview.items, 'overview');
+  }
+
+  // ── Generic items list renderer ────────────────────────────────────────────
+
+  function renderItemsList(container, items, context) {
+    if (!items || items.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">No items yet. Add entities below.</p>';
       return;
     }
 
@@ -105,143 +120,500 @@
       var item = items[i];
       html += '<div class="selected-row">';
       if (item.type === 'energy_flow') {
-        html += '<span class="selected-id selected-id-energy">\u26A1 Power Flow Card</span>';
+        html += '<span class="selected-id selected-id-energy">&#9889; Power Flow Card</span>';
         html += '<div class="selected-actions">';
         if (i > 0) {
-          html += '<button class="reorder-btn" type="button" data-action="up" data-idx="' + i + '">\u2191</button>';
+          html += '<button class="reorder-btn" type="button" data-action="up" data-idx="' + i + '" data-ctx="' + esc(context) + '">\u2191</button>';
         }
         if (i < items.length - 1) {
-          html += '<button class="reorder-btn" type="button" data-action="down" data-idx="' + i + '">\u2193</button>';
+          html += '<button class="reorder-btn" type="button" data-action="down" data-idx="' + i + '" data-ctx="' + esc(context) + '">\u2193</button>';
         }
-        html += '<button class="edit-energy-btn action-btn-sm" type="button" data-idx="' + i + '">Edit</button>';
-        html += '<button class="remove-btn" type="button" data-idx="' + i + '">\u2715</button>';
+        html += '<button class="edit-energy-btn action-btn-sm" type="button" data-idx="' + i + '" data-ctx="' + esc(context) + '">Edit</button>';
+        html += '<button class="remove-btn" type="button" data-idx="' + i + '" data-ctx="' + esc(context) + '">\u2715</button>';
       } else {
         html += '<span class="selected-id">' + esc(item.entity_id) + '</span>';
         html += '<div class="selected-actions">';
         if (i > 0) {
-          html += '<button class="reorder-btn" type="button" data-action="up" data-idx="' + i + '">\u2191</button>';
+          html += '<button class="reorder-btn" type="button" data-action="up" data-idx="' + i + '" data-ctx="' + esc(context) + '">\u2191</button>';
         }
         if (i < items.length - 1) {
-          html += '<button class="reorder-btn" type="button" data-action="down" data-idx="' + i + '">\u2193</button>';
+          html += '<button class="reorder-btn" type="button" data-action="down" data-idx="' + i + '" data-ctx="' + esc(context) + '">\u2193</button>';
         }
-        html += '<button class="remove-btn" type="button" data-idx="' + i + '">\u2715</button>';
+        html += '<button class="remove-btn" type="button" data-idx="' + i + '" data-ctx="' + esc(context) + '">\u2715</button>';
       }
+      html += '</div></div>';
+    }
+    container.innerHTML = html;
+
+    container.querySelectorAll('.reorder-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var idx = parseInt(this.getAttribute('data-idx'), 10);
+        var ctx = this.getAttribute('data-ctx');
+        var delta = this.getAttribute('data-action') === 'up' ? -1 : 1;
+        reorderItem(ctx, idx, delta);
+      });
+    });
+
+    container.querySelectorAll('.remove-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var idx = parseInt(this.getAttribute('data-idx'), 10);
+        var ctx = this.getAttribute('data-ctx');
+        removeItem(ctx, idx);
+      });
+    });
+
+    container.querySelectorAll('.edit-energy-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var idx = parseInt(this.getAttribute('data-idx'), 10);
+        var ctx = this.getAttribute('data-ctx');
+        openEnergyEditor(ctx, idx);
+      });
+    });
+  }
+
+  function getItemsForContext(ctx) {
+    if (ctx === 'overview') { return state.overview.items; }
+    if (ctx === 'room')     { return activeRoomItems(); }
+    return [];
+  }
+
+  function reorderItem(ctx, idx, delta) {
+    var items = getItemsForContext(ctx);
+    var newIdx = idx + delta;
+    if (newIdx < 0 || newIdx >= items.length) { return; }
+    var tmp = items[idx]; items[idx] = items[newIdx]; items[newIdx] = tmp;
+    refreshItemsList(ctx);
+  }
+
+  function removeItem(ctx, idx) {
+    var items = getItemsForContext(ctx);
+    items.splice(idx, 1);
+    refreshItemsList(ctx);
+    renderEntityList(); // refresh tick marks
+  }
+
+  function refreshItemsList(ctx) {
+    if (ctx === 'overview') { renderOverviewItems(); }
+    else if (ctx === 'room') { renderRoomItemsList(); }
+  }
+
+  // ── Rooms ──────────────────────────────────────────────────────────────────
+
+  function renderRoomsList() {
+    var container = qs('rooms-list');
+    if (!container) { return; }
+
+    if (state.rooms.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">No rooms configured. Add a room or import from HA Areas.</p>';
+      return;
+    }
+
+    var html = '';
+    for (var i = 0; i < state.rooms.length; i++) {
+      var room = state.rooms[i];
+      var entityCount = (room.items || []).filter(function (it) { return it.type === 'entity'; }).length;
+      html += '<div class="room-row" data-id="' + esc(room.id) + '">';
+      html += '<div class="room-row-info">';
+      html += '<span class="room-row-icon">' + getRoomEmoji(room.icon) + '</span>';
+      html += '<div>';
+      html += '<div class="room-row-title">' + esc(room.title) + '</div>';
+      html += '<div class="room-row-meta">' + entityCount + ' entit' + (entityCount === 1 ? 'y' : 'ies') + '</div>';
+      html += '</div></div>';
+      html += '<div class="room-row-actions">';
+      html += '<label class="toggle-wrap" title="' + (room.hidden ? 'Hidden' : 'Visible') + '">';
+      html += '<input type="checkbox" class="room-visible-toggle" data-id="' + esc(room.id) + '"' + (room.hidden ? '' : ' checked') + '>';
+      html += '<span class="toggle-slider"></span>';
+      html += '</label>';
+      html += '<button class="action-btn-sm room-edit-btn" type="button" data-id="' + esc(room.id) + '">Edit</button>';
       html += '</div>';
       html += '</div>';
     }
     container.innerHTML = html;
 
-    // Bind reorder
-    var reorderBtns = container.querySelectorAll('.reorder-btn');
-    for (var j = 0; j < reorderBtns.length; j++) {
-      reorderBtns[j].addEventListener('click', function () {
-        var idx = parseInt(this.getAttribute('data-idx'), 10);
-        reorderItem(idx, this.getAttribute('data-action') === 'up' ? -1 : 1);
+    container.querySelectorAll('.room-edit-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        openRoomEditor(this.getAttribute('data-id'));
       });
-    }
+    });
 
-    // Bind remove
-    var removeBtns = container.querySelectorAll('.remove-btn');
-    for (var k = 0; k < removeBtns.length; k++) {
-      removeBtns[k].addEventListener('click', function () {
-        removeItem(parseInt(this.getAttribute('data-idx'), 10));
+    container.querySelectorAll('.room-visible-toggle').forEach(function (cb) {
+      cb.addEventListener('change', function () {
+        var roomId = this.getAttribute('data-id');
+        for (var i = 0; i < state.rooms.length; i++) {
+          if (state.rooms[i].id === roomId) {
+            state.rooms[i].hidden = !this.checked;
+            break;
+          }
+        }
       });
-    }
+    });
+  }
 
-    // Bind energy card edit
-    var editBtns = container.querySelectorAll('.edit-energy-btn');
-    for (var m = 0; m < editBtns.length; m++) {
-      editBtns[m].addEventListener('click', function () {
-        openEnergyEditor(parseInt(this.getAttribute('data-idx'), 10));
-      });
+  function getRoomEmoji(icon) {
+    var map = {
+      home: '\uD83C\uDFE0', living: '\uD83D\uDECB', bedroom: '\uD83D\uDECC',
+      kitchen: '\uD83C\uDF73', bathroom: '\uD83D\uDEB0', garden: '\uD83C\uDF3F',
+      garage: '\uD83D\uDE97', office: '\uD83D\uDCBB', energy: '\u26A1',
+      security: '\uD83D\uDD12', climate: '\uD83C\uDF21', lights: '\uD83D\uDCA1',
+    };
+    return map[icon] || '\uD83C\uDFE0';
+  }
+
+  function addRoom() {
+    var newRoom = { id: genId(), title: 'New Room', icon: 'home', hidden: false, items: [] };
+    state.rooms.push(newRoom);
+    renderRoomsList();
+    openRoomEditor(newRoom.id);
+  }
+
+  function openRoomEditor(roomId) {
+    editingRoomId = roomId;
+    var room = activeRoomObj();
+    if (!room) { return; }
+
+    var roomsListEl = qs('rooms-list');
+    var addWrap = qs('import-areas-btn') && qs('import-areas-btn').parentElement;
+    var addRoomBtn = qs('add-room-btn');
+    var editor = qs('room-editor');
+
+    if (roomsListEl) { roomsListEl.classList.add('hidden'); }
+    if (addWrap) { addWrap.classList.add('hidden'); }
+    if (addRoomBtn) { addRoomBtn.classList.add('hidden'); }
+    if (editor) { editor.classList.remove('hidden'); }
+
+    // Populate fields
+    var titleInput = qs('room-title-input');
+    var iconSelect = qs('room-icon-select');
+    var editorTitle = qs('room-editor-title');
+    if (titleInput) { titleInput.value = room.title; }
+    if (iconSelect) { iconSelect.value = room.icon || 'home'; }
+    if (editorTitle) { editorTitle.textContent = room.title; }
+
+    renderRoomItemsList();
+  }
+
+  function closeRoomEditor() {
+    editingRoomId = null;
+    var roomsListEl = qs('rooms-list');
+    var importBtn = qs('import-areas-btn');
+    var addRoomBtn = qs('add-room-btn');
+    var editor = qs('room-editor');
+    var addWrap = importBtn && importBtn.parentElement;
+
+    if (roomsListEl) { roomsListEl.classList.remove('hidden'); }
+    if (addWrap) { addWrap.classList.remove('hidden'); }
+    if (addRoomBtn) { addRoomBtn.classList.remove('hidden'); }
+    if (editor) { editor.classList.add('hidden'); }
+    renderRoomsList();
+  }
+
+  function commitRoomTitle() {
+    var room = activeRoomObj();
+    if (!room) { return; }
+    var v = (qs('room-title-input').value || '').trim();
+    if (v) {
+      room.title = v.slice(0, 64);
+      var editorTitle = qs('room-editor-title');
+      if (editorTitle) { editorTitle.textContent = room.title; }
     }
   }
 
-  // ---- Page mutations ----
-
-  function addPage() {
-    var newPage = { id: genId(), title: 'New Page', icon: 'home', items: [] };
-    pages.push(newPage);
-    selectPage(pages.length - 1);
+  function commitRoomIcon() {
+    var room = activeRoomObj();
+    if (!room) { return; }
+    room.icon = (qs('room-icon-select') && qs('room-icon-select').value) || 'home';
   }
 
-  function deletePage() {
-    if (pages.length <= 1) {
-      showError('You must have at least one page.');
+  function deleteRoom() {
+    if (!editingRoomId) { return; }
+    state.rooms = state.rooms.filter(function (r) { return r.id !== editingRoomId; });
+    closeRoomEditor();
+  }
+
+  function renderRoomItemsList() {
+    var container = qs('room-items-list');
+    var countEl = qs('room-items-count');
+    if (!container) { return; }
+    var items = activeRoomItems();
+    if (countEl) { countEl.textContent = String(items.length); }
+    renderItemsList(container, items, 'room');
+  }
+
+  function importHaAreas() {
+    var btn = qs('import-areas-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Loading\u2026'; }
+
+    cfgFetchHaAreas()
+      .then(function (areas) {
+        // For each area not already present, add it as a room
+        var added = 0;
+        for (var i = 0; i < areas.length; i++) {
+          var area = areas[i];
+          var exists = false;
+          for (var j = 0; j < state.rooms.length; j++) {
+            if (state.rooms[j].id === area.id) { exists = true; break; }
+          }
+          if (!exists) {
+            state.rooms.push({
+              id: area.id,
+              title: area.name || area.id,
+              icon: guessRoomIcon(area.id, area.name),
+              hidden: false,
+              items: [], // entities are intentionally NOT auto-imported — user decides
+            });
+            added++;
+          }
+        }
+        if (btn) { btn.disabled = false; btn.textContent = '\u21BB Import from HA Areas'; }
+        renderRoomsList();
+        if (added === 0) {
+          showFeedback('All HA areas already imported.', false);
+        } else {
+          showFeedback('Imported ' + added + ' area' + (added > 1 ? 's' : '') + '. Open each room to add entities.', false);
+        }
+      })
+      .catch(function (err) {
+        if (btn) { btn.disabled = false; btn.textContent = '\u21BB Import from HA Areas'; }
+        showFeedback('Failed to load HA areas: ' + err.message, true);
+      });
+  }
+
+  function guessRoomIcon(id, name) {
+    var s = ((id || '') + ' ' + (name || '')).toLowerCase();
+    if (/bedr|camera|letto/.test(s))   { return 'bedroom'; }
+    if (/living|soggiorno|salotto/.test(s)) { return 'living'; }
+    if (/kitch|cucina/.test(s))        { return 'kitchen'; }
+    if (/bath|bagno/.test(s))          { return 'bathroom'; }
+    if (/garden|giardino/.test(s))     { return 'garden'; }
+    if (/garage|box/.test(s))          { return 'garage'; }
+    if (/office|studio/.test(s))       { return 'office'; }
+    if (/energy|ener/.test(s))         { return 'energy'; }
+    if (/secur|alarm|allarme/.test(s)) { return 'security'; }
+    return 'home';
+  }
+
+  // ── Scenarios ──────────────────────────────────────────────────────────────
+
+  function renderScenariosList() {
+    var container = qs('scenarios-list');
+    if (!container) { return; }
+
+    if (state.scenarios.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">No scenarios. Click "+ Add Scenario" to choose scenes or scripts from HA.</p>';
       return;
     }
-    pages.splice(activePageIdx, 1);
-    activePageIdx = Math.max(0, activePageIdx - 1);
-    renderPageTabs();
-    if (pages.length === 0) {
-      showSection(null);
-    } else {
-      renderPageEditor();
-    }
-  }
 
-  function commitPageTitle() {
-    var page = activePage();
-    if (!page) { return; }
-    var v = (qs('page-title-input').value || '').trim();
-    if (v) {
-      page.title = v.slice(0, 64);
-      renderPageTabs();
-    }
-  }
-
-  function commitPageIcon() {
-    var page = activePage();
-    if (!page) { return; }
-    page.icon = qs('page-icon-select').value || 'home';
-  }
-
-  // ---- Item mutations ----
-
-  function reorderItem(idx, delta) {
-    var page = activePage();
-    if (!page) { return; }
-    var items = page.items;
-    var newIdx = idx + delta;
-    if (newIdx < 0 || newIdx >= items.length) { return; }
-    var tmp = items[idx];
-    items[idx] = items[newIdx];
-    items[newIdx] = tmp;
-    renderItemsList();
-  }
-
-  function removeItem(idx) {
-    var page = activePage();
-    if (!page) { return; }
-    page.items.splice(idx, 1);
-    renderItemsList();
-    renderEntityList(); // refresh tick marks
-  }
-
-  // ---- Entity picker ----
-
-  function isEntityOnPage(entityId) {
-    var page = activePage();
-    if (!page) { return false; }
-    for (var i = 0; i < page.items.length; i++) {
-      if (page.items[i].type === 'entity' && page.items[i].entity_id === entityId) {
-        return true;
+    var html = '';
+    for (var i = 0; i < state.scenarios.length; i++) {
+      var sc = state.scenarios[i];
+      html += '<div class="selected-row">';
+      html += '<span class="scenario-row-icon">' + esc(sc.icon) + '</span>';
+      html += '<div class="scenario-row-info">';
+      html += '<span class="scenario-row-title">' + esc(sc.title) + '</span>';
+      html += '<span class="scenario-row-id">' + esc(sc.entity_id) + '</span>';
+      html += '</div>';
+      html += '<div class="selected-actions">';
+      if (i > 0) {
+        html += '<button class="reorder-btn" type="button" data-action="up" data-idx="' + i + '">\u2191</button>';
       }
+      if (i < state.scenarios.length - 1) {
+        html += '<button class="reorder-btn" type="button" data-action="down" data-idx="' + i + '">\u2193</button>';
+      }
+      html += '<button class="remove-btn sc-remove-btn" type="button" data-idx="' + i + '">\u2715</button>';
+      html += '</div>';
+      html += '</div>';
+    }
+    container.innerHTML = html;
+
+    container.querySelectorAll('.reorder-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var idx = parseInt(this.getAttribute('data-idx'), 10);
+        var delta = this.getAttribute('data-action') === 'up' ? -1 : 1;
+        var newIdx = idx + delta;
+        if (newIdx < 0 || newIdx >= state.scenarios.length) { return; }
+        var tmp = state.scenarios[idx]; state.scenarios[idx] = state.scenarios[newIdx]; state.scenarios[newIdx] = tmp;
+        renderScenariosList();
+      });
+    });
+
+    container.querySelectorAll('.sc-remove-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        state.scenarios.splice(parseInt(this.getAttribute('data-idx'), 10), 1);
+        renderScenariosList();
+      });
+    });
+  }
+
+  function openScenarioPicker() {
+    scenarioSearchText = '';
+    var searchEl = qs('scenario-search-input');
+    if (searchEl) { searchEl.value = ''; }
+    showOverlay('scenario-picker');
+    renderScenarioPickerList();
+    if (searchEl) { setTimeout(function () { searchEl.focus(); }, 100); }
+  }
+
+  function renderScenarioPickerList() {
+    var container = qs('scenario-list');
+    if (!container) { return; }
+
+    if (allScenarios.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">Loading scenes and scripts\u2026</p>';
+      return;
+    }
+
+    var filtered = allScenarios.filter(function (e) {
+      if (!scenarioSearchText) { return true; }
+      var hay = (e.entity_id + ' ' + (e.friendly_name || '')).toLowerCase();
+      return hay.indexOf(scenarioSearchText) !== -1;
+    });
+
+    if (filtered.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">No results.</p>';
+      return;
+    }
+
+    var html = '';
+    for (var i = 0; i < filtered.length; i++) {
+      var e = filtered[i];
+      var already = false;
+      for (var j = 0; j < state.scenarios.length; j++) {
+        if (state.scenarios[j].entity_id === e.entity_id) { already = true; break; }
+      }
+      html += '<div class="entity-row' + (already ? ' entity-row--selected' : '') + '">';
+      html += '<span class="entity-domain">' + esc(e.domain) + '</span>';
+      html += '<span class="entity-info">';
+      html += '<span class="entity-name">' + esc(e.friendly_name || e.entity_id) + '</span>';
+      html += '<span class="entity-id-label">' + esc(e.entity_id) + '</span>';
+      html += '</span>';
+      if (already) {
+        html += '<span class="entity-check">&#10003;</span>';
+      } else {
+        html += '<button class="add-btn sc-pick-btn" type="button"'
+          + ' data-id="' + esc(e.entity_id) + '"'
+          + ' data-name="' + esc(e.friendly_name || '') + '">+</button>';
+      }
+      html += '</div>';
+    }
+    container.innerHTML = html;
+
+    container.querySelectorAll('.sc-pick-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var eid = this.getAttribute('data-id');
+        var name = this.getAttribute('data-name');
+        state.scenarios.push({
+          entity_id: eid,
+          title: name || eid.split('.')[1] || eid,
+          icon: eid.startsWith('scene.') ? '\uD83C\uDF1F' : '\uD83C\uDFAD',
+        });
+        renderScenarioPickerList();
+        renderScenariosList();
+      });
+    });
+  }
+
+  // ── Header sensors ─────────────────────────────────────────────────────────
+
+  var MAX_HEADER_SENSORS = 4;
+
+  function renderHeaderSensorsList() {
+    var container = qs('header-sensors-list');
+    var addBtn = qs('add-header-sensor-btn');
+    if (!container) { return; }
+
+    if (addBtn) {
+      addBtn.disabled = state.header_sensors.length >= MAX_HEADER_SENSORS;
+    }
+
+    if (state.header_sensors.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">No header sensors. Add up to ' + MAX_HEADER_SENSORS + '.</p>';
+      return;
+    }
+
+    var html = '';
+    for (var i = 0; i < state.header_sensors.length; i++) {
+      var hs = state.header_sensors[i];
+      html += '<div class="hs-row">';
+      html += '<div class="hs-main">';
+      html += '<span class="hs-entity-id">' + esc(hs.entity_id) + '</span>';
+      html += '</div>';
+      html += '<div class="hs-fields">';
+      html += '<input type="text" class="hs-icon-input field-input-sm" placeholder="icon (emoji)" maxlength="8"'
+        + ' data-idx="' + i + '"'
+        + ' value="' + esc(hs.icon) + '">';
+      html += '<input type="text" class="hs-label-input field-input-sm" placeholder="label (optional)" maxlength="32"'
+        + ' data-idx="' + i + '"'
+        + ' value="' + esc(hs.label) + '">';
+      html += '<button class="remove-btn hs-remove-btn" type="button" data-idx="' + i + '">\u2715</button>';
+      html += '</div>';
+      html += '</div>';
+    }
+    container.innerHTML = html;
+
+    container.querySelectorAll('.hs-icon-input').forEach(function (inp) {
+      inp.addEventListener('input', function () {
+        var idx = parseInt(this.getAttribute('data-idx'), 10);
+        if (state.header_sensors[idx]) { state.header_sensors[idx].icon = this.value; }
+      });
+    });
+
+    container.querySelectorAll('.hs-label-input').forEach(function (inp) {
+      inp.addEventListener('input', function () {
+        var idx = parseInt(this.getAttribute('data-idx'), 10);
+        if (state.header_sensors[idx]) { state.header_sensors[idx].label = this.value; }
+      });
+    });
+
+    container.querySelectorAll('.hs-remove-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        state.header_sensors.splice(parseInt(this.getAttribute('data-idx'), 10), 1);
+        renderHeaderSensorsList();
+      });
+    });
+  }
+
+  function openHeaderSensorPicker() {
+    if (state.header_sensors.length >= MAX_HEADER_SENSORS) { return; }
+    sensorPickerTarget = '__header';
+    sensorSearchText = '';
+    var searchEl = qs('sensor-search-input');
+    if (searchEl) { searchEl.value = ''; }
+    var titleEl = qs('sensor-picker-title');
+    if (titleEl) { titleEl.textContent = 'Select header sensor'; }
+    showOverlay('sensor-picker');
+    renderSensorList();
+    if (searchEl) { setTimeout(function () { searchEl.focus(); }, 100); }
+  }
+
+  // ── Entity picker ──────────────────────────────────────────────────────────
+
+  function openEntityPicker(context) {
+    pickerContext = context;
+    searchText = '';
+    filterDomain = '';
+    var searchEl = qs('search-input');
+    if (searchEl) { searchEl.value = ''; }
+    var filterBtns = document.querySelectorAll('.filter-btn');
+    filterBtns.forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-domain') === ''); });
+    showOverlay('entity-picker');
+    renderEntityList();
+    if (searchEl) { setTimeout(function () { searchEl.focus(); }, 100); }
+  }
+
+  function isEntityInContext(entityId) {
+    var items = contextItems();
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].type === 'entity' && items[i].entity_id === entityId) { return true; }
     }
     return false;
   }
 
-  function addEntityToPage(entityId, friendlyName) {
-    var page = activePage();
-    if (!page) { return; }
-    if (isEntityOnPage(entityId)) { return; }
-    page.items.push({
-      type: 'entity',
-      entity_id: entityId,
-      label: friendlyName || '',
-      icon: '',
-    });
-    renderItemsList();
+  function addEntityToContext(entityId, friendlyName) {
+    var items = contextItems();
+    if (!items) { return; }
+    if (isEntityInContext(entityId)) { return; }
+    items.push({ type: 'entity', entity_id: entityId, label: friendlyName || '', icon: '' });
+    refreshItemsList(pickerContext === 'overview' ? 'overview' : 'room');
     renderEntityList();
   }
 
@@ -266,7 +638,7 @@
     var html = '';
     for (var i = 0; i < filtered.length; i++) {
       var e = filtered[i];
-      var sel = isEntityOnPage(e.entity_id);
+      var sel = isEntityInContext(e.entity_id);
       html += '<div class="entity-row' + (sel ? ' entity-row--selected' : '') + '">';
       html += '<span class="entity-domain">' + esc(e.domain) + '</span>';
       html += '<span class="entity-info">';
@@ -278,82 +650,54 @@
       } else {
         html += '<button class="add-btn" type="button"'
           + ' data-id="' + esc(e.entity_id) + '"'
-          + ' data-name="' + esc(e.friendly_name || '') + '"'
-          + '>+</button>';
+          + ' data-name="' + esc(e.friendly_name || '') + '">+</button>';
       }
       html += '</div>';
     }
     container.innerHTML = html;
 
-    var addBtns = container.querySelectorAll('.add-btn');
-    for (var j = 0; j < addBtns.length; j++) {
-      addBtns[j].addEventListener('click', function () {
-        addEntityToPage(this.getAttribute('data-id'), this.getAttribute('data-name'));
+    container.querySelectorAll('.add-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        addEntityToContext(this.getAttribute('data-id'), this.getAttribute('data-name'));
       });
-    }
+    });
   }
 
-  // ---- Section visibility ----
+  // ── Sensor picker ──────────────────────────────────────────────────────────
 
-  function showSection(id) {
-    var sections = ['page-editor', 'entity-picker', 'sensor-picker', 'energy-editor'];
-    for (var i = 0; i < sections.length; i++) {
-      var el = qs(sections[i]);
-      if (el) {
-        if (id && sections[i] === id) {
-          el.classList.remove('hidden');
-        } else {
-          el.classList.add('hidden');
-        }
-      }
-    }
-  }
-
-  // ---- Sensor picker (for energy card fields) ----
-
-  var ENERGY_FIELD_LABELS = {
-    'ef-solar':   'Solar production',
-    'ef-batt-soc':'Battery SOC (%)',
-    'ef-batt-pwr':'Battery power (W)',
-    'ef-grid':    'Grid power (W)',
-    'ef-home':    'Home consumption (W)',
-  };
-
-  function openSensorPicker(targetInputId) {
-    sensorPickerTarget = targetInputId;
+  function openSensorPicker(targetId) {
+    sensorPickerTarget = targetId;
     sensorSearchText = '';
-
-    var titleEl = qs('sensor-picker-title');
-    if (titleEl) {
-      titleEl.textContent = 'Select: ' + (ENERGY_FIELD_LABELS[targetInputId] || targetInputId);
-    }
-
     var searchEl = qs('sensor-search-input');
     if (searchEl) { searchEl.value = ''; }
-
-    showSection('sensor-picker');
-    renderSensorList();
-
-    // Focus search on open
-    if (searchEl) {
-      setTimeout(function () { searchEl.focus(); }, 100);
+    var titleEl = qs('sensor-picker-title');
+    if (titleEl) {
+      var FIELD_LABELS = {
+        'ef-solar': 'Solar production', 'ef-batt-soc': 'Battery SOC',
+        'ef-batt-pwr': 'Battery power', 'ef-grid': 'Grid power', 'ef-home': 'Home consumption',
+      };
+      var baseId = targetId.replace('__wizard', '');
+      titleEl.textContent = 'Select: ' + (FIELD_LABELS[baseId] || targetId);
     }
+    showOverlay('sensor-picker');
+    renderSensorList();
+    if (searchEl) { setTimeout(function () { searchEl.focus(); }, 100); }
   }
 
   function renderSensorList() {
     var container = qs('sensor-list');
     if (!container) { return; }
 
+    if (allSensors.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">Loading sensors\u2026</p>';
+      return;
+    }
+
     var filtered = allSensors.filter(function (e) {
       if (!sensorSearchText) { return true; }
       var hay = (e.entity_id + ' ' + (e.friendly_name || '') + ' ' + (e.device_class || '')).toLowerCase();
       return hay.indexOf(sensorSearchText) !== -1;
     });
-
-    if (allSensors.length === 0) {
-      container.innerHTML = '<p class="cfg-placeholder">Loading sensors…</p>';
-      return;
-    }
 
     if (filtered.length === 0) {
       container.innerHTML = '<p class="cfg-placeholder">No sensors found.</p>';
@@ -365,129 +709,110 @@
       var e = filtered[i];
       var meta = '';
       if (e.device_class) { meta += e.device_class; }
-      if (e.unit)         { meta += (meta ? ' · ' : '') + e.unit; }
-      html += '<div class="entity-row sensor-pick-row"'
-        + ' data-id="' + esc(e.entity_id) + '"'
-        + ' data-name="' + esc(e.friendly_name || '') + '">';
+      if (e.unit)         { meta += (meta ? ' \u00B7 ' : '') + e.unit; }
+      html += '<div class="entity-row">';
       html += '<span class="entity-info">';
       html += '<span class="entity-name">' + esc(e.friendly_name || e.entity_id) + '</span>';
       html += '<span class="entity-id-label">' + esc(e.entity_id);
       if (meta) { html += ' <em class="entity-meta">(' + esc(meta) + ')</em>'; }
-      html += '</span>';
-      html += '</span>';
-      html += '<button class="add-btn sensor-pick-select" type="button"'
-        + ' data-id="' + esc(e.entity_id) + '">&#10003;</button>';
+      html += '</span></span>';
+      html += '<button class="add-btn sensor-pick-select" type="button" data-id="' + esc(e.entity_id) + '">&#10003;</button>';
       html += '</div>';
     }
     container.innerHTML = html;
 
-    var selectBtns = container.querySelectorAll('.sensor-pick-select');
-    for (var j = 0; j < selectBtns.length; j++) {
-      selectBtns[j].addEventListener('click', function () {
-        pickSensor(this.getAttribute('data-id'));
-      });
-    }
+    container.querySelectorAll('.sensor-pick-select').forEach(function (btn) {
+      btn.addEventListener('click', function () { pickSensor(this.getAttribute('data-id')); });
+    });
   }
 
   function pickSensor(entityId) {
-    if (sensorPickerTarget) {
-      var target = sensorPickerTarget;
-      sensorPickerTarget = null;
+    if (!sensorPickerTarget) { return; }
+    var target = sensorPickerTarget;
+    sensorPickerTarget = null;
 
-      // Wizard mode: target ends with '__wizard'
-      var wizardSuffix = '__wizard';
-      if (target.slice(-wizardSuffix.length) === wizardSuffix) {
-        var fieldId = target.slice(0, -wizardSuffix.length);
-        wizardValues[fieldId] = entityId;
-        // Sync to legacy hidden input
-        var inp = qs(fieldId);
-        if (inp) { inp.value = entityId; }
-        showSection('energy-editor');
-        renderWizardStep(wizardStep);
-        return;
+    if (target === '__header') {
+      // Add to header sensors
+      var alreadyInHeader = false;
+      for (var i = 0; i < state.header_sensors.length; i++) {
+        if (state.header_sensors[i].entity_id === entityId) { alreadyInHeader = true; break; }
       }
-
-      // Legacy mode: target is the input id
-      var input = qs(target);
-      if (input) { input.value = entityId; }
+      if (!alreadyInHeader && state.header_sensors.length < MAX_HEADER_SENSORS) {
+        var friendlyName = '';
+        for (var j = 0; j < allSensors.length; j++) {
+          if (allSensors[j].entity_id === entityId) { friendlyName = allSensors[j].friendly_name || ''; break; }
+        }
+        state.header_sensors.push({ entity_id: entityId, icon: '', label: friendlyName });
+        renderHeaderSensorsList();
+      }
+      hideOverlay();
+      return;
     }
-    showSection('energy-editor');
+
+    // Wizard mode
+    var wizardSuffix = '__wizard';
+    if (target.length > wizardSuffix.length &&
+        target.slice(-wizardSuffix.length) === wizardSuffix) {
+      var fieldId = target.slice(0, -wizardSuffix.length);
+      wizardValues[fieldId] = entityId;
+      var inp = qs(fieldId);
+      if (inp) { inp.value = entityId; }
+      hideOverlay();
+      showOverlay('energy-editor');
+      renderWizardStep(wizardStep);
+      return;
+    }
+
+    // Legacy direct input
+    var input = qs(target);
+    if (input) { input.value = entityId; }
+    hideOverlay();
+    showOverlay('energy-editor');
   }
 
-  // ---- Energy card wizard ----
+  // ── Energy card wizard ─────────────────────────────────────────────────────
 
   var WIZARD_STEPS = [
-    {
-      field: 'ef-solar',
-      title: 'Step 1 of 5 — Solar Production',
-      icon: '\u2600',
-      description: 'Select the sensor that measures how much power your solar panels are currently producing (in Watts).\n\nLook for names like:\n• sensor.solar_power\n• sensor.pv_power\n• sensor.inverter_output_power\n• sensor.zcs_azzurro_power_pv\n\nTip: search "pv" or "solar" in the picker below.',
-      placeholder: 'sensor.solar_power',
-      searchHint: 'solar pv',
-    },
-    {
-      field: 'ef-batt-soc',
-      title: 'Step 2 of 5 — Battery State of Charge',
-      icon: '\uD83D\uDD0B',
-      description: 'Select the sensor that shows the battery charge level as a percentage (0–100%).\n\nLook for names like:\n• sensor.battery_soc\n• sensor.battery_level\n• sensor.bms_state_of_charge\n• sensor.zcs_azzurro_battery_soc\n\nTip: search "soc" or "battery" + "percent" in the picker.',
-      placeholder: 'sensor.battery_soc',
-      searchHint: 'battery soc',
-    },
-    {
-      field: 'ef-batt-pwr',
-      title: 'Step 3 of 5 — Battery Power',
-      icon: '\u26A1',
-      description: 'Select the sensor that shows battery charge/discharge power in Watts.\n\nConvention used by this card:\n• Positive value (+W) = battery is charging\n• Negative value (−W) = battery is discharging\n\nLook for names like:\n• sensor.battery_power\n• sensor.battery_charge_discharge_power\n• sensor.zcs_azzurro_battery_power\n\nIf your inverter reports separate charge/discharge sensors, pick the one that goes negative when discharging.',
-      placeholder: 'sensor.battery_power',
-      searchHint: 'battery power',
-    },
-    {
-      field: 'ef-grid',
-      title: 'Step 4 of 5 — Grid Power',
-      icon: '\uD83C\uDFED',
-      description: 'Select the sensor that measures power exchange with the electrical grid (in Watts).\n\nConvention used by this card:\n• Positive value (+W) = importing from grid (buying)\n• Negative value (−W) = exporting to grid (selling)\n\nLook for names like:\n• sensor.grid_power\n• sensor.meter_power\n• sensor.zcs_azzurro_power_grid\n\nTip: search "grid" or "meter" in the picker.',
-      placeholder: 'sensor.grid_power',
-      searchHint: 'grid meter',
-    },
-    {
-      field: 'ef-home',
-      title: 'Step 5 of 5 — Home Consumption',
-      icon: '\uD83C\uDFE0',
-      description: 'Select the sensor that shows total power consumption of your home (in Watts).\n\nThis is often calculated automatically by your inverter or energy meter.\n\nLook for names like:\n• sensor.home_consumption\n• sensor.house_load\n• sensor.load_power\n• sensor.zcs_azzurro_power_load\n\nTip: search "load" or "consumption" or "house" in the picker.',
-      placeholder: 'sensor.home_consumption',
-      searchHint: 'load consumption house',
-    },
+    { field: 'ef-solar', title: 'Step 1 of 5 \u2014 Solar Production', icon: '\u2600',
+      description: 'Select the sensor measuring solar panel power output (Watts).\n\nExamples:\n\u2022 sensor.solar_power\n\u2022 sensor.pv_power\n\u2022 sensor.zcs_azzurro_power_pv\n\nTip: search \u201cpv\u201d or \u201csolar\u201d.',
+      placeholder: 'sensor.solar_power' },
+    { field: 'ef-batt-soc', title: 'Step 2 of 5 \u2014 Battery State of Charge', icon: '\uD83D\uDD0B',
+      description: 'Select the sensor showing battery charge level (0\u2013100%).\n\nExamples:\n\u2022 sensor.battery_soc\n\u2022 sensor.bms_state_of_charge\n\u2022 sensor.zcs_azzurro_battery_soc\n\nTip: search \u201csoc\u201d.',
+      placeholder: 'sensor.battery_soc' },
+    { field: 'ef-batt-pwr', title: 'Step 3 of 5 \u2014 Battery Power', icon: '\u26A1',
+      description: 'Select the battery charge/discharge power sensor (Watts).\n\nConvention:\n\u2022 Positive (+W) = charging\n\u2022 Negative (\u2212W) = discharging\n\nExamples:\n\u2022 sensor.battery_power\n\u2022 sensor.zcs_azzurro_battery_power',
+      placeholder: 'sensor.battery_power' },
+    { field: 'ef-grid', title: 'Step 4 of 5 \u2014 Grid Power', icon: '\uD83C\uDFED',
+      description: 'Select the grid exchange power sensor (Watts).\n\nConvention:\n\u2022 Positive (+W) = importing from grid\n\u2022 Negative (\u2212W) = exporting to grid\n\nExamples:\n\u2022 sensor.grid_power\n\u2022 sensor.zcs_azzurro_power_grid',
+      placeholder: 'sensor.grid_power' },
+    { field: 'ef-home', title: 'Step 5 of 5 \u2014 Home Consumption', icon: '\uD83C\uDFE0',
+      description: 'Select the total home power consumption sensor (Watts).\n\nExamples:\n\u2022 sensor.home_consumption\n\u2022 sensor.house_load\n\u2022 sensor.zcs_azzurro_power_load\n\nTip: search \u201cload\u201d or \u201cconsumption\u201d.',
+      placeholder: 'sensor.home_consumption' },
   ];
 
-  var wizardStep = 0;
-  // wizardValues: { field_id: entity_id_string }
-  var wizardValues = {
-    'ef-solar': '', 'ef-batt-soc': '', 'ef-batt-pwr': '', 'ef-grid': '', 'ef-home': '',
-  };
+  function openEnergyEditor(ctx, itemIdx) {
+    energyContext = ctx;
+    energyItemIdx = (itemIdx !== undefined && itemIdx !== null) ? itemIdx : null;
 
-  function openEnergyEditor(itemIdx) {
-    energyEditIdx = itemIdx;
-    var page = activePage();
-    var item = (itemIdx !== null && page) ? page.items[itemIdx] : null;
+    var items = getItemsForContext(ctx);
+    var existingItem = (energyItemIdx !== null && items) ? items[energyItemIdx] : null;
 
-    // If editing an existing card, pre-populate wizard values
     wizardValues = {
-      'ef-solar':   (item && item.solar_power)   || '',
-      'ef-batt-soc':(item && item.battery_soc)   || '',
-      'ef-batt-pwr':(item && item.battery_power) || '',
-      'ef-grid':    (item && item.grid_power)    || '',
-      'ef-home':    (item && item.home_power)    || '',
+      'ef-solar':    (existingItem && existingItem.solar_power)   || '',
+      'ef-batt-soc': (existingItem && existingItem.battery_soc)   || '',
+      'ef-batt-pwr': (existingItem && existingItem.battery_power) || '',
+      'ef-grid':     (existingItem && existingItem.grid_power)    || '',
+      'ef-home':     (existingItem && existingItem.home_power)    || '',
     };
 
-    // Also populate legacy compact fields (in case sensor picker uses them)
-    qs('ef-solar').value    = wizardValues['ef-solar'];
-    qs('ef-batt-soc').value = wizardValues['ef-batt-soc'];
-    qs('ef-batt-pwr').value = wizardValues['ef-batt-pwr'];
-    qs('ef-grid').value     = wizardValues['ef-grid'];
-    qs('ef-home').value     = wizardValues['ef-home'];
+    // Sync to legacy inputs
+    for (var f in wizardValues) {
+      var inp = qs(f);
+      if (inp) { inp.value = wizardValues[f]; }
+    }
 
     wizardStep = 0;
-    showSection('energy-editor');
+    showOverlay('energy-editor');
     renderWizardStep(0);
   }
 
@@ -497,9 +822,7 @@
     if (!body || !stepDef) { return; }
 
     var currentVal = wizardValues[stepDef.field] || '';
-
-    var html = '';
-    html += '<div class="wizard-step-card">';
+    var html = '<div class="wizard-step-card">';
     html += '<div class="wizard-step-icon">' + stepDef.icon + '</div>';
     html += '<h3 class="wizard-step-title">' + esc(stepDef.title) + '</h3>';
     html += '<p class="wizard-step-desc">' + esc(stepDef.description).replace(/\n/g, '<br>') + '</p>';
@@ -512,30 +835,17 @@
     }
     html += '</div>';
     if (currentVal) {
-      html += '<button class="clear-sensor-btn" type="button" id="wizard-clear-btn" title="Clear">&#10005;</button>';
+      html += '<button class="clear-sensor-btn" type="button" id="wizard-clear-btn">&#10005;</button>';
     }
     html += '</div>';
     html += '<button class="action-btn" type="button" id="wizard-pick-btn" style="width:100%;margin-top:10px;">&#128269; Search and select sensor</button>';
     html += '</div>';
-
     body.innerHTML = html;
 
-    // Bind pick button
     var pickBtn = document.getElementById('wizard-pick-btn');
     if (pickBtn) {
       pickBtn.addEventListener('click', function () {
-        // Pre-fill search with hint keywords
-        sensorSearchText = '';
-        var searchEl = qs('sensor-search-input');
-        if (searchEl) { searchEl.value = ''; }
-        // Temporarily override sensorPickerTarget to write to wizardValues
-        sensorPickerTarget = stepDef.field + '__wizard';
-        var titleEl = qs('sensor-picker-title');
-        if (titleEl) {
-          titleEl.textContent = stepDef.title.replace('Step ? of 5 — ', '').replace(/Step \d of 5 — /, '');
-        }
-        showSection('sensor-picker');
-        renderSensorList();
+        openSensorPicker(stepDef.field + '__wizard');
       });
     }
 
@@ -543,17 +853,16 @@
     if (clearBtn) {
       clearBtn.addEventListener('click', function () {
         wizardValues[stepDef.field] = '';
-        // Also clear legacy input
-        var input = qs(stepDef.field);
-        if (input) { input.value = ''; }
+        var inp = qs(stepDef.field);
+        if (inp) { inp.value = ''; }
         renderWizardStep(step);
       });
     }
 
-    // Update step indicators
-    var stepIndicators = document.querySelectorAll('.wizard-step');
-    for (var i = 0; i < stepIndicators.length; i++) {
-      var s = stepIndicators[i];
+    // Step indicators
+    var indicators = document.querySelectorAll('.wizard-step');
+    for (var i = 0; i < indicators.length; i++) {
+      var s = indicators[i];
       s.classList.remove('active', 'done');
       var sIdx = parseInt(s.getAttribute('data-step'), 10);
       if (sIdx < step) { s.classList.add('done'); }
@@ -564,174 +873,189 @@
     var prevBtn = qs('energy-prev-btn');
     var nextBtn = qs('energy-next-btn');
     var finishBtn = qs('energy-finish-btn');
-
     if (prevBtn) { step > 0 ? prevBtn.classList.remove('hidden') : prevBtn.classList.add('hidden'); }
     if (nextBtn) { step < WIZARD_STEPS.length - 1 ? nextBtn.classList.remove('hidden') : nextBtn.classList.add('hidden'); }
     if (finishBtn) { step === WIZARD_STEPS.length - 1 ? finishBtn.classList.remove('hidden') : finishBtn.classList.add('hidden'); }
   }
 
   function commitEnergyCard() {
-    // Sync wizardValues to legacy inputs before reading
     for (var f in wizardValues) {
       var inp = qs(f);
       if (inp) { inp.value = wizardValues[f]; }
     }
 
-    var item = {
+    var efItem = {
       type: 'energy_flow',
-      solar_power:    wizardValues['ef-solar']   || '',
-      battery_soc:    wizardValues['ef-batt-soc'] || '',
-      battery_power:  wizardValues['ef-batt-pwr'] || '',
-      grid_power:     wizardValues['ef-grid']    || '',
-      home_power:     wizardValues['ef-home']    || '',
+      solar_power:   wizardValues['ef-solar']   || '',
+      battery_soc:   wizardValues['ef-batt-soc'] || '',
+      battery_power: wizardValues['ef-batt-pwr'] || '',
+      grid_power:    wizardValues['ef-grid']    || '',
+      home_power:    wizardValues['ef-home']    || '',
     };
 
-    var page = activePage();
-    if (!page) { return; }
-
-    if (energyEditIdx !== null) {
-      page.items[energyEditIdx] = item;
-    } else {
-      page.items.push(item);
+    var items = getItemsForContext(energyContext);
+    if (energyItemIdx !== null && items) {
+      items[energyItemIdx] = efItem;
+    } else if (items) {
+      items.push(efItem);
     }
-    energyEditIdx = null;
 
-    showSection('page-editor');
-    renderItemsList();
+    hideOverlay();
+    refreshItemsList(energyContext === 'overview' ? 'overview' : 'room');
   }
 
-  // ---- Save ----
+  // ── Overlay management ─────────────────────────────────────────────────────
+
+  var OVERLAYS = ['entity-picker', 'sensor-picker', 'scenario-picker', 'energy-editor'];
+
+  function showOverlay(id) {
+    for (var i = 0; i < OVERLAYS.length; i++) {
+      var el = qs(OVERLAYS[i]);
+      if (el) { el.classList.toggle('hidden', OVERLAYS[i] !== id); }
+    }
+  }
+
+  function hideOverlay() {
+    for (var i = 0; i < OVERLAYS.length; i++) {
+      var el = qs(OVERLAYS[i]);
+      if (el) { el.classList.add('hidden'); }
+    }
+  }
+
+  // ── Save ───────────────────────────────────────────────────────────────────
 
   function save() {
-    // Commit any in-progress edits
-    commitPageTitle();
-    commitPageIcon();
+    // Commit any in-progress room edits
+    if (editingRoomId) { commitRoomTitle(); commitRoomIcon(); }
 
     var btn = qs('save-btn');
     btn.disabled = true;
     btn.textContent = 'Saving\u2026';
 
-    cfgSavePages(pages)
+    cfgSaveV3(state)
       .then(function () {
         btn.textContent = 'Saved!';
-        setTimeout(function () {
-          window.location.href = './';
-        }, 800);
+        setTimeout(function () { window.location.href = './'; }, 800);
       })
       .catch(function (err) {
         btn.disabled = false;
         btn.textContent = 'Save';
-        showError(err.message || 'Save failed');
+        showFeedback(err.message || 'Save failed', true);
       });
   }
 
-  function showError(msg) {
+  function showFeedback(msg, isError) {
     var fb = qs('save-feedback');
     if (!fb) { return; }
-    fb.textContent = 'Error: ' + msg;
+    fb.textContent = isError ? 'Error: ' + msg : msg;
+    fb.style.backgroundColor = isError ? '' : 'var(--color-on)';
     fb.className = '';
-    setTimeout(function () { fb.className = 'hidden'; }, 5000);
+    setTimeout(function () { fb.className = 'hidden'; fb.style.backgroundColor = ''; }, 4000);
   }
 
-  // ---- Init ----
+  // ── Init ───────────────────────────────────────────────────────────────────
 
   function init() {
-    // Load sensors for energy picker (async, independent)
+    // Load sensors (async, independent)
     cfgFetchSensors()
-      .then(function (sensors) { allSensors = sensors || []; })
-      .catch(function (err) { console.warn('[config] Could not load sensors:', err.message); });
+      .then(function (s) { allSensors = s || []; })
+      .catch(function (e) { console.warn('[config] sensors:', e.message); });
 
+    // Load scenarios (async, independent)
+    cfgFetchScenarios()
+      .then(function (s) { allScenarios = s || []; })
+      .catch(function (e) { console.warn('[config] scenarios:', e.message); });
+
+    // Load config + entity list
     Promise.all([cfgFetchPanelConfig(), cfgFetchEntities()])
       .then(function (results) {
-        var panelCfg = results[0];
+        var cfg = results[0];
         var entities = results[1];
 
-        // Apply theme
-        document.body.className = 'theme-' + (panelCfg.theme || 'dark');
+        document.body.className = 'theme-' + (cfg.theme || 'dark');
 
-        // Build pages from config
-        if (panelCfg.pages && panelCfg.pages.length > 0) {
-          pages = panelCfg.pages.map(function (p) {
-            return {
-              id:    p.id    || genId(),
-              title: p.title || 'Page',
-              icon:  p.icon  || 'home',
-              items: (p.items || []).map(function (item) {
-                if (item.type === 'energy_flow') {
-                  return {
-                    type: 'energy_flow',
-                    solar_power:   item.solar_power   || '',
-                    battery_soc:   item.battery_soc   || '',
-                    battery_power: item.battery_power || '',
-                    grid_power:    item.grid_power    || '',
-                    home_power:    item.home_power    || '',
-                  };
-                }
-                return {
-                  type:      'entity',
-                  entity_id: item.entity_id,
-                  label:     item.label || '',
-                  icon:      item.icon  || '',
-                };
-              }),
-            };
-          });
-        } else {
-          // No pages configured yet — start with one empty page
-          pages = [{ id: genId(), title: 'Home', icon: 'home', items: [] }];
-        }
+        // Populate state from v3 config
+        state.overview        = cfg.overview        || { items: [] };
+        state.rooms           = (cfg.rooms || []).map(function (r) {
+          return {
+            id:     r.id    || genId(),
+            title:  r.title || 'Room',
+            icon:   r.icon  || 'home',
+            hidden: !!r.hidden,
+            items:  r.items  || [],
+          };
+        });
+        state.scenarios       = cfg.scenarios       || [];
+        state.header_sensors  = cfg.header_sensors  || [];
 
         allEntities = entities || [];
 
-        renderPageTabs();
-        selectPage(0);
+        renderOverviewItems();
+        renderRoomsList();
+        renderScenariosList();
+        renderHeaderSensorsList();
       })
       .catch(function (err) {
         var el = qs('entity-list');
-        if (el) {
-          el.innerHTML = '<p class="cfg-error">Failed to load: ' + esc(err.message) + '</p>';
-        }
+        if (el) { el.innerHTML = '<p class="cfg-error">Failed to load: ' + esc(err.message) + '</p>'; }
       });
 
-    // Add Page button
-    var addPageBtn = qs('add-page-btn');
-    if (addPageBtn) { addPageBtn.addEventListener('click', addPage); }
-
-    // Delete Page button
-    var delPageBtn = qs('delete-page-btn');
-    if (delPageBtn) { delPageBtn.addEventListener('click', deletePage); }
-
-    // Page title: commit on blur and Enter
-    var titleInput = qs('page-title-input');
-    if (titleInput) {
-      titleInput.addEventListener('blur', commitPageTitle);
-      titleInput.addEventListener('keydown', function (e) {
-        if (e.keyCode === 13) { this.blur(); }
+    // ── Tab buttons ────────────────────────────────────────────────────────
+    document.querySelectorAll('.cfg-tab').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        switchTab(this.getAttribute('data-tab'));
       });
+    });
+
+    // ── Overview buttons ───────────────────────────────────────────────────
+    var ovAddEntityBtn = qs('ov-add-entity-btn');
+    if (ovAddEntityBtn) { ovAddEntityBtn.addEventListener('click', function () { openEntityPicker('overview'); }); }
+
+    var ovAddEnergyBtn = qs('ov-add-energy-btn');
+    if (ovAddEnergyBtn) { ovAddEnergyBtn.addEventListener('click', function () { openEnergyEditor('overview', null); }); }
+
+    // ── Rooms buttons ──────────────────────────────────────────────────────
+    var addRoomBtn = qs('add-room-btn');
+    if (addRoomBtn) { addRoomBtn.addEventListener('click', addRoom); }
+
+    var importAreasBtn = qs('import-areas-btn');
+    if (importAreasBtn) { importAreasBtn.addEventListener('click', importHaAreas); }
+
+    var roomEditorBackBtn = qs('room-editor-back-btn');
+    if (roomEditorBackBtn) { roomEditorBackBtn.addEventListener('click', function () {
+      commitRoomTitle(); commitRoomIcon(); closeRoomEditor();
+    }); }
+
+    var roomTitleInput = qs('room-title-input');
+    if (roomTitleInput) {
+      roomTitleInput.addEventListener('blur', commitRoomTitle);
+      roomTitleInput.addEventListener('keydown', function (e) { if (e.keyCode === 13) { this.blur(); } });
     }
 
-    // Page icon: commit on change
-    var iconSelect = qs('page-icon-select');
-    if (iconSelect) { iconSelect.addEventListener('change', commitPageIcon); }
+    var roomIconSelect = qs('room-icon-select');
+    if (roomIconSelect) { roomIconSelect.addEventListener('change', commitRoomIcon); }
 
-    // Add entity button
-    var addEntityBtn = qs('add-entity-btn');
-    if (addEntityBtn) {
-      addEntityBtn.addEventListener('click', function () {
-        showSection('entity-picker');
-        renderEntityList();
-      });
-    }
+    var roomAddEntityBtn = qs('room-add-entity-btn');
+    if (roomAddEntityBtn) { roomAddEntityBtn.addEventListener('click', function () { openEntityPicker('room'); }); }
 
-    // Entity picker done
+    var deleteRoomBtn = qs('delete-room-btn');
+    if (deleteRoomBtn) { deleteRoomBtn.addEventListener('click', deleteRoom); }
+
+    // ── Scenarios buttons ──────────────────────────────────────────────────
+    var addScenarioBtn = qs('add-scenario-btn');
+    if (addScenarioBtn) { addScenarioBtn.addEventListener('click', openScenarioPicker); }
+
+    // ── Header sensor buttons ──────────────────────────────────────────────
+    var addHeaderBtn = qs('add-header-sensor-btn');
+    if (addHeaderBtn) { addHeaderBtn.addEventListener('click', openHeaderSensorPicker); }
+
+    // ── Entity picker controls ─────────────────────────────────────────────
+    var pickerCancelBtn = qs('picker-cancel-btn');
+    if (pickerCancelBtn) { pickerCancelBtn.addEventListener('click', hideOverlay); }
+
     var pickerDoneBtn = qs('picker-done-btn');
-    if (pickerDoneBtn) {
-      pickerDoneBtn.addEventListener('click', function () {
-        showSection('page-editor');
-      });
-    }
+    if (pickerDoneBtn) { pickerDoneBtn.addEventListener('click', hideOverlay); }
 
-    // Search
     var searchEl = qs('search-input');
     if (searchEl) {
       searchEl.addEventListener('input', function () {
@@ -740,75 +1064,22 @@
       });
     }
 
-    // Domain filter pills
-    var filterBtns = document.querySelectorAll('.filter-btn');
-    for (var i = 0; i < filterBtns.length; i++) {
-      filterBtns[i].addEventListener('click', function () {
+    document.querySelectorAll('.filter-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
         filterDomain = this.getAttribute('data-domain');
-        var btns = document.querySelectorAll('.filter-btn');
-        for (var j = 0; j < btns.length; j++) { btns[j].classList.remove('active'); }
+        document.querySelectorAll('.filter-btn').forEach(function (b) { b.classList.remove('active'); });
         this.classList.add('active');
         renderEntityList();
       });
-    }
+    });
 
-    // Add Energy Card button
-    var addEnergyBtn = qs('add-energy-btn');
-    if (addEnergyBtn) {
-      addEnergyBtn.addEventListener('click', function () {
-        energyEditIdx = null;
-        openEnergyEditor(null);
-      });
-    }
+    // ── Sensor picker controls ─────────────────────────────────────────────
+    var sensorCancelBtn = qs('sensor-picker-cancel-btn');
+    if (sensorCancelBtn) { sensorCancelBtn.addEventListener('click', function () {
+      sensorPickerTarget = null;
+      hideOverlay();
+    }); }
 
-    // Energy done (header button — also commits)
-    var energyDoneBtn = qs('energy-done-btn');
-    if (energyDoneBtn) { energyDoneBtn.addEventListener('click', commitEnergyCard); }
-
-    // Wizard navigation
-    var energyPrevBtn = qs('energy-prev-btn');
-    if (energyPrevBtn) {
-      energyPrevBtn.addEventListener('click', function () {
-        if (wizardStep > 0) {
-          wizardStep -= 1;
-          renderWizardStep(wizardStep);
-        }
-      });
-    }
-
-    var energyNextBtn = qs('energy-next-btn');
-    if (energyNextBtn) {
-      energyNextBtn.addEventListener('click', function () {
-        if (wizardStep < WIZARD_STEPS.length - 1) {
-          wizardStep += 1;
-          renderWizardStep(wizardStep);
-        }
-      });
-    }
-
-    var energyFinishBtn = qs('energy-finish-btn');
-    if (energyFinishBtn) {
-      energyFinishBtn.addEventListener('click', commitEnergyCard);
-    }
-
-    // Pick-sensor buttons (🔍) next to each energy field
-    var pickBtns = document.querySelectorAll('.pick-sensor-btn');
-    for (var pi = 0; pi < pickBtns.length; pi++) {
-      pickBtns[pi].addEventListener('click', function () {
-        openSensorPicker(this.getAttribute('data-for'));
-      });
-    }
-
-    // Clear-sensor buttons (✕) next to each energy field
-    var clearBtns = document.querySelectorAll('.clear-sensor-btn');
-    for (var ci = 0; ci < clearBtns.length; ci++) {
-      clearBtns[ci].addEventListener('click', function () {
-        var input = qs(this.getAttribute('data-for'));
-        if (input) { input.value = ''; }
-      });
-    }
-
-    // Sensor picker search
     var sensorSearchEl = qs('sensor-search-input');
     if (sensorSearchEl) {
       sensorSearchEl.addEventListener('input', function () {
@@ -817,16 +1088,40 @@
       });
     }
 
-    // Sensor picker cancel
-    var sensorCancelBtn = qs('sensor-picker-cancel-btn');
-    if (sensorCancelBtn) {
-      sensorCancelBtn.addEventListener('click', function () {
-        sensorPickerTarget = null;
-        showSection('energy-editor');
+    // ── Scenario picker controls ───────────────────────────────────────────
+    var scCancelBtn = qs('scenario-picker-cancel-btn');
+    if (scCancelBtn) { scCancelBtn.addEventListener('click', hideOverlay); }
+
+    var scSearchEl = qs('scenario-search-input');
+    if (scSearchEl) {
+      scSearchEl.addEventListener('input', function () {
+        scenarioSearchText = this.value.toLowerCase();
+        renderScenarioPickerList();
       });
     }
 
-    // Save
+    // ── Energy wizard controls ─────────────────────────────────────────────
+    var energyCancelBtn = qs('energy-cancel-btn');
+    if (energyCancelBtn) { energyCancelBtn.addEventListener('click', hideOverlay); }
+
+    var energyPrevBtn = qs('energy-prev-btn');
+    if (energyPrevBtn) {
+      energyPrevBtn.addEventListener('click', function () {
+        if (wizardStep > 0) { wizardStep--; renderWizardStep(wizardStep); }
+      });
+    }
+
+    var energyNextBtn = qs('energy-next-btn');
+    if (energyNextBtn) {
+      energyNextBtn.addEventListener('click', function () {
+        if (wizardStep < WIZARD_STEPS.length - 1) { wizardStep++; renderWizardStep(wizardStep); }
+      });
+    }
+
+    var energyFinishBtn = qs('energy-finish-btn');
+    if (energyFinishBtn) { energyFinishBtn.addEventListener('click', commitEnergyCard); }
+
+    // ── Save ───────────────────────────────────────────────────────────────
     var saveBtn = qs('save-btn');
     if (saveBtn) { saveBtn.addEventListener('click', save); }
   }

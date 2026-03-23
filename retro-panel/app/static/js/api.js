@@ -84,4 +84,5 @@
       body: JSON.stringify(data),
     });
   };
+  window.getHaAreas = function () { return apiFetch('api/ha-areas'); };
 }());

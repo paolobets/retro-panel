@@ -135,6 +135,26 @@ class HAClient:
         except asyncio.TimeoutError as exc:
             raise TimeoutError("Request for all entity states timed out") from exc
 
+    async def call_template(self, template: str) -> str:
+        """Evaluate a Jinja2 template via the HA template API.
+
+        Returns the rendered result as a plain string.
+        Used for area registry queries and other template-based data.
+        """
+        url = f"{self._ha_url}/api/template"
+        session = self._get_session()
+        timeout = aiohttp.ClientTimeout(total=15)
+        try:
+            async with session.post(url, json={"template": template}, timeout=timeout) as resp:
+                if resp.status == 401:
+                    raise PermissionError("HA returned 401 Unauthorized")
+                resp.raise_for_status()
+                return await resp.text()
+        except aiohttp.ClientConnectorError as exc:
+            raise ConnectionRefusedError(str(exc)) from exc
+        except asyncio.TimeoutError as exc:
+            raise TimeoutError("Template API request timed out") from exc
+
     async def ws_connect(self) -> aiohttp.ClientWebSocketResponse:
         """Open a WebSocket connection to the HA WebSocket API with auth handshake."""
         ws_url = self._ha_url.replace("http://", "ws://").replace("https://", "wss://")

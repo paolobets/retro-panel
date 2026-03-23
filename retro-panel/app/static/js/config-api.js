@@ -1,6 +1,6 @@
 /**
- * config-api.js — Plain-script API helpers for the config page.
- * No ES modules — loaded as regular <script> for iOS 15 safety.
+ * config-api.js — API helpers for the Retro Panel v1.2 config page.
+ * No ES modules — plain functions for iOS 15 safety.
  * All paths are relative (no leading slash) for HA Ingress compatibility.
  */
 
@@ -25,15 +25,32 @@ function cfgFetchSensors() {
   });
 }
 
+function cfgFetchScenarios() {
+  // Fetch scenes and scripts for the scenario picker
+  return Promise.all([
+    fetch('api/entities?domain=scene').then(function (r) { return r.ok ? r.json() : []; }),
+    fetch('api/entities?domain=script').then(function (r) { return r.ok ? r.json() : []; }),
+  ]).then(function (results) {
+    return (results[0] || []).concat(results[1] || []);
+  });
+}
+
+function cfgFetchHaAreas() {
+  return fetch('api/ha-areas').then(function (r) {
+    if (!r.ok) { throw new Error('Failed to load HA areas (' + r.status + ')'); }
+    return r.json();
+  });
+}
+
 /**
- * Save the full pages structure.
- * pages: array of { id, title, icon, items: [{type, ...}] }
+ * Save the full v3 configuration structure.
+ * payload: { overview, rooms, scenarios, header_sensors }
  */
-function cfgSavePages(pages) {
+function cfgSaveV3(payload) {
   return fetch('api/config', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ pages: pages }),
+    body: JSON.stringify(payload),
   }).then(function (r) {
     return r.json().then(function (data) {
       if (!r.ok) { throw new Error(data.error || 'Save failed (' + r.status + ')'); }

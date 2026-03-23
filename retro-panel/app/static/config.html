@@ -19,190 +19,251 @@
     <button id="save-btn" type="button">Save</button>
   </header>
 
+  <!-- Section tabs -->
+  <div id="cfg-tabs">
+    <button class="cfg-tab active" type="button" data-tab="overview">&#127968; Overview</button>
+    <button class="cfg-tab" type="button" data-tab="rooms">&#127968; Rooms</button>
+    <button class="cfg-tab" type="button" data-tab="scenarios">&#127917; Scenarios</button>
+    <button class="cfg-tab" type="button" data-tab="header">&#128268; Header</button>
+  </div>
+
   <div id="cfg-body">
 
-    <!-- ── Page management ── -->
-    <section id="pages-section">
-      <div id="pages-header">
-        <h2 class="section-title">Pages</h2>
-        <button id="add-page-btn" type="button" class="action-btn">+ Add Page</button>
+    <!-- ══════════════════════════════════════════════
+         TAB: OVERVIEW
+         Items shown on the main home section.
+         ══════════════════════════════════════════════ -->
+    <section id="tab-overview" class="cfg-section">
+
+      <div class="section-header">
+        <h2 class="section-title">Overview Items</h2>
+        <p class="cfg-hint">Items shown on the home section. Add your most important devices here.</p>
       </div>
-      <!-- Page tab pills -->
-      <div id="page-tabs" role="tablist"></div>
 
-      <!-- Per-page editor (shown for active page) -->
-      <div id="page-editor" class="hidden">
+      <div id="overview-items-list">
+        <p class="cfg-placeholder">No items yet.</p>
+      </div>
+      <div class="items-actions">
+        <button id="ov-add-entity-btn" type="button" class="action-btn">+ Add Entities</button>
+        <button id="ov-add-energy-btn" type="button" class="action-btn">+ Add Power Flow Card</button>
+      </div>
 
-        <!-- Page settings: title + icon -->
-        <div id="page-settings">
+    </section>
+
+    <!-- ══════════════════════════════════════════════
+         TAB: ROOMS
+         ══════════════════════════════════════════════ -->
+    <section id="tab-rooms" class="cfg-section hidden">
+
+      <div class="section-header">
+        <h2 class="section-title">Rooms</h2>
+        <button id="add-room-btn" type="button" class="action-btn">+ Add Room</button>
+      </div>
+      <p class="cfg-hint">Each room appears as a navigation item in the sidebar. Toggle visibility or edit entities.</p>
+
+      <div id="rooms-list">
+        <p class="cfg-placeholder">No rooms configured. Add a room or import from HA areas.</p>
+      </div>
+
+      <div class="items-actions">
+        <button id="import-areas-btn" type="button" class="action-btn-outline">&#8635; Import from HA Areas</button>
+      </div>
+
+      <!-- Room editor (shown when editing a room) -->
+      <div id="room-editor" class="hidden">
+        <div class="room-editor-header">
+          <button id="room-editor-back-btn" type="button" class="action-btn-outline">&#8592; Back to Rooms</button>
+          <h3 id="room-editor-title" class="room-editor-name">Room</h3>
+        </div>
+
+        <div id="room-settings" class="field-group">
           <div class="field-row">
-            <label class="field-label" for="page-title-input">Page title</label>
-            <input id="page-title-input" type="text" class="field-input"
+            <label class="field-label" for="room-title-input">Title</label>
+            <input id="room-title-input" type="text" class="field-input"
               maxlength="64" autocomplete="off" autocorrect="off"
               autocapitalize="words" spellcheck="false">
           </div>
           <div class="field-row">
-            <label class="field-label" for="page-icon-select">Icon</label>
-            <select id="page-icon-select" class="field-select">
-              <option value="home">🏠 Home</option>
-              <option value="living">🛋 Living room</option>
-              <option value="bedroom">🛏 Bedroom</option>
-              <option value="kitchen">🍳 Kitchen</option>
-              <option value="bathroom">🚰 Bathroom</option>
-              <option value="garden">🌿 Garden</option>
-              <option value="garage">🚗 Garage</option>
-              <option value="office">💻 Office</option>
-              <option value="energy">⚡ Energy</option>
-              <option value="security">🔒 Security</option>
-              <option value="climate">🌡 Climate</option>
-              <option value="lights">💡 Lights</option>
+            <label class="field-label" for="room-icon-select">Icon</label>
+            <select id="room-icon-select" class="field-select">
+              <option value="home">&#127968; Home</option>
+              <option value="living">&#128715; Living room</option>
+              <option value="bedroom">&#128716; Bedroom</option>
+              <option value="kitchen">&#127859; Kitchen</option>
+              <option value="bathroom">&#128688; Bathroom</option>
+              <option value="garden">&#127807; Garden</option>
+              <option value="garage">&#128663; Garage</option>
+              <option value="office">&#128187; Office</option>
+              <option value="energy">&#9889; Energy</option>
+              <option value="security">&#128274; Security</option>
+              <option value="climate">&#127777; Climate</option>
+              <option value="lights">&#128161; Lights</option>
             </select>
           </div>
-          <button id="delete-page-btn" type="button" class="danger-btn">Delete this page</button>
         </div>
 
-        <!-- Items on this page -->
-        <div id="items-section">
-          <h2 class="section-title">
-            Items <span id="items-count">0</span>
-            <span class="section-hint">— tap ↑ ↓ to reorder, ✕ to remove</span>
-          </h2>
-          <div id="items-list">
-            <p class="cfg-placeholder">No items yet. Add entities or an Energy Card below.</p>
-          </div>
-          <div id="items-actions">
-            <button id="add-entity-btn" type="button" class="action-btn">+ Add Entities</button>
-            <button id="add-energy-btn" type="button" class="action-btn">+ Add Power Flow Card</button>
-          </div>
+        <h4 class="section-title" style="margin-top:16px;">
+          Entities <span id="room-items-count">0</span>
+        </h4>
+        <div id="room-items-list">
+          <p class="cfg-placeholder">No entities in this room.</p>
+        </div>
+        <div class="items-actions">
+          <button id="room-add-entity-btn" type="button" class="action-btn">+ Add Entities</button>
         </div>
 
-      </div><!-- /page-editor -->
+        <button id="delete-room-btn" type="button" class="danger-btn">Delete this room</button>
+      </div>
+
     </section>
 
-    <!-- ── Entity Picker (shown when adding entities) ── -->
-    <section id="entity-picker" class="hidden">
-      <div id="picker-header">
-        <h2 class="section-title">Add Entities</h2>
-        <button id="picker-done-btn" type="button" class="action-btn">Done</button>
+    <!-- ══════════════════════════════════════════════
+         TAB: SCENARIOS
+         ══════════════════════════════════════════════ -->
+    <section id="tab-scenarios" class="cfg-section hidden">
+
+      <div class="section-header">
+        <h2 class="section-title">Scenarios</h2>
+        <p class="cfg-hint">Select scenes and scripts to show in the Scenarios section. Tap a scenario card to activate it.</p>
       </div>
-      <div id="search-wrap">
-        <input id="search-input" type="text"
-          placeholder="Search entities…"
-          autocomplete="off" autocorrect="off"
-          autocapitalize="off" spellcheck="false">
+
+      <div id="scenarios-list">
+        <p class="cfg-placeholder">No scenarios configured.</p>
       </div>
-      <div id="domain-filters">
-        <button class="filter-btn active" type="button" data-domain="">All</button>
-        <button class="filter-btn" type="button" data-domain="light">Lights</button>
-        <button class="filter-btn" type="button" data-domain="switch">Switches</button>
-        <button class="filter-btn" type="button" data-domain="sensor">Sensors</button>
-        <button class="filter-btn" type="button" data-domain="binary_sensor">Binary</button>
-        <button class="filter-btn" type="button" data-domain="alarm_control_panel">Alarm</button>
+
+      <div class="items-actions">
+        <button id="add-scenario-btn" type="button" class="action-btn">+ Add Scenario</button>
       </div>
-      <div id="entity-list">
-        <p class="cfg-placeholder">Loading…</p>
-      </div>
+
     </section>
 
-    <!-- ── Sensor Picker (inline, used by energy editor fields) ── -->
-    <section id="sensor-picker" class="hidden">
-      <div id="sensor-picker-header">
-        <h2 class="section-title" id="sensor-picker-title">Select sensor</h2>
-        <button id="sensor-picker-cancel-btn" type="button" class="action-btn">Cancel</button>
-      </div>
-      <div id="sensor-search-wrap">
-        <input id="sensor-search-input" type="text"
-          placeholder="Search sensors…"
-          autocomplete="off" autocorrect="off"
-          autocapitalize="off" spellcheck="false">
-      </div>
-      <div id="sensor-list">
-        <p class="cfg-placeholder">Loading sensors…</p>
-      </div>
-    </section>
+    <!-- ══════════════════════════════════════════════
+         TAB: HEADER SENSORS
+         ══════════════════════════════════════════════ -->
+    <section id="tab-header" class="cfg-section hidden">
 
-    <!-- ── Energy Flow Card Configurator ── -->
-    <section id="energy-editor" class="hidden">
-      <div id="energy-header">
-        <h2 class="section-title">&#9889; Power Flow Card</h2>
-        <button id="energy-done-btn" type="button" class="action-btn">Done</button>
-      </div>
-      <p class="cfg-hint">Map each sensor role to a HA entity. Leave empty to hide that element.</p>
-
-      <!-- Wizard step indicator -->
-      <div id="energy-wizard-steps">
-        <div class="wizard-step active" data-step="0">1</div>
-        <div class="wizard-step-line"></div>
-        <div class="wizard-step" data-step="1">2</div>
-        <div class="wizard-step-line"></div>
-        <div class="wizard-step" data-step="2">3</div>
-        <div class="wizard-step-line"></div>
-        <div class="wizard-step" data-step="3">4</div>
-        <div class="wizard-step-line"></div>
-        <div class="wizard-step" data-step="4">5</div>
+      <div class="section-header">
+        <h2 class="section-title">Header Sensors</h2>
+        <p class="cfg-hint">Up to 4 mini sensor chips shown in the top bar (e.g. garbage collection, temperature).</p>
       </div>
 
-      <!-- One wizard step shown at a time -->
-      <div id="energy-wizard-body">
-        <!-- Step content injected by JS -->
+      <div id="header-sensors-list">
+        <p class="cfg-placeholder">No header sensors configured.</p>
       </div>
 
-      <div id="energy-wizard-nav">
-        <button id="energy-prev-btn" type="button" class="action-btn-outline hidden">&#8592; Back</button>
-        <button id="energy-next-btn" type="button" class="action-btn">Next &#8594;</button>
-        <button id="energy-finish-btn" type="button" class="action-btn hidden">&#10003; Confirm</button>
+      <div class="items-actions" id="header-add-wrap">
+        <button id="add-header-sensor-btn" type="button" class="action-btn">+ Add Sensor</button>
       </div>
 
-      <!-- Legacy compact view (shown after wizard completed once) -->
-      <div id="energy-fields" class="hidden">
-        <div class="field-row">
-          <label class="field-label" for="ef-solar">Solar production</label>
-          <input id="ef-solar" type="text" class="field-input entity-input"
-            placeholder="sensor.solar_power" autocomplete="off" autocorrect="off"
-            autocapitalize="none" spellcheck="false" readonly>
-          <button class="pick-sensor-btn" type="button" data-for="ef-solar" title="Search sensor">&#128269;</button>
-          <button class="clear-sensor-btn" type="button" data-for="ef-solar" title="Clear">&#10005;</button>
-        </div>
-        <div class="field-row">
-          <label class="field-label" for="ef-batt-soc">Battery SOC (%)</label>
-          <input id="ef-batt-soc" type="text" class="field-input entity-input"
-            placeholder="sensor.battery_soc" autocomplete="off" autocorrect="off"
-            autocapitalize="none" spellcheck="false" readonly>
-          <button class="pick-sensor-btn" type="button" data-for="ef-batt-soc" title="Search sensor">&#128269;</button>
-          <button class="clear-sensor-btn" type="button" data-for="ef-batt-soc" title="Clear">&#10005;</button>
-        </div>
-        <div class="field-row">
-          <label class="field-label" for="ef-batt-pwr">Battery power (W)</label>
-          <input id="ef-batt-pwr" type="text" class="field-input entity-input"
-            placeholder="sensor.battery_power" autocomplete="off" autocorrect="off"
-            autocapitalize="none" spellcheck="false" readonly>
-          <button class="pick-sensor-btn" type="button" data-for="ef-batt-pwr" title="Search sensor">&#128269;</button>
-          <button class="clear-sensor-btn" type="button" data-for="ef-batt-pwr" title="Clear">&#10005;</button>
-        </div>
-        <div class="field-row">
-          <label class="field-label" for="ef-grid">Grid power (W)</label>
-          <input id="ef-grid" type="text" class="field-input entity-input"
-            placeholder="sensor.grid_power" autocomplete="off" autocorrect="off"
-            autocapitalize="none" spellcheck="false" readonly>
-          <button class="pick-sensor-btn" type="button" data-for="ef-grid" title="Search sensor">&#128269;</button>
-          <button class="clear-sensor-btn" type="button" data-for="ef-grid" title="Clear">&#10005;</button>
-        </div>
-        <div class="field-row">
-          <label class="field-label" for="ef-home">Home consumption (W)</label>
-          <input id="ef-home" type="text" class="field-input entity-input"
-            placeholder="sensor.home_consumption" autocomplete="off" autocorrect="off"
-            autocapitalize="none" spellcheck="false" readonly>
-          <button class="pick-sensor-btn" type="button" data-for="ef-home" title="Search sensor">&#128269;</button>
-          <button class="clear-sensor-btn" type="button" data-for="ef-home" title="Clear">&#10005;</button>
-        </div>
-      </div>
-      <p class="cfg-hint" style="margin-top:8px;">
-        ZCS Azzurro, SMA, Fronius, etc.: positive battery_power = charging, negative = discharging.
-        Positive grid_power = importing from grid, negative = exporting.
-      </p>
     </section>
 
   </div><!-- /cfg-body -->
+
+  <!-- ══════════════════════════════════════════════
+       ENTITY PICKER (shown over any section)
+       ══════════════════════════════════════════════ -->
+  <section id="entity-picker" class="cfg-overlay hidden">
+    <div id="picker-header">
+      <button id="picker-cancel-btn" type="button" class="action-btn-outline">Cancel</button>
+      <h2 class="section-title" style="margin:0;">Add Entities</h2>
+      <button id="picker-done-btn" type="button" class="action-btn">Done</button>
+    </div>
+    <div id="search-wrap">
+      <input id="search-input" type="text"
+        placeholder="Search entities…"
+        autocomplete="off" autocorrect="off"
+        autocapitalize="off" spellcheck="false">
+    </div>
+    <div id="domain-filters">
+      <button class="filter-btn active" type="button" data-domain="">All</button>
+      <button class="filter-btn" type="button" data-domain="light">Lights</button>
+      <button class="filter-btn" type="button" data-domain="switch">Switches</button>
+      <button class="filter-btn" type="button" data-domain="sensor">Sensors</button>
+      <button class="filter-btn" type="button" data-domain="binary_sensor">Binary</button>
+      <button class="filter-btn" type="button" data-domain="alarm_control_panel">Alarm</button>
+    </div>
+    <div id="entity-list">
+      <p class="cfg-placeholder">Loading…</p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       SENSOR PICKER (for energy card wizard + header sensors)
+       ══════════════════════════════════════════════ -->
+  <section id="sensor-picker" class="cfg-overlay hidden">
+    <div id="sensor-picker-header">
+      <button id="sensor-picker-cancel-btn" type="button" class="action-btn-outline">Cancel</button>
+      <h2 class="section-title" id="sensor-picker-title" style="margin:0;">Select sensor</h2>
+    </div>
+    <div id="sensor-search-wrap">
+      <input id="sensor-search-input" type="text"
+        placeholder="Search sensors…"
+        autocomplete="off" autocorrect="off"
+        autocapitalize="off" spellcheck="false">
+    </div>
+    <div id="sensor-list">
+      <p class="cfg-placeholder">Loading sensors…</p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       SCENARIO PICKER
+       ══════════════════════════════════════════════ -->
+  <section id="scenario-picker" class="cfg-overlay hidden">
+    <div id="scenario-picker-header">
+      <button id="scenario-picker-cancel-btn" type="button" class="action-btn-outline">Cancel</button>
+      <h2 class="section-title" style="margin:0;">Add Scenario</h2>
+    </div>
+    <div id="scenario-search-wrap">
+      <input id="scenario-search-input" type="text"
+        placeholder="Search scenes and scripts…"
+        autocomplete="off" autocorrect="off"
+        autocapitalize="off" spellcheck="false">
+    </div>
+    <div id="scenario-list">
+      <p class="cfg-placeholder">Loading…</p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       ENERGY CARD WIZARD
+       ══════════════════════════════════════════════ -->
+  <section id="energy-editor" class="cfg-overlay hidden">
+    <div id="energy-header">
+      <button id="energy-cancel-btn" type="button" class="action-btn-outline">Cancel</button>
+      <h2 class="section-title" style="margin:0;">&#9889; Power Flow Card</h2>
+    </div>
+
+    <!-- Step indicators -->
+    <div id="energy-wizard-steps">
+      <div class="wizard-step active" data-step="0">1</div>
+      <div class="wizard-step-line"></div>
+      <div class="wizard-step" data-step="1">2</div>
+      <div class="wizard-step-line"></div>
+      <div class="wizard-step" data-step="2">3</div>
+      <div class="wizard-step-line"></div>
+      <div class="wizard-step" data-step="3">4</div>
+      <div class="wizard-step-line"></div>
+      <div class="wizard-step" data-step="4">5</div>
+    </div>
+
+    <div id="energy-wizard-body"></div>
+
+    <div id="energy-wizard-nav">
+      <button id="energy-prev-btn" type="button" class="action-btn-outline hidden">&#8592; Back</button>
+      <button id="energy-next-btn" type="button" class="action-btn">Next &#8594;</button>
+      <button id="energy-finish-btn" type="button" class="action-btn hidden">&#10003; Confirm</button>
+    </div>
+
+    <!-- Legacy inputs (hidden, synced by JS) -->
+    <div class="hidden">
+      <input id="ef-solar" type="text" readonly>
+      <input id="ef-batt-soc" type="text" readonly>
+      <input id="ef-batt-pwr" type="text" readonly>
+      <input id="ef-grid" type="text" readonly>
+      <input id="ef-home" type="text" readonly>
+    </div>
+  </section>
 
   <div id="save-feedback" class="hidden"></div>
 

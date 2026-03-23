@@ -1,30 +1,28 @@
 /**
- * app.js — Main application entry point for Retro Panel v1.1
+ * app.js — Main application entry point for Retro Panel v1.2
+ *
+ * Layout: sidebar nav (Overview, Rooms, Scenarios) + header + content area.
  *
  * Boot sequence:
- * 1. Fetch /api/panel-config (returns pages)
+ * 1. Fetch /api/panel-config (v3: overview, rooms, scenarios, header_sensors)
  * 2. Apply theme, columns, kiosk mode
- * 3. Fetch all entity states
- * 4. Render tab bar + first page
- * 5. Hide loading screen
- * 6. Connect WebSocket for live updates
- * 7. Start clock
+ * 3. Build sidebar navigation
+ * 4. Fetch all entity states
+ * 5. Render active section (Overview by default)
+ * 6. Hide loading screen
+ * 7. Connect WebSocket for live updates
+ * 8. Start clock + date
  *
- * No ES modules — loaded as regular script after all dependencies.
- * iOS 15 Safari safe (WKWebView compatible).
- *
- * Depends on (loaded before this file):
- *   utils/dom.js    → window.RP_DOM
- *   utils/format.js → window.RP_FMT
- *   api.js          → window.getPanelConfig, getAllStates, callService
- *   ws.js           → window.connectWS
- *   components/*.js → LightComponent, SwitchComponent, SensorComponent,
- *                     AlarmComponent, EnergyFlowComponent
+ * No ES modules. iOS 15 Safari safe (WKWebView compatible).
+ * Depends on: utils/dom.js, utils/format.js, api.js, ws.js,
+ *             components/light.js, switch.js, sensor.js, alarm.js,
+ *             energy.js, scenario.js
  */
 (function () {
   'use strict';
 
-  // Entity domain → component
+  var DOM = window.RP_DOM;
+
   var COMPONENTS = {
     light:               window.LightComponent,
     switch:              window.SwitchComponent,
@@ -33,56 +31,51 @@
     alarm_control_panel: window.AlarmComponent,
   };
 
-  // Page icon map: icon name → emoji/character
-  var PAGE_ICONS = {
-    home:        '\uD83C\uDFE0',
-    bedroom:     '\uD83D\uDECC',
-    kitchen:     '\uD83C\uDF73',
-    garden:      '\uD83C\uDF3F',
-    garage:      '\uD83D\uDE97',
-    energy:      '\u26A1',
-    security:    '\uD83D\uDD12',
-    climate:     '\uD83C\uDF21',
-    living:      '\uD83D\uDECB',
-    office:      '\uD83D\uDCBB',
-    bathroom:    '\uD83D\uDEB0',
-    lights:      '\uD83D\uDCA1',
+  var ROOM_ICONS = {
+    home:     '\uD83C\uDFE0',
+    living:   '\uD83D\uDECB',
+    bedroom:  '\uD83D\uDECC',
+    kitchen:  '\uD83C\uDF73',
+    bathroom: '\uD83D\uDEB0',
+    garden:   '\uD83C\uDF3F',
+    garage:   '\uD83D\uDE97',
+    office:   '\uD83D\uDCBB',
+    energy:   '\u26A1',
+    security: '\uD83D\uDD12',
+    climate:  '\uD83C\uDF21',
+    lights:   '\uD83D\uDCA1',
   };
 
-  function getPageIcon(iconName) {
-    return PAGE_ICONS[iconName] || PAGE_ICONS['home'];
+  function getRoomIcon(iconName) {
+    return ROOM_ICONS[iconName] || ROOM_ICONS['home'];
   }
 
   // ---------------------------------------------------------------------------
-  // Global application state
+  // Application state
   // ---------------------------------------------------------------------------
   var AppState = {
     config: null,
     states: {},
     wsConnected: false,
-    tileMap: {},        // entity_id → tile DOM element
-    energyTiles: [],    // [{tile, cfg}] — tiles that need state map updates
-    currentPageIdx: 0,
-    pages: [],          // from config.pages
+    tileMap: {},       // entity_id → tile DOM element
+    energyTiles: [],   // [{tile, cfg}]
+    activeSectionId: 'overview',  // 'overview' | 'room:id' | 'scenarios'
+    sidebarCollapsed: false,
   };
 
   // ---------------------------------------------------------------------------
-  // State update handler — called by WebSocket
+  // State update handler (called by WebSocket)
   // ---------------------------------------------------------------------------
   function updateEntityState(entityId, newState) {
     AppState.states[entityId] = newState;
 
-    // Update entity tile if present
     var tile = AppState.tileMap[entityId];
     if (tile) {
       var domain = entityId.split('.')[0];
       var component = COMPONENTS[domain];
-      if (component) {
-        component.updateTile(tile, newState);
-      }
+      if (component) { component.updateTile(tile, newState); }
     }
 
-    // Update all energy flow cards that reference this entity
     for (var i = 0; i < AppState.energyTiles.length; i++) {
       var et = AppState.energyTiles[i];
       var cfg = et.cfg;
@@ -92,94 +85,206 @@
         window.EnergyFlowComponent.updateTile(et.tile, AppState.states);
       }
     }
+
+    // Update header sensor chips
+    updateHeaderSensorChip(entityId, newState);
   }
 
   // ---------------------------------------------------------------------------
-  // Columns: respect orientation
+  // Header sensor chips
   // ---------------------------------------------------------------------------
-  function applyColumns(config) {
-    var grid = window.RP_DOM.qs('#tile-grid');
-    if (!grid) { return; }
-    var portrait = config.columns || 3;
-    var landscape = Math.min(portrait + 1, 4);
-    grid.style.setProperty('--columns', String(portrait));
-    grid.style.setProperty('--columns-landscape', String(landscape));
-  }
+  function buildHeaderSensors(headerSensors) {
+    var container = DOM.qs('#header-sensors');
+    if (!container) { return; }
+    container.innerHTML = '';
 
-  // ---------------------------------------------------------------------------
-  // Tab bar rendering
-  // ---------------------------------------------------------------------------
-  function renderTabBar(pages, activeIdx) {
-    var tabBar = window.RP_DOM.qs('#tab-bar');
-    if (!tabBar) { return; }
-    tabBar.innerHTML = '';
+    for (var i = 0; i < headerSensors.length; i++) {
+      (function (hs) {
+        var chip = DOM.createElement('div', 'header-sensor-chip');
+        chip.setAttribute('data-entity', hs.entity_id);
 
-    // Only show tab bar if there are 2+ pages
-    if (!pages || pages.length <= 1) {
-      tabBar.style.display = 'none';
-      return;
-    }
+        if (hs.icon) {
+          var iconEl = DOM.createElement('span', 'header-sensor-icon');
+          iconEl.textContent = hs.icon;
+          chip.appendChild(iconEl);
+        }
 
-    tabBar.style.display = '';
+        var valEl = DOM.createElement('span', 'header-sensor-value');
+        valEl.textContent = '—';
+        chip.appendChild(valEl);
 
-    for (var i = 0; i < pages.length; i++) {
-      (function (pageIdx) {
-        var page = pages[pageIdx];
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'tab-btn' + (pageIdx === activeIdx ? ' active' : '');
+        container.appendChild(chip);
 
-        var iconEl = document.createElement('span');
-        iconEl.className = 'tab-btn-icon';
-        iconEl.textContent = getPageIcon(page.icon);
-
-        var labelEl = document.createElement('span');
-        labelEl.textContent = page.title;
-
-        btn.appendChild(iconEl);
-        btn.appendChild(labelEl);
-
-        btn.addEventListener('touchend', function (e) {
-          e.preventDefault();
-          switchPage(pageIdx);
-        });
-        btn.addEventListener('click', function () {
-          if (!('ontouchstart' in window)) { switchPage(pageIdx); }
-        });
-
-        tabBar.appendChild(btn);
-      })(i);
+        // Initial value from already-loaded states
+        var st = AppState.states[hs.entity_id];
+        if (st) { valEl.textContent = formatSensorChipValue(st, hs); }
+      })(headerSensors[i]);
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Page switching
-  // ---------------------------------------------------------------------------
-  function switchPage(idx) {
-    if (idx === AppState.currentPageIdx) { return; }
-    AppState.currentPageIdx = idx;
-    renderPageGrid(AppState.pages[idx]);
-    renderTabBar(AppState.pages, idx);
+  function formatSensorChipValue(stateObj, hs) {
+    var val = stateObj.state || '—';
+    var attrs = stateObj.attributes || {};
+    var unit = attrs.unit_of_measurement || '';
+    if (hs.label) { return hs.label + ': ' + val + (unit ? ' ' + unit : ''); }
+    return val + (unit ? ' ' + unit : '');
+  }
+
+  function updateHeaderSensorChip(entityId, newState) {
+    var container = DOM.qs('#header-sensors');
+    if (!container) { return; }
+    var chip = container.querySelector('[data-entity="' + entityId + '"]');
+    if (!chip) { return; }
+    var valEl = chip.querySelector('.header-sensor-value');
+    if (!valEl) { return; }
+
+    var config = AppState.config;
+    var hs = null;
+    if (config && config.header_sensors) {
+      for (var i = 0; i < config.header_sensors.length; i++) {
+        if (config.header_sensors[i].entity_id === entityId) {
+          hs = config.header_sensors[i];
+          break;
+        }
+      }
+    }
+    valEl.textContent = formatSensorChipValue(newState, hs || { entity_id: entityId });
   }
 
   // ---------------------------------------------------------------------------
-  // Grid rendering for a single page
+  // Sidebar
   // ---------------------------------------------------------------------------
-  function renderPageGrid(page) {
-    var grid = window.RP_DOM.qs('#tile-grid');
-    if (!grid) { return; }
-    grid.innerHTML = '';
+  function buildSidebar(config) {
+    var nav = DOM.qs('#sidebar-nav');
+    if (!nav) { return; }
+    nav.innerHTML = '';
+
+    // Overview
+    addNavItem(nav, 'overview', '\uD83C\uDFE0', 'Overview');
+
+    // Visible rooms
+    var rooms = config.rooms || [];
+    for (var i = 0; i < rooms.length; i++) {
+      var room = rooms[i];
+      if (room.hidden) { continue; }
+      addNavItem(nav, 'room:' + room.id, getRoomIcon(room.icon), room.title);
+    }
+
+    // Scenarios (only if configured)
+    if (config.scenarios && config.scenarios.length > 0) {
+      addNavItem(nav, 'scenarios', '\uD83C\uDFAD', 'Scenari');
+    }
+
+    // Set active state
+    setActiveSidebarItem(AppState.activeSectionId);
+  }
+
+  function addNavItem(nav, sectionId, icon, label) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'sidebar-nav-item';
+    btn.setAttribute('data-section', sectionId);
+
+    var iconEl = DOM.createElement('span', 'sidebar-item-icon');
+    iconEl.textContent = icon;
+
+    var labelEl = DOM.createElement('span', 'sidebar-item-label');
+    labelEl.textContent = label;
+
+    btn.appendChild(iconEl);
+    btn.appendChild(labelEl);
+
+    btn.addEventListener('touchend', function (e) {
+      e.preventDefault();
+      navigateTo(sectionId);
+    });
+    btn.addEventListener('click', function () {
+      if (!('ontouchstart' in window)) { navigateTo(sectionId); }
+    });
+
+    nav.appendChild(btn);
+  }
+
+  function setActiveSidebarItem(sectionId) {
+    var items = document.querySelectorAll('.sidebar-nav-item');
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      if (item.getAttribute('data-section') === sectionId) {
+        item.classList.add('active');
+      } else {
+        item.classList.remove('active');
+      }
+    }
+  }
+
+  function toggleSidebar() {
+    AppState.sidebarCollapsed = !AppState.sidebarCollapsed;
+    var sidebar = DOM.qs('#sidebar');
+    if (sidebar) {
+      if (AppState.sidebarCollapsed) {
+        sidebar.classList.add('collapsed');
+      } else {
+        sidebar.classList.remove('collapsed');
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Navigation
+  // ---------------------------------------------------------------------------
+  function navigateTo(sectionId) {
+    AppState.activeSectionId = sectionId;
+    setActiveSidebarItem(sectionId);
+    renderActiveSection();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Content rendering
+  // ---------------------------------------------------------------------------
+  function renderActiveSection() {
+    var contentArea = DOM.qs('#content-area');
+    if (!contentArea) { return; }
+    contentArea.innerHTML = '';
     AppState.tileMap = {};
     AppState.energyTiles = [];
 
-    var items = (page && page.items) || [];
+    var sectionId = AppState.activeSectionId;
+    var config = AppState.config;
+    if (!config) { return; }
 
-    if (items.length === 0) {
-      var msg = document.createElement('p');
-      msg.className = 'loading-text';
-      msg.style.cssText = 'grid-column:1/-1;text-align:center;padding:60px 20px;';
-      msg.textContent = 'No items on this page. Open Settings (\u2699) to configure.';
-      grid.appendChild(msg);
+    if (sectionId === 'overview') {
+      renderItemsGrid(contentArea, config.overview ? config.overview.items || [] : [], 'Overview');
+    } else if (sectionId === 'scenarios') {
+      renderScenariosGrid(contentArea, config.scenarios || []);
+    } else if (sectionId.indexOf('room:') === 0) {
+      var roomId = sectionId.slice(5);
+      var room = null;
+      var rooms = config.rooms || [];
+      for (var i = 0; i < rooms.length; i++) {
+        if (rooms[i].id === roomId) { room = rooms[i]; break; }
+      }
+      if (room) {
+        renderItemsGrid(contentArea, room.items || [], room.title);
+      }
+    }
+  }
+
+  function renderItemsGrid(container, items, heading) {
+    if (heading) {
+      var h = DOM.createElement('h2', 'section-heading');
+      h.textContent = heading;
+      container.appendChild(h);
+    }
+
+    var grid = DOM.createElement('div', 'tile-grid');
+    container.appendChild(grid);
+
+    if (!items || items.length === 0) {
+      var empty = DOM.createElement('div', 'empty-state');
+      empty.innerHTML = '<span class="empty-state-icon">\u2699</span>'
+        + '<p class="empty-state-title">No items configured</p>'
+        + '<p class="empty-state-hint">Open Settings to add entities to this section.</p>';
+      grid.appendChild(empty);
       return;
     }
 
@@ -197,19 +302,13 @@
         AppState.tileMap[item.entity_id] = tile;
 
         var stateObj = AppState.states[item.entity_id];
-        if (stateObj) {
-          component.updateTile(tile, stateObj);
-        }
+        if (stateObj) { component.updateTile(tile, stateObj); }
 
-        if (domain === 'alarm_control_panel') {
-          tile.classList.add('alarm-tile');
-        }
-
+        if (domain === 'alarm_control_panel') { tile.classList.add('alarm-tile'); }
         grid.appendChild(tile);
 
       } else if (item.type === 'energy_flow') {
         var efTile = window.EnergyFlowComponent.createTile(item);
-        // Initial state update with all current states
         window.EnergyFlowComponent.updateTile(efTile, AppState.states);
         AppState.energyTiles.push({ tile: efTile, cfg: item });
         grid.appendChild(efTile);
@@ -217,19 +316,49 @@
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Theme and display setup
-  // ---------------------------------------------------------------------------
-  function applyConfig(config) {
-    var body = document.body;
-    body.classList.remove('theme-dark', 'theme-light', 'theme-auto');
-    body.classList.add('theme-' + (config.theme || 'dark'));
+  function renderScenariosGrid(container, scenarios) {
+    var h = DOM.createElement('h2', 'section-heading');
+    h.textContent = 'Scenari';
+    container.appendChild(h);
 
-    if (config.kiosk_mode) {
-      body.classList.add('kiosk');
+    if (!scenarios || scenarios.length === 0) {
+      var empty = DOM.createElement('div', 'empty-state');
+      empty.innerHTML = '<span class="empty-state-icon">\uD83C\uDFAD</span>'
+        + '<p class="empty-state-title">No scenarios configured</p>'
+        + '<p class="empty-state-hint">Open Settings to add scenes and scripts.</p>';
+      container.appendChild(empty);
+      return;
     }
 
-    var titleEl = window.RP_DOM.qs('#panel-title');
+    var grid = DOM.createElement('div', 'scenarios-grid');
+    for (var i = 0; i < scenarios.length; i++) {
+      grid.appendChild(window.ScenarioComponent.createCard(scenarios[i]));
+    }
+    container.appendChild(grid);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Columns
+  // ---------------------------------------------------------------------------
+  function applyColumns(config) {
+    var contentArea = DOM.qs('#content-area');
+    if (!contentArea) { return; }
+    var portrait = config.columns || 3;
+    var landscape = Math.min(portrait + 1, 4);
+    contentArea.style.setProperty('--columns', String(portrait));
+    contentArea.style.setProperty('--columns-landscape', String(landscape));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Theme
+  // ---------------------------------------------------------------------------
+  function applyConfig(config) {
+    document.body.classList.remove('theme-dark', 'theme-light', 'theme-auto');
+    document.body.classList.add('theme-' + (config.theme || 'dark'));
+
+    if (config.kiosk_mode) { document.body.classList.add('kiosk'); }
+
+    var titleEl = DOM.qs('#panel-title');
     if (titleEl) { titleEl.textContent = config.title || 'Retro Panel'; }
     document.title = config.title || 'Retro Panel';
 
@@ -237,113 +366,112 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Connection status UI
+  // Connection status
   // ---------------------------------------------------------------------------
   function setConnectionStatus(connected) {
     AppState.wsConnected = connected;
-    var dot = window.RP_DOM.qs('#connection-status');
-    var banner = window.RP_DOM.qs('#disconnect-banner');
-    if (!dot || !banner) { return; }
-
+    var dot = DOM.qs('#connection-status');
+    var banner = DOM.qs('#disconnect-banner');
+    if (!dot) { return; }
     if (connected) {
       dot.className = 'status-dot status-connected';
       dot.title = 'Connected';
-      window.RP_DOM.hideElement(banner);
+      if (banner) { DOM.hideElement(banner); }
     } else {
       dot.className = 'status-dot status-disconnected';
       dot.title = 'Disconnected';
-      window.RP_DOM.showElement(banner);
+      if (banner) { DOM.showElement(banner); }
     }
   }
 
   function setConnecting() {
-    var dot = window.RP_DOM.qs('#connection-status');
-    if (dot) {
-      dot.className = 'status-dot status-connecting';
-      dot.title = 'Connecting\u2026';
-    }
+    var dot = DOM.qs('#connection-status');
+    if (dot) { dot.className = 'status-dot status-connecting'; dot.title = 'Connecting\u2026'; }
   }
 
   // ---------------------------------------------------------------------------
-  // Loading screen helpers
+  // Loading screen
   // ---------------------------------------------------------------------------
   function hideLoadingScreen() {
-    var loadingScreen = window.RP_DOM.qs('#loading-screen');
-    if (!loadingScreen) { return; }
-    loadingScreen.classList.add('fade-out');
-    setTimeout(function () { loadingScreen.style.display = 'none'; }, 250);
+    var ls = DOM.qs('#loading-screen');
+    if (!ls) { return; }
+    ls.classList.add('fade-out');
+    setTimeout(function () { ls.style.display = 'none'; }, 250);
   }
 
   function showPanel() {
-    var panelEl = window.RP_DOM.qs('#panel');
+    var panelEl = DOM.qs('#panel');
     if (panelEl) { panelEl.classList.remove('hidden'); }
   }
 
   // ---------------------------------------------------------------------------
-  // Live clock
+  // Clock + Date
   // ---------------------------------------------------------------------------
   function startClock() {
-    var clockEl = window.RP_DOM.qs('#panel-clock');
-    if (!clockEl) { return; }
+    var clockEl = DOM.qs('#panel-clock');
+    var dateEl  = DOM.qs('#panel-date');
+
+    var DAYS   = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
     function tick() {
       var now = new Date();
-      var h = now.getHours();
-      var m = now.getMinutes();
-      clockEl.textContent = (h < 10 ? '0' + h : h) + ':' + (m < 10 ? '0' + m : m);
+      if (clockEl) {
+        var h = now.getHours(), m = now.getMinutes();
+        clockEl.textContent = (h < 10 ? '0' + h : h) + ':' + (m < 10 ? '0' + m : m);
+      }
+      if (dateEl) {
+        dateEl.textContent = DAYS[now.getDay()] + ' ' + now.getDate() + ' ' + MONTHS[now.getMonth()];
+      }
     }
 
     tick();
-    // Sync to next minute boundary
     var msToNextMin = (60 - new Date().getSeconds()) * 1000;
-    setTimeout(function () {
-      tick();
-      setInterval(tick, 60000);
-    }, msToNextMin);
+    setTimeout(function () { tick(); setInterval(tick, 60000); }, msToNextMin);
   }
 
   // ---------------------------------------------------------------------------
-  // Boot sequence
+  // Boot
   // ---------------------------------------------------------------------------
   async function boot() {
     try {
-      // 1. Load config
       var config = await window.getPanelConfig();
       AppState.config = config;
-      AppState.pages = config.pages || [];
       applyConfig(config);
 
-      // 2. Load all entity states (now includes energy flow sensors)
+      // Fetch all entity states
       var statesArray = await window.getAllStates();
       statesArray.forEach(function (s) {
         AppState.states[s.entity_id] = { state: s.state, attributes: s.attributes };
       });
 
-      // 3. Render tab bar
-      renderTabBar(AppState.pages, 0);
+      // Build sidebar
+      buildSidebar(config);
 
-      // 4. Render first page
-      if (AppState.pages.length > 0) {
-        renderPageGrid(AppState.pages[0]);
-      } else {
-        var grid = window.RP_DOM.qs('#tile-grid');
-        if (grid) {
-          var msg = document.createElement('p');
-          msg.className = 'loading-text';
-          msg.style.cssText = 'grid-column:1/-1;text-align:center;padding:60px 20px;';
-          msg.textContent = config.title + ' \u2014 No pages configured. Open Settings (\u2699) to add pages and entities.';
-          grid.appendChild(msg);
-        }
-      }
+      // Build header sensor chips
+      buildHeaderSensors(config.header_sensors || []);
 
-      // 5. Show panel, hide loading
+      // Render default section (overview)
+      renderActiveSection();
+
       showPanel();
       hideLoadingScreen();
-
-      // 6. Start clock
       startClock();
 
-      // 7. Connect WebSocket
+      // Sidebar toggle button
+      var toggleBtn = DOM.qs('#sidebar-toggle');
+      if (toggleBtn) {
+        toggleBtn.addEventListener('touchend', function (e) {
+          e.preventDefault();
+          toggleSidebar();
+        });
+        toggleBtn.addEventListener('click', function () {
+          if (!('ontouchstart' in window)) { toggleSidebar(); }
+        });
+      }
+
+      // Connect WebSocket
       setConnecting();
       window.connectWS(
         function (entityId, newState) { updateEntityState(entityId, newState); },
@@ -358,19 +486,19 @@
       console.error('[app] Boot failed:', err);
       showPanel();
       hideLoadingScreen();
-      var grid = window.RP_DOM.qs('#tile-grid');
-      if (grid) {
-        var errMsg = document.createElement('p');
-        errMsg.className = 'loading-text';
-        errMsg.style.cssText = 'grid-column:1/-1;text-align:center;padding:60px 20px;';
-        errMsg.textContent = 'Cannot connect to Home Assistant. Check add-on logs.';
-        grid.appendChild(errMsg);
+      var ca = DOM.qs('#content-area');
+      if (ca) {
+        ca.innerHTML = '<div class="empty-state">'
+          + '<span class="empty-state-icon">\u26A0</span>'
+          + '<p class="empty-state-title">Cannot connect to Home Assistant</p>'
+          + '<p class="empty-state-hint">Check add-on logs for details.</p>'
+          + '</div>';
       }
     }
   }
 
   // ---------------------------------------------------------------------------
-  // Fallback polling when WebSocket is unavailable
+  // Fallback polling
   // ---------------------------------------------------------------------------
   var pollTimer = null;
 
@@ -387,14 +515,9 @@
       } catch (err) {
         console.warn('[app] State poll failed:', err);
       }
-      if (!AppState.wsConnected) {
-        scheduleStatePoll(intervalSeconds);
-      }
+      if (!AppState.wsConnected) { scheduleStatePoll(intervalSeconds); }
     }, intervalSeconds * 1000);
   }
 
-  // ---------------------------------------------------------------------------
-  // Start
-  // ---------------------------------------------------------------------------
   boot();
 }());

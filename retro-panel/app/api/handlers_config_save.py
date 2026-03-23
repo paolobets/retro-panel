@@ -1,4 +1,4 @@
-"""POST /api/config — saves pages configuration to /data/entities.json and reloads in-memory config."""
+"""POST /api/config — saves v3 configuration to /data/entities.json."""
 
 from __future__ import annotations
 
@@ -14,17 +14,17 @@ logger = logging.getLogger(__name__)
 _ENTITY_ID_RE = re.compile(r"^[a-z_]+\.[a-z0-9_]+$")
 _ENTITIES_FILE = Path("/data/entities.json")
 
-# Safe icon/label lengths
 _MAX_LABEL = 64
 _MAX_ICON = 32
-_MAX_PAGE_TITLE = 64
-_MAX_PAGE_ID = 64
-_MAX_PAGES = 20
-_MAX_ITEMS_PER_PAGE = 100
+_MAX_TITLE = 64
+_MAX_ID = 64
+_MAX_ROOMS = 30
+_MAX_ITEMS = 100
+_MAX_SCENARIOS = 50
+_MAX_HEADER_SENSORS = 6
 
 
 def _validate_entity_id(eid: str) -> str:
-    """Return stripped entity_id or raise ValueError."""
     eid = str(eid or "").strip()
     if not eid:
         raise ValueError("entity_id is empty")
@@ -33,105 +33,150 @@ def _validate_entity_id(eid: str) -> str:
     return eid
 
 
-def _parse_entity_item(raw: dict, idx: int) -> dict:
-    entity_id = _validate_entity_id(raw.get("entity_id") or "")
-    item: dict = {"type": "entity", "entity_id": entity_id}
-    if raw.get("label"):
-        item["label"] = str(raw["label"])[:_MAX_LABEL]
-    if raw.get("icon"):
-        item["icon"] = str(raw["icon"])[:_MAX_ICON]
-    return item
-
-
-def _parse_energy_flow_item(raw: dict) -> dict:
-    item: dict = {"type": "energy_flow"}
-    for field in ("solar_power", "battery_soc", "battery_power", "grid_power", "home_power"):
-        val = str(raw.get(field) or "").strip()
-        if val:
-            try:
-                val = _validate_entity_id(val)
-            except ValueError as exc:
-                raise ValueError(f"energy_flow.{field}: {exc}") from exc
-        item[field] = val
-    return item
+def _parse_item(raw: dict, idx: int, context: str) -> dict:
+    item_type = str(raw.get("type") or "entity").strip()
+    if item_type == "entity":
+        entity_id = _validate_entity_id(raw.get("entity_id") or "")
+        item: dict = {"type": "entity", "entity_id": entity_id}
+        if raw.get("label"):
+            item["label"] = str(raw["label"])[:_MAX_LABEL]
+        if raw.get("icon"):
+            item["icon"] = str(raw["icon"])[:_MAX_ICON]
+        return item
+    elif item_type == "energy_flow":
+        item = {"type": "energy_flow"}
+        for f in ("solar_power", "battery_soc", "battery_power", "grid_power", "home_power"):
+            val = str(raw.get(f) or "").strip()
+            if val:
+                try:
+                    val = _validate_entity_id(val)
+                except ValueError as exc:
+                    raise ValueError(f"energy_flow.{f}: {exc}") from exc
+            item[f] = val
+        return item
+    else:
+        raise ValueError(f"Unknown item type: {item_type!r}")
 
 
 async def save_config(request: web.Request) -> web.Response:
-    """Accept a pages structure, write to /data/entities.json, reload in-memory config."""
+    """Accept v3 structure, write to /data/entities.json, reload in-memory config."""
     try:
         body = await request.json()
     except Exception:
         return web.json_response({"error": "Invalid JSON body"}, status=400)
 
-    pages_raw = body.get("pages")
-    if not isinstance(pages_raw, list):
-        return web.json_response({"error": "'pages' must be a list"}, status=400)
+    # --- overview ---
+    overview_raw = (body.get("overview") or {}).get("items") or []
+    if not isinstance(overview_raw, list):
+        overview_raw = []
+    overview_items = []
+    for idx, raw in enumerate(overview_raw[:_MAX_ITEMS]):
+        if not isinstance(raw, dict):
+            continue
+        try:
+            overview_items.append(_parse_item(raw, idx, "overview"))
+        except ValueError as exc:
+            return web.json_response({"error": f"overview item {idx}: {exc}"}, status=400)
 
-    if len(pages_raw) > _MAX_PAGES:
-        return web.json_response(
-            {"error": f"Too many pages (max {_MAX_PAGES})"}, status=400
-        )
+    # --- rooms ---
+    rooms_raw = body.get("rooms") or []
+    if not isinstance(rooms_raw, list):
+        rooms_raw = []
+    if len(rooms_raw) > _MAX_ROOMS:
+        return web.json_response({"error": f"Too many rooms (max {_MAX_ROOMS})"}, status=400)
 
-    pages: list[dict] = []
-    for page_idx, page_raw in enumerate(pages_raw):
-        if not isinstance(page_raw, dict):
-            return web.json_response(
-                {"error": f"Page at index {page_idx} must be an object"}, status=400
-            )
-
-        page_id = str(page_raw.get("id") or f"page_{page_idx}").strip()[:_MAX_PAGE_ID]
-        page_title = str(page_raw.get("title") or f"Page {page_idx + 1}").strip()[:_MAX_PAGE_TITLE]
-        page_icon = str(page_raw.get("icon") or "home").strip()[:_MAX_ICON]
-
-        items_raw = page_raw.get("items")
+    rooms = []
+    for room_idx, room_raw in enumerate(rooms_raw):
+        if not isinstance(room_raw, dict):
+            continue
+        room_id = str(room_raw.get("id") or f"room_{room_idx}").strip()[:_MAX_ID]
+        room_title = str(room_raw.get("title") or f"Room {room_idx + 1}").strip()[:_MAX_TITLE]
+        room_icon = str(room_raw.get("icon") or "home").strip()[:_MAX_ICON]
+        room_hidden = bool(room_raw.get("hidden", False))
+        items_raw = room_raw.get("items") or []
         if not isinstance(items_raw, list):
             items_raw = []
-        if len(items_raw) > _MAX_ITEMS_PER_PAGE:
+        if len(items_raw) > _MAX_ITEMS:
             return web.json_response(
-                {"error": f"Page {page_idx}: too many items (max {_MAX_ITEMS_PER_PAGE})"}, status=400
+                {"error": f"Room {room_idx}: too many items (max {_MAX_ITEMS})"}, status=400
             )
-
-        items: list[dict] = []
-        for item_idx, item_raw in enumerate(items_raw):
-            if not isinstance(item_raw, dict):
+        room_items = []
+        for item_idx, raw in enumerate(items_raw):
+            if not isinstance(raw, dict):
                 continue
-            item_type = str(item_raw.get("type") or "entity").strip()
             try:
-                if item_type == "entity":
-                    items.append(_parse_entity_item(item_raw, item_idx))
-                elif item_type == "energy_flow":
-                    items.append(_parse_energy_flow_item(item_raw))
-                else:
-                    logger.warning(
-                        "Page %d item %d has unknown type %r, skipping",
-                        page_idx, item_idx, item_type,
-                    )
+                room_items.append(_parse_item(raw, item_idx, f"room[{room_id}]"))
             except ValueError as exc:
                 return web.json_response(
-                    {"error": f"Page {page_idx} item {item_idx}: {exc}"}, status=400
+                    {"error": f"room[{room_id}] item {item_idx}: {exc}"}, status=400
                 )
+        rooms.append({
+            "id": room_id,
+            "title": room_title,
+            "icon": room_icon,
+            "hidden": room_hidden,
+            "items": room_items,
+        })
 
-        pages.append({"id": page_id, "title": page_title, "icon": page_icon, "items": items})
+    # --- scenarios ---
+    scenarios_raw = body.get("scenarios") or []
+    if not isinstance(scenarios_raw, list):
+        scenarios_raw = []
+    scenarios = []
+    for sc_raw in scenarios_raw[:_MAX_SCENARIOS]:
+        if not isinstance(sc_raw, dict):
+            continue
+        try:
+            eid = _validate_entity_id(sc_raw.get("entity_id") or "")
+        except ValueError:
+            continue
+        scenarios.append({
+            "entity_id": eid,
+            "title": str(sc_raw.get("title") or eid.split(".")[-1]).strip()[:_MAX_TITLE],
+            "icon": str(sc_raw.get("icon") or "\U0001f3ad").strip()[:_MAX_ICON],
+        })
 
-    v2_data = {"version": 2, "pages": pages}
+    # --- header_sensors ---
+    hs_raw = body.get("header_sensors") or []
+    if not isinstance(hs_raw, list):
+        hs_raw = []
+    header_sensors = []
+    for hs in hs_raw[:_MAX_HEADER_SENSORS]:
+        if not isinstance(hs, dict):
+            continue
+        try:
+            eid = _validate_entity_id(hs.get("entity_id") or "")
+        except ValueError:
+            continue
+        header_sensors.append({
+            "entity_id": eid,
+            "icon": str(hs.get("icon") or "").strip()[:_MAX_ICON],
+            "label": str(hs.get("label") or "").strip()[:_MAX_LABEL],
+        })
+
+    v3_data = {
+        "version": 3,
+        "header_sensors": header_sensors,
+        "overview": {"items": overview_items},
+        "rooms": rooms,
+        "scenarios": scenarios,
+    }
 
     try:
         _ENTITIES_FILE.write_text(
-            json.dumps(v2_data, ensure_ascii=False, indent=2), encoding="utf-8"
+            json.dumps(v3_data, ensure_ascii=False, indent=2), encoding="utf-8"
         )
     except Exception as exc:
         logger.error("Failed to write %s: %s", _ENTITIES_FILE, exc)
         return web.json_response({"error": "Failed to save configuration"}, status=500)
 
-    total_entities = sum(
-        1 for p in pages for item in p["items"] if item.get("type") == "entity"
-    )
+    total_overview = sum(1 for it in overview_items if it.get("type") == "entity")
     logger.info(
-        "Config saved to %s: %d pages, %d entity items",
-        _ENTITIES_FILE, len(pages), total_entities,
+        "Config v3 saved: overview=%d entities, rooms=%d, scenarios=%d, header_sensors=%d",
+        total_overview, len(rooms), len(scenarios), len(header_sensors),
     )
 
-    # Reload in-memory config and update the WS proxy entity filter
+    # Reload in-memory config and update WS proxy entity filter
     try:
         from config.loader import load_config
         new_config = load_config()
@@ -142,4 +187,9 @@ async def save_config(request: web.Request) -> web.Response:
     except Exception as exc:
         logger.warning("Config saved but in-memory reload failed: %s", exc)
 
-    return web.json_response({"ok": True, "pages": len(pages), "entities": total_entities})
+    return web.json_response({
+        "ok": True,
+        "overview_entities": total_overview,
+        "rooms": len(rooms),
+        "scenarios": len(scenarios),
+    })

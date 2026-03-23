@@ -1,5 +1,35 @@
 # Changelog
 
+## [1.2.0] - 2026-03-23
+
+### Added
+- **Sidebar navigation** — collapsible left sidebar replaces the bottom tab bar. Shows Overview,
+  per-room sections, and Scenarios. Settings gear icon at top. Expands (200 px, icon + label)
+  or collapses (64 px, icons only) via toggle button. Smooth CSS transition.
+- **Overview section** — dedicated home screen for favorite / important devices. Configurable
+  from Settings → Overview tab with entity picker and Power Flow Card support.
+- **Rooms** — one section per Home Assistant area. Each room has its own entity grid and
+  can be hidden from the sidebar individually. Configure entities per room in Settings → Rooms.
+- **Scenarios section** — configurable list of HA scenes and scripts. Tap a card to activate.
+  Configure from Settings → Scenarios with a searchable scene/script picker.
+- **Header sensor chips** — up to 4 mini entity-state chips displayed in the top bar
+  (e.g. temperature, garbage collection). Configure from Settings → Header.
+- **Import rooms from HA areas** — one-click import of all Home Assistant areas as rooms
+  via Jinja2 template API (`GET /api/ha-areas`).
+- **v3 entities.json schema** — new layout format:
+  `{ "version": 3, "header_sensors": [...], "overview": {"items": [...]}, "rooms": [...], "scenarios": [...] }`.
+
+### Changed
+- **Settings page redesigned** — four-tab layout (Overview, Rooms, Scenarios, Header) replaces
+  the old page-manager UI. Room editor opens inline with back navigation.
+- **Config API v3** — `GET /api/panel-config` returns v3 structure; `POST /api/config` accepts
+  `{ overview, rooms, scenarios, header_sensors }`.
+
+### Migration
+- **v2 → v3**: first page items become Overview items; additional pages are discarded.
+  Rooms/Scenarios/Header start empty — import from HA areas to recreate rooms quickly.
+- **v1 → v3**: flat entity list becomes Overview items.
+
 ## [1.1.3] - 2026-03-23
 
 ### Added
