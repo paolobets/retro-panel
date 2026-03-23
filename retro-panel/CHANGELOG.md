@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1] - 2026-03-23
+
+### Fixed
+- **Settings gear icon hidden in kiosk mode** — removed erroneous CSS rule
+  `.kiosk #config-link { display: none; }` that was hiding the ⚙ button whenever
+  `kiosk_mode: true` (the default). The gear is now always accessible.
+
 ## [1.1.0] - 2026-03-23
 
 ### Added
