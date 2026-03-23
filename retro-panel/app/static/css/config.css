@@ -749,8 +749,12 @@ html, body { overflow: auto; height: auto; }
 }
 
 .room-row-icon {
-  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  width: 24px;
+  font-size: 22px;
 }
 
 .room-row-title {

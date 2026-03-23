@@ -32,30 +32,31 @@
   };
 
   var ROOM_ICONS = {
-    home:      '\uD83C\uDFE0',   // 🏠
-    living:    '\uD83D\uDECB',   // 🛋
-    bedroom:   '\uD83D\uDECC',   // 🛌
-    kitchen:   '\uD83C\uDF73',   // 🍳
-    bathroom:  '\uD83D\uDEB0',   // 🚰
-    garden:    '\uD83C\uDF3F',   // 🌿
-    garage:    '\uD83D\uDE97',   // 🚗
-    office:    '\uD83D\uDCBB',   // 💻
-    energy:    '\u26A1',         // ⚡
-    security:  '\uD83D\uDD12',   // 🔒
-    climate:   '\uD83C\uDF21',   // 🌡
-    lights:    '\uD83D\uDCA1',   // 💡
-    dining:    '\uD83C\uDF7D',   // 🍽 dining room
-    laundry:   '\uD83D\uDEBF',   // 🚿 laundry / utility
-    balcony:   '\uD83C\uDF04',   // 🌄 balcony / terrace
-    gym:       '\uD83C\uDFCB',   // 🏋 gym / sport
-    attic:     '\uD83C\uDFD7',   // 🏗 attic / storage
-    entry:     '\uD83D\uDEAA',   // 🚪 entrance / hallway
-    server:    '\uD83D\uDDA5',   // 🖥 server / tech room
-    kids:      '\uD83E\uDDE8',   // 🧸 kids room
+    home:      'home',
+    living:    'sofa',
+    bedroom:   'bed',
+    kitchen:   'stove',
+    bathroom:  'shower',
+    garden:    'tree',
+    garage:    'garage',
+    office:    'laptop',
+    energy:    'lightning-bolt',
+    security:  'shield-home',
+    climate:   'thermometer',
+    lights:    'lightbulb',
+    dining:    'silverware-fork-knife',
+    laundry:   'washing-machine',
+    balcony:   'tree',
+    gym:       'dumbbell',
+    attic:     'warehouse',
+    entry:     'door',
+    server:    'desktop-tower',
+    kids:      'toy-brick',
   };
 
   function getRoomIcon(iconName) {
-    return ROOM_ICONS[iconName] || ROOM_ICONS['home'];
+    var mdiName = ROOM_ICONS[iconName] || 'home';
+    return window.RP_MDI ? window.RP_MDI(mdiName, 22) : '';
   }
 
   // ---------------------------------------------------------------------------
@@ -170,19 +171,20 @@
     nav.innerHTML = '';
 
     var overviewTitle = (config.overview && config.overview.title) || 'Overview';
-    addNavItem(nav, 'overview', '\uD83C\uDFE0', overviewTitle);
+    var mdi = window.RP_MDI || function() { return ''; };
+    addNavItem(nav, 'overview', mdi('home', 22), overviewTitle);
 
     // "Rooms" entry (opens submenu) only if rooms are configured
     var visibleRooms = (config.rooms || []).filter(function (r) { return !r.hidden; });
     if (visibleRooms.length > 0) {
-      addNavAction(nav, 'rooms-menu', '\uD83C\uDFE0', 'Rooms', function () {
+      addNavAction(nav, 'rooms-menu', mdi('floor-plan', 22), 'Rooms', function () {
         showRoomsSubmenu(config);
       });
     }
 
     // Scenarios
     if (config.scenarios && config.scenarios.length > 0) {
-      addNavItem(nav, 'scenarios', '\uD83C\uDFAD', 'Scenari');
+      addNavItem(nav, 'scenarios', mdi('palette', 22), 'Scenari');
     }
 
     setActiveSidebarItem(AppState.activeSectionId);
@@ -233,7 +235,7 @@
     btn.setAttribute('data-section', sectionId);
 
     var iconEl = DOM.createElement('span', 'sidebar-item-icon');
-    iconEl.textContent = icon;
+    iconEl.innerHTML = icon;
     var labelEl = DOM.createElement('span', 'sidebar-item-label');
     labelEl.textContent = label;
     btn.appendChild(iconEl);
@@ -256,7 +258,7 @@
     btn.id = id;
 
     var iconEl = DOM.createElement('span', 'sidebar-item-icon');
-    iconEl.textContent = icon;
+    iconEl.innerHTML = icon;
     var labelEl = DOM.createElement('span', 'sidebar-item-label');
     labelEl.textContent = label;
     var chevron = DOM.createElement('span', 'sidebar-item-chevron');
@@ -391,7 +393,7 @@
 
     if (!scenarios || scenarios.length === 0) {
       var empty = DOM.createElement('div', 'empty-state');
-      empty.innerHTML = '<span class="empty-state-icon">\uD83C\uDFAD</span>'
+      empty.innerHTML = '<span class="empty-state-icon">' + (window.RP_MDI ? window.RP_MDI('palette', 36) : '\uD83C\uDFAD') + '</span>'
         + '<p class="empty-state-title">No scenarios configured</p>'
         + '<p class="empty-state-hint">Open Settings to add scenes and scripts.</p>';
       container.appendChild(empty);

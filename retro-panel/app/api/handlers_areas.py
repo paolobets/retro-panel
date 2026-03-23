@@ -34,7 +34,9 @@ async def get_ha_areas(request: web.Request) -> web.Response:
     Each entry: {id, name, entity_ids: [...]}
     Entity ids are filtered:
     - removes excluded domains
-    - removes hidden/disabled entities (cross-referenced against active states)
+    - removes entities hidden or disabled in the HA entity registry
+      (cross-referenced via /api/config/entity_registry; falls back to
+      state-presence check only if the registry call fails)
     """
     ha_client = request.app["ha_client"]
     try:
@@ -44,6 +46,27 @@ async def get_ha_areas(request: web.Request) -> web.Response:
         logger.error("Failed to fetch HA areas: %s", exc)
         return web.json_response({"error": str(exc)}, status=502)
 
+    # Build set of entity_ids that are hidden or disabled in the entity registry.
+    # This filters entities that HA marks as hidden_by / disabled_by (they can
+    # still appear in states even when hidden, so template cross-referencing alone
+    # is not sufficient).
+    hidden_or_disabled: set[str] = set()
+    try:
+        registry = await ha_client.get_entity_registry()
+        hidden_or_disabled = {
+            e["entity_id"] for e in registry
+            if isinstance(e, dict) and (e.get("hidden_by") or e.get("disabled_by"))
+        }
+        logger.debug(
+            "Entity registry loaded: %d hidden/disabled entries", len(hidden_or_disabled)
+        )
+    except Exception as exc:
+        logger.warning(
+            "Could not fetch entity registry for hidden-entity filtering: %s — "
+            "falling back to state-presence filter only",
+            exc,
+        )
+
     result = []
     for area in areas:
         if not isinstance(area, dict):
@@ -52,6 +75,8 @@ async def get_ha_areas(request: web.Request) -> web.Response:
         for eid in area.get("entity_ids") or []:
             domain = eid.split(".")[0] if "." in eid else ""
             if domain in _EXCLUDED_DOMAINS:
+                continue
+            if eid in hidden_or_disabled:
                 continue
             entity_ids.append(eid)
         result.append({

@@ -39,7 +39,7 @@ async def get_panel_config(request: web.Request) -> web.Response:
     """
     config = request.app["config"]
 
-    overview_payload = [_serialize_item(it) for it in config.overview_items if _serialize_item(it)]
+    overview_payload = [s for it in config.overview_items if (s := _serialize_item(it))]
 
     rooms_payload = []
     for room in config.rooms:
@@ -48,7 +48,7 @@ async def get_panel_config(request: web.Request) -> web.Response:
             "title": room.title,
             "icon": room.icon,
             "hidden": room.hidden,
-            "items": [_serialize_item(it) for it in room.items if _serialize_item(it)],
+            "items": [s for it in room.items if (s := _serialize_item(it))],
         })
 
     scenarios_payload = [

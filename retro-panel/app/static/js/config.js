@@ -280,14 +280,19 @@
     });
   }
 
+  var ROOM_MDI_MAP = {
+    home: 'home', living: 'sofa', bedroom: 'bed',
+    kitchen: 'stove', bathroom: 'shower', garden: 'tree',
+    garage: 'garage', office: 'laptop', energy: 'lightning-bolt',
+    security: 'shield-home', climate: 'thermometer', lights: 'lightbulb',
+    dining: 'silverware-fork-knife', laundry: 'washing-machine', balcony: 'tree',
+    gym: 'dumbbell', attic: 'warehouse', entry: 'door',
+    server: 'desktop-tower', kids: 'toy-brick',
+  };
+
   function getRoomEmoji(icon) {
-    var map = {
-      home: '\uD83C\uDFE0', living: '\uD83D\uDECB', bedroom: '\uD83D\uDECC',
-      kitchen: '\uD83C\uDF73', bathroom: '\uD83D\uDEB0', garden: '\uD83C\uDF3F',
-      garage: '\uD83D\uDE97', office: '\uD83D\uDCBB', energy: '\u26A1',
-      security: '\uD83D\uDD12', climate: '\uD83C\uDF21', lights: '\uD83D\uDCA1',
-    };
-    return map[icon] || '\uD83C\uDFE0';
+    var mdiName = ROOM_MDI_MAP[icon] || 'home';
+    return window.RP_MDI ? window.RP_MDI(mdiName, 20) : (icon || '\uD83C\uDFE0');
   }
 
   function addRoom() {

@@ -255,12 +255,13 @@
 }
 
 .sidebar-item-icon {
-  font-size: 20px;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   width: 28px;
-  text-align: center;
-  display: inline-block;
+  font-size: 20px;
+  line-height: 1;
 }
 
 .sidebar-item-label {

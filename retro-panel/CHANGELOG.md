@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.2.3] - 2026-03-23
+
+### Fixed
+- **Empty tile icons in main panel** — `mdi-icons.js` was not included in `index.html`, so `window.RP_MDI` was undefined and all entity tile icons rendered as empty. Added script tag before `format.js`.
+- **Area import includes HA-hidden entities** — entities with `hidden_by` or `disabled_by` set in the HA entity registry still appeared in `states` (hidden_by does not suppress state publication) and passed the previous Jinja2 cross-reference filter. `GET /api/ha-areas` now also calls `/api/config/entity_registry` and excludes entities marked hidden or disabled. Falls back gracefully if the registry endpoint is unavailable.
+- **`_serialize_item` double-call in panel config endpoint** — each item was serialized twice per list comprehension (once for the filter, once for the value). Fixed using walrus operator.
+
+### Changed
+- **MDI icons for room navigation** — sidebar room icons and the rooms list in Settings now use the same MDI SVG icon set as Home Assistant (via `window.RP_MDI`), replacing the previous emoji characters. `mdi-icons.js` is now loaded in both `index.html` and `config.html`. Added `mdi:washing-machine` and `mdi:floor-plan` paths to the icon set. Room icon mapping updated for all 20 room types.
+- **Sidebar icon alignment** — `.sidebar-item-icon` and `.room-row-icon` updated to flex-centering so SVG icons align correctly within their containers.
+
 ## [1.2.2] - 2026-03-23
 
 ### Fixed

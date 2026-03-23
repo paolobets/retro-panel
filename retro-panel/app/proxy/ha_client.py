@@ -155,6 +155,27 @@ class HAClient:
         except asyncio.TimeoutError as exc:
             raise TimeoutError("Template API request timed out") from exc
 
+    async def get_entity_registry(self) -> list[dict]:
+        """Fetch entity registry from HA, including hidden_by and disabled_by fields.
+
+        Available since HA 2021.6. Returns a list of entity registry entries.
+        Raises on auth failure; returns empty list on other errors so callers
+        can degrade gracefully.
+        """
+        url = f"{self._ha_url}/api/config/entity_registry"
+        session = self._get_session()
+        timeout = aiohttp.ClientTimeout(total=20)
+        try:
+            async with session.get(url, timeout=timeout) as resp:
+                if resp.status == 401:
+                    raise PermissionError("HA returned 401 Unauthorized")
+                resp.raise_for_status()
+                return await resp.json()
+        except aiohttp.ClientConnectorError as exc:
+            raise ConnectionRefusedError(str(exc)) from exc
+        except asyncio.TimeoutError as exc:
+            raise TimeoutError("Entity registry request timed out") from exc
+
     async def ws_connect(self) -> aiohttp.ClientWebSocketResponse:
         """Open a WebSocket connection to the HA WebSocket API with auth handshake."""
         ws_url = self._ha_url.replace("http://", "ws://").replace("https://", "wss://")
