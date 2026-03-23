@@ -137,7 +137,7 @@
         html += '<input type="text" class="item-label-input" placeholder="Display name\u2026" value="' + esc(item.label || '') + '" data-idx="' + i + '" data-ctx="' + esc(context) + '">';
         html += '</div>';
         html += '<div class="selected-actions">';
-        html += '<button class="item-visibility-btn" type="button" title="' + (isHidden ? 'Show' : 'Hide') + '" data-idx="' + i + '" data-ctx="' + esc(context) + '">' + (isHidden ? '\uD83D\uDC41\uFE0F' : '\uD83D\uDC41') + '</button>';
+        html += '<button class="item-visibility-btn" type="button" title="' + (isHidden ? 'Show' : 'Hide') + '" data-idx="' + i + '" data-ctx="' + esc(context) + '">' + (isHidden ? (window.RP_MDI ? window.RP_MDI('eye-off', 18) : '\uD83D\uDE48') : (window.RP_MDI ? window.RP_MDI('eye', 18) : '\uD83D\uDC41')) + '</button>';
         if (i > 0) {
           html += '<button class="reorder-btn" type="button" data-action="up" data-idx="' + i + '" data-ctx="' + esc(context) + '">\u2191</button>';
         }

@@ -1,6 +1,9 @@
 """
 Unit tests per handlers_entities.get_all_entities.
 
+Il handler usa ha_client.call_template() che restituisce una stringa JSON.
+I test qui mockano call_template con AsyncMock.
+
 Esegui con:
     pip install pytest pytest-asyncio aiohttp
     pytest tests/test_handlers_entities.py -v --asyncio-mode=auto
@@ -35,27 +38,36 @@ def _make_request(ha_client, query_string: str = "") -> MagicMock:
     return request
 
 
-def _make_ha_client(states: list[dict], registry: list[dict] | Exception) -> MagicMock:
+def _make_ha_client(template_result) -> MagicMock:
+    """Build a mock ha_client whose call_template returns template_result.
+
+    Pass an Exception instance to simulate a failing call.
+    """
     client = MagicMock()
-    client.get_all_entity_states = AsyncMock(return_value=states)
-    if isinstance(registry, Exception):
-        client.get_entity_registry = AsyncMock(side_effect=registry)
+    if isinstance(template_result, Exception):
+        client.call_template = AsyncMock(side_effect=template_result)
     else:
-        client.get_entity_registry = AsyncMock(return_value=registry)
+        client.call_template = AsyncMock(return_value=template_result)
     return client
 
 
-def _state(entity_id: str, attrs: dict | None = None) -> dict:
-    return {"entity_id": entity_id, "state": "on", "attributes": attrs or {}}
-
-
-def _reg_entry(entity_id: str, hidden_by=None, disabled_by=None) -> dict:
-    entry = {"entity_id": entity_id}
-    if hidden_by is not None:
-        entry["hidden_by"] = hidden_by
-    if disabled_by is not None:
-        entry["disabled_by"] = disabled_by
-    return entry
+def _entity(
+    entity_id: str,
+    friendly_name: str = "",
+    domain: str | None = None,
+    device_class: str = "",
+    unit: str = "",
+) -> dict:
+    """Build a template-result entity dict as HA would produce it."""
+    if domain is None:
+        domain = entity_id.split(".")[0]
+    return {
+        "entity_id": entity_id,
+        "friendly_name": friendly_name or entity_id,
+        "domain": domain,
+        "device_class": device_class,
+        "unit": unit,
+    }
 
 
 def _body(response) -> list:
@@ -63,189 +75,124 @@ def _body(response) -> list:
 
 
 # ---------------------------------------------------------------------------
-# Scenari nominali
+# 1. basic_returns_allowed_domains
 # ---------------------------------------------------------------------------
 
 @pytest.mark.asyncio
-async def test_visible_entity_is_included():
-    """Entità con hidden_by=null, disabled_by=null deve essere inclusa."""
-    client = _make_ha_client(
-        states=[_state("light.soggiorno")],
-        registry=[_reg_entry("light.soggiorno")],
-    )
-    body = _body(await get_all_entities(_make_request(client)))
-    assert len(body) == 1
-    assert body[0]["entity_id"] == "light.soggiorno"
-
-
-@pytest.mark.asyncio
-async def test_hidden_by_user_is_excluded():
-    """hidden_by='user' → esclusa."""
-    client = _make_ha_client(
-        states=[_state("light.nascosta")],
-        registry=[_reg_entry("light.nascosta", hidden_by="user")],
-    )
-    assert _body(await get_all_entities(_make_request(client))) == []
-
-
-@pytest.mark.asyncio
-async def test_hidden_by_integration_is_excluded():
-    """hidden_by='integration' → esclusa."""
-    client = _make_ha_client(
-        states=[_state("sensor.internal")],
-        registry=[_reg_entry("sensor.internal", hidden_by="integration")],
-    )
-    assert _body(await get_all_entities(_make_request(client))) == []
-
-
-@pytest.mark.asyncio
-async def test_disabled_by_user_is_excluded():
-    """disabled_by='user' → esclusa."""
-    client = _make_ha_client(
-        states=[_state("switch.disabilitato")],
-        registry=[_reg_entry("switch.disabilitato", disabled_by="user")],
-    )
-    assert _body(await get_all_entities(_make_request(client))) == []
-
-
-@pytest.mark.asyncio
-async def test_disabled_by_integration_is_excluded():
-    """disabled_by='integration' → esclusa."""
-    client = _make_ha_client(
-        states=[_state("binary_sensor.disabled")],
-        registry=[_reg_entry("binary_sensor.disabled", disabled_by="integration")],
-    )
-    assert _body(await get_all_entities(_make_request(client))) == []
-
-
-@pytest.mark.asyncio
-async def test_registry_unavailable_falls_back_gracefully():
-    """Se get_entity_registry() fallisce, le entità visibili appaiono comunque."""
-    client = _make_ha_client(
-        states=[_state("light.ok")],
-        registry=ConnectionRefusedError("HA unreachable"),
-    )
-    body = _body(await get_all_entities(_make_request(client)))
-    assert len(body) == 1
-    assert body[0]["entity_id"] == "light.ok"
-
-
-@pytest.mark.asyncio
-async def test_legacy_attribute_hidden_true_is_excluded():
-    """attributes.hidden=True (flag YAML legacy) → esclusa."""
-    client = _make_ha_client(
-        states=[_state("light.legacy", attrs={"hidden": True})],
-        registry=[_reg_entry("light.legacy")],
-    )
-    assert _body(await get_all_entities(_make_request(client))) == []
-
-
-@pytest.mark.asyncio
-async def test_legacy_attribute_hidden_string_is_NOT_excluded():
-    """attributes.hidden='true' (stringa) NON viene filtrata — il check usa 'is True'."""
-    client = _make_ha_client(
-        states=[_state("light.stringa", attrs={"hidden": "true"})],
-        registry=[_reg_entry("light.stringa")],
-    )
-    body = _body(await get_all_entities(_make_request(client)))
-    assert len(body) == 1
-
-
-# ---------------------------------------------------------------------------
-# Edge case: registry entry malformata senza entity_id
-# ---------------------------------------------------------------------------
-
-@pytest.mark.asyncio
-async def test_registry_entry_missing_entity_id_is_skipped():
-    """
-    Entry di registry senza 'entity_id' deve essere saltata silenziosamente.
-    Con il fix (e.get('entity_id')), il set rimane valido per le altre entry.
-    L'entità nascosta con entry valida viene comunque esclusa.
-    """
-    states = [
-        _state("light.visibile"),
-        _state("light.nascosta"),
+async def test_basic_returns_allowed_domains():
+    """call_template restituisce entita di tutti i 5 domini consentiti; tutte devono comparire."""
+    entities = [
+        _entity("light.soggiorno"),
+        _entity("switch.presa"),
+        _entity("sensor.temperatura"),
+        _entity("binary_sensor.porta"),
+        _entity("alarm_control_panel.casa"),
     ]
-    registry = [
-        {"hidden_by": "user"},                          # entry malformata: nessun entity_id
-        _reg_entry("light.visibile"),
-        _reg_entry("light.nascosta", hidden_by="user"),  # entry valida
+    client = _make_ha_client(json.dumps(entities))
+    body = _body(await get_all_entities(_make_request(client)))
+    ids = [e["entity_id"] for e in body]
+    assert "light.soggiorno" in ids
+    assert "switch.presa" in ids
+    assert "sensor.temperatura" in ids
+    assert "binary_sensor.porta" in ids
+    assert "alarm_control_panel.casa" in ids
+    assert len(body) == 5
+
+
+# ---------------------------------------------------------------------------
+# 2. filters_by_domain_query_param
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_filters_by_domain_query_param():
+    """?domain=sensor con risposta mista deve ritornare solo i sensor."""
+    entities = [
+        _entity("sensor.temperatura"),
+        _entity("light.lampadina"),
+        _entity("switch.presa"),
     ]
-    client = _make_ha_client(states, registry)
-    body = _body(await get_all_entities(_make_request(client)))
-    entity_ids = [e["entity_id"] for e in body]
-
-    assert "light.visibile" in entity_ids
-    assert "light.nascosta" not in entity_ids  # DEVE essere esclusa nonostante entry malformata
-
-
-# ---------------------------------------------------------------------------
-# Edge case: entità non presente nel registry
-# ---------------------------------------------------------------------------
-
-@pytest.mark.asyncio
-async def test_entity_not_in_registry_is_included():
-    """Entità senza registry entry (custom component legacy) deve essere inclusa."""
-    client = _make_ha_client(
-        states=[_state("light.custom")],
-        registry=[],
-    )
-    body = _body(await get_all_entities(_make_request(client)))
-    assert len(body) == 1
-    assert body[0]["entity_id"] == "light.custom"
-
-
-# ---------------------------------------------------------------------------
-# Domain filter
-# ---------------------------------------------------------------------------
-
-@pytest.mark.asyncio
-async def test_domain_filter_restricts_results():
-    """?domain=sensor deve escludere light e switch."""
-    client = _make_ha_client(
-        states=[
-            _state("sensor.temperatura"),
-            _state("light.lampadina"),
-            _state("switch.presa"),
-        ],
-        registry=[],
-    )
+    client = _make_ha_client(json.dumps(entities))
     body = _body(await get_all_entities(_make_request(client, "domain=sensor")))
     assert len(body) == 1
     assert body[0]["entity_id"] == "sensor.temperatura"
 
 
+# ---------------------------------------------------------------------------
+# 3. unknown_domain_query_param_returns_400
+# ---------------------------------------------------------------------------
+
 @pytest.mark.asyncio
-async def test_domain_filter_invalid_returns_400():
-    """?domain=media_player (non consentito) deve ritornare 400."""
-    client = _make_ha_client([], registry=[])
-    response = await get_all_entities(_make_request(client, "domain=media_player"))
+async def test_unknown_domain_query_param_returns_400():
+    """?domain=foo (non consentito) deve ritornare 400 prima di chiamare call_template."""
+    client = _make_ha_client(json.dumps([]))
+    response = await get_all_entities(_make_request(client, "domain=foo"))
     assert response.status == 400
+    # call_template NON deve essere stato invocato
+    client.call_template.assert_not_called()
 
+
+# ---------------------------------------------------------------------------
+# 4. sorts_by_entity_id
+# ---------------------------------------------------------------------------
 
 @pytest.mark.asyncio
-async def test_disallowed_domain_is_filtered():
-    """Domini non in _ALLOWED_DOMAINS vengono ignorati."""
-    client = _make_ha_client(
-        states=[
-            _state("media_player.tv"),
-            _state("update.firmware"),
-            _state("light.ok"),
-        ],
-        registry=[],
-    )
+async def test_sorts_by_entity_id():
+    """Il risultato deve essere ordinato alfabeticamente per entity_id."""
+    entities = [
+        _entity("switch.zebra"),
+        _entity("light.alfa"),
+        _entity("sensor.medio"),
+    ]
+    client = _make_ha_client(json.dumps(entities))
     body = _body(await get_all_entities(_make_request(client)))
-    assert len(body) == 1
-    assert body[0]["entity_id"] == "light.ok"
+    ids = [e["entity_id"] for e in body]
+    assert ids == sorted(ids)
 
 
 # ---------------------------------------------------------------------------
-# Errori HTTP
+# 5. empty_result
 # ---------------------------------------------------------------------------
 
 @pytest.mark.asyncio
-async def test_missing_ha_client_returns_503():
-    """Se ha_client non è configurato nell'app, deve ritornare 503."""
+async def test_empty_result():
+    """call_template restituisce lista vuota; risposta e lista vuota con status 200."""
+    client = _make_ha_client(json.dumps([]))
+    response = await get_all_entities(_make_request(client))
+    assert response.status == 200
+    assert _body(response) == []
+
+
+# ---------------------------------------------------------------------------
+# 6. template_call_fails_returns_502
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_template_call_fails_returns_502():
+    """Se call_template solleva Exception, la risposta deve essere 502."""
+    client = _make_ha_client(ConnectionRefusedError("HA down"))
+    response = await get_all_entities(_make_request(client))
+    assert response.status == 502
+
+
+# ---------------------------------------------------------------------------
+# 7. json_parse_fails_returns_502
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_json_parse_fails_returns_502():
+    """Se call_template restituisce JSON non valido, la risposta deve essere 502."""
+    client = _make_ha_client("this is not valid json {{")
+    response = await get_all_entities(_make_request(client))
+    assert response.status == 502
+
+
+# ---------------------------------------------------------------------------
+# 8. no_ha_client_returns_503
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_no_ha_client_returns_503():
+    """Se ha_client e None nell'app, deve ritornare 503."""
     request = MagicMock()
     request.app = MagicMock()
     request.app.get = lambda key, default=None: default
@@ -253,30 +200,49 @@ async def test_missing_ha_client_returns_503():
     assert response.status == 503
 
 
-@pytest.mark.asyncio
-async def test_states_fetch_failure_returns_502():
-    """Se get_all_entity_states() fallisce, deve ritornare 502."""
-    client = MagicMock()
-    client.get_all_entity_states = AsyncMock(side_effect=ConnectionRefusedError("HA down"))
-    response = await get_all_entities(_make_request(client))
-    assert response.status == 502
-
-
 # ---------------------------------------------------------------------------
-# Ordinamento
+# 9. friendly_name_and_fields_preserved
 # ---------------------------------------------------------------------------
 
 @pytest.mark.asyncio
-async def test_results_are_sorted_by_entity_id():
-    """I risultati devono essere ordinati per entity_id alfabeticamente."""
-    client = _make_ha_client(
-        states=[
-            _state("switch.zebra"),
-            _state("light.alfa"),
-            _state("sensor.medio"),
-        ],
-        registry=[],
-    )
+async def test_friendly_name_and_fields_preserved():
+    """friendly_name, device_class e unit devono essere passati attraverso invariati."""
+    entities = [
+        {
+            "entity_id": "sensor.potenza",
+            "friendly_name": "Potenza Attuale",
+            "domain": "sensor",
+            "device_class": "power",
+            "unit": "W",
+        }
+    ]
+    client = _make_ha_client(json.dumps(entities))
     body = _body(await get_all_entities(_make_request(client)))
+    assert len(body) == 1
+    e = body[0]
+    assert e["friendly_name"] == "Potenza Attuale"
+    assert e["device_class"] == "power"
+    assert e["unit"] == "W"
+    assert e["entity_id"] == "sensor.potenza"
+
+
+# ---------------------------------------------------------------------------
+# 10. domain_filter_sensor_only
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_domain_filter_sensor_only():
+    """?domain=sensor con risposta template mista: solo sensor entities vengono restituite."""
+    entities = [
+        _entity("sensor.a"),
+        _entity("sensor.b"),
+        _entity("light.c"),
+        _entity("binary_sensor.d"),
+        _entity("alarm_control_panel.e"),
+    ]
+    client = _make_ha_client(json.dumps(entities))
+    body = _body(await get_all_entities(_make_request(client, "domain=sensor")))
     ids = [e["entity_id"] for e in body]
-    assert ids == sorted(ids)
+    assert set(ids) == {"sensor.a", "sensor.b"}
+    assert "light.c" not in ids
+    assert "binary_sensor.d" not in ids

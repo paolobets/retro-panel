@@ -254,7 +254,7 @@ html, body { overflow: auto; height: auto; }
   flex-shrink: 0;
 }
 
-.reorder-btn, .remove-btn {
+.reorder-btn, .remove-btn, .item-visibility-btn {
   background: var(--color-surface-2);
   border: none;
   border-radius: var(--radius-sm);
@@ -264,8 +264,14 @@ html, body { overflow: auto; height: auto; }
   font-size: 15px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
 }
 .remove-btn { color: var(--color-danger); }
+.item-visibility-btn { color: var(--color-text-secondary); }
 
 /* ---- Page tabs (top-level page switcher) ---- */
 #pages-header {
@@ -771,6 +777,8 @@ html, body { overflow: auto; height: auto; }
   padding: 16px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  flex: 1;
+  min-height: 0;
 }
 
 @media (min-width: 540px) {
@@ -846,6 +854,11 @@ html, body { overflow: auto; height: auto; }
   padding: 16px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Icon picker needs no outer padding — header and grid have their own */
+#icon-picker.cfg-overlay {
+  padding: 0;
 }
 
 /* ---- Room list rows ---- */

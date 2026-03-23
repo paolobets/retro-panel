@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.8] - 2026-03-23
+
+### Fixed
+- **Hidden entities still visible in entity picker** — the previous fix (entity registry cross-reference) was silently failing: the `call_template` method via supervisor proxy works reliably, but the separate `/api/config/entity_registry` HTTP call was not. Root fix: replaced the dual API call approach with a single HA Jinja template call. HA's `states` variable in templates has automatically excluded `hidden_by` entities since HA 2022.3 (our minimum is 2023.1.0), so no cross-reference is needed. `handlers_entities.py` rewritten; entity registry call completely removed.
+- **Icon picker not showing as full-screen selector** — `.cfg-overlay` has `padding: 16px`, making the icon picker header appear "embedded" in the page instead of edge-to-edge at the top of the screen. Fixed with `#icon-picker.cfg-overlay { padding: 0 }` (icon grid and header have their own padding). Also added `flex: 1; min-height: 0` to `#icon-grid` so the grid grows and scrolls correctly inside the flex column overlay on iOS 15 Safari. Added explicit button styling for `.item-visibility-btn` to ensure consistent tap-target size and visual state for the new MDI eye toggle button in the items list.
+
+### Changed
+- **Entity hide toggle uses MDI icons** — the eye toggle in the config items list now uses `window.RP_MDI('eye', 18)` / `window.RP_MDI('eye-off', 18)` with emoji fallbacks, consistent with the rest of the app. Added `eye` and `eye-off` paths to `mdi-icons.js`.
+- **Unit tests updated** — `tests/test_handlers_entities.py` rewritten to mock `call_template` instead of the now-removed `get_all_entity_states` / `get_entity_registry` calls. 10 tests, all passing.
+
 ## [1.2.7] - 2026-03-23
 
 ### Fixed
