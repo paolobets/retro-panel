@@ -61,6 +61,7 @@
     energyTiles: [],   // [{tile, cfg}]
     activeSectionId: 'overview',  // 'overview' | 'room:id' | 'scenarios'
     sidebarCollapsed: false,
+    sidebarMode: 'main',  // 'main' | 'rooms'
   };
 
   // ---------------------------------------------------------------------------
@@ -155,27 +156,65 @@
   // Sidebar
   // ---------------------------------------------------------------------------
   function buildSidebar(config) {
+    AppState.sidebarMode = 'main';
     var nav = DOM.qs('#sidebar-nav');
     if (!nav) { return; }
     nav.innerHTML = '';
 
-    // Overview
-    addNavItem(nav, 'overview', '\uD83C\uDFE0', 'Overview');
+    var overviewTitle = (config.overview && config.overview.title) || 'Overview';
+    addNavItem(nav, 'overview', '\uD83C\uDFE0', overviewTitle);
+
+    // "Rooms" entry (opens submenu) only if rooms are configured
+    var visibleRooms = (config.rooms || []).filter(function (r) { return !r.hidden; });
+    if (visibleRooms.length > 0) {
+      addNavAction(nav, 'rooms-menu', '\uD83C\uDFE0', 'Rooms', function () {
+        showRoomsSubmenu(config);
+      });
+    }
+
+    // Scenarios
+    if (config.scenarios && config.scenarios.length > 0) {
+      addNavItem(nav, 'scenarios', '\uD83C\uDFAD', 'Scenari');
+    }
+
+    setActiveSidebarItem(AppState.activeSectionId);
+  }
+
+  function showRoomsSubmenu(config) {
+    AppState.sidebarMode = 'rooms';
+    var nav = DOM.qs('#sidebar-nav');
+    if (!nav) { return; }
+    nav.innerHTML = '';
+
+    // Back button
+    var backBtn = document.createElement('button');
+    backBtn.id = 'sidebar-rooms-back';
+    backBtn.type = 'button';
+    var backIcon = DOM.createElement('span', 'sidebar-item-icon');
+    backIcon.textContent = '\u2190';
+    var backLabel = DOM.createElement('span', 'sidebar-item-label');
+    backLabel.textContent = 'Back';
+    backBtn.appendChild(backIcon);
+    backBtn.appendChild(backLabel);
+    backBtn.addEventListener('touchend', function (e) {
+      e.preventDefault();
+      buildSidebar(AppState.config);
+    });
+    backBtn.addEventListener('click', function () {
+      if (!('ontouchstart' in window)) { buildSidebar(AppState.config); }
+    });
+    nav.appendChild(backBtn);
 
     // Visible rooms
     var rooms = config.rooms || [];
     for (var i = 0; i < rooms.length; i++) {
       var room = rooms[i];
       if (room.hidden) { continue; }
-      addNavItem(nav, 'room:' + room.id, getRoomIcon(room.icon), room.title);
+      (function (r) {
+        addNavItem(nav, 'room:' + r.id, getRoomIcon(r.icon), r.title);
+      })(room);
     }
 
-    // Scenarios (only if configured)
-    if (config.scenarios && config.scenarios.length > 0) {
-      addNavItem(nav, 'scenarios', '\uD83C\uDFAD', 'Scenari');
-    }
-
-    // Set active state
     setActiveSidebarItem(AppState.activeSectionId);
   }
 
@@ -187,10 +226,8 @@
 
     var iconEl = DOM.createElement('span', 'sidebar-item-icon');
     iconEl.textContent = icon;
-
     var labelEl = DOM.createElement('span', 'sidebar-item-label');
     labelEl.textContent = label;
-
     btn.appendChild(iconEl);
     btn.appendChild(labelEl);
 
@@ -201,7 +238,27 @@
     btn.addEventListener('click', function () {
       if (!('ontouchstart' in window)) { navigateTo(sectionId); }
     });
+    nav.appendChild(btn);
+  }
 
+  function addNavAction(nav, id, icon, label, action) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'sidebar-nav-item';
+    btn.id = id;
+
+    var iconEl = DOM.createElement('span', 'sidebar-item-icon');
+    iconEl.textContent = icon;
+    var labelEl = DOM.createElement('span', 'sidebar-item-label');
+    labelEl.textContent = label;
+    var chevron = DOM.createElement('span', 'sidebar-item-chevron');
+    chevron.textContent = '\u203A';
+    btn.appendChild(iconEl);
+    btn.appendChild(labelEl);
+    btn.appendChild(chevron);
+
+    btn.addEventListener('touchend', function (e) { e.preventDefault(); action(); });
+    btn.addEventListener('click', function () { if (!('ontouchstart' in window)) { action(); } });
     nav.appendChild(btn);
   }
 
@@ -209,11 +266,10 @@
     var items = document.querySelectorAll('.sidebar-nav-item');
     for (var i = 0; i < items.length; i++) {
       var item = items[i];
-      if (item.getAttribute('data-section') === sectionId) {
-        item.classList.add('active');
-      } else {
-        item.classList.remove('active');
-      }
+      var ds = item.getAttribute('data-section');
+      var isActive = ds === sectionId
+        || (sectionId && sectionId.indexOf('room:') === 0 && ds === 'rooms-menu' && AppState.sidebarMode === 'main');
+      item.classList.toggle('active', !!isActive);
     }
   }
 
@@ -221,11 +277,7 @@
     AppState.sidebarCollapsed = !AppState.sidebarCollapsed;
     var sidebar = DOM.qs('#sidebar');
     if (sidebar) {
-      if (AppState.sidebarCollapsed) {
-        sidebar.classList.add('collapsed');
-      } else {
-        sidebar.classList.remove('collapsed');
-      }
+      sidebar.classList.toggle('collapsed', AppState.sidebarCollapsed);
     }
   }
 
@@ -234,6 +286,10 @@
   // ---------------------------------------------------------------------------
   function navigateTo(sectionId) {
     AppState.activeSectionId = sectionId;
+    // If navigating to a room and sidebar is in main mode, open rooms submenu
+    if (sectionId && sectionId.indexOf('room:') === 0 && AppState.sidebarMode === 'main') {
+      showRoomsSubmenu(AppState.config);
+    }
     setActiveSidebarItem(sectionId);
     renderActiveSection();
   }
@@ -253,7 +309,8 @@
     if (!config) { return; }
 
     if (sectionId === 'overview') {
-      renderItemsGrid(contentArea, config.overview ? config.overview.items || [] : [], 'Overview');
+      var ovTitle = (config.overview && config.overview.title) || 'Overview';
+      renderItemsGrid(contentArea, config.overview ? config.overview.items || [] : [], ovTitle);
     } else if (sectionId === 'scenarios') {
       renderScenariosGrid(contentArea, config.scenarios || []);
     } else if (sectionId.indexOf('room:') === 0) {
@@ -290,6 +347,9 @@
 
     for (var i = 0; i < items.length; i++) {
       var item = items[i];
+
+      // Skip items hidden via config
+      if (item.hidden) { continue; }
 
       if (item.type === 'entity') {
         var domain = item.entity_id.split('.')[0];

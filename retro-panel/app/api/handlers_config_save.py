@@ -66,7 +66,9 @@ async def save_config(request: web.Request) -> web.Response:
         return web.json_response({"error": "Invalid JSON body"}, status=400)
 
     # --- overview ---
-    overview_raw = (body.get("overview") or {}).get("items") or []
+    overview_raw = body.get("overview") or {}
+    overview_title = str(overview_raw.get("title") or "Overview").strip()[:64] or "Overview"
+    overview_raw = overview_raw.get("items") or [] if isinstance(overview_raw, dict) else []
     if not isinstance(overview_raw, list):
         overview_raw = []
     overview_items = []
@@ -157,7 +159,7 @@ async def save_config(request: web.Request) -> web.Response:
     v3_data = {
         "version": 3,
         "header_sensors": header_sensors,
-        "overview": {"items": overview_items},
+        "overview": {"title": overview_title, "items": overview_items},
         "rooms": rooms,
         "scenarios": scenarios,
     }

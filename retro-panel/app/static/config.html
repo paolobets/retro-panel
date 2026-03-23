@@ -36,8 +36,17 @@
     <section id="tab-overview" class="cfg-section">
 
       <div class="section-header">
-        <h2 class="section-title">Overview Items</h2>
-        <p class="cfg-hint">Items shown on the home section. Add your most important devices here.</p>
+        <h2 class="section-title">Overview</h2>
+      </div>
+      <p class="cfg-hint">Items shown on the home section. Add your most important devices here.</p>
+
+      <div class="field-group" style="margin-bottom:12px;">
+        <div class="field-row">
+          <label class="field-label" for="overview-title-input">Section name</label>
+          <input id="overview-title-input" type="text" class="field-input"
+            maxlength="32" autocomplete="off" autocorrect="off"
+            autocapitalize="words" spellcheck="false" placeholder="Overview">
+        </div>
       </div>
 
       <div id="overview-items-list">
@@ -110,6 +119,7 @@
         </div>
         <div class="items-actions">
           <button id="room-add-entity-btn" type="button" class="action-btn">+ Add Entities</button>
+          <button id="room-import-devices-btn" type="button" class="action-btn-outline">&#8635; Import from area</button>
         </div>
 
         <button id="delete-room-btn" type="button" class="danger-btn">Delete this room</button>
@@ -194,6 +204,7 @@
     <div id="sensor-picker-header">
       <button id="sensor-picker-cancel-btn" type="button" class="action-btn-outline">Cancel</button>
       <h2 class="section-title" id="sensor-picker-title" style="margin:0;">Select sensor</h2>
+      <button id="sensor-picker-done-btn" type="button" class="action-btn hidden">Done</button>
     </div>
     <div id="sensor-search-wrap">
       <input id="sensor-search-input" type="text"

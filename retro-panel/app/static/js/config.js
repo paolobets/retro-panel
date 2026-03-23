@@ -118,7 +118,8 @@
     var html = '';
     for (var i = 0; i < items.length; i++) {
       var item = items[i];
-      html += '<div class="selected-row">';
+      var isHidden = !!item.hidden;
+      html += '<div class="selected-row' + (isHidden ? ' selected-row--hidden' : '') + '">';
       if (item.type === 'energy_flow') {
         html += '<span class="selected-id selected-id-energy">&#9889; Power Flow Card</span>';
         html += '<div class="selected-actions">';
@@ -133,6 +134,7 @@
       } else {
         html += '<span class="selected-id">' + esc(item.entity_id) + '</span>';
         html += '<div class="selected-actions">';
+        html += '<button class="item-visibility-btn" type="button" title="' + (isHidden ? 'Show' : 'Hide') + '" data-idx="' + i + '" data-ctx="' + esc(context) + '">' + (isHidden ? '\uD83D\uDC41\uFE0F' : '\uD83D\uDC41') + '</button>';
         if (i > 0) {
           html += '<button class="reorder-btn" type="button" data-action="up" data-idx="' + i + '" data-ctx="' + esc(context) + '">\u2191</button>';
         }
@@ -159,6 +161,18 @@
         var idx = parseInt(this.getAttribute('data-idx'), 10);
         var ctx = this.getAttribute('data-ctx');
         removeItem(ctx, idx);
+      });
+    });
+
+    container.querySelectorAll('.item-visibility-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var idx = parseInt(this.getAttribute('data-idx'), 10);
+        var ctx = this.getAttribute('data-ctx');
+        var items = getItemsForContext(ctx);
+        if (items[idx]) {
+          items[idx].hidden = !items[idx].hidden;
+          refreshItemsList(ctx);
+        }
       });
     });
 
@@ -224,11 +238,28 @@
       html += '<input type="checkbox" class="room-visible-toggle" data-id="' + esc(room.id) + '"' + (room.hidden ? '' : ' checked') + '>';
       html += '<span class="toggle-slider"></span>';
       html += '</label>';
+      if (i > 0) {
+        html += '<button class="reorder-btn room-reorder-btn" type="button" data-action="up" data-idx="' + i + '">\u2191</button>';
+      }
+      if (i < state.rooms.length - 1) {
+        html += '<button class="reorder-btn room-reorder-btn" type="button" data-action="down" data-idx="' + i + '">\u2193</button>';
+      }
       html += '<button class="action-btn-sm room-edit-btn" type="button" data-id="' + esc(room.id) + '">Edit</button>';
       html += '</div>';
       html += '</div>';
     }
     container.innerHTML = html;
+
+    container.querySelectorAll('.room-reorder-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var idx = parseInt(this.getAttribute('data-idx'), 10);
+        var delta = this.getAttribute('data-action') === 'up' ? -1 : 1;
+        var newIdx = idx + delta;
+        if (newIdx < 0 || newIdx >= state.rooms.length) { return; }
+        var tmp = state.rooms[idx]; state.rooms[idx] = state.rooms[newIdx]; state.rooms[newIdx] = tmp;
+        renderRoomsList();
+      });
+    });
 
     container.querySelectorAll('.room-edit-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -375,6 +406,50 @@
       .catch(function (err) {
         if (btn) { btn.disabled = false; btn.textContent = '\u21BB Import from HA Areas'; }
         showFeedback('Failed to load HA areas: ' + err.message, true);
+      });
+  }
+
+  function importRoomDevices() {
+    var room = activeRoomObj();
+    if (!room) { return; }
+    var btn = qs('room-import-devices-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Loading\u2026'; }
+
+    cfgFetchHaAreas()
+      .then(function (areas) {
+        var area = null;
+        for (var i = 0; i < areas.length; i++) {
+          if (areas[i].id === room.id) { area = areas[i]; break; }
+        }
+        if (!btn) { return; }
+        btn.disabled = false;
+        btn.textContent = '\u21BB Import from area';
+
+        if (!area || !area.entity_ids || area.entity_ids.length === 0) {
+          showFeedback('No devices found for this area in HA.', false);
+          return;
+        }
+
+        var added = 0;
+        for (var j = 0; j < area.entity_ids.length; j++) {
+          var eid = area.entity_ids[j];
+          var exists = false;
+          for (var k = 0; k < room.items.length; k++) {
+            if (room.items[k].type === 'entity' && room.items[k].entity_id === eid) {
+              exists = true; break;
+            }
+          }
+          if (!exists) {
+            room.items.push({ type: 'entity', entity_id: eid, label: '', icon: '', hidden: false });
+            added++;
+          }
+        }
+        renderRoomItemsList();
+        showFeedback(added > 0 ? 'Imported ' + added + ' device' + (added > 1 ? 's' : '') + '.' : 'All devices already imported.', false);
+      })
+      .catch(function (err) {
+        if (btn) { btn.disabled = false; btn.textContent = '\u21BB Import from area'; }
+        showFeedback('Error: ' + err.message, true);
       });
   }
 
@@ -579,7 +654,9 @@
     var searchEl = qs('sensor-search-input');
     if (searchEl) { searchEl.value = ''; }
     var titleEl = qs('sensor-picker-title');
-    if (titleEl) { titleEl.textContent = 'Select header sensor'; }
+    if (titleEl) { titleEl.textContent = 'Add header sensors'; }
+    var doneBtn = qs('sensor-picker-done-btn');
+    if (doneBtn) { doneBtn.classList.remove('hidden'); }
     showOverlay('sensor-picker');
     renderSensorList();
     if (searchEl) { setTimeout(function () { searchEl.focus(); }, 100); }
@@ -710,19 +787,34 @@
       var meta = '';
       if (e.device_class) { meta += e.device_class; }
       if (e.unit)         { meta += (meta ? ' \u00B7 ' : '') + e.unit; }
-      html += '<div class="entity-row">';
+
+      // Check if already in header sensors (for multi-select mode)
+      var alreadyAdded = false;
+      if (sensorPickerTarget === '__header') {
+        for (var k = 0; k < state.header_sensors.length; k++) {
+          if (state.header_sensors[k].entity_id === e.entity_id) { alreadyAdded = true; break; }
+        }
+      }
+
+      html += '<div class="entity-row' + (alreadyAdded ? ' entity-row--selected' : '') + '">';
       html += '<span class="entity-info">';
       html += '<span class="entity-name">' + esc(e.friendly_name || e.entity_id) + '</span>';
       html += '<span class="entity-id-label">' + esc(e.entity_id);
       if (meta) { html += ' <em class="entity-meta">(' + esc(meta) + ')</em>'; }
       html += '</span></span>';
-      html += '<button class="add-btn sensor-pick-select" type="button" data-id="' + esc(e.entity_id) + '">&#10003;</button>';
+      if (alreadyAdded) {
+        html += '<span class="entity-check">&#10003;</span>';
+      } else {
+        html += '<button class="add-btn sensor-pick-select" type="button" data-id="' + esc(e.entity_id) + '" data-name="' + esc(e.friendly_name || '') + '">+</button>';
+      }
       html += '</div>';
     }
     container.innerHTML = html;
 
     container.querySelectorAll('.sensor-pick-select').forEach(function (btn) {
-      btn.addEventListener('click', function () { pickSensor(this.getAttribute('data-id')); });
+      btn.addEventListener('click', function () {
+        pickSensor(this.getAttribute('data-id'), this.getAttribute('data-name'));
+      });
     });
   }
 
@@ -732,7 +824,7 @@
     sensorPickerTarget = null;
 
     if (target === '__header') {
-      // Add to header sensors
+      // Multi-select: add without closing
       var alreadyInHeader = false;
       for (var i = 0; i < state.header_sensors.length; i++) {
         if (state.header_sensors[i].entity_id === entityId) { alreadyInHeader = true; break; }
@@ -744,9 +836,11 @@
         }
         state.header_sensors.push({ entity_id: entityId, icon: '', label: friendlyName });
         renderHeaderSensorsList();
+        // Re-render list to show checkmark; restore target for next pick
+        sensorPickerTarget = '__header';
+        renderSensorList();
       }
-      hideOverlay();
-      return;
+      return;  // stay open — Done button closes
     }
 
     // Wizard mode
@@ -975,20 +1069,30 @@
         document.body.className = 'theme-' + (cfg.theme || 'dark');
 
         // Populate state from v3 config
-        state.overview        = cfg.overview        || { items: [] };
+        var ovRaw = cfg.overview || {};
+        state.overview = {
+          title: ovRaw.title || 'Overview',
+          items: ovRaw.items || [],
+        };
         state.rooms           = (cfg.rooms || []).map(function (r) {
           return {
             id:     r.id    || genId(),
             title:  r.title || 'Room',
             icon:   r.icon  || 'home',
             hidden: !!r.hidden,
-            items:  r.items  || [],
+            items:  (r.items || []).map(function (it) {
+              return Object.assign({}, it, { hidden: !!it.hidden });
+            }),
           };
         });
         state.scenarios       = cfg.scenarios       || [];
         state.header_sensors  = cfg.header_sensors  || [];
 
         allEntities = entities || [];
+
+        // Populate overview title input
+        var ovTitleInput = qs('overview-title-input');
+        if (ovTitleInput) { ovTitleInput.value = state.overview.title; }
 
         renderOverviewItems();
         renderRoomsList();
@@ -1006,6 +1110,14 @@
         switchTab(this.getAttribute('data-tab'));
       });
     });
+
+    // ── Overview title ─────────────────────────────────────────────────────
+    var ovTitleInput = qs('overview-title-input');
+    if (ovTitleInput) {
+      ovTitleInput.addEventListener('input', function () {
+        state.overview.title = this.value.trim() || 'Overview';
+      });
+    }
 
     // ── Overview buttons ───────────────────────────────────────────────────
     var ovAddEntityBtn = qs('ov-add-entity-btn');
@@ -1037,6 +1149,9 @@
 
     var roomAddEntityBtn = qs('room-add-entity-btn');
     if (roomAddEntityBtn) { roomAddEntityBtn.addEventListener('click', function () { openEntityPicker('room'); }); }
+
+    var roomImportDevicesBtn = qs('room-import-devices-btn');
+    if (roomImportDevicesBtn) { roomImportDevicesBtn.addEventListener('click', importRoomDevices); }
 
     var deleteRoomBtn = qs('delete-room-btn');
     if (deleteRoomBtn) { deleteRoomBtn.addEventListener('click', deleteRoom); }
@@ -1077,6 +1192,15 @@
     var sensorCancelBtn = qs('sensor-picker-cancel-btn');
     if (sensorCancelBtn) { sensorCancelBtn.addEventListener('click', function () {
       sensorPickerTarget = null;
+      var doneBtn = qs('sensor-picker-done-btn');
+      if (doneBtn) { doneBtn.classList.add('hidden'); }
+      hideOverlay();
+    }); }
+
+    var sensorDoneBtn = qs('sensor-picker-done-btn');
+    if (sensorDoneBtn) { sensorDoneBtn.addEventListener('click', function () {
+      sensorPickerTarget = null;
+      this.classList.add('hidden');
       hideOverlay();
     }); }
 

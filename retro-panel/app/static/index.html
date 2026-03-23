@@ -36,21 +36,21 @@
 
     <!-- Sidebar -->
     <nav id="sidebar">
-      <!-- Toggle button -->
+      <!-- Toggle button (left-aligned) -->
       <button id="sidebar-toggle" type="button" aria-label="Toggle sidebar" title="Toggle menu">
         <span class="sidebar-toggle-icon">&#9776;</span>
       </button>
-
-      <!-- Settings gear (top of sidebar) -->
-      <a id="config-link" href="config" class="sidebar-settings" title="Settings" aria-label="Settings">
-        <span class="sidebar-item-icon">&#9881;</span>
-        <span class="sidebar-item-label">Settings</span>
-      </a>
 
       <div class="sidebar-divider"></div>
 
       <!-- Navigation items (populated by JS) -->
       <div id="sidebar-nav"></div>
+
+      <!-- Settings gear (bottom of sidebar, icon only) -->
+      <div class="sidebar-divider"></div>
+      <a id="config-link" href="config" class="sidebar-settings sidebar-settings-bottom" title="Settings" aria-label="Settings">
+        <span class="sidebar-item-icon">&#9881;</span>
+      </a>
     </nav>
 
     <!-- Main area (header + content) -->

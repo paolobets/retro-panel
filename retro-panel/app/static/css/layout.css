@@ -114,17 +114,17 @@
   min-width: var(--sidebar-width-collapsed);
 }
 
-/* Toggle button */
+/* Toggle button — left-aligned icon */
 #sidebar-toggle {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   width: 100%;
   height: 52px;
   min-height: 52px;
+  padding: 0 18px;
   background: none;
   border: none;
-  border-bottom: 1px solid var(--color-surface-2);
   color: var(--color-text-secondary);
   font-size: 20px;
   cursor: pointer;
@@ -137,13 +137,14 @@
 
 .sidebar-toggle-icon { line-height: 1; }
 
-/* Settings link */
+/* Settings link — bottom of sidebar, icon only */
 .sidebar-settings {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   height: 52px;
   min-height: 52px;
-  padding: 0 16px;
+  padding: 0 18px;
   gap: 12px;
   color: var(--color-text-secondary);
   text-decoration: none;
@@ -156,11 +157,47 @@
 
 .sidebar-settings:active { background-color: var(--color-surface-2); }
 
+/* Bottom settings: only icon, no label even when expanded */
+.sidebar-settings-bottom .sidebar-item-label {
+  display: none;
+}
+
 .sidebar-divider {
   height: 1px;
   background-color: var(--color-surface-2);
   margin: 4px 0;
   flex-shrink: 0;
+}
+
+/* Rooms submenu back button */
+#sidebar-rooms-back {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  gap: 8px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--color-surface-2);
+  color: var(--color-accent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  width: 100%;
+  text-align: left;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+#sidebar-rooms-back:active { background-color: var(--color-surface-2); }
+
+#sidebar-rooms-back .sidebar-item-label {
+  opacity: 1;
 }
 
 /* Nav container */
@@ -234,8 +271,16 @@
   transition: opacity 0.2s ease;
 }
 
-/* When collapsed: hide labels */
-#sidebar.collapsed .sidebar-item-label {
+.sidebar-item-chevron {
+  font-size: 16px;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  transition: opacity 0.2s ease;
+}
+
+/* When collapsed: hide labels and chevrons */
+#sidebar.collapsed .sidebar-item-label,
+#sidebar.collapsed .sidebar-item-chevron {
   opacity: 0;
   pointer-events: none;
 }

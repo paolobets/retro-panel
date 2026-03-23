@@ -214,6 +214,7 @@ html, body { overflow: auto; height: auto; }
   gap: 10px;
 }
 .selected-row:last-child { border-bottom: none; }
+.selected-row--hidden { opacity: 0.45; }
 
 .selected-id {
   flex: 1;
