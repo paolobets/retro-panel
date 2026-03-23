@@ -42,14 +42,14 @@
   position: absolute;
   inset: 0;
   background-color: var(--color-on);
-  opacity: 0.06;
+  opacity: 0.10;
   pointer-events: none;
 }
 
 /* State: OFF */
 .tile.state-off {
   border-color: transparent;
-  opacity: 0.75;
+  opacity: 0.60;
 }
 
 /* State: unavailable */
@@ -73,18 +73,35 @@
   user-select: none;
 }
 
-.tile-toggle-indicator {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
+/* ---- iOS-style pill toggle (replaces old 14px dot indicator) ---- */
+.tile-toggle {
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
   background: var(--color-off);
-  transition: background-color 0.25s ease;
+  position: relative;
   flex-shrink: 0;
-  margin-top: 4px;
+  transition: background-color 0.25s ease;
 }
 
-.state-on .tile-toggle-indicator {
+.tile-toggle-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.25s ease;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+}
+
+.state-on .tile-toggle {
   background: var(--color-on);
+}
+
+.state-on .tile-toggle-thumb {
+  transform: translateX(18px);
 }
 
 .tile-bottom {
@@ -290,3 +307,242 @@
   margin-top: 6px;
   min-height: 16px;
 }
+
+/* ============================================================
+   Climate / Environmental sensor tile
+   Shows a large value + a proportional fill bar behind the tile
+   ============================================================ */
+.tile.climate-tile {
+  cursor: default;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.tile.climate-tile:active { transform: none; }
+
+/* Fill bar rising from the bottom — height driven by --climate-pct */
+.tile.climate-tile::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--climate-pct, 0) * 1%);
+  background: var(--climate-color, var(--color-accent));
+  opacity: 0.18;
+  pointer-events: none;
+  transition: height 0.6s ease;
+}
+
+.climate-tile .tile-value {
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.climate-tile .sensor-unit {
+  font-size: 18px;
+  vertical-align: super;
+  font-weight: 500;
+}
+
+/* ============================================================
+   Energy Flow Card
+   Full-width tile spanning all grid columns
+   ============================================================ */
+.tile.energy-card {
+  grid-column: 1 / -1;
+  cursor: default;
+  pointer-events: none;
+  min-height: 180px;
+  padding: 14px 16px 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.tile.energy-card:active { transform: none; }
+
+.energy-card-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-secondary);
+  margin-bottom: 10px;
+}
+
+/* 3-column grid: battery | home | grid ; solar spans center column */
+.energy-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 0;
+  flex: 1;
+  align-items: center;
+}
+
+.energy-solar-row {
+  grid-column: 2 / 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 4px;
+}
+
+.energy-main-row {
+  grid-column: 1 / 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.energy-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 64px;
+}
+
+.energy-node-icon {
+  font-size: 22px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.energy-node-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: 1.1;
+}
+
+.energy-node-sub {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  margin-top: 1px;
+}
+
+.energy-node-label {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
+/* Connectors between nodes */
+.energy-connector {
+  flex: 1;
+  height: 2px;
+  background: var(--color-surface-2);
+  position: relative;
+  margin: 0 4px;
+}
+
+.energy-connector-v {
+  width: 2px;
+  height: 16px;
+  background: var(--color-surface-2);
+  margin: 0 auto;
+}
+
+/* Active flow coloring */
+.energy-connector.flow-active { background: var(--color-accent); }
+.energy-connector-v.flow-active { background: var(--color-accent); }
+
+/* Arrow on connectors — Unicode caret rendered via data attribute */
+.energy-connector::after {
+  content: attr(data-arrow);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 10px;
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.energy-connector.flow-active::after {
+  color: var(--color-accent);
+}
+
+/* Node-specific colors */
+.energy-node.solar .energy-node-icon  { color: #f9a825; }
+.energy-node.solar .energy-node-value { color: #f9a825; }
+.energy-node.battery .energy-node-icon { color: #43a047; }
+.energy-node.battery .energy-node-value { color: #43a047; }
+.energy-node.grid .energy-node-icon  { color: var(--color-warning); }
+.energy-node.home .energy-node-icon  { color: var(--color-accent); }
+
+/* ============================================================
+   Bottom Tab Bar
+   ============================================================ */
+#tab-bar {
+  display: flex;
+  align-items: stretch;
+  height: 64px;
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-surface-2);
+  flex-shrink: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbar on tab bar */
+#tab-bar::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-width: 64px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  gap: 3px;
+  padding: 6px 4px 8px;
+  position: relative;
+  font-family: inherit;
+  transition: color 0.15s ease;
+}
+
+.tab-btn-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.tab-btn.active {
+  color: var(--color-accent);
+}
+
+.tab-btn.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 25%;
+  right: 25%;
+  height: 3px;
+  background: var(--color-accent);
+  border-radius: 0 0 3px 3px;
+}
+
+/* ============================================================
+   Live Clock in header
+   ============================================================ */
+#panel-clock {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hide config link in kiosk mode */
+.kiosk #config-link { display: none; }

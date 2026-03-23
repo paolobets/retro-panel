@@ -21,9 +21,10 @@ window.SwitchComponent = (function () {
 
     var top = DOM.createElement('div', 'tile-top');
     var iconEl = DOM.createElement('span', 'tile-icon', FMT.getIcon(icon));
-    var indicator = DOM.createElement('span', 'tile-toggle-indicator');
+    var toggle = DOM.createElement('div', 'tile-toggle');
+    toggle.appendChild(DOM.createElement('div', 'tile-toggle-thumb'));
     top.appendChild(iconEl);
-    top.appendChild(indicator);
+    top.appendChild(toggle);
 
     var bottom = DOM.createElement('div', 'tile-bottom');
     var valueEl = DOM.createElement('span', 'tile-value', 'Off');

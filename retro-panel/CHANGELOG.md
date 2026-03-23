@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.1.0] - 2026-03-23
+
+### Added
+- **Multi-page navigation** — bottom tab bar with configurable pages per house area
+  (e.g. Casa, Camera da letto, Energia). Add/rename/delete/reorder pages via Settings.
+- **Power Flow Card** — fully configurable energy dashboard card showing solar production,
+  battery SOC & charge/discharge power, grid import/export, and home consumption.
+  Map any HA sensor to each role (works with ZCS Azzurro, SMA, Fronius, etc.).
+  Bidirectional arrows update in real-time based on power flow direction.
+- **iOS-style pill toggle** — 44×26px slide-to-toggle indicator replaces the old 14px dot
+  on light and switch tiles; thumb slides on state change.
+- **Climate sensor tiles** — temperature and humidity sensors now display a large 40px value
+  with a proportional fill bar (warm orange for temperature, blue for humidity).
+- **Live clock** in the panel header (HH:MM, syncs to minute boundary).
+- **Orientation-responsive columns** — portrait uses configured columns (2/3/4), landscape
+  automatically adds one column (max 4) via CSS media query + JS CSS custom property.
+
+### Changed
+- `/data/entities.json` schema upgraded to **v2** (`{ "version": 2, "pages": [...] }`).
+  Existing v1 flat arrays are auto-migrated to a single "Home" page on first load.
+- `/api/panel-config` now returns a `pages` array instead of a flat `entities` array.
+- `/api/config` (POST) now accepts `{ "pages": [...] }` instead of `{ "entities": [...] }`.
+- Config page redesigned: page manager with tabs, per-page item list, entity picker modal,
+  and energy card configurator with sensor role mapping inputs.
+- ON state tile overlay increased from 6% to 10% opacity; OFF opacity reduced from 0.75 to 0.60.
+
 ## [1.0.14] - 2026-03-23
 
 ### Fixed

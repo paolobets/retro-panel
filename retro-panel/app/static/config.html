@@ -12,47 +12,144 @@
 </head>
 <body class="theme-dark">
 
+  <!-- Sticky header -->
   <header id="cfg-header">
     <a href="./" id="back-link" title="Back to panel">&#8592; Panel</a>
-    <h1 id="cfg-title">Entities</h1>
+    <h1 id="cfg-title">Settings</h1>
     <button id="save-btn" type="button">Save</button>
   </header>
 
   <div id="cfg-body">
 
-    <!-- Search + filter -->
-    <div id="search-wrap">
-      <input id="search-input" type="text"
-        placeholder="Search entities…"
-        autocomplete="off" autocorrect="off"
-        autocapitalize="off" spellcheck="false">
-    </div>
-    <div id="domain-filters">
-      <button class="filter-btn active" type="button" data-domain="">All</button>
-      <button class="filter-btn" type="button" data-domain="light">Lights</button>
-      <button class="filter-btn" type="button" data-domain="switch">Switches</button>
-      <button class="filter-btn" type="button" data-domain="sensor">Sensors</button>
-      <button class="filter-btn" type="button" data-domain="binary_sensor">Binary</button>
-      <button class="filter-btn" type="button" data-domain="alarm_control_panel">Alarm</button>
-    </div>
-
-    <!-- Available entities -->
-    <div id="entity-list">
-      <p class="cfg-placeholder">Loading…</p>
-    </div>
-
-    <!-- Selected entities -->
-    <div id="selected-section">
-      <h2 class="section-title">
-        Selected <span id="selected-count">0</span>
-        <span class="section-hint">— tap ↑ ↓ to reorder, ✕ to remove</span>
-      </h2>
-      <div id="selected-list">
-        <p class="cfg-placeholder">No entities selected.</p>
+    <!-- ── Page management ── -->
+    <section id="pages-section">
+      <div id="pages-header">
+        <h2 class="section-title">Pages</h2>
+        <button id="add-page-btn" type="button" class="action-btn">+ Add Page</button>
       </div>
-    </div>
+      <!-- Page tab pills -->
+      <div id="page-tabs" role="tablist"></div>
 
-  </div>
+      <!-- Per-page editor (shown for active page) -->
+      <div id="page-editor" class="hidden">
+
+        <!-- Page settings: title + icon -->
+        <div id="page-settings">
+          <div class="field-row">
+            <label class="field-label" for="page-title-input">Page title</label>
+            <input id="page-title-input" type="text" class="field-input"
+              maxlength="64" autocomplete="off" autocorrect="off"
+              autocapitalize="words" spellcheck="false">
+          </div>
+          <div class="field-row">
+            <label class="field-label" for="page-icon-select">Icon</label>
+            <select id="page-icon-select" class="field-select">
+              <option value="home">🏠 Home</option>
+              <option value="living">🛋 Living room</option>
+              <option value="bedroom">🛏 Bedroom</option>
+              <option value="kitchen">🍳 Kitchen</option>
+              <option value="bathroom">🚰 Bathroom</option>
+              <option value="garden">🌿 Garden</option>
+              <option value="garage">🚗 Garage</option>
+              <option value="office">💻 Office</option>
+              <option value="energy">⚡ Energy</option>
+              <option value="security">🔒 Security</option>
+              <option value="climate">🌡 Climate</option>
+              <option value="lights">💡 Lights</option>
+            </select>
+          </div>
+          <button id="delete-page-btn" type="button" class="danger-btn">Delete this page</button>
+        </div>
+
+        <!-- Items on this page -->
+        <div id="items-section">
+          <h2 class="section-title">
+            Items <span id="items-count">0</span>
+            <span class="section-hint">— tap ↑ ↓ to reorder, ✕ to remove</span>
+          </h2>
+          <div id="items-list">
+            <p class="cfg-placeholder">No items yet. Add entities or an Energy Card below.</p>
+          </div>
+          <div id="items-actions">
+            <button id="add-entity-btn" type="button" class="action-btn">+ Add Entities</button>
+            <button id="add-energy-btn" type="button" class="action-btn">+ Add Power Flow Card</button>
+          </div>
+        </div>
+
+      </div><!-- /page-editor -->
+    </section>
+
+    <!-- ── Entity Picker (shown when adding entities) ── -->
+    <section id="entity-picker" class="hidden">
+      <div id="picker-header">
+        <h2 class="section-title">Add Entities</h2>
+        <button id="picker-done-btn" type="button" class="action-btn">Done</button>
+      </div>
+      <div id="search-wrap">
+        <input id="search-input" type="text"
+          placeholder="Search entities…"
+          autocomplete="off" autocorrect="off"
+          autocapitalize="off" spellcheck="false">
+      </div>
+      <div id="domain-filters">
+        <button class="filter-btn active" type="button" data-domain="">All</button>
+        <button class="filter-btn" type="button" data-domain="light">Lights</button>
+        <button class="filter-btn" type="button" data-domain="switch">Switches</button>
+        <button class="filter-btn" type="button" data-domain="sensor">Sensors</button>
+        <button class="filter-btn" type="button" data-domain="binary_sensor">Binary</button>
+        <button class="filter-btn" type="button" data-domain="alarm_control_panel">Alarm</button>
+      </div>
+      <div id="entity-list">
+        <p class="cfg-placeholder">Loading…</p>
+      </div>
+    </section>
+
+    <!-- ── Energy Flow Card Configurator ── -->
+    <section id="energy-editor" class="hidden">
+      <div id="energy-header">
+        <h2 class="section-title">Power Flow Card</h2>
+        <button id="energy-done-btn" type="button" class="action-btn">Done</button>
+      </div>
+      <p class="cfg-hint">Map each sensor role to a Home Assistant entity. Leave empty to hide that element.</p>
+      <div id="energy-fields">
+        <div class="field-row">
+          <label class="field-label" for="ef-solar">Solar production</label>
+          <input id="ef-solar" type="text" class="field-input entity-input"
+            placeholder="sensor.solar_power" autocomplete="off" autocorrect="off"
+            autocapitalize="none" spellcheck="false">
+        </div>
+        <div class="field-row">
+          <label class="field-label" for="ef-batt-soc">Battery SOC (%)</label>
+          <input id="ef-batt-soc" type="text" class="field-input entity-input"
+            placeholder="sensor.battery_soc" autocomplete="off" autocorrect="off"
+            autocapitalize="none" spellcheck="false">
+        </div>
+        <div class="field-row">
+          <label class="field-label" for="ef-batt-pwr">Battery power (W)</label>
+          <input id="ef-batt-pwr" type="text" class="field-input entity-input"
+            placeholder="sensor.battery_power" autocomplete="off" autocorrect="off"
+            autocapitalize="none" spellcheck="false">
+        </div>
+        <div class="field-row">
+          <label class="field-label" for="ef-grid">Grid power (W)</label>
+          <input id="ef-grid" type="text" class="field-input entity-input"
+            placeholder="sensor.grid_power" autocomplete="off" autocorrect="off"
+            autocapitalize="none" spellcheck="false">
+        </div>
+        <div class="field-row">
+          <label class="field-label" for="ef-home">Home consumption (W)</label>
+          <input id="ef-home" type="text" class="field-input entity-input"
+            placeholder="sensor.home_consumption" autocomplete="off" autocorrect="off"
+            autocapitalize="none" spellcheck="false">
+        </div>
+      </div>
+      <p class="cfg-hint" style="margin-top:8px;">
+        For ZCS Azzurro or other inverters: positive battery_power = charging, negative = discharging.
+        Positive grid_power = importing from grid, negative = exporting.
+      </p>
+    </section>
+
+  </div><!-- /cfg-body -->
 
   <div id="save-feedback" class="hidden"></div>
 

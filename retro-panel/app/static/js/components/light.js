@@ -21,12 +21,13 @@ window.LightComponent = (function () {
     var tile = DOM.createElement('div', 'tile state-off');
     tile.dataset.entityId = entity_id;
 
-    // Top row: icon + state indicator
+    // Top row: icon + iOS pill toggle
     var top = DOM.createElement('div', 'tile-top');
     var iconEl = DOM.createElement('span', 'tile-icon', FMT.getIcon(icon));
-    var indicator = DOM.createElement('span', 'tile-toggle-indicator');
+    var toggle = DOM.createElement('div', 'tile-toggle');
+    toggle.appendChild(DOM.createElement('div', 'tile-toggle-thumb'));
     top.appendChild(iconEl);
-    top.appendChild(indicator);
+    top.appendChild(toggle);
 
     // Bottom row: value + label
     var bottom = DOM.createElement('div', 'tile-bottom');

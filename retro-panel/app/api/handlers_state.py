@@ -45,7 +45,7 @@ async def get_state(request: web.Request) -> web.Response:
             status=400,
         )
 
-    allowed = {e.entity_id for e in config.entities}
+    allowed = set(config.all_entity_ids)
     if entity_id not in allowed:
         logger.warning("Blocked request for unconfigured entity: %s", entity_id)
         return web.json_response(
@@ -83,7 +83,7 @@ async def get_all_states(request: web.Request) -> web.Response:
     config = request.app["config"]
     ha_client = request.app["ha_client"]
 
-    entity_ids = [e.entity_id for e in config.entities]
+    entity_ids = config.all_entity_ids
     if not entity_ids:
         return web.json_response([])
 

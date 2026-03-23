@@ -160,3 +160,10 @@
     grid-column: 1 / -1;
   }
 }
+
+/* ---- Landscape: use --columns-landscape override ---- */
+@media (orientation: landscape) {
+  #tile-grid {
+    grid-template-columns: repeat(var(--columns-landscape, var(--columns, 4)), 1fr);
+  }
+}
