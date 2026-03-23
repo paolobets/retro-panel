@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.5] - 2026-03-23
+
+### Fixed
+- **Add-on update broken on HA Supervisor** — `docker/build-push-action@v6` enables provenance attestation by default, wrapping images in an OCI image index. HA Supervisor's Docker client requests manifests with the Docker v2 schema Accept header, which ghcr.io cannot match against an OCI index, returning `manifest unknown`. Fixed by setting `provenance: false` in the workflow.
+
 ## [1.2.4] - 2026-03-23
 
 ### Changed
