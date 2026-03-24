@@ -1,7 +1,8 @@
 /**
  * light.js — Light entity tile component
- * Supports toggle and long-press brightness control.
- * No ES modules — loaded as regular script. iOS 15 Safari safe.
+ * Style C: fixed 120px tile, dynamic color from state attributes,
+ * long-press opens global bottom sheet.
+ * No ES modules — loaded as regular script. iOS 12 safe.
  *
  * Exposes globally: window.LightComponent = { createTile, updateTile }
  */
@@ -10,10 +11,84 @@ window.LightComponent = (function () {
 
   var LONG_PRESS_MS = 500;
 
+  /* Default color when light is ON without color info */
+  var COLOR_DEFAULT = '#FFB700';
+
+  /* Map color_temp mired → hex for tile coloring */
+  function miredToColor(mired) {
+    if (!mired) { return COLOR_DEFAULT; }
+    if (mired <= 170) { return '#89c4f4'; }
+    if (mired <= 220) { return '#c8deff'; }
+    if (mired <= 280) { return '#FFD77A'; }
+    if (mired <= 340) { return COLOR_DEFAULT; }
+    if (mired <= 400) { return '#FF9A30'; }
+    return '#FF8C00';
+  }
+
+  /* Convert rgb_color [r,g,b] array → hex string */
+  function rgbToHex(rgb) {
+    if (!rgb || rgb.length < 3) { return COLOR_DEFAULT; }
+    function h(v) { return ('0' + Math.max(0, Math.min(255, v)).toString(16)).slice(-2); }
+    return '#' + h(rgb[0]) + h(rgb[1]) + h(rgb[2]);
+  }
+
+  /* Derive display color from HA state attributes */
+  function colorFromAttributes(attrs) {
+    if (!attrs) { return COLOR_DEFAULT; }
+    if (attrs.rgb_color && attrs.rgb_color.length >= 3) {
+      return rgbToHex(attrs.rgb_color);
+    }
+    if (attrs.color_temp !== undefined && attrs.color_temp !== null) {
+      return miredToColor(attrs.color_temp);
+    }
+    return COLOR_DEFAULT;
+  }
+
+  /* Apply ON visual state to tile using color */
+  function applyOnState(tile, color, brightnessValue) {
+    var toggle   = tile.querySelector('.tile-toggle');
+    var thumb    = tile.querySelector('.tile-toggle-thumb');
+    var iconEl   = tile.querySelector('.tile-icon');
+    var valEl    = tile.querySelector('.tile-value');
+    var tintEl   = tile.querySelector('.light-tint');
+
+    tile.style.borderColor = color;
+    if (toggle) { toggle.style.background = color; }
+    if (thumb)  { thumb.style.transform = 'translateX(18px)'; }
+    if (iconEl) { iconEl.style.color = color; }
+
+    if (valEl) {
+      valEl.style.color = color;
+      valEl.textContent = brightnessValue !== null && brightnessValue !== undefined
+        ? brightnessValue
+        : '';
+    }
+    if (tintEl) {
+      var r = parseInt(color.slice(1,3), 16) || 255;
+      var g = parseInt(color.slice(3,5), 16) || 183;
+      var b = parseInt(color.slice(5,7), 16) || 0;
+      tintEl.style.background = 'rgba(' + r + ',' + g + ',' + b + ',0.14)';
+    }
+  }
+
+  /* Apply OFF visual state */
+  function applyOffState(tile) {
+    var toggle   = tile.querySelector('.tile-toggle');
+    var thumb    = tile.querySelector('.tile-toggle-thumb');
+    var iconEl   = tile.querySelector('.tile-icon');
+    var valEl    = tile.querySelector('.tile-value');
+
+    tile.style.borderColor = 'transparent';
+    if (toggle) { toggle.style.background = ''; }
+    if (thumb)  { thumb.style.transform = ''; }
+    if (iconEl) { iconEl.style.color = ''; }
+    if (valEl)  { valEl.textContent = ''; valEl.style.color = ''; }
+  }
+
   function createTile(entityConfig) {
     var entity_id = entityConfig.entity_id;
-    var label = entityConfig.label;
-    var icon = entityConfig.icon;
+    var label     = entityConfig.label;
+    var icon      = entityConfig.icon;
 
     var DOM = window.RP_DOM;
     var FMT = window.RP_FMT;
@@ -21,8 +96,12 @@ window.LightComponent = (function () {
     var tile = DOM.createElement('div', 'tile entity-light state-off');
     tile.dataset.entityId = entity_id;
 
-    // Top row: icon + iOS pill toggle
-    var top = DOM.createElement('div', 'tile-top');
+    /* Tint overlay (color set via inline style) */
+    var tint = DOM.createElement('div', 'light-tint');
+    tile.appendChild(tint);
+
+    /* Top row: icon + toggle */
+    var top    = DOM.createElement('div', 'tile-top');
     var iconEl = DOM.createElement('span', 'tile-icon');
     iconEl.innerHTML = FMT.getIcon(icon, 28, entity_id);
     var toggle = DOM.createElement('div', 'tile-toggle');
@@ -30,126 +109,104 @@ window.LightComponent = (function () {
     top.appendChild(iconEl);
     top.appendChild(toggle);
 
-    // Bottom row: value + label
-    var bottom = DOM.createElement('div', 'tile-bottom');
-    var valueEl = DOM.createElement('span', 'tile-value', 'Off');
+    /* Bottom row: brightness value + label */
+    var bottom  = DOM.createElement('div', 'tile-bottom');
+    var valueEl = DOM.createElement('span', 'tile-value', '');
     var labelEl = DOM.createElement('span', 'tile-label', label);
     bottom.appendChild(valueEl);
     bottom.appendChild(labelEl);
 
-    // Brightness slider (hidden by default)
-    var brightnessContainer = DOM.createElement('div', 'brightness-container hidden');
-    var slider = document.createElement('input');
-    slider.type = 'range';
-    slider.className = 'brightness-slider';
-    slider.min = '1';
-    slider.max = '255';
-    slider.value = '255';
-    brightnessContainer.appendChild(slider);
-
     tile.appendChild(top);
     tile.appendChild(bottom);
-    tile.appendChild(brightnessContainer);
 
-    // --- Interaction ---
-    var longPressTimer = null;
-    var sliderVisible = false;
+    /* ---- Interaction: long-press engine ---- */
+    var _lpTimer = null;
+    var _hasMoved = false;
 
-    function handleTap() {
-      var currentState = tile.dataset.state || 'off';
-      var service = currentState === 'on' ? 'turn_off' : 'turn_on';
-      var nextState = service === 'turn_on' ? 'on' : 'off';
-      // Optimistic update
-      updateTile(tile, { state: nextState, attributes: {} });
-
-      window.callService('light', service, { entity_id: entity_id }).catch(function (err) {
-        console.error('[light] Service call failed:', err);
-        // Revert on failure
-        updateTile(tile, { state: currentState, attributes: {} });
-      });
+    function _clearLP() {
+      if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; }
     }
 
-    // Long press: show/hide brightness slider.
-    // longPressTimer must be set to null BEFORE touchend fires to avoid
-    // triggering handleTap() after a long-press.
-    function handleLongPress() {
-      longPressTimer = null;
-      sliderVisible = !sliderVisible;
-      if (sliderVisible) {
-        brightnessContainer.classList.remove('hidden');
-      } else {
-        brightnessContainer.classList.add('hidden');
+    function _handleTap() {
+      var currentState = tile.dataset.state || 'off';
+      var service  = currentState === 'on' ? 'turn_off' : 'turn_on';
+      var next     = service === 'turn_on' ? 'on' : 'off';
+      /* optimistic */
+      updateTile(tile, { state: next, attributes: tile._lastAttrs || {} });
+      window.callService('light', service, { entity_id: entity_id })
+        .catch(function (err) {
+          console.error('[light] tap failed:', err);
+          updateTile(tile, { state: currentState, attributes: tile._lastAttrs || {} });
+        });
+    }
+
+    function _handleLongPress() {
+      _lpTimer = null;
+      var attrs = tile._lastAttrs || {};
+      if (window.RP_LightSheet) {
+        window.RP_LightSheet.open(entity_id, label, attrs);
       }
     }
 
     tile.addEventListener('touchstart', function () {
-      longPressTimer = setTimeout(handleLongPress, LONG_PRESS_MS);
+      _hasMoved = false;
+      _lpTimer = setTimeout(_handleLongPress, LONG_PRESS_MS);
+    }, { passive: true });
+
+    tile.addEventListener('touchmove', function () {
+      _hasMoved = true;
+      _clearLP();
     }, { passive: true });
 
     tile.addEventListener('touchend', function () {
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
-        longPressTimer = null;
-        handleTap();
+      if (_lpTimer) {
+        _clearLP();
+        if (!_hasMoved) { _handleTap(); }
       }
     });
 
-    tile.addEventListener('touchmove', function () {
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
-        longPressTimer = null;
-      }
-    }, { passive: true });
+    tile.addEventListener('touchcancel', _clearLP);
 
-    // Mouse fallback for desktop
-    tile.addEventListener('click', function () {
-      if (!('ontouchstart' in window)) handleTap();
+    /* Mouse fallback for desktop testing */
+    tile.addEventListener('mousedown', function () {
+      if ('ontouchstart' in window) { return; }
+      _lpTimer = setTimeout(_handleLongPress, LONG_PRESS_MS);
     });
-
-    // Brightness slider: debounced service call
-    var sliderDebounce = null;
-    slider.addEventListener('input', function () {
-      clearTimeout(sliderDebounce);
-      var brightness = parseInt(slider.value, 10);
-      valueEl.textContent = FMT.formatBrightness(brightness);
-      sliderDebounce = setTimeout(function () {
-        window.callService('light', 'turn_on', { entity_id: entity_id, brightness: brightness }).catch(function (err) {
-          console.error('[light] Brightness call failed:', err);
-        });
-      }, 300);
+    tile.addEventListener('mouseup', function () {
+      if ('ontouchstart' in window) { return; }
+      if (_lpTimer) { _clearLP(); _handleTap(); }
     });
-
-    slider.addEventListener('touchstart', function (e) { e.stopPropagation(); }, { passive: true });
-    slider.addEventListener('click', function (e) { e.stopPropagation(); });
+    tile.addEventListener('mouseleave', function () {
+      if ('ontouchstart' in window) { return; }
+      _clearLP();
+    });
 
     return tile;
   }
 
   function updateTile(tile, stateObj) {
-    var state = stateObj.state;
-    var attributes = stateObj.attributes;
+    var state  = stateObj.state;
+    var attrs  = stateObj.attributes || {};
     tile.dataset.state = state;
-
-    var valueEl = tile.querySelector('.tile-value');
-    var slider = tile.querySelector('.brightness-slider');
+    tile._lastAttrs = attrs;
 
     tile.classList.remove('state-on', 'state-off', 'state-unavailable');
 
     if (state === 'on') {
       tile.classList.add('state-on');
-      var brightness = attributes && attributes.brightness;
-      if (brightness !== undefined && brightness !== null) {
-        valueEl.textContent = window.RP_FMT.formatBrightness(brightness);
-        if (slider) slider.value = String(Math.round(brightness));
-      } else {
-        valueEl.textContent = 'On';
-      }
+      var color = colorFromAttributes(attrs);
+      var bri   = (attrs.brightness !== undefined && attrs.brightness !== null)
+        ? (Math.round(attrs.brightness / 255 * 100) + '%')
+        : null;
+      applyOnState(tile, color, bri);
+
     } else if (state === 'unavailable') {
       tile.classList.add('state-unavailable');
-      valueEl.textContent = 'N/A';
+      applyOffState(tile);
+
     } else {
       tile.classList.add('state-off');
-      valueEl.textContent = 'Off';
+      applyOffState(tile);
     }
   }
 

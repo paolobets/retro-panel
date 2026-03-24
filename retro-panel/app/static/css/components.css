@@ -59,17 +59,26 @@
   border-color: var(--color-light-on);
 }
 
-.tile.entity-light.state-on::before {
-  background-color: var(--color-light-on);
-}
-
 .tile.entity-light.state-on .tile-icon {
   color: var(--color-light-on);
 }
 
-.tile.entity-light.state-on .tile-toggle {
-  background: var(--color-light-on);
+/* Light/switch: tint overlay managed via .light-tint div (inline color from JS).
+   Suppress generic ::before tint for these entity types to avoid double-tint. */
+.entity-light.state-on::before,
+.entity-switch.state-on::before {
+  display: none;
 }
+
+.light-tint {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: calc(var(--radius) - 2px);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.state-on .light-tint { opacity: 1; }
 
 /* Binary sensor alert: orange for motion/open/smoke/moisture */
 .tile.entity-sensor.sensor-alert {
@@ -142,10 +151,12 @@
 }
 
 .tile-bottom {
+  display: -webkit-flex;
   display: flex;
+  -webkit-flex-direction: column;
   flex-direction: column;
-  gap: 2px;
 }
+.tile-bottom .tile-label { margin-top: 2px; }
 
 .tile-value {
   font-size: var(--font-size-value);
@@ -153,6 +164,16 @@
   color: var(--color-text-primary);
   line-height: 1.1;
   letter-spacing: -0.02em;
+}
+
+/* Light e switch: tile-value mostra solo % o è vuoto (nessun On/Off) */
+.entity-light .tile-value,
+.entity-switch .tile-value {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  min-height: 18px;
 }
 
 .state-off .tile-value {
@@ -688,4 +709,105 @@
 
 .tile.state-off .tile-toggle {
   opacity: 0.5;
+}
+
+/* ============================================================
+   Light Bottom Sheet — brightness / color controls
+   ============================================================ */
+.rp-bs-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 190;
+  background: rgba(0,0,0,0.5);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+.rp-bs-overlay.hidden { display: none; }
+
+.rp-bottom-sheet {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 200;
+  background: var(--color-surface);
+  border-radius: 18px 18px 0 0;
+  padding: 0 0 env(safe-area-inset-bottom, 24px);
+  max-height: 60vh;
+  overflow-y: auto;
+  box-shadow: 0 -4px 32px rgba(0,0,0,0.5);
+}
+.rp-bottom-sheet.hidden { display: none; }
+
+.rp-bs-header {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  padding: 18px 20px 12px;
+  border-bottom: 1px solid var(--color-surface-2);
+}
+.rp-bs-title { font-size: 15px; font-weight: 700; color: var(--color-text-primary); }
+.rp-bs-close {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--color-surface-2); border: none;
+  display: -webkit-flex; display: flex;
+  -webkit-align-items: center; align-items: center;
+  -webkit-justify-content: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+  touch-action: manipulation; color: var(--color-text-secondary);
+  -webkit-tap-highlight-color: transparent;
+}
+.rp-bs-close:active { background: var(--color-accent); color: #fff; }
+
+.rp-bs-body { padding: 20px 20px 0; }
+.rp-bs-section { margin-bottom: 22px; }
+.rp-bs-row {
+  display: -webkit-flex; display: flex;
+  -webkit-align-items: center; align-items: center;
+  -webkit-justify-content: space-between; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.rp-bs-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--color-text-secondary);
+}
+.rp-bs-val {
+  font-size: 13px; font-weight: 700; color: var(--color-text-primary);
+  min-width: 40px; text-align: right;
+}
+
+.rp-bs-slider {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 10px; border-radius: 5px;
+  outline: none; border: none; cursor: pointer;
+}
+.rp-bs-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: #fff; border: 3px solid var(--color-accent);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35); cursor: pointer;
+}
+.rp-bs-slider::-moz-range-thumb {
+  width: 26px; height: 26px; border-radius: 50%; border: none;
+  background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.35); cursor: pointer;
+}
+
+.rp-bs-swatches {
+  display: -webkit-flex; display: flex;
+  -webkit-flex-wrap: wrap; flex-wrap: wrap;
+  margin-top: 12px;
+}
+.rp-bs-swatch {
+  width: 38px; height: 38px; border-radius: 50%;
+  border: 3px solid transparent; cursor: pointer;
+  flex-shrink: 0; margin-right: 10px; margin-bottom: 8px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.rp-bs-swatch.selected { border-color: var(--color-text-primary); }
+.rp-bs-hue-dot {
+  display: inline-block; width: 22px; height: 22px;
+  border-radius: 50%; border: 2px solid rgba(255,255,255,0.3);
+  vertical-align: middle;
 }

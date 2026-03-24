@@ -156,25 +156,31 @@ class HAClient:
             raise TimeoutError("Template API request timed out") from exc
 
     async def get_entity_registry(self) -> list[dict]:
-        """Fetch entity registry from HA, including hidden_by and disabled_by fields.
+        """Fetch entity registry via HA WebSocket API (config/entity_registry/list).
 
-        Available since HA 2021.6. Returns a list of entity registry entries.
-        Raises on auth failure; returns empty list on other errors so callers
-        can degrade gracefully.
+        The REST endpoint GET /api/config/entity_registry is NOT a supported list
+        operation in Home Assistant — only single-entity GET/POST endpoints exist in
+        the REST API. The authoritative way to retrieve all registry entries (including
+        hidden_by and disabled_by) is the WebSocket command config/entity_registry/list.
+
+        Opens a short-lived WebSocket connection, authenticates, sends the command,
+        reads the result, and closes the connection.
         """
-        url = f"{self._ha_url}/api/config/entity_registry"
-        session = self._get_session()
-        timeout = aiohttp.ClientTimeout(total=20)
+        ws = await self.ws_connect()
+        cmd_id = 99  # arbitrary id; WSProxy uses id=1 for its subscription
         try:
-            async with session.get(url, timeout=timeout) as resp:
-                if resp.status == 401:
-                    raise PermissionError("HA returned 401 Unauthorized")
-                resp.raise_for_status()
-                return await resp.json()
-        except aiohttp.ClientConnectorError as exc:
-            raise ConnectionRefusedError(str(exc)) from exc
+            await ws.send_json({"id": cmd_id, "type": "config/entity_registry/list"})
+            msg = await asyncio.wait_for(ws.receive_json(), timeout=15)
+            if not msg.get("success"):
+                raise ValueError(
+                    f"HA entity registry list command failed: {msg.get('error')}"
+                )
+            return msg.get("result") or []
         except asyncio.TimeoutError as exc:
-            raise TimeoutError("Entity registry request timed out") from exc
+            raise TimeoutError("Entity registry WebSocket request timed out") from exc
+        finally:
+            if not ws.closed:
+                await ws.close()
 
     async def ws_connect(self) -> aiohttp.ClientWebSocketResponse:
         """Open a WebSocket connection to the HA WebSocket API with auth handshake."""

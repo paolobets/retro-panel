@@ -9,6 +9,7 @@
   // Map internal icon names → MDI icon names
   var DOMAIN_ICONS = {
     bulb:        'lightbulb',
+    power:       'power',
     toggle:      'toggle-switch',
     shield:      'shield-home',
     thermometer: 'thermometer',
@@ -37,7 +38,7 @@
 
   var _DOMAIN_FALLBACK = {
     light:               'bulb',
-    switch:              'toggle',
+    switch:              'power',
     sensor:              'thermometer',
     binary_sensor:       'circle',
     alarm_control_panel: 'shield',
