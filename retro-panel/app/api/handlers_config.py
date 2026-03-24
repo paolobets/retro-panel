@@ -1,4 +1,4 @@
-"""GET /api/panel-config — exposes v3 panel configuration to the frontend."""
+"""GET /api/panel-config — exposes v4 panel configuration to the frontend."""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ def _serialize_item(item) -> dict:
 
 
 async def get_panel_config(request: web.Request) -> web.Response:
-    """Return the panel configuration (v3) for the frontend.
+    """Return the panel configuration (v4) for the frontend.
 
     Excludes sensitive fields (ha_url, ha_token).
     """
@@ -43,12 +43,19 @@ async def get_panel_config(request: web.Request) -> web.Response:
 
     rooms_payload = []
     for room in config.rooms:
+        sections_payload = []
+        for section in room.sections:
+            sections_payload.append({
+                "id": section.id,
+                "title": section.title,
+                "items": [s for it in section.items if (s := _serialize_item(it))],
+            })
         rooms_payload.append({
             "id": room.id,
             "title": room.title,
             "icon": room.icon,
             "hidden": room.hidden,
-            "items": [s for it in room.items if (s := _serialize_item(it))],
+            "sections": sections_payload,
         })
 
     scenarios_payload = [

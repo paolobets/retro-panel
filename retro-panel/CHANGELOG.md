@@ -7,6 +7,19 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.4.1] — 2026-03-24
+
+### Fixed
+
+- **`/api/panel-config` handler v4 compatibility** (`app/api/handlers_config.py`)
+  `get_panel_config()` was still serializing `room.items` instead of `room.sections`,
+  causing `AttributeError: 'RoomConfig' object has no attribute 'items'` on every
+  panel-config request after upgrading to v1.4.0 (v4 schema).
+  Handler now iterates `room.sections` and returns `sections: [{id, title, items}]`
+  in the rooms payload, matching the v4 data model.
+
+---
+
 ## [1.4.0] — 2026-03-24
 
 ### Added
