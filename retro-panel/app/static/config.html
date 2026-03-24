@@ -95,11 +95,14 @@
           <div class="field-row">
             <label class="field-label">Icon</label>
             <input id="room-icon-value" type="hidden" value="home">
-            <button id="room-icon-btn" type="button" class="icon-picker-btn">
-              <span id="room-icon-preview" class="icon-picker-btn-icon"></span>
-              <span id="room-icon-name" class="icon-picker-btn-label">Home</span>
-              <span class="icon-picker-chevron" aria-hidden="true">&#8250;</span>
-            </button>
+            <div class="icon-picker-wrap">
+              <button id="room-icon-btn" type="button" class="icon-picker-btn">
+                <span id="room-icon-preview" class="icon-picker-btn-icon"></span>
+                <span id="room-icon-name" class="icon-picker-btn-label">Home</span>
+                <span id="room-icon-chevron" class="icon-picker-chevron" aria-hidden="true">&#8964;</span>
+              </button>
+              <div id="icon-dropdown" class="icon-dropdown hidden"></div>
+            </div>
           </div>
         </div>
 
@@ -268,19 +271,7 @@
     </div>
   </section>
 
-  <!-- ══════════════════════════════════════════════
-       ICON PICKER (room icon selection)
-       ══════════════════════════════════════════════ -->
-  <section id="icon-picker" class="cfg-overlay hidden">
-    <div id="icon-picker-header">
-      <button id="icon-picker-cancel-btn" type="button" class="action-btn-outline">Cancel</button>
-      <h2 class="section-title" style="margin:0;">Room icon</h2>
-      <div style="width:80px;"></div>
-    </div>
-    <div id="icon-grid"></div>
-  </section>
-
-  <div id="save-feedback" class="hidden"></div>
+<div id="save-feedback" class="hidden"></div>
 
   <script src="static/js/mdi-icons.js"></script>
   <script src="static/js/config-api.js"></script>

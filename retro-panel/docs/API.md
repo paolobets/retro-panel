@@ -329,6 +329,53 @@ Content-Type: application/json
 
 ---
 
+### GET /api/entities
+
+**Description**: Fetch the list of HA entities available for the config-page entity picker.
+
+**Request**:
+```
+GET /api/entities HTTP/1.1
+Host: localhost:7654
+Accept: application/json
+```
+
+**Optional query parameter**:
+- `?domain=<domain>` — restrict to a single allowed domain (e.g. `sensor`). Returns 400 if the domain is not in the allowed set (`light`, `switch`, `sensor`, `binary_sensor`, `alarm_control_panel`).
+
+**Response**:
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+[
+  {
+    "entity_id": "light.soggiorno",
+    "friendly_name": "Soggiorno",
+    "domain": "light",
+    "device_class": "",
+    "unit": ""
+  }
+]
+```
+
+**Filtering applied server-side**:
+1. Only entities in the allowed domains are included.
+2. Entities with `hidden_by` or `disabled_by` set in the HA entity registry are excluded (cross-referenced via `GET /api/config/entity_registry`). If the registry call fails, the filter is skipped and a warning is logged (graceful fallback).
+3. Results are sorted alphabetically by `entity_id`.
+
+**Error responses**:
+
+| Status | Condition |
+|--------|-----------|
+| 400 | `?domain=` value is not in the allowed set |
+| 502 | HA template API call failed or returned invalid JSON |
+| 503 | HA client not available |
+
+**Frequency**: Called on config-page load and when the entity picker is opened.
+
+---
+
 ### POST /api/service/{domain}/{service}
 
 **Description**: Call a Home Assistant service
@@ -1148,6 +1195,6 @@ function getComponent(entityId) {
 
 ---
 
-**Document Version**: 1.0
-**Last Updated**: 2026-03-22
+**Document Version**: 1.1
+**Last Updated**: 2026-03-24
 **Maintainer**: Retro Panel Team

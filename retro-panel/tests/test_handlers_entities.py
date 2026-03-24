@@ -38,16 +38,18 @@ def _make_request(ha_client, query_string: str = "") -> MagicMock:
     return request
 
 
-def _make_ha_client(template_result) -> MagicMock:
+def _make_ha_client(template_result, registry=None) -> MagicMock:
     """Build a mock ha_client whose call_template returns template_result.
 
     Pass an Exception instance to simulate a failing call.
+    ``registry`` is the list returned by get_entity_registry (default: empty list).
     """
     client = MagicMock()
     if isinstance(template_result, Exception):
         client.call_template = AsyncMock(side_effect=template_result)
     else:
         client.call_template = AsyncMock(return_value=template_result)
+    client.get_entity_registry = AsyncMock(return_value=registry if registry is not None else [])
     return client
 
 
@@ -246,3 +248,67 @@ async def test_domain_filter_sensor_only():
     assert set(ids) == {"sensor.a", "sensor.b"}
     assert "light.c" not in ids
     assert "binary_sensor.d" not in ids
+
+
+# ---------------------------------------------------------------------------
+# 11. hidden_entities_excluded_via_registry
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_hidden_entities_excluded_via_registry():
+    """Entità con hidden_by nel registro non devono comparire nella risposta."""
+    entities = [
+        _entity("light.visibile"),
+        _entity("light.nascosta"),
+        _entity("sensor.temperatura"),
+    ]
+    registry = [
+        {"entity_id": "light.nascosta", "hidden_by": "user", "disabled_by": None},
+        {"entity_id": "light.visibile",  "hidden_by": None,   "disabled_by": None},
+        {"entity_id": "sensor.temperatura", "hidden_by": None, "disabled_by": None},
+    ]
+    client = _make_ha_client(json.dumps(entities), registry=registry)
+    body = _body(await get_all_entities(_make_request(client)))
+    ids = [e["entity_id"] for e in body]
+    assert "light.visibile" in ids
+    assert "sensor.temperatura" in ids
+    assert "light.nascosta" not in ids
+
+
+# ---------------------------------------------------------------------------
+# 12. disabled_entities_excluded_via_registry
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_disabled_entities_excluded_via_registry():
+    """Entità con disabled_by nel registro non devono comparire nella risposta."""
+    entities = [
+        _entity("switch.abilitato"),
+        _entity("switch.disabilitato"),
+    ]
+    registry = [
+        {"entity_id": "switch.abilitato",    "hidden_by": None, "disabled_by": None},
+        {"entity_id": "switch.disabilitato", "hidden_by": None, "disabled_by": "integration"},
+    ]
+    client = _make_ha_client(json.dumps(entities), registry=registry)
+    body = _body(await get_all_entities(_make_request(client)))
+    ids = [e["entity_id"] for e in body]
+    assert "switch.abilitato" in ids
+    assert "switch.disabilitato" not in ids
+
+
+# ---------------------------------------------------------------------------
+# 13. registry_failure_falls_back_gracefully
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_registry_failure_falls_back_gracefully():
+    """Se get_entity_registry fallisce, le entità vengono comunque restituite (degraded mode)."""
+    entities = [_entity("light.a"), _entity("sensor.b")]
+    client = _make_ha_client(json.dumps(entities))
+    client.get_entity_registry = AsyncMock(side_effect=ConnectionRefusedError("HA down"))
+    body = _body(await get_all_entities(_make_request(client)))
+    ids = [e["entity_id"] for e in body]
+    # Fallback: tutte le entità sono restituite anche senza filtro registry
+    assert "light.a" in ids
+    assert "sensor.b" in ids

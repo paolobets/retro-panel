@@ -26,6 +26,7 @@
   var allEntities  = [];   // from /api/entities
   var allSensors   = [];   // from /api/entities?domain=sensor
   var allScenarios = [];   // scenes + scripts
+  var haAreaMap    = {};   // area_id -> [entity_id, ...] from /api/ha-areas
 
   // Entity picker state
   var pickerContext   = null;  // 'overview' | 'room' | 'header'
@@ -326,38 +327,52 @@
   }
 
   function openIconPicker() {
+    var dropdown = qs('icon-dropdown');
+    var chevron  = qs('room-icon-chevron');
+    if (!dropdown) { return; }
+
+    // Toggle: close if already open
+    if (!dropdown.classList.contains('hidden')) {
+      dropdown.classList.add('hidden');
+      if (chevron) { chevron.classList.remove('icon-picker-chevron--open'); }
+      return;
+    }
+
+    // Build list
     var room = activeRoomObj();
     var currentIcon = (room && room.icon) || 'home';
-    renderIconGrid(currentIcon);
-    showOverlay('icon-picker');
-  }
-
-  function renderIconGrid(selectedIcon) {
-    var container = qs('icon-grid');
-    if (!container) { return; }
     var html = '';
     var keys = Object.keys(ROOM_MDI_MAP);
     for (var i = 0; i < keys.length; i++) {
       var key = keys[i];
       var mdiName = ROOM_MDI_MAP[key];
       var label = ROOM_LABELS[key] || key;
-      var isSel = key === selectedIcon;
-      html += '<button class="icon-grid-item' + (isSel ? ' icon-grid-item--selected' : '') + '" type="button" data-icon="' + key + '">';
-      html += window.RP_MDI ? window.RP_MDI(mdiName, 28) : '';
-      html += '<span class="icon-grid-label">' + esc(label) + '</span>';
-      html += '</button>';
+      var isSel = key === currentIcon;
+      html += '<div class="icon-dropdown-item' + (isSel ? ' icon-dropdown-item--selected' : '') + '" data-icon="' + key + '">';
+      html += '<span class="icon-dropdown-item-icon">' + (window.RP_MDI ? window.RP_MDI(mdiName, 22) : '') + '</span>';
+      html += '<span class="icon-dropdown-item-label">' + esc(label) + '</span>';
+      if (isSel) { html += '<span class="icon-dropdown-check">&#10003;</span>'; }
+      html += '</div>';
     }
-    container.innerHTML = html;
-    container.querySelectorAll('.icon-grid-item').forEach(function (btn) {
-      btn.addEventListener('click', function () {
+    dropdown.innerHTML = html;
+    dropdown.classList.remove('hidden');
+    if (chevron) { chevron.classList.add('icon-picker-chevron--open'); }
+
+    // Scroll selected item into view
+    var selItem = dropdown.querySelector('.icon-dropdown-item--selected');
+    if (selItem) { selItem.scrollIntoView({ block: 'nearest' }); }
+
+    dropdown.querySelectorAll('.icon-dropdown-item').forEach(function (item) {
+      item.addEventListener('click', function () {
         var iconKey = this.getAttribute('data-icon');
-        var room = activeRoomObj();
-        if (room) { room.icon = iconKey; }
+        var r = activeRoomObj();
+        if (r) { r.icon = iconKey; }
         var iconValue = qs('room-icon-value');
         if (iconValue) { iconValue.value = iconKey; }
         updateIconPreview(iconKey);
         renderRoomsList();
-        hideOverlay();
+        dropdown.classList.add('hidden');
+        if (chevron) { chevron.classList.remove('icon-picker-chevron--open'); }
       });
     });
   }
@@ -778,12 +793,18 @@
     var container = qs('entity-list');
     if (!container) { return; }
 
+    // When editing a room whose id matches an HA area, restrict to that area's entities.
+    var areaEntityIds = (pickerContext === 'room' && editingRoomId && haAreaMap[editingRoomId])
+      ? haAreaMap[editingRoomId]
+      : null;
+
     var filtered = allEntities.filter(function (e) {
       if (filterDomain && e.domain !== filterDomain) { return false; }
       if (searchText) {
         var hay = (e.entity_id + ' ' + (e.friendly_name || '')).toLowerCase();
         if (hay.indexOf(searchText) === -1) { return false; }
       }
+      if (areaEntityIds !== null && areaEntityIds.indexOf(e.entity_id) === -1) { return false; }
       return true;
     });
 
@@ -1080,7 +1101,7 @@
 
   // ── Overlay management ─────────────────────────────────────────────────────
 
-  var OVERLAYS = ['entity-picker', 'sensor-picker', 'scenario-picker', 'energy-editor', 'icon-picker'];
+  var OVERLAYS = ['entity-picker', 'sensor-picker', 'scenario-picker', 'energy-editor'];
 
   function showOverlay(id) {
     for (var i = 0; i < OVERLAYS.length; i++) {
@@ -1139,6 +1160,15 @@
     cfgFetchScenarios()
       .then(function (s) { allScenarios = s || []; })
       .catch(function (e) { console.warn('[config] scenarios:', e.message); });
+
+    // Load HA areas (async, independent) for entity picker area filtering
+    cfgFetchHaAreas()
+      .then(function (areas) {
+        for (var i = 0; i < areas.length; i++) {
+          haAreaMap[areas[i].id] = areas[i].entity_ids || [];
+        }
+      })
+      .catch(function (e) { console.warn('[config] ha-areas:', e.message); });
 
     // Load config + entity list
     Promise.all([cfgFetchPanelConfig(), cfgFetchEntities()])
@@ -1233,10 +1263,19 @@
     }
 
     var roomIconBtn = qs('room-icon-btn');
-    if (roomIconBtn) { roomIconBtn.addEventListener('click', openIconPicker); }
+    if (roomIconBtn) { roomIconBtn.addEventListener('click', function (e) { e.stopPropagation(); openIconPicker(); }); }
 
-    var iconPickerCancelBtn = qs('icon-picker-cancel-btn');
-    if (iconPickerCancelBtn) { iconPickerCancelBtn.addEventListener('click', hideOverlay); }
+    // Close icon dropdown when clicking outside the picker wrap
+    document.addEventListener('click', function (e) {
+      var dropdown = qs('icon-dropdown');
+      var chevron  = qs('room-icon-chevron');
+      if (!dropdown || dropdown.classList.contains('hidden')) { return; }
+      var wrap = dropdown.parentElement;
+      if (wrap && !wrap.contains(e.target)) {
+        dropdown.classList.add('hidden');
+        if (chevron) { chevron.classList.remove('icon-picker-chevron--open'); }
+      }
+    });
 
     var roomAddEntityBtn = qs('room-add-entity-btn');
     if (roomAddEntityBtn) { roomAddEntityBtn.addEventListener('click', function () { openEntityPicker('room'); }); }

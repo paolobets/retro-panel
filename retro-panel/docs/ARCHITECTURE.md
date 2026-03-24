@@ -567,6 +567,14 @@ Browser                          Backend                    Home Assistant
 | `GET /api/states` | Fetch all entities | Page load, full sync | On demand |
 | `GET /api/states/{entity_id}` | Get single entity | Tile click (to verify state) | Rarely |
 | `POST /api/services/{domain}/{service}` | Call service | User interaction | On demand |
+| `GET /api/config/entity_registry` | Fetch entity registry | Entity picker load | On demand |
+
+> **Note — entity registry usage**: The HA `states` variable in Jinja2 templates
+> does **not** carry `hidden_by` / `disabled_by` metadata; those fields live
+> exclusively in the entity registry. Any handler that must exclude hidden or
+> disabled entities (`handlers_entities.py`, `handlers_areas.py`) must call
+> `/api/config/entity_registry` explicitly. If the call fails, the policy is to
+> proceed without the filter and log a warning (graceful degradation).
 
 **Headers**:
 ```
@@ -898,6 +906,6 @@ Client                              HA Server
 
 ---
 
-**Document Version**: 1.0
-**Last Updated**: 2026-03-22
+**Document Version**: 1.1
+**Last Updated**: 2026-03-24
 **Maintainer**: Retro Panel Team
