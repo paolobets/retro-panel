@@ -7,6 +7,34 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.4.0] — 2026-03-24
+
+### Added
+
+- **Room sections** (`app/config/loader.py`, `app/api/handlers_config_save.py`, `app/static/js/app.js`, `app/static/js/config.js`, `app/static/config.html`, `app/static/css/config.css`, `app/static/css/layout.css`)
+  Rooms now support named sections. Each section has an id, a title, and its own list of entity items. This replaces the previous flat entity list per room and enables structured page design within a room.
+  - **Data model (v4 schema)**: rooms contain `sections: [{id, title, items:[]}]` instead of flat `items[]`. Backward compatibility: v3 rooms with `items[]` are automatically migrated to a single unnamed default section on load.
+  - **Room view rendering**: `renderRoomSections()` in `app.js` renders each section with an optional titled header followed by an auto-fill responsive tile grid (`.tile-grid-auto`). Replaces the fixed-column grid for room pages.
+  - **Auto-fill grid**: room tiles now use `grid-template-columns: repeat(auto-fill, minmax(140px, 1fr))` instead of fixed columns, adapting naturally to the available width.
+  - **Config editor — two-column section editor**: the room editor in `config.html` / `config.js` now shows a two-column layout:
+    - Left column: sections list with ↑↓ reorder, delete, and active selection highlight.
+    - Right column: section detail — name input, entity list, + Add Entities, Import from area.
+    - `+ Add Section` button creates a new empty section and selects it immediately.
+    - Entity picker context is now per-section (`editingSectionId`).
+  - **Import from area**: entities imported via "Import from area" are added to the currently selected section (or the first section, creating one if none exists).
+
+- **"Retro PANEL" title branding** (`app/static/js/app.js`)
+  The panel title in the sidebar header now renders as `Retro` followed by `PANEL` in accent blue (`var(--color-accent)`), applied via `innerHTML` in `applyConfig()`. `document.title` retains the plain text value from config.
+
+### Changed
+
+- **Entities.json schema bumped to v4** (`app/config/loader.py`, `app/api/handlers_config_save.py`)
+  The on-disk format version is now `4`. Both the loader and the save handler accept v3 room formats (flat `items[]`) transparently for backward compatibility.
+  - `PanelConfig._all_items()` traverses sections within rooms.
+  - `PanelConfig.all_entity_ids` covers all entities across all sections.
+
+---
+
 ## [1.3.0] — 2026-03-24
 
 ### Fixed

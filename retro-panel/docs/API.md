@@ -110,26 +110,32 @@ Host: localhost:7654
 Accept: application/json
 ```
 
-**Response**:
+**Response** (v1.4+ with sections):
 ```
 HTTP/1.1 200 OK
 Content-Type: application/json
-Content-Length: 2891
+Content-Length: 3156
 
 {
-  "panels": [
+  "version": 4,
+  "rooms": [
     {
-      "name": "Living Room",
+      "id": "living_room",
+      "title": "Living Room",
       "icon": "mdi:sofa",
-      "rows": [
+      "hidden": false,
+      "sections": [
         {
-          "cols": [
+          "id": "sec_lights",
+          "title": "Lights",
+          "items": [
             {
               "entity_id": "light.ceiling",
               "size": "medium",
               "name": "Ceiling Light",
               "show_state": true,
-              "icon": "mdi:ceiling-light"
+              "icon": "mdi:ceiling-light",
+              "hidden": false
             }
           ]
         }
@@ -145,33 +151,57 @@ Content-Length: 2891
 }
 ```
 
-**Response Schema**:
+**Response Schema** (v1.4+):
 ```typescript
 {
-  panels: Array<{
-    name: string;                    // Panel display name
-    icon?: string;                   // MDI icon code
-    rows: Array<{
-      cols: Array<{
-        entity_id: string;           // HA entity ID (required)
-        size: "small" | "medium" | "large";  // Tile size
-        name?: string;               // Override display name
-        show_state?: boolean;        // Show state label
-        icon?: string;               // Override entity icon
-        hidden?: boolean;            // Hide this tile
-        // Entity-type-specific options below:
-        show_brightness?: boolean;   // Light only
+  version: 4;                      // Schema version
+  rooms: Array<{
+    id: string;                    // Room unique identifier
+    title: string;                 // Room display name
+    icon?: string;                 // MDI icon code
+    hidden?: boolean;              // Hide entire room
+    sections: Array<{
+      id: string;                  // Section unique identifier
+      title: string;               // Section title (may be empty)
+      items: Array<{
+        entity_id: string;         // HA entity ID (required)
+        size?: "small" | "medium" | "large";  // Tile size
+        name?: string;             // Override display name
+        show_state?: boolean;      // Show state label
+        icon?: string;             // Override entity icon
+        hidden?: boolean;          // Hide this item
+        // Entity-type-specific options:
+        show_brightness?: boolean; // Light only
         confirm_before_toggle?: boolean;  // Switch only
-        show_history?: boolean;      // Sensor only (future)
+        show_history?: boolean;    // Sensor only (future)
       }>;
     }>;
   }>;
   layout_config: {
-    tile_size_px: number;            // Tile size in pixels
-    grid_gap_px: number;             // Gap between tiles
-    show_state_labels: boolean;      // Global toggle for state labels
+    tile_size_px: number;         // Tile size in pixels
+    grid_gap_px: number;          // Gap between tiles
+    show_state_labels: boolean;   // Global toggle for state labels
     state_label_position: "bottom" | "overlay";  // Where to show state
   };
+}
+```
+
+**Backward Compatibility**:
+- v3 configurations (with `items[]` instead of `sections[]`) are automatically migrated to v4 on first load
+- Returned response always uses v4 format with sections
+- Old client code expecting legacy format will need update
+
+**Legacy Response** (v1.0-v1.3, deprecated):
+```
+{
+  "panels": [
+    {
+      "name": "Living Room",
+      "icon": "mdi:sofa",
+      "rows": [...]
+    }
+  ],
+  "layout_config": {...}
 }
 ```
 
@@ -182,7 +212,7 @@ Content-Type: application/json
 
 {
   "error": "Config validation failed",
-  "details": "Missing required field: entity_id in panel[0].rows[0].cols[0]"
+  "details": "Missing required field: id in rooms[0].sections[0]"
 }
 ```
 
@@ -373,6 +403,98 @@ Content-Type: application/json
 | 503 | HA client not available |
 
 **Frequency**: Called on config-page load and when the entity picker is opened.
+
+---
+
+### POST /api/config
+
+**Description**: Update panel configuration with new rooms and sections structure (v1.4+)
+
+**Request**:
+```
+POST /api/config HTTP/1.1
+Host: localhost:7654
+Content-Type: application/json
+
+{
+  "version": 4,
+  "rooms": [
+    {
+      "id": "living_room",
+      "title": "Living Room",
+      "icon": "mdi:sofa",
+      "sections": [
+        {
+          "id": "sec_lights",
+          "title": "Lights",
+          "items": [
+            {
+              "entity_id": "light.ceiling",
+              "name": "Ceiling Light",
+              "icon": "mdi:bulb"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "layout_config": {
+    "tile_size_px": 80,
+    "grid_gap_px": 8,
+    "show_state_labels": true
+  }
+}
+```
+
+**Request Schema**:
+```typescript
+{
+  version: 4;                      // Must be 4 for v1.4+
+  rooms: Array<{
+    id: string;                    // Unique room identifier
+    title: string;                 // Room display name
+    icon?: string;                 // MDI icon code
+    hidden?: boolean;              // Hide room
+    sections: Array<{
+      id: string;                  // Unique section identifier
+      title: string;               // Section title (can be empty)
+      items: Array<{
+        entity_id: string;         // HA entity ID (required)
+        name?: string;             // Display name override
+        icon?: string;             // Icon override
+        size?: string;             // Tile size
+        hidden?: boolean;          // Hide item
+      }>;
+    }>;
+  }>;
+  layout_config: object;           // Layout settings
+}
+```
+
+**Response**:
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "success": true,
+  "message": "Configuration updated",
+  "version": 4
+}
+```
+
+**Error Handling**:
+```
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+
+{
+  "error": "Config validation failed",
+  "details": "Missing required field: id in rooms[0].sections[0]"
+}
+```
+
+**Frequency**: Called when user saves configuration changes in config editor
 
 ---
 
@@ -1195,6 +1317,16 @@ function getComponent(entityId) {
 
 ---
 
-**Document Version**: 1.1
+**Document Version**: 1.2
 **Last Updated**: 2026-03-24
 **Maintainer**: Retro Panel Team
+
+**Recent Updates (v1.2)**:
+- Updated GET /api/panel-config to document v1.4 response with version: 4 and rooms.sections structure
+- Added backward compatibility note: v3 configs auto-migrate to v4
+- Documented legacy response format (v1.0-v1.3) as deprecated
+- Added new POST /api/config endpoint for saving configuration with v4 schema
+- Updated response schema documentation to show rooms with id, title, sections array
+- Updated error handling examples to reference v4 schema fields
+- Documented section ID requirement and section title (may be empty)
+- Clarified auto-migration behavior on first load

@@ -1,4 +1,4 @@
-"""POST /api/config — saves v3 configuration to /data/entities.json."""
+"""POST /api/config — saves v4 configuration to /data/entities.json."""
 
 from __future__ import annotations
 
@@ -20,6 +20,7 @@ _MAX_TITLE = 64
 _MAX_ID = 64
 _MAX_ROOMS = 30
 _MAX_ITEMS = 100
+_MAX_SECTIONS = 20
 _MAX_SCENARIOS = 50
 _MAX_HEADER_SENSORS = 6
 
@@ -60,8 +61,24 @@ def _parse_item(raw: dict, idx: int, context: str) -> dict:
         raise ValueError(f"Unknown item type: {item_type!r}")
 
 
+def _parse_section_for_save(sec_raw: dict, sec_idx: int, room_id: str) -> dict:
+    sec_id = str(sec_raw.get("id") or f"sec_{sec_idx}").strip()[:_MAX_ID]
+    sec_title = str(sec_raw.get("title") or "").strip()[:_MAX_TITLE]
+    items_raw = sec_raw.get("items") or []
+    if not isinstance(items_raw, list):
+        items_raw = []
+    if len(items_raw) > _MAX_ITEMS:
+        raise ValueError(f"Section {sec_idx}: too many items (max {_MAX_ITEMS})")
+    sec_items = []
+    for item_idx, raw in enumerate(items_raw):
+        if not isinstance(raw, dict):
+            continue
+        sec_items.append(_parse_item(raw, item_idx, f"room[{room_id}]/sec[{sec_id}]"))
+    return {"id": sec_id, "title": sec_title, "items": sec_items}
+
+
 async def save_config(request: web.Request) -> web.Response:
-    """Accept v3 structure, write to /data/entities.json, reload in-memory config."""
+    """Accept v4 structure, write to /data/entities.json, reload in-memory config."""
     try:
         body = await request.json()
     except Exception:
@@ -97,30 +114,54 @@ async def save_config(request: web.Request) -> web.Response:
         room_title = str(room_raw.get("title") or f"Room {room_idx + 1}").strip()[:_MAX_TITLE]
         room_icon = str(room_raw.get("icon") or "home").strip()[:_MAX_ICON]
         room_hidden = bool(room_raw.get("hidden", False))
-        items_raw = room_raw.get("items") or []
-        if not isinstance(items_raw, list):
-            items_raw = []
-        if len(items_raw) > _MAX_ITEMS:
-            return web.json_response(
-                {"error": f"Room {room_idx}: too many items (max {_MAX_ITEMS})"}, status=400
-            )
-        room_items = []
-        for item_idx, raw in enumerate(items_raw):
-            if not isinstance(raw, dict):
-                continue
-            try:
-                room_items.append(_parse_item(raw, item_idx, f"room[{room_id}]"))
-            except ValueError as exc:
+
+        # Accept both v4 sections[] and legacy items[] (for backward compat)
+        sections_raw = room_raw.get("sections")
+        if sections_raw is not None and isinstance(sections_raw, list):
+            # v4 format
+            if len(sections_raw) > _MAX_SECTIONS:
                 return web.json_response(
-                    {"error": f"room[{room_id}] item {item_idx}: {exc}"}, status=400
+                    {"error": f"Room {room_idx}: too many sections (max {_MAX_SECTIONS})"}, status=400
                 )
-        rooms.append({
-            "id": room_id,
-            "title": room_title,
-            "icon": room_icon,
-            "hidden": room_hidden,
-            "items": room_items,
-        })
+            room_sections = []
+            for sec_idx, sec_raw in enumerate(sections_raw):
+                if not isinstance(sec_raw, dict):
+                    continue
+                try:
+                    room_sections.append(_parse_section_for_save(sec_raw, sec_idx, room_id))
+                except ValueError as exc:
+                    return web.json_response(
+                        {"error": f"room[{room_id}] section {sec_idx}: {exc}"}, status=400
+                    )
+            rooms.append({
+                "id": room_id,
+                "title": room_title,
+                "icon": room_icon,
+                "hidden": room_hidden,
+                "sections": room_sections,
+            })
+        else:
+            # Legacy v3 format: flat items[] -> wrap in default section
+            items_raw = room_raw.get("items") or []
+            if not isinstance(items_raw, list):
+                items_raw = []
+            room_items = []
+            for item_idx, raw in enumerate(items_raw):
+                if not isinstance(raw, dict):
+                    continue
+                try:
+                    room_items.append(_parse_item(raw, item_idx, f"room[{room_id}]"))
+                except ValueError as exc:
+                    return web.json_response(
+                        {"error": f"room[{room_id}] item {item_idx}: {exc}"}, status=400
+                    )
+            rooms.append({
+                "id": room_id,
+                "title": room_title,
+                "icon": room_icon,
+                "hidden": room_hidden,
+                "sections": [{"id": "sec_default", "title": "", "items": room_items}],
+            })
 
     # --- scenarios ---
     scenarios_raw = body.get("scenarios") or []
@@ -158,8 +199,8 @@ async def save_config(request: web.Request) -> web.Response:
             "label": str(hs.get("label") or "").strip()[:_MAX_LABEL],
         })
 
-    v3_data = {
-        "version": 3,
+    v4_data = {
+        "version": 4,
         "header_sensors": header_sensors,
         "overview": {"title": overview_title, "items": overview_items},
         "rooms": rooms,
@@ -168,16 +209,17 @@ async def save_config(request: web.Request) -> web.Response:
 
     try:
         _ENTITIES_FILE.write_text(
-            json.dumps(v3_data, ensure_ascii=False, indent=2), encoding="utf-8"
+            json.dumps(v4_data, ensure_ascii=False, indent=2), encoding="utf-8"
         )
     except Exception as exc:
         logger.error("Failed to write %s: %s", _ENTITIES_FILE, exc)
         return web.json_response({"error": "Failed to save configuration"}, status=500)
 
     total_overview = sum(1 for it in overview_items if it.get("type") == "entity")
+    total_sections = sum(len(r.get("sections", [])) for r in rooms)
     logger.info(
-        "Config v3 saved: overview=%d entities, rooms=%d, scenarios=%d, header_sensors=%d",
-        total_overview, len(rooms), len(scenarios), len(header_sensors),
+        "Config v4 saved: overview=%d entities, rooms=%d, sections=%d, scenarios=%d, header_sensors=%d",
+        total_overview, len(rooms), total_sections, len(scenarios), len(header_sensors),
     )
 
     # Reload in-memory config and update WS proxy entity filter

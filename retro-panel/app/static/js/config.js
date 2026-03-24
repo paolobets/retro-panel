@@ -15,10 +15,10 @@
 
   // ── State ──────────────────────────────────────────────────────────────────
 
-  // v3 data model
+  // v4 data model
   var state = {
     overview:       { items: [] },
-    rooms:          [],           // [{id, title, icon, hidden, items:[]}]
+    rooms:          [],           // [{id, title, icon, hidden, sections:[{id, title, items:[]}]}]
     scenarios:      [],           // [{entity_id, title, icon}]
     header_sensors: [],           // [{entity_id, icon, label}]
   };
@@ -38,6 +38,7 @@
 
   // Room editor state
   var editingRoomId = null;
+  var editingSectionId = null;  // id of the section currently shown in the right panel
 
   // Energy wizard state
   var energyContext = null;   // 'overview' | 'room'
@@ -60,10 +61,18 @@
 
   function genId() { return 'room_' + Math.random().toString(36).slice(2, 9); }
 
+  function genSecId() { return 'sec_' + Math.random().toString(36).slice(2, 9); }
+
   function activeRoomItems() {
-    for (var i = 0; i < state.rooms.length; i++) {
-      if (state.rooms[i].id === editingRoomId) { return state.rooms[i].items; }
+    var room = activeRoomObj();
+    if (!room) { return []; }
+    var sections = room.sections || [];
+    if (editingSectionId) {
+      for (var i = 0; i < sections.length; i++) {
+        if (sections[i].id === editingSectionId) { return sections[i].items; }
+      }
     }
+    if (sections.length > 0) { return sections[0].items; }
     return [];
   }
 
@@ -76,7 +85,7 @@
 
   function contextItems() {
     if (pickerContext === 'overview') { return state.overview.items; }
-    if (pickerContext === 'room')     { return activeRoomItems(); }
+    if (pickerContext === 'section')  { return activeRoomItems(); }
     return [];
   }
 
@@ -202,7 +211,7 @@
 
   function getItemsForContext(ctx) {
     if (ctx === 'overview') { return state.overview.items; }
-    if (ctx === 'room')     { return activeRoomItems(); }
+    if (ctx === 'section')  { return activeRoomItems(); }
     return [];
   }
 
@@ -223,7 +232,7 @@
 
   function refreshItemsList(ctx) {
     if (ctx === 'overview') { renderOverviewItems(); }
-    else if (ctx === 'room') { renderRoomItemsList(); }
+    else if (ctx === 'section') { renderSectionItemsList(); }
   }
 
   // ── Rooms ──────────────────────────────────────────────────────────────────
@@ -240,7 +249,11 @@
     var html = '';
     for (var i = 0; i < state.rooms.length; i++) {
       var room = state.rooms[i];
-      var entityCount = (room.items || []).filter(function (it) { return it.type === 'entity'; }).length;
+      var entityCount = 0;
+      var roomSecs = room.sections || [];
+      for (var si = 0; si < roomSecs.length; si++) {
+        entityCount += (roomSecs[si].items || []).filter(function (it) { return it.type === 'entity'; }).length;
+      }
       html += '<div class="room-row" data-id="' + esc(room.id) + '">';
       html += '<div class="room-row-info">';
       html += '<span class="room-row-icon">' + getRoomEmoji(room.icon) + '</span>';
@@ -378,7 +391,7 @@
   }
 
   function addRoom() {
-    var newRoom = { id: genId(), title: 'New Room', icon: 'home', hidden: false, items: [] };
+    var newRoom = { id: genId(), title: 'New Room', icon: 'home', hidden: false, sections: [] };
     state.rooms.push(newRoom);
     renderRoomsList();
     openRoomEditor(newRoom.id);
@@ -386,6 +399,7 @@
 
   function openRoomEditor(roomId) {
     editingRoomId = roomId;
+    editingSectionId = null;
     var room = activeRoomObj();
     if (!room) { return; }
 
@@ -408,11 +422,21 @@
     if (editorTitle) { editorTitle.textContent = room.title; }
     updateIconPreview(room.icon || 'home');
 
-    renderRoomItemsList();
+    // Initialize sections — migrate legacy items[] if needed
+    if (!room.sections) { room.sections = []; }
+    if (room.sections.length === 0 && room.items && room.items.length > 0) {
+      room.sections.push({ id: genSecId(), title: '', items: room.items });
+      delete room.items;
+    }
+    // Auto-select first section
+    if (room.sections.length > 0) { editingSectionId = room.sections[0].id; }
+    renderSectionsList();
+    renderSectionDetail();
   }
 
   function closeRoomEditor() {
     editingRoomId = null;
+    editingSectionId = null;
     var roomsListEl = qs('rooms-list');
     var importBtn = qs('import-areas-btn');
     var addRoomBtn = qs('add-room-btn');
@@ -424,6 +448,167 @@
     if (addRoomBtn) { addRoomBtn.classList.remove('hidden'); }
     if (editor) { editor.classList.add('hidden'); }
     renderRoomsList();
+  }
+
+  // ── Section CRUD ───────────────────────────────────────────────────────────
+
+  function activeRoomSections() {
+    var room = activeRoomObj();
+    if (!room) { return []; }
+    if (!room.sections) { room.sections = []; }
+    return room.sections;
+  }
+
+  function addSection() {
+    var sections = activeRoomSections();
+    var n = sections.length + 1;
+    var sec = { id: genSecId(), title: 'Section ' + n, items: [] };
+    sections.push(sec);
+    renderSectionsList();
+    selectSection(sec.id);
+  }
+
+  function deleteSection(secId) {
+    var room = activeRoomObj();
+    if (!room) { return; }
+    room.sections = (room.sections || []).filter(function (s) { return s.id !== secId; });
+    if (editingSectionId === secId) {
+      editingSectionId = room.sections.length > 0 ? room.sections[0].id : null;
+    }
+    renderSectionsList();
+    renderSectionDetail();
+  }
+
+  function reorderSection(secId, delta) {
+    var sections = activeRoomSections();
+    var idx = -1;
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i].id === secId) { idx = i; break; }
+    }
+    if (idx < 0) { return; }
+    var newIdx = idx + delta;
+    if (newIdx < 0 || newIdx >= sections.length) { return; }
+    var tmp = sections[idx]; sections[idx] = sections[newIdx]; sections[newIdx] = tmp;
+    renderSectionsList();
+  }
+
+  function selectSection(secId) {
+    editingSectionId = secId;
+    renderSectionsList();
+    renderSectionDetail();
+  }
+
+  function commitSectionTitle(secId, newTitle) {
+    var sections = activeRoomSections();
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i].id === secId) {
+        sections[i].title = (newTitle || '').trim().slice(0, 64);
+        break;
+      }
+    }
+    renderSectionsList();
+  }
+
+  function renderSectionsList() {
+    var container = qs('room-sections-list');
+    if (!container) { return; }
+    var sections = activeRoomSections();
+
+    if (sections.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">No sections. Click &ldquo;+ Add&rdquo;.</p>';
+      return;
+    }
+
+    var html = '';
+    for (var i = 0; i < sections.length; i++) {
+      var sec = sections[i];
+      var isActive = sec.id === editingSectionId;
+      var count = (sec.items || []).filter(function (it) { return it.type === 'entity'; }).length;
+      html += '<div class="section-row' + (isActive ? ' section-row--active' : '') + '" data-id="' + esc(sec.id) + '">';
+      html += '<span class="section-row-drag">\u2630</span>';
+      html += '<div class="section-row-info">';
+      html += '<span class="section-row-title">' + esc(sec.title || 'Unnamed') + '</span>';
+      html += '<span class="section-row-count">' + count + ' entit' + (count === 1 ? 'y' : 'ies') + '</span>';
+      html += '</div>';
+      html += '<div class="section-row-actions">';
+      if (i > 0) {
+        html += '<button class="reorder-btn sec-up-btn" type="button" data-id="' + esc(sec.id) + '">\u2191</button>';
+      }
+      if (i < sections.length - 1) {
+        html += '<button class="reorder-btn sec-dn-btn" type="button" data-id="' + esc(sec.id) + '">\u2193</button>';
+      }
+      html += '<button class="remove-btn sec-del-btn" type="button" data-id="' + esc(sec.id) + '">\u2715</button>';
+      html += '</div>';
+      html += '</div>';
+    }
+    container.innerHTML = html;
+
+    container.querySelectorAll('.section-row').forEach(function (row) {
+      row.addEventListener('click', function (e) {
+        if (e.target.tagName === 'BUTTON') { return; }
+        selectSection(this.getAttribute('data-id'));
+      });
+    });
+
+    container.querySelectorAll('.sec-up-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        reorderSection(this.getAttribute('data-id'), -1);
+      });
+    });
+
+    container.querySelectorAll('.sec-dn-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        reorderSection(this.getAttribute('data-id'), 1);
+      });
+    });
+
+    container.querySelectorAll('.sec-del-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        deleteSection(this.getAttribute('data-id'));
+      });
+    });
+  }
+
+  function renderSectionDetail() {
+    var placeholder = qs('section-detail-placeholder');
+    var content = qs('section-detail-content');
+
+    if (!editingSectionId) {
+      if (placeholder) { placeholder.classList.remove('hidden'); }
+      if (content) { content.classList.add('hidden'); }
+      return;
+    }
+
+    var sections = activeRoomSections();
+    var sec = null;
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i].id === editingSectionId) { sec = sections[i]; break; }
+    }
+    if (!sec) {
+      if (placeholder) { placeholder.classList.remove('hidden'); }
+      if (content) { content.classList.add('hidden'); }
+      return;
+    }
+
+    if (placeholder) { placeholder.classList.add('hidden'); }
+    if (content) { content.classList.remove('hidden'); }
+
+    var titleInput = qs('section-title-input');
+    if (titleInput) { titleInput.value = sec.title; }
+
+    renderSectionItemsList();
+  }
+
+  function renderSectionItemsList() {
+    var container = qs('section-items-list');
+    var countEl = qs('section-items-count');
+    if (!container) { return; }
+    var items = activeRoomItems();
+    if (countEl) { countEl.textContent = String(items.length); }
+    renderItemsList(container, items, 'section');
   }
 
   function commitRoomTitle() {
@@ -450,12 +635,7 @@
   }
 
   function renderRoomItemsList() {
-    var container = qs('room-items-list');
-    var countEl = qs('room-items-count');
-    if (!container) { return; }
-    var items = activeRoomItems();
-    if (countEl) { countEl.textContent = String(items.length); }
-    renderItemsList(container, items, 'room');
+    renderSectionItemsList();
   }
 
   function importHaAreas() {
@@ -478,7 +658,7 @@
               title: area.name || area.id,
               icon: guessRoomIcon(area.id, area.name),
               hidden: false,
-              items: [], // entities are intentionally NOT auto-imported — user decides
+              sections: [],
             });
             added++;
           }
@@ -518,12 +698,23 @@
           return;
         }
 
+        // Get or create the target section (active section or first section)
+        if (!room.sections || room.sections.length === 0) {
+          room.sections = [{ id: genSecId(), title: '', items: [] }];
+        }
+        var targetSection = room.sections[0];
+        if (editingSectionId) {
+          for (var si = 0; si < room.sections.length; si++) {
+            if (room.sections[si].id === editingSectionId) { targetSection = room.sections[si]; break; }
+          }
+        }
+
         var added = 0;
         for (var j = 0; j < area.entity_ids.length; j++) {
           var eid = area.entity_ids[j];
           var exists = false;
-          for (var k = 0; k < room.items.length; k++) {
-            if (room.items[k].type === 'entity' && room.items[k].entity_id === eid) {
+          for (var k = 0; k < targetSection.items.length; k++) {
+            if (targetSection.items[k].type === 'entity' && targetSection.items[k].entity_id === eid) {
               exists = true; break;
             }
           }
@@ -535,11 +726,12 @@
                 break;
               }
             }
-            room.items.push({ type: 'entity', entity_id: eid, label: autoLabel, icon: '', hidden: false });
+            targetSection.items.push({ type: 'entity', entity_id: eid, label: autoLabel, icon: '', hidden: false });
             added++;
           }
         }
-        renderRoomItemsList();
+        renderSectionsList();
+        renderSectionDetail();
         showFeedback(added > 0 ? 'Imported ' + added + ' device' + (added > 1 ? 's' : '') + '.' : 'All devices already imported.', false);
       })
       .catch(function (err) {
@@ -785,7 +977,7 @@
     if (!items) { return; }
     if (isEntityInContext(entityId)) { return; }
     items.push({ type: 'entity', entity_id: entityId, label: friendlyName || '', icon: '', hidden: false });
-    refreshItemsList(pickerContext === 'overview' ? 'overview' : 'room');
+    refreshItemsList(pickerContext === 'overview' ? 'overview' : 'section');
     renderEntityList();
   }
 
@@ -794,7 +986,7 @@
     if (!container) { return; }
 
     // When editing a room whose id matches an HA area, restrict to that area's entities.
-    var areaEntityIds = (pickerContext === 'room' && editingRoomId && haAreaMap[editingRoomId])
+    var areaEntityIds = (pickerContext === 'section' && editingRoomId && haAreaMap[editingRoomId])
       ? haAreaMap[editingRoomId]
       : null;
 
@@ -1096,7 +1288,7 @@
     }
 
     hideOverlay();
-    refreshItemsList(energyContext === 'overview' ? 'overview' : 'room');
+    refreshItemsList(energyContext === 'overview' ? 'overview' : 'section');
   }
 
   // ── Overlay management ─────────────────────────────────────────────────────
@@ -1185,14 +1377,34 @@
           items: ovRaw.items || [],
         };
         state.rooms           = (cfg.rooms || []).map(function (r) {
+          var sections;
+          if (r.sections && r.sections.length > 0) {
+            sections = r.sections.map(function (sec) {
+              return {
+                id:    sec.id    || genSecId(),
+                title: sec.title || '',
+                items: (sec.items || []).map(function (it) {
+                  return Object.assign({}, it, { hidden: !!it.hidden });
+                }),
+              };
+            });
+          } else if (r.items && r.items.length > 0) {
+            sections = [{
+              id: genSecId(),
+              title: '',
+              items: (r.items || []).map(function (it) {
+                return Object.assign({}, it, { hidden: !!it.hidden });
+              }),
+            }];
+          } else {
+            sections = [];
+          }
           return {
-            id:     r.id    || genId(),
-            title:  r.title || 'Room',
-            icon:   r.icon  || 'home',
-            hidden: !!r.hidden,
-            items:  (r.items || []).map(function (it) {
-              return Object.assign({}, it, { hidden: !!it.hidden });
-            }),
+            id:       r.id    || genId(),
+            title:    r.title || 'Room',
+            icon:     r.icon  || 'home',
+            hidden:   !!r.hidden,
+            sections: sections,
           };
         });
         state.scenarios       = cfg.scenarios       || [];
@@ -1278,7 +1490,20 @@
     });
 
     var roomAddEntityBtn = qs('room-add-entity-btn');
-    if (roomAddEntityBtn) { roomAddEntityBtn.addEventListener('click', function () { openEntityPicker('room'); }); }
+    if (roomAddEntityBtn) { roomAddEntityBtn.addEventListener('click', function () { openEntityPicker('section'); }); }
+
+    var addSectionBtn = qs('add-section-btn');
+    if (addSectionBtn) { addSectionBtn.addEventListener('click', addSection); }
+
+    var sectionTitleInput = qs('section-title-input');
+    if (sectionTitleInput) {
+      sectionTitleInput.addEventListener('blur', function () {
+        if (editingSectionId) { commitSectionTitle(editingSectionId, this.value); }
+      });
+      sectionTitleInput.addEventListener('keydown', function (e) {
+        if (e.keyCode === 13 && editingSectionId) { commitSectionTitle(editingSectionId, this.value); this.blur(); }
+      });
+    }
 
     var roomImportDevicesBtn = qs('room-import-devices-btn');
     if (roomImportDevicesBtn) { roomImportDevicesBtn.addEventListener('click', importRoomDevices); }

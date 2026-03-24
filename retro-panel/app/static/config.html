@@ -81,8 +81,9 @@
       <!-- Room editor (shown when editing a room) -->
       <div id="room-editor" class="hidden">
         <div class="room-editor-header">
-          <button id="room-editor-back-btn" type="button" class="action-btn-outline">&#8592; Back to Rooms</button>
+          <button id="room-editor-back-btn" type="button" class="action-btn-outline">&#8592; Back</button>
           <h3 id="room-editor-title" class="room-editor-name">Room</h3>
+          <button id="delete-room-btn" type="button" class="danger-btn-sm">Delete</button>
         </div>
 
         <div id="room-settings" class="field-group">
@@ -106,19 +107,50 @@
           </div>
         </div>
 
-        <h4 class="section-title" style="margin-top:16px;">
-          Entities <span id="room-items-count">0</span>
-        </h4>
-        <div id="room-items-list">
-          <p class="cfg-placeholder">No entities in this room.</p>
-        </div>
-        <div class="items-actions">
-          <button id="room-add-entity-btn" type="button" class="action-btn">+ Add Entities</button>
-          <button id="room-import-devices-btn" type="button" class="action-btn-outline">&#8635; Import from area</button>
-        </div>
+        <!-- Two-column section editor -->
+        <div id="sections-editor">
 
-        <button id="delete-room-btn" type="button" class="danger-btn">Delete this room</button>
-      </div>
+          <!-- Left: sections list -->
+          <div id="sections-col-left">
+            <div class="sections-col-header">
+              <span class="sections-col-label">Sections</span>
+              <button id="add-section-btn" type="button" class="action-btn-sm">+ Add</button>
+            </div>
+            <div id="room-sections-list">
+              <p class="cfg-placeholder">No sections.</p>
+            </div>
+          </div>
+
+          <!-- Right: section detail -->
+          <div id="sections-col-right">
+            <div id="section-detail-placeholder" class="section-detail-placeholder">
+              <p>Select a section to edit its entities.</p>
+            </div>
+            <div id="section-detail-content" class="hidden">
+              <div class="field-group" style="margin-bottom:12px;">
+                <div class="field-row">
+                  <label class="field-label" for="section-title-input">Section name</label>
+                  <input id="section-title-input" type="text" class="field-input"
+                    maxlength="64" autocomplete="off" autocorrect="off"
+                    autocapitalize="words" spellcheck="false" placeholder="e.g. Lights, Sensors…">
+                </div>
+              </div>
+              <div class="section-entities-header">
+                <span class="sections-col-label">Entities <span id="section-items-count">0</span></span>
+              </div>
+              <div id="section-items-list">
+                <p class="cfg-placeholder">No entities in this section.</p>
+              </div>
+              <div class="items-actions">
+                <button id="room-add-entity-btn" type="button" class="action-btn">+ Add Entities</button>
+                <button id="room-import-devices-btn" type="button" class="action-btn-outline">&#8635; Import from area</button>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /sections-editor -->
+
+      </div><!-- /room-editor -->
 
     </section>
 

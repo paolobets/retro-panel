@@ -9,11 +9,11 @@ Retro Panel follows semantic versioning (MAJOR.MINOR.PATCH):
 
 ---
 
-## v1.0 - Foundation (Current Release)
+## v1.0 - Foundation (Released)
 
-**Status**: In Development / Released
+**Status**: Released
 
-**Release Goal**: Create a lightweight, stable home automation control panel that works on iOS 15+, requires minimal resources, and provides a solid foundation for future extensions.
+**Release Goal**: Create a lightweight, stable home automation control panel that works on legacy devices no longer receiving OS updates, requires minimal resources, and provides a solid foundation for future extensions.
 
 ### Features Included
 
@@ -38,7 +38,7 @@ Retro Panel follows semantic versioning (MAJOR.MINOR.PATCH):
 - Layout customization (tile size, spacing, state label positions)
 
 **Browser Support**:
-- iOS 15+ Safari
+- legacy devices no longer receiving OS updates Safari
 - iPadOS 15+ Safari
 - Desktop Chrome/Firefox (modern versions)
 - Android Chrome
@@ -61,7 +61,7 @@ Retro Panel follows semantic versioning (MAJOR.MINOR.PATCH):
 
 ### Definition of Done Criteria (v1.0)
 
-- [ ] All entity types render correctly on iOS 15
+- [ ] All entity types render correctly on legacy mobile Safari
 - [ ] WebSocket reconnects automatically without user intervention
 - [ ] Service calls succeed with <1 second latency on local network
 - [ ] Configuration loads without errors for typical 20-50 entity panels
@@ -89,11 +89,125 @@ Retro Panel follows semantic versioning (MAJOR.MINOR.PATCH):
 
 ---
 
-## v1.5 - Extension (Next Release)
+## v1.4 - Room Sections (Released)
+
+**Status**: Released
+
+**Release Goal**: Introduce room sections for better content organization within rooms, auto-fill configuration grid from entity selection, and enhance the configuration editor UI.
+
+### Completed Features
+
+#### Room Sections Support
+- Rooms now contain `sections: [{id, title, items:[]}]` instead of direct `items[]`
+- Each section groups related items with a title
+- Sections provide visual organization hierarchy
+- Sections have unique IDs for targeting and identification
+- Backward compatible: v3 rooms with `items[]` auto-migrate to a default section on first load
+
+**Schema Changes**:
+- Config version bumped to 4
+- Room structure: `rooms[].sections[]` replaces `rooms[].items[]`
+- Migration: v3 configs auto-converted to v4 transparently
+
+**Implementation Files**:
+- `app/config_loader.py` - v3→v4 auto-migration logic
+- `frontend/js/config-page.js` - Section UI in config editor
+- `docs/ARCHITECTURE.md` - Data model documentation
+
+#### Auto-Fill Configuration Grid
+- Config editor now auto-fills available entities from HA entity registry
+- Entity picker displays available light, switch, sensor, binary_sensor, climate, cover entities
+- Entities hidden or disabled in HA are automatically excluded
+- Search/filter available entities
+- Select and add entities to sections with one click
+
+**Implementation Files**:
+- `app/handlers/panel_config.py` - GET /api/entities endpoint
+- `frontend/js/config-page.js` - Entity picker UI component
+
+#### Two-Column Configuration Editor
+- Configuration editor redesigned with two-column layout
+- Left column: Room/section tree navigator
+- Right column: Section item editor
+- Drag-and-drop support for reordering items within sections
+- Section title inline editor
+- Delete sections/items with visual confirmation
+
+**Implementation Files**:
+- `frontend/css/config.css` - Two-column layout styles
+- `frontend/js/config-page.js` - Editor logic and UX
+
+#### "Retro PANEL" Title
+- New title display showing "Retro PANEL" in header
+- Custom branding and visual identity
+- Consistent across all views
+- Retro aesthetic emphasizing panel concept
+
+**Implementation Files**:
+- `frontend/index.html` - Title markup
+- `frontend/css/layout.css` - Title styling
+
+### v1.4 Definition of Done (COMPLETED)
+
+- [x] Room sections schema implemented (v4 format)
+- [x] v3 to v4 auto-migration transparent to users
+- [x] Config editor shows two-column layout
+- [x] Left panel: room/section tree navigator
+- [x] Right panel: item editor with drag-drop reorder
+- [x] Auto-fill from entity picker (excludes hidden/disabled)
+- [x] Section inline title editor
+- [x] "Retro PANEL" title displayed
+- [x] All tested on legacy mobile Safari (WebKit)
+- [x] Backward compatibility: v1.0-v1.3 configs still work
+- [x] Documentation updated with v4 schema
+- [x] Release notes document migration path
+- [x] Configuration file migration tested
+
+---
+
+## v1.5 - Extension (Current Release)
 
 **Release Goal**: Add commonly-requested entity types, multiple page support, and advanced controls.
 
 **Timeline**: ~8 weeks after v1.0
+
+### Completed Features
+
+#### Light Component Advanced Controls
+- Long-press (500ms+) opens bottom sheet modal for detailed control
+- Short tap toggles on/off immediately
+- Dynamic color tinting via `.light-tint` overlay div
+- RGB color support (converted to hex for visual feedback)
+- Color temperature support (mireds converted to Kelvin)
+- Brightness display as percentage (0-100%)
+- Brightness slider (1-255) in bottom sheet
+- Color temperature slider (153-500 mireds) in bottom sheet
+- Hue slider (0-360°) with 8 color swatch presets in bottom sheet
+- Feature-gated controls via `supported_features` bitmask:
+  - Bit 1 (BRIGHTNESS): enables brightness slider
+  - Bit 2 (COLOR_TEMP): enables color temperature slider
+  - Bit 16 (COLOR): enables hue and color swatches
+- Live tile color updates while adjusting
+- Debounced service calls (300ms) to prevent flooding HA
+- Bottom sheet singleton pattern (`window.RP_LightSheet`)
+- Lazy DOM construction on first open
+
+**Implementation Files**:
+- `app/static/js/components/light.js` - Tile + long-press handler
+- `app/static/js/components/light-sheet.js` - Global singleton modal
+- `app/static/css/components.css` - `.light-tint`, bottom sheet styles
+
+#### Switch Component Styling Enhancements
+- Consistent 120px tile size with light component
+- Green theme (`#4caf50`) when ON with inline styles
+- `.light-tint` overlay div with green rgba background
+- Dynamic color tinting for visual feedback
+- No "On/Off" text in tile (empty tile-value)
+- Short tap toggles on/off
+- iOS 12+ compatible IIFE pattern
+
+**Implementation Files**:
+- `app/static/js/components/switch.js` - Enhanced styling and interaction
 
 ### New Features
 
@@ -218,7 +332,29 @@ if (navigator.wakeLock) {
 
 ### Version 1.5 Definition of Done
 
-- [ ] All new entity types tested on iOS 15 Safari
+**Light & Switch Component Enhancements** (COMPLETED):
+- [x] Light component long-press opens bottom sheet modal
+- [x] Light component supports RGB color tinting
+- [x] Light component supports color temperature (mireds → Kelvin)
+- [x] Light component brightness slider in bottom sheet (1-255 → percentage)
+- [x] Light component hue slider with 8 color presets
+- [x] Light component feature-gated controls via `supported_features` bitmask
+- [x] Light component live tile updates while adjusting
+- [x] Light component debounced service calls (300ms)
+- [x] Switch component green theme when ON (#4caf50)
+- [x] Switch and light use `.light-tint` overlay for smooth transitions
+- [x] All tested on legacy mobile Safari (WebKit)
+- [x] No optional chaining or nullish coalescing (iOS 12+ safe)
+
+**Remaining Features**:
+- [ ] Multiple Pages/Panels with Swipe Navigation
+- [ ] Cover Entity Support (garage doors, blinds)
+- [ ] Input Boolean Entity Support
+- [ ] Input Select Entity Support
+- [ ] Auto-Layout (no manual row/col config)
+- [ ] Wake Lock API
+- [ ] Camera MJPEG Proxy
+- [ ] All new entity types tested on legacy mobile Safari (WebKit)
 - [ ] Swipe navigation works smoothly (60 FPS animations)
 - [ ] Multiple panels load without lag
 - [ ] Camera MJPEG proxy handles 500 Kbps streams without buffering
@@ -452,8 +588,9 @@ jobs:
 
 ## Release Schedule
 
-- **v1.0**: 2026 Q2 (Current)
-- **v1.5**: 2026 Q3 (Planning)
+- **v1.0**: 2026 Q2 (Released)
+- **v1.4**: 2026 Q2 (Released)
+- **v1.5**: 2026 Q3 (In Development)
 - **v2.0**: 2026 Q4 / 2027 Q1 (Planning)
 - **Future**: Ongoing based on community feedback
 
@@ -473,6 +610,17 @@ Retro Panel commits to:
 
 ---
 
-**Document Version**: 1.0
-**Last Updated**: 2026-03-22
+**Document Version**: 1.2
+**Last Updated**: 2026-03-24
 **Maintainer**: Retro Panel Team
+
+**Recent Updates (v1.2)**:
+- Added v1.4 section as Released
+- Documented Room Sections feature (v4 schema with sections[])
+- Documented auto-migration from v3 to v4 (items[] → default section)
+- Documented Auto-Fill Configuration Grid (entity picker from HA registry)
+- Documented Two-Column Configuration Editor (left: tree, right: editor)
+- Documented "Retro PANEL" title branding
+- Updated v1.4 Definition of Done - all items completed
+- Updated Release Schedule to show v1.0 and v1.4 as Released
+- v1.5 now listed as In Development

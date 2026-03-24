@@ -206,11 +206,11 @@ In add-on page:
 
 ## Browser Compatibility Rules (CRITICAL)
 
-These rules ensure iOS 15 compatibility and must not be violated.
+These rules ensure legacy browser compatibility and must not be violated.
 
 ### JavaScript Features - Strict Allowlist
 
-**Safe in iOS 15 (Use Freely)**:
+**Safe in legacy mobile Safari (Use Freely)**:
 - `async/await`, Promises
 - Arrow functions `() => {}`
 - Template literals (backticks)
@@ -218,8 +218,6 @@ These rules ensure iOS 15 compatibility and must not be violated.
 - `const`/`let`
 - `import`/`export` (ES6 modules)
 - Spread operator `...`
-- Optional chaining `obj?.prop`
-- Nullish coalescing `a ?? b`
 - Array methods: `.map()`, `.filter()`, `.reduce()`
 - Object methods: `.assign()`, `.entries()`, `.keys()`
 - Fetch API
@@ -227,7 +225,10 @@ These rules ensure iOS 15 compatibility and must not be violated.
 - `setTimeout()`, `setInterval()`
 - `localStorage`
 
-**FORBIDDEN (Will Break iOS 15)**:
+**FORBIDDEN (Will Break on legacy devices)**:
+- Optional chaining `obj?.prop` — not available on pre-2020 WebKit
+- Nullish coalescing `a ?? b` — not available on pre-2020 WebKit
+- `??=` `&&=` `||=` logical assignment operators
 - `var` keyword (use `const`/`let` only)
 - `function` keyword for non-class methods (use arrow functions)
 - Async generators
@@ -264,7 +265,7 @@ input {
   appearance: none;
 }
 
-/* transform (iOS 15 needs it for performance) */
+/* transform (legacy mobile Safari needs it for performance) */
 .smooth {
   -webkit-transform: translate3d(0, 0, 0);
   transform: translate3d(0, 0, 0);
@@ -277,7 +278,7 @@ input {
 - CSS custom properties (variables)
 - `box-shadow`, `border-radius`, `gradients`
 
-### Testing on iOS 15
+### Testing on legacy mobile Safari
 
 #### Using Safari Developer Tools
 
@@ -332,18 +333,104 @@ In Safari DevTools:
    - `GET /api/... 404` → API endpoint missing
    - `WebSocket failed` → Connection issue
 
-**Common iOS 15 Errors to Avoid**:
+**Common legacy mobile Safari Errors to Avoid**:
 ```javascript
-// BAD - Will not work in iOS 15
+// BAD - Will not work in legacy mobile Safari
 const obj = new Proxy({}, {});  // Proxy not supported
 const bigNum = 1n;               // BigInt not supported
 await async function* gen() {}   // Async generators not supported
 
-// GOOD - iOS 15 compatible
+// GOOD - legacy browser compatible
 const handlers = {};
 const timeout = 1000;
 async function fetchData() {}
 ```
+
+## Configuration Editor (v1.4+)
+
+### Two-Column Layout
+
+The configuration editor uses a two-column design for managing rooms and sections:
+
+**Left Column**: Room/Section Navigator
+- Displays rooms as expandable tree
+- Each room shows its sections
+- Click to select room or section
+- Visual indication of current selection
+- Add room and add section buttons
+
+**Right Column**: Item Editor
+- Displays items in selected section
+- Drag-and-drop reordering support
+- Section title inline editor
+- Item property editor (entity_id, name, icon, size, hidden)
+- Add item button (opens entity picker)
+- Delete item/section buttons with confirmation
+
+### Entity Picker
+
+The auto-fill entity picker displays available entities from Home Assistant:
+
+**Features**:
+- Fetches from `GET /api/entities` endpoint
+- Automatically excludes hidden and disabled entities
+- Shows entity_id, friendly_name, domain, device_class
+- Search/filter capability
+- Click to add entity to selected section
+- Domain filtering (light, switch, sensor, binary_sensor, climate, cover)
+
+**Backend Implementation** (`app/handlers/panel_config.py`):
+- Calls `GET /api/config/entity_registry` to get hidden/disabled status
+- Filters against allowed domains
+- Returns sorted list
+
+**Frontend Implementation** (`frontend/js/config-page.js`):
+- Modal dialog with search input
+- Displays entity list with icons and names
+- Click handler adds selected entity to section
+
+### Configuration File Format (v1.4)
+
+The config editor works with schema v4 format:
+
+```json
+{
+  "version": 4,
+  "rooms": [
+    {
+      "id": "living_room",
+      "title": "Living Room",
+      "icon": "mdi:sofa",
+      "hidden": false,
+      "sections": [
+        {
+          "id": "sec_lights",
+          "title": "Lights",
+          "items": [
+            {
+              "entity_id": "light.ceiling",
+              "name": "Ceiling Light",
+              "icon": "mdi:bulb",
+              "size": "medium",
+              "hidden": false
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "layout_config": {...}
+}
+```
+
+**Key Differences from v1.0-v1.3**:
+- `rooms` array replaces `panels` array
+- Room structure simplified (no nested rows/cols)
+- `sections` provide organizational grouping
+- Each section has `id`, `title`, and `items`
+- Flat item structure (no rows/cols grid layout)
+
+---
 
 ## Adding a New Entity Type
 
@@ -887,6 +974,15 @@ python3 app/server.py 2>&1 | tail -f
 
 ---
 
-**Document Version**: 1.0
-**Last Updated**: 2026-03-22
+**Document Version**: 1.1
+**Last Updated**: 2026-03-24
 **Maintainer**: Retro Panel Team
+
+**Recent Updates (v1.1)**:
+- Added "Configuration Editor (v1.4+)" section describing two-column layout
+- Documented Left Column: Room/Section Navigator with tree display
+- Documented Right Column: Item Editor with drag-drop and inline editing
+- Documented Entity Picker with auto-fill from HA registry
+- Documented backend implementation (GET /api/entities endpoint)
+- Documented Configuration File Format (v1.4 schema with rooms/sections)
+- Documented key differences from v1.0-v1.3 (rooms vs panels, sections vs rows/cols)

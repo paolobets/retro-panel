@@ -227,7 +227,7 @@ html, body { overflow: auto; height: auto; }
 
 .item-label-input {
   background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-surface-2);
   border-radius: 6px;
   padding: 3px 8px;
   font-size: 12px;
@@ -739,7 +739,7 @@ html, body { overflow: auto; height: auto; }
   align-items: center;
   width: 100%;
   background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-surface-2);
   border-radius: var(--radius);
   padding: 10px 14px;
   color: var(--color-text-primary);
@@ -780,7 +780,7 @@ html, body { overflow: auto; height: auto; }
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-surface-2);
   border-radius: var(--radius);
   z-index: 100;
   box-shadow: 0 6px 20px rgba(0,0,0,0.45);
@@ -950,22 +950,7 @@ html, body { overflow: auto; height: auto; }
   transform: translateX(18px);
 }
 
-/* ---- Room editor ---- */
-.room-editor-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
-.room-editor-name {
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  flex: 1;
-  margin: 0;
-}
+/* ---- Room editor (styles moved to Section Editor block below) ---- */
 
 .field-group {
   background-color: var(--color-surface);
@@ -1103,4 +1088,170 @@ html, body { overflow: auto; height: auto; }
   flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
   font-family: inherit;
+}
+
+/* ============================================================
+   SECTION EDITOR — Two-column room editor (v1.4)
+   ============================================================ */
+
+.room-editor-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.room-editor-name {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.danger-btn-sm {
+  background: none;
+  border: 1px solid var(--color-danger);
+  color: var(--color-danger);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 36px;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  font-family: inherit;
+}
+
+.action-btn-sm {
+  background-color: var(--color-accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 36px;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  font-family: inherit;
+}
+
+#sections-editor {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+  min-height: 300px;
+}
+
+#sections-col-left {
+  width: 220px;
+  min-width: 180px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#sections-col-right {
+  flex: 1;
+  min-width: 0;
+}
+
+.sections-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.sections-col-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.section-entities-header {
+  margin-bottom: 8px;
+}
+
+.section-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-surface-2);
+  background-color: var(--color-surface);
+  margin-bottom: 6px;
+  gap: 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.section-row:active { background-color: var(--color-surface-2); }
+
+.section-row--active {
+  border-color: var(--color-accent);
+  background-color: rgba(33, 150, 243, 0.08);
+}
+
+.section-row-drag {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  opacity: 0.4;
+  flex-shrink: 0;
+}
+
+.section-row-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.section-row-title {
+  display: block;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.section-row-count {
+  display: block;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
+.section-row-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.section-detail-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  border: 2px dashed var(--color-surface-2);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  text-align: center;
+  padding: 20px;
+}
+
+@media (max-width: 600px) {
+  #sections-editor {
+    flex-direction: column;
+  }
+  #sections-col-left {
+    width: 100%;
+    min-width: 0;
+  }
 }

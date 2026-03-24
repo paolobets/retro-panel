@@ -2,12 +2,12 @@
 Loads and parses /data/options.json injected by HA Supervisor at runtime.
 Falls back to ./data/options.json for local development.
 
-Entity layout is stored in /data/entities.json (v3 schema):
+Entity layout is stored in /data/entities.json (v4 schema):
   {
-    "version": 3,
+    "version": 4,
     "header_sensors": [{"entity_id", "icon", "label"}],
     "overview": {"items": [...]},
-    "rooms": [{"id", "title", "icon", "hidden", "items": [...]}],
+    "rooms": [{"id", "title", "icon", "hidden", "sections": [{"id", "title", "items": [...]}]}],
     "scenarios": [{"entity_id", "title", "icon"}]
   }
 
@@ -16,6 +16,7 @@ Each item is one of:
   {"type": "energy_flow", "solar_power", "battery_soc", "battery_power",
    "grid_power", "home_power"}
 
+v3 rooms with flat items[] are auto-migrated: wrapped in a single default section.
 v2 pages format is auto-migrated: first page -> overview, other pages -> discarded.
 v1 flat arrays are migrated to overview items.
 """
@@ -118,6 +119,14 @@ class SectionItem:
 
 
 @dataclass
+class RoomSection:
+    """A named section within a room, containing a list of items."""
+    id: str
+    title: str
+    items: List[SectionItem] = field(default_factory=list)
+
+
+@dataclass
 class HeaderSensor:
     """Mini sensor displayed in the header bar."""
     entity_id: str
@@ -140,12 +149,12 @@ class RoomConfig:
     title: str
     icon: str = "home"
     hidden: bool = False
-    items: List[SectionItem] = field(default_factory=list)
+    sections: List[RoomSection] = field(default_factory=list)
 
 
 @dataclass
 class PanelConfig:
-    """Top-level configuration for Retro Panel v3."""
+    """Top-level configuration for Retro Panel v4."""
 
     ha_url: str
     ha_token: str
@@ -174,7 +183,8 @@ class PanelConfig:
     def _all_items(self) -> list[SectionItem]:
         items: list[SectionItem] = list(self.overview_items)
         for room in self.rooms:
-            items.extend(room.items)
+            for section in room.sections:
+                items.extend(section.items)
         return items
 
     @property
@@ -268,13 +278,31 @@ def _parse_items(raw_list: list, context: str) -> list[SectionItem]:
     return items
 
 
+def _parse_section(raw: dict, idx: int, context: str) -> RoomSection:
+    sec_id = str(raw.get("id") or f"sec_{idx}").strip()
+    title = str(raw.get("title") or "").strip()
+    items = _parse_items(raw.get("items") or [], f"{context}/sec[{sec_id}]")
+    return RoomSection(id=sec_id, title=title, items=items)
+
+
 def _parse_room(raw: dict, idx: int) -> RoomConfig:
     room_id = str(raw.get("id") or f"room_{idx}").strip()
     title = str(raw.get("title") or f"Room {idx + 1}").strip()
     icon = str(raw.get("icon") or "home").strip()
     hidden = bool(raw.get("hidden", False))
-    items = _parse_items(raw.get("items") or [], f"room[{room_id}]")
-    return RoomConfig(id=room_id, title=title, icon=icon, hidden=hidden, items=items)
+
+    # v4: sections[] key present
+    if "sections" in raw and isinstance(raw["sections"], list):
+        sections = []
+        for sidx, sec_raw in enumerate(raw["sections"]):
+            if isinstance(sec_raw, dict):
+                sections.append(_parse_section(sec_raw, sidx, f"room[{room_id}]"))
+    else:
+        # v3 migration: flat items[] -> single default section
+        legacy_items = _parse_items(raw.get("items") or [], f"room[{room_id}]")
+        sections = [RoomSection(id="sec_default", title="", items=legacy_items)]
+
+    return RoomConfig(id=room_id, title=title, icon=icon, hidden=hidden, sections=sections)
 
 
 def _parse_header_sensor(raw: dict) -> Optional[HeaderSensor]:
@@ -337,8 +365,8 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
             logger.warning("Failed to read %s: %s — using empty layout", entities_file, exc)
             return empty
 
-        # v3 format
-        if isinstance(raw, dict) and raw.get("version") == 3:
+        # v4 format (also handles v3 rooms via _parse_room migration logic)
+        if isinstance(raw, dict) and raw.get("version") in (3, 4):
             overview_items = _parse_items(
                 (raw.get("overview") or {}).get("items") or [], "overview"
             )
@@ -363,13 +391,13 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
 
         # v2 format: migrate first page to overview
         if isinstance(raw, dict) and raw.get("version") == 2:
-            logger.info("Migrating v2 pages format to v3")
+            logger.info("Migrating v2 pages format to v4")
             overview_items = _migrate_v2_pages(raw.get("pages") or [])
             return overview_items, "Overview", [], [], []
 
         # v1 format: plain list
         if isinstance(raw, list):
-            logger.info("Migrating v1 flat entities format to v3")
+            logger.info("Migrating v1 flat entities format to v4")
             return _migrate_v1_flat(raw), "Overview", [], [], []
 
         logger.warning("Unrecognised entities.json format, using empty layout")
@@ -433,7 +461,10 @@ def load_config() -> PanelConfig:
 
     total_entities = sum(1 for it in overview_items if it.type == "entity")
     total_entities += sum(
-        1 for room in rooms for it in room.items if it.type == "entity"
+        1 for room in rooms
+        for section in room.sections
+        for it in section.items
+        if it.type == "entity"
     )
 
     config = PanelConfig(

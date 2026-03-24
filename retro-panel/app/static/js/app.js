@@ -331,7 +331,7 @@
         if (rooms[i].id === roomId) { room = rooms[i]; break; }
       }
       if (room) {
-        renderItemsGrid(contentArea, room.items || [], room.title);
+        renderRoomSections(contentArea, room);
       }
     }
   }
@@ -386,6 +386,82 @@
     }
   }
 
+  function renderRoomSections(container, room) {
+    var sections = room.sections || [];
+
+    // Migration fallback: if no sections but legacy items[], create virtual section
+    if (sections.length === 0 && room.items && room.items.length > 0) {
+      sections = [{ id: 'sec_default', title: '', items: room.items }];
+    }
+
+    if (sections.length === 0) {
+      var empty = DOM.createElement('div', 'empty-state');
+      empty.innerHTML = '<span class="empty-state-icon">\u2699</span>'
+        + '<p class="empty-state-title">No sections configured</p>'
+        + '<p class="empty-state-hint">Open Settings to add sections and entities to this room.</p>';
+      container.appendChild(empty);
+      return;
+    }
+
+    for (var s = 0; s < sections.length; s++) {
+      var section = sections[s];
+      var items = section.items || [];
+
+      var sectionEl = DOM.createElement('div', 'room-section');
+
+      if (section.title) {
+        var sectionHeader = DOM.createElement('div', 'room-section-header');
+        var titleEl = DOM.createElement('span', 'room-section-title');
+        titleEl.textContent = section.title;
+        sectionHeader.appendChild(titleEl);
+        sectionEl.appendChild(sectionHeader);
+      }
+
+      // Visible items only
+      var visibleItems = [];
+      for (var i = 0; i < items.length; i++) {
+        if (!items[i].hidden) { visibleItems.push(items[i]); }
+      }
+
+      if (visibleItems.length === 0) {
+        var emptySection = DOM.createElement('p', 'room-section-empty');
+        emptySection.textContent = 'No entities in this section.';
+        sectionEl.appendChild(emptySection);
+        container.appendChild(sectionEl);
+        continue;
+      }
+
+      var grid = DOM.createElement('div', 'tile-grid-auto');
+      sectionEl.appendChild(grid);
+      container.appendChild(sectionEl);
+
+      for (var j = 0; j < visibleItems.length; j++) {
+        var item = visibleItems[j];
+
+        if (item.type === 'entity') {
+          var domain = item.entity_id.split('.')[0];
+          var component = COMPONENTS[domain];
+          if (!component) {
+            console.warn('[app] No component for domain:', domain, item.entity_id);
+            continue;
+          }
+          var tile = component.createTile(item);
+          AppState.tileMap[item.entity_id] = tile;
+          var stateObj = AppState.states[item.entity_id];
+          if (stateObj) { component.updateTile(tile, stateObj); }
+          if (domain === 'alarm_control_panel') { tile.classList.add('alarm-tile'); }
+          grid.appendChild(tile);
+
+        } else if (item.type === 'energy_flow') {
+          var efTile = window.EnergyFlowComponent.createTile(item);
+          window.EnergyFlowComponent.updateTile(efTile, AppState.states);
+          AppState.energyTiles.push({ tile: efTile, cfg: item });
+          grid.appendChild(efTile);
+        }
+      }
+    }
+  }
+
   function renderScenariosGrid(container, scenarios) {
     var h = DOM.createElement('h2', 'section-heading');
     h.textContent = 'Scenari';
@@ -429,7 +505,10 @@
     if (config.kiosk_mode) { document.body.classList.add('kiosk'); }
 
     var titleEl = DOM.qs('#panel-title');
-    if (titleEl) { titleEl.textContent = config.title || 'Retro Panel'; }
+    if (titleEl) {
+      // "Retro PANEL" — PANEL in accent blue
+      titleEl.innerHTML = 'Retro <span style="color:var(--color-accent)">PANEL</span>';
+    }
     document.title = config.title || 'Retro Panel';
 
     applyColumns(config);

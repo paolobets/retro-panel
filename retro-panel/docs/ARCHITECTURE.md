@@ -4,7 +4,7 @@
 
 Retro Panel is a Home Assistant Add-on that provides a lightweight, mobile-friendly control panel for Home Assistant. It delivers a simple, nostalgic interface for controlling smart home entities with minimal overhead and maximum compatibility.
 
-**Purpose**: Enable users to create retro-styled control panels for Home Assistant that work seamlessly on older devices and mobile browsers (particularly iOS 15+).
+**Purpose**: Enable users to create retro-styled control panels for Home Assistant that work seamlessly on older devices and mobile browsers (particularly legacy devices no longer receiving OS updates).
 
 **Target Users**:
 - Home Assistant enthusiasts who want a simple, fast control interface
@@ -38,7 +38,7 @@ Retro Panel is a Home Assistant Add-on that provides a lightweight, mobile-frien
 
 **Justifications**:
 - **Bundle Size**: No build step means no webpack/rollup overhead. Assets are served directly: ~15 KB JS vs. React ~35 KB + polyfills.
-- **iOS 15 Compatibility**: ES2017 is fully supported in iOS 15 Safari. Avoiding Babel transpilation eliminates polyfill bloat.
+- **Legacy Browser Compatibility**: ES2017 is fully supported in legacy mobile Safari (WebKit). Avoiding Babel transpilation eliminates polyfill bloat.
 - **Network**: Every KB matters on slow connections. Direct ES2017 is fastest.
 - **Maintenance**: No build pipeline to maintain. File-based modularization using ES6 imports.
 - **Developer Experience**: Developers can edit and refresh. No build wait times.
@@ -62,6 +62,12 @@ Retro Panel is a Home Assistant Add-on that provides a lightweight, mobile-frien
 - Tailwind adds utility class overhead and requires a build process.
 - SASS compilation adds build complexity without significant benefit.
 - Plain CSS custom properties (variables) provide enough reusability.
+
+**CSS Pattern: Dynamic Tints and Inline Styles**:
+- Inline styles take priority over CSS for dynamic colors (e.g., `style="color: rgb(100, 200, 255)"`)
+- `.light-tint` overlay div allows smooth opacity transitions without repainting element borders
+- Suppressed `::before` pseudo-elements on light/switch tiles to prevent double-tint effect
+- Tile value text sized at 15px for legacy device compatibility (small screen optimization)
 
 ### Process Management: s6-overlay
 
@@ -363,6 +369,47 @@ const COMPONENTS = {
 };
 ```
 
+#### Light Component Advanced Interactions
+
+The light component (`js/components/light.js`) implements a two-step interaction model for enhanced UX on touch devices:
+
+**Interaction Patterns**:
+1. **Short Tap** (< 500ms): Toggle on/off immediately
+2. **Long Press** (500ms+): Opens bottom sheet for advanced controls
+
+**Color Support**:
+- **RGB Color** (`rgb_color` attribute): Converted to hex color for tile tint
+- **Color Temperature** (`color_temp` in mireds): Converted to Kelvin gradient for visual feedback
+- **Dynamic Tint**: `.light-tint` div overlay shows active color with state-dependent opacity
+
+**Bottom Sheet Control Panel** (`js/components/light-sheet.js`):
+A modal singleton (`window.RP_LightSheet`) that lazy-loads on first open and provides:
+- Brightness slider (1-255 converted to percentage display)
+- Color temperature slider (153-500 mireds converted to Kelvin)
+- Hue slider (0-360°) with 8 color swatch presets
+- Live tile color updates while adjusting
+- Service calls debounced to 300ms intervals
+
+**Visual Design**:
+- `.light-tint` div (absolute positioned overlay) animates opacity from 0 (off) to 1 (on)
+- Inline style takes priority over CSS for dynamic colors
+- Green theme (`#4caf50`) for on state with rgba background tint
+- iOS 12+ safe IIFE pattern with no optional chaining
+
+**Feature Flags** (via `supported_features` bitmask):
+- Bit 1 (BRIGHTNESS=1): Enables brightness slider in bottom sheet
+- Bit 2 (COLOR_TEMP=2): Enables color temperature slider
+- Bit 16 (COLOR=16): Enables hue and color swatch controls
+
+#### Switch Component Styling
+
+The switch component (`js/components/switch.js`) mirrors the light component structure with simplified controls:
+- Short tap toggles on/off (no long-press)
+- Green inline styles (`#4caf50`) when ON
+- `.light-tint` div with rgba(76,175,80,0.12) background
+- Empty tile-value (no "On/Off" text display)
+- Consistent 120px tile size with light component
+
 #### app.js Entry Point
 
 Main application orchestration.
@@ -644,7 +691,7 @@ Client                              HA Server
 
 ## Browser Compatibility Matrix
 
-### iOS 15 Safari
+### legacy mobile Safari (WebKit)
 
 | Feature | Status | Notes |
 |---------|--------|-------|
@@ -665,15 +712,15 @@ Client                              HA Server
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Babel transpilation | ✗ | Avoid - adds bloat, unnecessary in iOS 15 |
+| Babel transpilation | ✗ | Avoid - adds bloat, unnecessary in legacy mobile Safari |
 | CSS-in-JS libraries | ✗ | Avoid - extra bytes, not needed |
 | Async generators | ✗ | Use Promise chains instead |
-| Optional chaining (?.) | ✓ | ES2020, safe in iOS 15 |
-| Nullish coalescing (??) | ✓ | ES2020, safe in iOS 15 |
+| Optional chaining (?.) | ✗ | AVOID — not available on legacy WebKit (pre-2020 devices) |
+| Nullish coalescing (??) | ✗ | AVOID — not available on legacy WebKit (pre-2020 devices) |
 
 ### CSS Compatibility Notes
 
-| CSS Feature | iOS 15 | Prefix Required |
+| CSS Feature | legacy mobile Safari | Prefix Required |
 |-------------|--------|-----------------|
 | backdrop-filter | ✓ | `-webkit-backdrop-filter` |
 | user-select | ✓ | `-webkit-user-select` |
@@ -688,16 +735,99 @@ Client                              HA Server
 **Minimum Devices**:
 - iPhone 6S or newer (A9 chip, 2015+)
 - iPad Air 2 or newer (A8X chip, 2014+)
-- iOS 15.0 or later
+- any device with a legacy WebKit browser
 
 **Network Conditions Tested**:
 - 3G: ~400 Kbps, 100ms latency
 - 4G: ~10 Mbps, 30ms latency
 - WiFi: 50+ Mbps, <10ms latency
 
+## Data Model (v4 Schema)
+
+### Room Structure with Sections
+
+Starting in v1.4, rooms support a **sections** array that groups related items. This allows for logical organization of items within a room.
+
+**Schema v4 Features**:
+- Each room contains `sections: [{id, title, items:[]}]` instead of direct `items[]`
+- Sections provide organizational hierarchy
+- Backward compatibility: v3 rooms with `items[]` are auto-migrated to a default section
+
+**Auto-Migration from v3 to v4**:
+When loading a configuration with v3 format (rooms containing `items[]` directly), the system automatically migrates to v4:
+- Creates a single section with `id: "sec_default"` and `title: ""` (empty)
+- All `items[]` from v3 are moved into this default section
+- Migration happens transparently on first load
+- Original config file is not modified
+
+**Schema v4 Example**:
+```json
+{
+  "version": 4,
+  "header_sensors": [
+    {
+      "entity_id": "sensor.temperature",
+      "icon": "mdi:thermometer",
+      "label": "Temp"
+    }
+  ],
+  "overview": {
+    "title": "Overview",
+    "items": [
+      {
+        "type": "entity",
+        "entity_id": "light.main",
+        "label": "Main Light",
+        "icon": "mdi:bulb"
+      }
+    ]
+  },
+  "rooms": [
+    {
+      "id": "living_room",
+      "title": "Living Room",
+      "icon": "mdi:sofa",
+      "hidden": false,
+      "sections": [
+        {
+          "id": "sec_lights",
+          "title": "Lights",
+          "items": [
+            {
+              "type": "entity",
+              "entity_id": "light.ceiling",
+              "label": "Ceiling Light",
+              "icon": "mdi:bulb",
+              "hidden": false
+            },
+            {
+              "type": "entity",
+              "entity_id": "light.table",
+              "label": "Table Lamp"
+            }
+          ]
+        },
+        {
+          "id": "sec_climate",
+          "title": "Climate",
+          "items": [
+            {
+              "type": "entity",
+              "entity_id": "climate.thermostat",
+              "label": "Thermostat"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "scenarios": []
+}
+```
+
 ## Configuration Schema
 
-### options.json Structure
+### options.json Structure (Legacy v1.0-v1.3 Format)
 
 ```json
 {
@@ -787,21 +917,31 @@ Client                              HA Server
 **Supported Attributes**:
 - `state`: "on" or "off"
 - `brightness`: 0-255
-- `color_temp`: color temperature in mireds
+- `color_temp`: color temperature in mireds (153-500)
 - `xy_color`: [x, y] coordinates
 - `rgb_color`: [r, g, b] 0-255
 - `hs_color`: [h, s] (0-360, 0-100)
+- `supported_features`: bitmask indicating available controls (BRIGHTNESS=1, COLOR_TEMP=2, COLOR=16)
 
 **Service Calls**:
-- `light/turn_on` → `{entity_id, brightness?, color_temp?, ...}`
+- `light/turn_on` → `{entity_id, brightness?, color_temp?, rgb_color?, hs_color?, ...}`
 - `light/turn_off` → `{entity_id}`
 - `light/toggle` → `{entity_id}`
 
 **Tile Rendering**:
-- Large button showing current state (on/off)
-- If brightness attribute present, show slider below
-- Color name or temperature if available
-- Visual feedback: brightness level in opacity or color
+- 120px tile with dynamic background tint
+- Short tap: toggle on/off
+- Long press (500ms+): open bottom sheet for advanced controls
+- Brightness shown as "XX%" in tile-value (empty when OFF)
+- `.light-tint` div overlay shows dynamic color based on:
+  - RGB color converted to hex
+  - Color temp (mireds) converted to Kelvin gradient
+- Bottom sheet sections shown based on `supported_features`:
+  - BRIGHTNESS (bit 1): brightness slider
+  - COLOR_TEMP (bit 2): color temperature slider
+  - COLOR (bit 16): hue slider + 8 color presets
+- Live tile color updates while adjusting sliders
+- Service calls debounced to 300ms to avoid flooding HA
 
 ### Switch Entity
 
@@ -906,6 +1046,13 @@ Client                              HA Server
 
 ---
 
-**Document Version**: 1.1
+**Document Version**: 1.3
 **Last Updated**: 2026-03-24
 **Maintainer**: Retro Panel Team
+
+**Recent Updates (v1.3)**:
+- Added Data Model (v4 Schema) section documenting room sections structure
+- Documented backward compatibility: v3 rooms with `items[]` auto-migrate to v4
+- Added schema v4 example with sections, header_sensors, overview, and scenarios
+- Updated Configuration Schema section to note legacy format is from v1.0-v1.3
+- Clarified version bumping from v3 to v4 with section introduction
