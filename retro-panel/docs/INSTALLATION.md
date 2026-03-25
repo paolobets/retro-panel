@@ -17,7 +17,7 @@ This guide walks you through installing and configuring Retro Panel, a touch-opt
 6. [Entity Configuration Examples](#entity-configuration-examples)
 7. [Starting the Add-on](#starting-the-add-on)
 8. [Accessing the Panel](#accessing-the-panel)
-9. [iPad and iOS 15 Kiosk Setup](#ipad-and-ios-15-kiosk-setup)
+9. [iPad and legacy mobile Safari Kiosk Setup](#ipad-and-ios-15-kiosk-setup)
 10. [Troubleshooting](#troubleshooting)
 11. [Updating the Add-on](#updating-the-add-on)
 12. [Uninstalling](#uninstalling)
@@ -32,7 +32,7 @@ Before you begin, verify that your Home Assistant setup meets these requirements
 - **Minimum version**: Home Assistant 2023.x or later
 - **Docker**: Supervisor manages Docker containers automatically; no manual Docker installation required
 - **Network access**: The tablet must be on the same network as your Home Assistant instance and able to reach its IP address
-- **Browser**: iOS 15+ Safari, or any modern browser on Android
+- **Browser**: iOS 12+ Safari (legacy devices), or any modern browser on Android
 - **Storage**: At least 200 MB available disk space on the HA host
 
 > If you are unsure whether you have Home Assistant OS or Supervised, go to **Settings → About** in the Home Assistant web interface. You should see "Home Assistant OS" or "Home Assistant Supervised" in the banner at the top.
@@ -517,17 +517,17 @@ For a wall-mounted tablet or kiosk display:
 3. Click **"Retro Panel"** in the sidebar
 4. The Retro Panel dashboard will load
 
-To make it full-screen and easy to access, see the [iPad and iOS 15 Kiosk Setup](#ipad-and-ios-15-kiosk-setup) section below.
+To make it full-screen and easy to access, see the [iPad and legacy mobile Safari Kiosk Setup](#ipad-and-ios-15-kiosk-setup) section below.
 
 ---
 
-## iPad and iOS 15 Kiosk Setup
+## iPad and legacy mobile Safari Kiosk Setup
 
 To turn your iPad into a permanent home control panel, follow these steps to create a full-screen web app and optionally lock it to Retro Panel using Guided Access.
 
 ### Prerequisites:
 
-- iPad or iPhone running iOS 15 or later
+- iPad or iPhone running iOS 12 or later
 - Home Assistant accessible on the local network
 - Retro Panel installed and running (see above sections)
 
@@ -716,7 +716,7 @@ This section covers common issues and their solutions.
    - Go to iPad **Settings → Safari → Clear History and Website Data**
 3. Remove the home screen icon and re-add it:
    - Long-press the icon and select **Remove**
-   - Follow the [iPad and iOS 15 Kiosk Setup](#ipad-and-ios-15-kiosk-setup) section again
+   - Follow the [iPad and legacy mobile Safari Kiosk Setup](#ipad-and-ios-15-kiosk-setup) section again
 4. Ensure the Retro Panel add-on is running:
    - Go to **Settings → Add-ons → Retro Panel** and verify the status is **Running**
 

@@ -174,7 +174,7 @@ No bundler is used. Manual inspection is the primary approach. For automated bro
 
 ## 4. Touch / Mobile Tests
 
-These tests **must** be performed on a real iOS 15 device (or Safari iOS 15 simulator).
+These tests **must** be performed on a real iOS device (or Safari simulator).
 
 | # | Test | Expected |
 |---|------|----------|
@@ -318,7 +318,7 @@ Previously: expired `longPressTimer` ID remained truthy, causing `touchend` to c
 All of the following must pass before a release is tagged:
 
 - [ ] All manual functional tests pass on desktop (Chrome, Firefox, Safari)
-- [ ] All touch tests pass on iOS 15 Safari (real device or simulator)
+- [ ] All touch tests pass on iOS 12+ Safari (real device or simulator)
 - [ ] All security tests pass
 - [ ] Panel loads in < 2s on LAN
 - [ ] No console errors on load or interaction

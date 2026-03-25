@@ -5,7 +5,7 @@
 /* ---- Loading Screen ---- */
 #loading-screen {
   position: fixed;
-  inset: 0;
+  top: 0; right: 0; bottom: 0; left: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -23,8 +23,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
 }
+.loading-content > * + * { margin-top: 20px; }
 
 .spinner {
   width: 48px;
@@ -61,8 +61,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
 }
+#disconnect-banner > * + * { margin-left: 8px; }
 
 .banner-dot {
   display: inline-block;
@@ -83,6 +83,7 @@
   display: flex;
   flex-direction: row;
   height: 100vh;
+  height: -webkit-fill-available;
   height: 100dvh;
   overflow: hidden;
 }
@@ -145,7 +146,6 @@
   height: 52px;
   min-height: 52px;
   padding: 0 18px;
-  gap: 12px;
   color: var(--color-text-secondary);
   text-decoration: none;
   flex-shrink: 0;
@@ -154,6 +154,8 @@
   white-space: nowrap;
   overflow: hidden;
 }
+
+.sidebar-settings > * + * { margin-left: 12px; }
 
 .sidebar-settings:active { background-color: var(--color-surface-2); }
 
@@ -176,7 +178,6 @@
   height: 44px;
   min-height: 44px;
   padding: 0 12px;
-  gap: 8px;
   background: none;
   border: none;
   border-bottom: 1px solid var(--color-surface-2);
@@ -193,6 +194,8 @@
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
+
+#sidebar-rooms-back > * + * { margin-left: 8px; }
 
 #sidebar-rooms-back:active { background-color: var(--color-surface-2); }
 
@@ -218,7 +221,6 @@
   height: 52px;
   min-height: 52px;
   padding: 0 16px;
-  gap: 12px;
   background: none;
   border: none;
   color: var(--color-text-secondary);
@@ -234,6 +236,8 @@
   width: 100%;
   position: relative;
 }
+
+.sidebar-nav-item > * + * { margin-left: 12px; }
 
 .sidebar-nav-item:active { background-color: var(--color-surface-2); }
 
@@ -307,9 +311,9 @@
   background-color: var(--color-surface);
   border-bottom: 1px solid var(--color-surface-2);
   flex-shrink: 0;
-  gap: 12px;
   overflow: hidden;
 }
+#panel-header > * + * { margin-left: 12px; }
 
 #panel-title {
   font-size: 17px;
@@ -326,9 +330,9 @@
 #header-info {
   display: flex;
   align-items: center;
-  gap: 8px;
   flex-shrink: 0;
 }
+#header-info > * + * { margin-left: 8px; }
 
 #panel-date {
   font-size: 13px;
@@ -351,15 +355,14 @@
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 8px;
   overflow: hidden;
   min-width: 0;
 }
+#header-sensors > * + * { margin-left: 8px; }
 
 .header-sensor-chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
   background-color: var(--color-surface-2);
   border-radius: 12px;
   padding: 4px 10px;
@@ -373,6 +376,7 @@
 .header-sensor-icon {
   font-size: 13px;
   line-height: 1;
+  margin-right: 4px;
 }
 
 .header-sensor-value {
@@ -447,11 +451,12 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
   padding: 60px 20px;
   text-align: center;
   grid-column: 1 / -1;
 }
+
+.empty-state > * + * { margin-top: 8px; }
 
 .empty-state-icon {
   font-size: 40px;
@@ -501,8 +506,6 @@
   display: flex;
   align-items: center;
   margin-bottom: 10px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--color-surface-2);
 }
 
 .room-section-title {
@@ -511,6 +514,25 @@
   color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.1em;
+  flex-shrink: 0;
+}
+
+.room-section-count {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  background-color: var(--color-surface-2);
+  border-radius: 10px;
+  padding: 2px 7px;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.room-section-line {
+  flex: 1;
+  height: 1px;
+  background-color: var(--color-surface-2);
+  margin-left: 10px;
 }
 
 .room-section-empty {
@@ -519,4 +541,17 @@
   opacity: 0.5;
   padding: 8px 0;
   margin: 0;
+}
+
+/* ---- Responsive: auto-collapse sidebar on narrow screens ---- */
+@media (max-width: 900px) {
+  #sidebar {
+    width: var(--sidebar-width-collapsed);
+    min-width: var(--sidebar-width-collapsed);
+  }
+  #sidebar .sidebar-item-label,
+  #sidebar .sidebar-item-chevron {
+    opacity: 0;
+    pointer-events: none;
+  }
 }

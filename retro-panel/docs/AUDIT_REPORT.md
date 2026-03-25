@@ -221,19 +221,19 @@ All interactive elements meet or exceed the 56px touch target guideline (WCAG 2.
 | Alarm keypad keys | 56px | Pass |
 | Alarm action buttons | 56px (fixed in CQ-002) | Pass (after fix) |
 
-### iOS 15 Safari compatibility
+### Legacy device (iOS 12+) compatibility
 
 All JavaScript uses ES2017 features or earlier. The following modern features were intentionally avoided:
 
 | Feature | Reason omitted |
 |---------|---------------|
-| Top-level `await` | Partial iOS 15 support |
-| `??=` (logical assignment) | Not available in iOS 15 |
-| `structuredClone()` | Not available in iOS 15 |
-| `Array.at()` | Not available in iOS 15 |
-| CSS container queries | Not available in iOS 15 |
-| CSS `:has()` | Not available in iOS 15 |
-| `<dialog>` element | Unreliable in iOS 15 |
+| Top-level `await` | Not available in iOS 12 |
+| `??=` (logical assignment) | Not available in iOS 12 |
+| `structuredClone()` | Not available in iOS 12 |
+| `Array.at()` | Not available in iOS 12 |
+| CSS container queries | Not available in iOS 12 |
+| CSS `:has()` | Not available in iOS 12 |
+| `<dialog>` element | Unreliable on legacy devices |
 
 ### Tap delay elimination
 

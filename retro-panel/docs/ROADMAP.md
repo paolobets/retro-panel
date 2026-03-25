@@ -39,7 +39,7 @@ Retro Panel follows semantic versioning (MAJOR.MINOR.PATCH):
 
 **Browser Support**:
 - legacy devices no longer receiving OS updates Safari
-- iPadOS 15+ Safari
+- Legacy devices (iOS 12+)
 - Desktop Chrome/Firefox (modern versions)
 - Android Chrome
 - Fully responsive design

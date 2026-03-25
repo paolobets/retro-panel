@@ -40,7 +40,7 @@
 .tile.state-on::before {
   content: '';
   position: absolute;
-  inset: 0;
+  top: 0; right: 0; bottom: 0; left: 0;
   background-color: var(--color-on);
   opacity: 0.10;
   pointer-events: none;
@@ -72,7 +72,7 @@
 
 .light-tint {
   position: absolute;
-  inset: 0;
+  top: 0; right: 0; bottom: 0; left: 0;
   pointer-events: none;
   border-radius: calc(var(--radius) - 2px);
   opacity: 0;
@@ -88,7 +88,7 @@
 .tile.entity-sensor.sensor-alert::before {
   content: '';
   position: absolute;
-  inset: 0;
+  top: 0; right: 0; bottom: 0; left: 0;
   background-color: var(--color-binary-alert);
   opacity: 0.10;
   pointer-events: none;
@@ -348,10 +348,10 @@
 /* Alarm action buttons */
 .alarm-actions {
   display: flex;
-  gap: 8px;
   margin-top: 10px;
   flex-wrap: wrap;
 }
+.alarm-actions > * + * { margin-left: 8px; }
 
 .alarm-btn {
   flex: 1;
@@ -424,16 +424,18 @@
 }
 
 /* ============================================================
-   Energy Flow Card
-   Full-width tile spanning all grid columns
+   Energy Flow Card — pure SVG approach
+   Everything (circles, icons, text, paths, dots) lives inside
+   one inline SVG. No absolute-positioned div nodes.
    ============================================================ */
 .tile.energy-card {
   grid-column: 1 / -1;
   cursor: default;
   pointer-events: none;
-  min-height: 180px;
-  padding: 14px 16px 10px;
+  padding: 14px 16px 20px;
+  display: -webkit-flex;
   display: flex;
+  -webkit-flex-direction: column;
   flex-direction: column;
 }
 
@@ -445,111 +447,17 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--color-text-secondary);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
-/* 3-column grid: battery | home | grid ; solar spans center column */
-.energy-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: auto auto;
-  gap: 0;
-  flex: 1;
-  align-items: center;
-}
-
-.energy-solar-row {
-  grid-column: 2 / 3;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding-bottom: 4px;
-}
-
-.energy-main-row {
-  grid-column: 1 / 4;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.energy-node {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 64px;
-}
-
-.energy-node-icon {
-  font-size: 22px;
-  line-height: 1;
-  margin-bottom: 4px;
-}
-
-.energy-node-value {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  line-height: 1.1;
-}
-
-.energy-node-sub {
-  font-size: 11px;
-  color: var(--color-text-secondary);
-  margin-top: 1px;
-}
-
-.energy-node-label {
-  font-size: 11px;
-  color: var(--color-text-secondary);
-  margin-top: 2px;
-}
-
-/* Connectors between nodes */
-.energy-connector {
-  flex: 1;
-  height: 2px;
-  background: var(--color-surface-2);
-  position: relative;
-  margin: 0 4px;
-}
-
-.energy-connector-v {
-  width: 2px;
-  height: 16px;
-  background: var(--color-surface-2);
+/* The SVG scales to full tile width, max 560px, centered */
+.pf-svg-main {
+  width: 100%;
+  max-width: 560px;
+  display: block;
   margin: 0 auto;
+  overflow: visible;
 }
-
-/* Active flow coloring */
-.energy-connector.flow-active { background: var(--color-accent); }
-.energy-connector-v.flow-active { background: var(--color-accent); }
-
-/* Arrow on connectors — Unicode caret rendered via data attribute */
-.energy-connector::after {
-  content: attr(data-arrow);
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 10px;
-  color: var(--color-text-secondary);
-  background: var(--color-surface);
-  padding: 0 2px;
-  line-height: 1;
-}
-
-.energy-connector.flow-active::after {
-  color: var(--color-accent);
-}
-
-/* Node-specific colors */
-.energy-node.solar .energy-node-icon  { color: #f9a825; }
-.energy-node.solar .energy-node-value { color: #f9a825; }
-.energy-node.battery .energy-node-icon { color: #43a047; }
-.energy-node.battery .energy-node-value { color: #43a047; }
-.energy-node.grid .energy-node-icon  { color: var(--color-warning); }
-.energy-node.home .energy-node-icon  { color: var(--color-accent); }
 
 /* ============================================================
    Bottom Tab Bar
@@ -583,12 +491,13 @@
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  gap: 3px;
   padding: 6px 4px 8px;
   position: relative;
   font-family: inherit;
   transition: color 0.15s ease;
 }
+
+.tab-btn > * + * { margin-top: 3px; }
 
 .tab-btn-icon {
   font-size: 20px;
@@ -636,7 +545,6 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
   border: 2px solid transparent;
   transition: border-color 0.2s ease, background-color 0.2s ease;
   touch-action: manipulation;
@@ -645,6 +553,8 @@
   -webkit-tap-highlight-color: transparent;
   text-align: center;
 }
+
+.scenario-card > * + * { margin-top: 8px; }
 
 .scenario-card:active {
   transform: scale(0.97);
@@ -664,7 +574,7 @@
 .scenario-card.scenario-done::before {
   content: '';
   position: absolute;
-  inset: 0;
+  top: 0; right: 0; bottom: 0; left: 0;
   background-color: var(--color-on);
   opacity: 0.10;
   pointer-events: none;
@@ -716,7 +626,7 @@
    ============================================================ */
 .rp-bs-overlay {
   position: fixed;
-  inset: 0;
+  top: 0; right: 0; bottom: 0; left: 0;
   z-index: 190;
   background: rgba(0,0,0,0.5);
   -webkit-backdrop-filter: blur(2px);
@@ -810,4 +720,88 @@
   display: inline-block; width: 22px; height: 22px;
   border-radius: 50%; border: 2px solid rgba(255,255,255,0.3);
   vertical-align: middle;
+}
+
+/* ============================================================
+   Sensor Row Tile — compact horizontal layout (iOS Home-style)
+   Used for all sensors except temperature & humidity (climate-tile).
+   ============================================================ */
+.tile.sensor-row-tile {
+  -webkit-flex-direction: row;
+  flex-direction: row;
+  -webkit-align-items: center;
+  align-items: center;
+  min-height: 56px;
+  padding: 10px 14px;
+  cursor: default;
+  pointer-events: none;
+  grid-column: 1 / -1;
+}
+
+.tile.sensor-row-tile:active { transform: none; }
+
+.sensor-row-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background-color: var(--color-surface-2);
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  margin-right: 12px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sensor-row-icon.sri-on {
+  background-color: rgba(33, 150, 243, 0.15);
+  color: var(--color-accent);
+}
+
+.sensor-row-icon.sri-alert {
+  background-color: rgba(255, 152, 0, 0.18);
+  color: var(--color-binary-alert);
+}
+
+.sensor-row-text {
+  flex: 1;
+  min-width: 0;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+}
+
+.sensor-row-name {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.sensor-row-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: 1.2;
+}
+
+/* Alert state: binary sensor triggered (door open, motion, etc.) */
+.tile.sensor-row-tile.srt-alert {
+  border-color: var(--color-binary-alert);
+}
+
+.tile.sensor-row-tile.srt-alert::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  background-color: var(--color-binary-alert);
+  opacity: 0.08;
+  pointer-events: none;
 }

@@ -594,13 +594,14 @@ html, body { overflow: auto; height: auto; }
 .wizard-field-row {
   display: flex;
   align-items: center;
-  gap: 10px;
   background-color: var(--color-surface-2);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
   margin-bottom: 4px;
   min-height: 44px;
 }
+
+.wizard-field-row > * + * { margin-left: 10px; }
 
 .wizard-selected-label {
   flex: 1;
@@ -629,10 +630,11 @@ html, body { overflow: auto; height: auto; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
   margin-top: 4px;
   margin-bottom: 20px;
 }
+
+#energy-wizard-nav > * + * { margin-left: 10px; }
 
 .action-btn-outline {
   background: transparent;
@@ -702,7 +704,6 @@ html, body { overflow: auto; height: auto; }
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
@@ -715,6 +716,8 @@ html, body { overflow: auto; height: auto; }
   -webkit-tap-highlight-color: transparent;
   white-space: nowrap;
 }
+
+.cfg-tab > * + * { margin-left: 5px; }
 
 .cfg-tab.active {
   color: var(--color-accent);
@@ -826,8 +829,8 @@ html, body { overflow: auto; height: auto; }
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
-  gap: 12px;
 }
+.section-header > * + * { margin-left: 12px; }
 
 .section-header .section-title {
   flex: 1;
@@ -836,15 +839,15 @@ html, body { overflow: auto; height: auto; }
 
 .items-actions {
   display: flex;
-  gap: 10px;
   margin-top: 12px;
   flex-wrap: wrap;
 }
+.items-actions > * + * { margin-left: 10px; }
 
 /* ---- Overlay (entity-picker, sensor-picker, scenario-picker, energy-editor) ---- */
 .cfg-overlay {
   position: fixed;
-  inset: 0;
+  top: 0; right: 0; bottom: 0; left: 0;
   z-index: 50;
   background-color: var(--color-bg);
   display: flex;
@@ -864,16 +867,17 @@ html, body { overflow: auto; height: auto; }
   border-radius: var(--radius-sm);
   padding: 12px 14px;
   margin-bottom: 8px;
-  gap: 10px;
 }
+.room-row > * + * { margin-left: 10px; }
 
 .room-row-info {
   display: flex;
   align-items: center;
-  gap: 10px;
   flex: 1;
   min-width: 0;
 }
+
+.room-row-info > * + * { margin-left: 10px; }
 
 .room-row-icon {
   display: flex;
@@ -901,9 +905,9 @@ html, body { overflow: auto; height: auto; }
 .room-row-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
   flex-shrink: 0;
 }
+.room-row-actions > * + * { margin-left: 10px; }
 
 /* ---- iOS-style toggle ---- */
 .toggle-wrap {
@@ -924,7 +928,7 @@ html, body { overflow: auto; height: auto; }
 
 .toggle-slider {
   position: absolute;
-  inset: 0;
+  top: 0; right: 0; bottom: 0; left: 0;
   border-radius: 26px;
   background-color: var(--color-surface-2);
   transition: background-color 0.2s ease;
@@ -971,8 +975,8 @@ html, body { overflow: auto; height: auto; }
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
 }
+.scenario-row-info > * + * { margin-top: 2px; }
 
 .scenario-row-title {
   font-size: 14px;
@@ -1053,9 +1057,9 @@ html, body { overflow: auto; height: auto; }
 .hs-fields {
   display: flex;
   align-items: center;
-  gap: 8px;
   flex-wrap: wrap;
 }
+.hs-fields > * + * { margin-left: 8px; }
 
 .field-input-sm {
   flex: 1;
@@ -1097,10 +1101,10 @@ html, body { overflow: auto; height: auto; }
 .room-editor-header {
   display: flex;
   align-items: center;
-  gap: 10px;
   margin-bottom: 16px;
   flex-wrap: wrap;
 }
+.room-editor-header > * + * { margin-left: 10px; }
 
 .room-editor-name {
   flex: 1;
@@ -1142,10 +1146,11 @@ html, body { overflow: auto; height: auto; }
 
 #sections-editor {
   display: flex;
-  gap: 16px;
   margin-top: 16px;
   min-height: 300px;
 }
+
+#sections-editor > * + * { margin-left: 16px; }
 
 #sections-col-left {
   width: 220px;
@@ -1187,10 +1192,11 @@ html, body { overflow: auto; height: auto; }
   border: 1px solid var(--color-surface-2);
   background-color: var(--color-surface);
   margin-bottom: 6px;
-  gap: 8px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
+
+.section-row > * + * { margin-left: 8px; }
 
 .section-row:active { background-color: var(--color-surface-2); }
 
@@ -1229,9 +1235,9 @@ html, body { overflow: auto; height: auto; }
 
 .section-row-actions {
   display: flex;
-  gap: 4px;
   flex-shrink: 0;
 }
+.section-row-actions > * + * { margin-left: 4px; }
 
 .section-detail-placeholder {
   display: flex;

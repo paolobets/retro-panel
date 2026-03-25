@@ -14,7 +14,7 @@ Welcome to the Retro Panel documentation. This is the **SINGLE SOURCE OF TRUTH**
    - Data flow diagrams (page load, service calls, WebSocket, reconnection)
    - Security model and threat mitigation
    - HA integration details
-   - Browser compatibility matrix (iOS 15, Chrome, Firefox, etc.)
+   - Browser compatibility matrix (legacy mobile Safari, Chrome, Firefox, etc.)
    - Configuration schema documentation
    - Entity type reference (Light, Switch, Sensor, Binary Sensor, Cover, Input Boolean, Input Select)
 
@@ -39,7 +39,7 @@ Welcome to the Retro Panel documentation. This is the **SINGLE SOURCE OF TRUTH**
 4. **[DEVELOPMENT.md](DEVELOPMENT.md)** - Developer guide
    - Quick start: local development without HA
    - Testing on real Home Assistant instance
-   - Browser compatibility rules (CRITICAL - iOS 15)
+   - Browser compatibility rules (CRITICAL - legacy mobile Safari)
    - Step-by-step guide to adding new entity types
    - Configuration schema change procedure
    - WebSocket debugging and common issues
@@ -90,7 +90,7 @@ Welcome to the Retro Panel documentation. This is the **SINGLE SOURCE OF TRUTH**
 
 **What is Retro Panel?**
 Retro Panel is a lightweight Home Assistant control panel optimized for:
-- iOS 15 Safari (oldest 5+ year old devices)
+- legacy mobile Safari (WebKit) (oldest 5+ year old devices)
 - Slower networks (3G/4G connections)
 - Resource-constrained devices (Raspberry Pi 3B+)
 - Simple, fast, distraction-free interface
@@ -104,7 +104,7 @@ Retro Panel is a lightweight Home Assistant control panel optimized for:
 
 **Key Design Decisions**:
 1. Python + aiohttp: Lightweight, HA ecosystem, minimal deps
-2. Vanilla JS ES2017: 15 KB vs React 35 KB, iOS 15 native
+2. Vanilla JS ES2017: 15 KB vs React 35 KB, legacy mobile Safari native
 3. Plain CSS: No build overhead
 4. HA Ingress: Token isolation, security, network flexibility
 5. WebSocket bridge: Server-side token storage, scalable
@@ -114,7 +114,7 @@ Retro Panel is a lightweight Home Assistant control panel optimized for:
 - Responsive grid layout with configurable tiles
 - Real-time state updates via WebSocket
 - Service call API with security whitelist
-- iOS 15 Safari full support
+- legacy mobile Safari (WebKit) full support
 
 **Success Metrics**:
 - Page load < 2 seconds on 4G
@@ -128,14 +128,14 @@ Retro Panel is a lightweight Home Assistant control panel optimized for:
 
 1. **Usability Over Features**: Simple, usable interface > feature-rich complexity
 2. **Robustness Over Elegance**: Reliable code > elegant but fragile code
-3. **Compatibility Over Modernity**: Works on iOS 15 > uses ES2025 features
+3. **Compatibility Over Modernity**: Works on legacy mobile Safari > uses ES2025 features
 4. **No Over-Engineering**: Build for v1.0 needs only, refactor when pattern is clear
 
 ---
 
 ## Important Constraints (MUST FOLLOW)
 
-### iOS 15 Compatibility (Hard Constraint)
+### Legacy Browser Compatibility (Hard Constraint)
 - ES2017 maximum (no transpilation)
 - All vendor prefixes included (-webkit-)
 - No async generators, Proxy, BigInt, eval()
@@ -251,7 +251,7 @@ If something is unclear or missing, it should be documented here.
 | Browser support | ARCHITECTURE.md | Browser Compatibility Matrix |
 | Local dev setup | DEVELOPMENT.md | Local Development |
 | Real HA testing | DEVELOPMENT.md | Testing on Real HA |
-| iOS 15 rules | DEVELOPMENT.md | Browser Compatibility Rules |
+| legacy mobile Safari rules | DEVELOPMENT.md | Browser Compatibility Rules |
 | Add entity type | DEVELOPMENT.md | Adding a New Entity Type |
 | Change config | DEVELOPMENT.md | Configuration Schema Changes |
 | Debug WebSocket | DEVELOPMENT.md | Debugging WebSocket Issues |

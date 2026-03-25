@@ -13,7 +13,7 @@
  * 7. Connect WebSocket for live updates
  * 8. Start clock + date
  *
- * No ES modules. iOS 15 Safari safe (WKWebView compatible).
+ * No ES modules. iOS 12+ Safari safe (WKWebView compatible).
  * Depends on: utils/dom.js, utils/format.js, api.js, ws.js,
  *             components/light.js, switch.js, sensor.js, alarm.js,
  *             energy.js, scenario.js
@@ -409,18 +409,23 @@
 
       var sectionEl = DOM.createElement('div', 'room-section');
 
+      // Visible items only
+      var visibleItems = [];
+      for (var i = 0; i < items.length; i++) {
+        if (!items[i].hidden) { visibleItems.push(items[i]); }
+      }
+
       if (section.title) {
         var sectionHeader = DOM.createElement('div', 'room-section-header');
         var titleEl = DOM.createElement('span', 'room-section-title');
         titleEl.textContent = section.title;
         sectionHeader.appendChild(titleEl);
+        var countEl = DOM.createElement('span', 'room-section-count');
+        countEl.textContent = visibleItems.length;
+        sectionHeader.appendChild(countEl);
+        var lineEl = DOM.createElement('span', 'room-section-line');
+        sectionHeader.appendChild(lineEl);
         sectionEl.appendChild(sectionHeader);
-      }
-
-      // Visible items only
-      var visibleItems = [];
-      for (var i = 0; i < items.length; i++) {
-        if (!items[i].hidden) { visibleItems.push(items[i]); }
       }
 
       if (visibleItems.length === 0) {

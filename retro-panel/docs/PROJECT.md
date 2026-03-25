@@ -11,7 +11,7 @@ Retro Panel addresses a specific gap in the Home Assistant ecosystem. While Love
 1. **Minimalists**: Users who want a simple, distraction-free interface
 2. **Mobile Users**: People accessing HA primarily from phones on slower networks
 3. **Older Device Users**: Those running Home Assistant on Raspberry Pi 3B+ or older hardware
-4. **iOS Users**: Users who need iOS 15 compatibility (older iPhones/iPads)
+4. **iOS Users**: Users who need legacy browser compatibility (older iPhones/iPads)
 5. **Network-Constrained**: Users on 3G/4G or unstable connections
 6. **Developers**: Those building custom HA interfaces and needing a lightweight foundation
 
@@ -22,7 +22,7 @@ Retro Panel addresses a specific gap in the Home Assistant ecosystem. While Love
 | Minimalists | Simple interface, no bloat | < 20 KB JS, < 20 tiles per panel |
 | Mobile Users | Fast load on 4G | < 2 second page load |
 | Older Hardware | Low resource usage | < 100 MB memory |
-| iOS Users | Full iOS 15 support | All features work on iPhone 6S + iOS 15 |
+| iOS Users | Full support on legacy devices | All features work on legacy devices (iOS 12+) |
 | Network-Constrained | Works on 3G | Functional with 500 Kbps connection |
 | Developers | Easy to extend | Clear component API, good docs |
 
@@ -35,7 +35,7 @@ The v1.0 release is considered successful when ALL of the following are true:
 - [ ] Service calls complete in < 1 second on local network
 - [ ] WebSocket automatically reconnects without user action
 - [ ] Configuration loads for typical 20-50 entity panels
-- [ ] No critical bugs in iOS 15 Safari
+- [ ] No critical bugs in legacy mobile Safari (WebKit)
 - [ ] No critical bugs in Chrome/Firefox
 
 ### Performance Requirements
@@ -47,8 +47,8 @@ The v1.0 release is considered successful when ALL of the following are true:
 - [ ] CSS bundle < 25 KB (uncompressed)
 
 ### Compatibility Requirements
-- [ ] iOS 15 Safari on iPhone 6S and newer
-- [ ] iPad Air 2 (iPadOS 15+)
+- [ ] legacy mobile Safari (WebKit) on legacy devices
+- [ ] iPad Air 2 (iOS 12+)
 - [ ] Android Chrome (latest 3 versions)
 - [ ] Desktop Chrome/Firefox/Safari (modern versions)
 - [ ] Screen sizes 320px to 2560px width (responsive)
@@ -93,7 +93,7 @@ These principles guide all development decisions for Retro Panel.
 
 **Example**: Light brightness control
 - Simple: On/Off toggle button
-- Better: Toggle + brightness slider (iOS 15 compatible)
+- Better: Toggle + brightness slider (legacy browser compatible)
 - Over-engineered: Brightness slider + RGB color picker + animation profiles (v2.0+)
 
 ### 2. Robustness Over Elegance
@@ -112,7 +112,7 @@ These principles guide all development decisions for Retro Panel.
 
 ### 3. Compatibility Over Modernity
 
-**Principle**: Code that runs on iOS 15 is worth more than code using latest ES2025 features.
+**Principle**: Code that runs on legacy mobile Safari is worth more than code using latest ES2025 features.
 
 **Application**:
 - Target ES2017 (not ES2020+) for broad compatibility
@@ -122,7 +122,7 @@ These principles guide all development decisions for Retro Panel.
 
 **Example**: State management
 - Modern: Redux + mobx + signals (too heavy)
-- Compatible: Simple object + event listeners (lightweight, iOS 15 works)
+- Compatible: Simple object + event listeners (lightweight, legacy mobile Safari works)
 
 ### 4. No Over-Engineering Rule
 
@@ -183,7 +183,7 @@ Format: Problem → Options → Decision → Rationale
 **Rationale**:
 - Smallest bundle size: ~15 KB vs. React ~35-45 KB
 - No build process: Simpler for HA developers to modify
-- No transpilation needed: Direct ES2017 → iOS 15 works
+- No transpilation needed: Direct ES2017 → legacy mobile Safari works
 - Virtual DOM diffing is overkill for simple control panel
 - State is simple (entity states), doesn't need React's complexity
 
@@ -267,9 +267,9 @@ Format: Problem → Options → Decision → Rationale
 
 ### Hard Constraints (Must Not Violate)
 
-**iOS 15 Compatibility**:
+**Legacy Browser Compatibility**:
 - Minimum: iPhone 6S (A9 chip)
-- Minimum: iOS 15.0
+- Minimum: legacy WebKit
 - Requirement: Zero transpilation, ES2017 maximum
 - Requirement: All vendor prefixes included
 
@@ -427,7 +427,7 @@ v2.0 Release Notes:
 - Week 1-2: Core API and component architecture
 - Week 3-4: Entity type components (light, switch, sensor, binary_sensor)
 - Week 5: WebSocket and real-time updates
-- Week 6: iOS 15 testing and fixes
+- Week 6: legacy mobile Safari testing and fixes
 - Week 7: Documentation and polish
 - Week 8: Testing with real HA instance
 - Week 9: Add-on linting and submission

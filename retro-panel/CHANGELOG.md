@@ -7,6 +7,43 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.5.0] — 2026-03-25
+
+### Added
+
+- **Sensor row tile** (`app/static/js/components/sensor.js`, `app/static/css/components.css`)
+  Generic sensors (non-temperature/humidity) now render as compact horizontal rows — iOS Home App-style.
+  Each row shows a circular icon bubble + entity name + current value in a full-width grid cell.
+  Temperature and humidity sensors retain the existing `climate-tile` fill-bar layout.
+  - Icon bubble gains `.sri-on` (blue tint) or `.sri-alert` (orange tint) based on state.
+  - Binary sensors with alert device classes (door, window, motion, moisture, smoke, vibration) apply `.srt-alert` highlighting when ON.
+  - Climate tiles are promoted on first `updateTile` call when `device_class` is known (temperature/humidity).
+
+- **Room section count badge** (`app/static/css/layout.css`, `app/static/js/app.js`)
+  Section headers now display a small pill badge with the count of visible entities in that section.
+  A flex-1 divider line fills the remaining header space, providing clear visual separation.
+  Classes: `.room-section-count` (badge), `.room-section-line` (divider).
+
+- **Responsive sidebar** (`app/static/css/layout.css`)
+  Sidebar auto-collapses to icon-only mode (64px) on screens ≤900px (portrait iPad, phones).
+  No JavaScript change needed — pure CSS media query. At ≥901px (landscape iPad, desktop) the sidebar
+  is expanded by default and can be toggled with the ☰ button as before.
+
+### Fixed
+
+- **iOS 12 CSS compatibility** (`app/static/css/layout.css`, `app/static/css/components.css`, `app/static/css/config.css`)
+  All `inset: 0` shorthand properties replaced with explicit `top/right/bottom/left: 0` (supported from iOS 14.5+ only).
+  All `gap` properties on flex containers replaced with `> * + *` margin selectors (flex `gap` requires iOS 14.5+; grid `gap` was already supported from iOS 12 and was left unchanged).
+  Added `height: -webkit-fill-available` fallback between `100vh` and `100dvh` for correct full-screen rendering on iOS < 15.4.
+  Affected rules: `#loading-screen`, `.loading-content`, `#disconnect-banner`, `#panel`, `.sidebar-settings`, `#sidebar-rooms-back`, `.sidebar-nav-item`, `#panel-header`, `#header-info`, `#header-sensors`, `.header-sensor-chip`, `.empty-state`, `.light-tint`, `.tile.state-on::before`, `.tile.entity-sensor.sensor-alert::before`, `.scenario-card`, `.scenario-card.scenario-done::before`, `.rp-bs-overlay`, `.alarm-actions`, `.tab-btn`, and 16 rules in `config.css`.
+
+### Changed
+
+- **Documentation cleanup** — all "iOS 15" / "iPadOS 15+" references updated to "legacy devices (iOS 12+)" across `DOCS.md`, `CHANGELOG.md`, `docs/AUDIT_REPORT.md`, `docs/ROADMAP.md`, `docs/PROJECT.md`, `config.yaml`, and `app/static/js/app.js`.
+  Deleted `docs/CHANGELOG.md` (outdated duplicate — root `CHANGELOG.md` is authoritative).
+
+---
+
 ## [1.4.1] — 2026-03-24
 
 ### Fixed
@@ -142,7 +179,7 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - Each row: SVG icon (22px) + human-readable label + checkmark when selected.
   - Trigger button arrow rotates when the dropdown is open.
   - Click outside closes the dropdown automatically.
-  - iOS 15 Safari compatible (no ES modules, no flex gap, no `<dialog>`).
+  - Legacy browser compatible (no ES modules, no flex gap, no `<dialog>`).
 
 ### Tests
 
@@ -155,5 +192,5 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-**Document Version**: 1.0.0
-**Last Updated**: 2026-03-24
+**Document Version**: 1.1.0
+**Last Updated**: 2026-03-25

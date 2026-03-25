@@ -1,8 +1,8 @@
 # Retro Panel — Documentation
 
 Retro Panel is a lightweight kiosk dashboard for Home Assistant, designed for
-**wall-mounted tablets and always-on displays**. It targets iOS 15 Safari,
-older Android WebView, and any browser from the last decade.
+**wall-mounted tablets and always-on displays**. It targets legacy devices
+no longer receiving OS updates, older Android WebView, and any browser from the last decade.
 
 ---
 
