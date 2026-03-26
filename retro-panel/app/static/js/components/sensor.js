@@ -100,16 +100,46 @@ window.SensorComponent = (function () {
     var label = entityConfig.label;
     var icon = entityConfig.icon;
     var isBinary = entity_id.indexOf('binary_sensor.') === 0;
+    var displayMode = entityConfig.display_mode || 'auto';
 
     var DOM = window.RP_DOM;
     var FMT = window.RP_FMT;
 
-    // All sensors start as sensor-row-tile; climate sensors are promoted on first update
+    // Se display_mode è 'climate', crea direttamente una climate tile
+    if (displayMode === 'climate') {
+      var climateTile = DOM.createElement('div', 'tile climate-tile sensor-tile entity-sensor');
+      climateTile.dataset.entityId = entity_id;
+      climateTile.dataset.isBinary = 'false';
+      climateTile.dataset.label = label;
+      climateTile.dataset.icon = icon || '';
+      climateTile.dataset.displayMode = 'climate';
+      climateTile.dataset.climateForced = 'true';
+
+      var cTop = DOM.createElement('div', 'tile-top');
+      var cIconEl = DOM.createElement('span', 'tile-icon');
+      cIconEl.innerHTML = FMT.getIcon(icon, 28, entity_id);
+      cTop.appendChild(cIconEl);
+
+      var cBottom = DOM.createElement('div', 'tile-bottom');
+      var cValueEl = DOM.createElement('span', 'tile-value', '\u2014');
+      var cLabelEl = DOM.createElement('span', 'tile-label', label);
+      cBottom.appendChild(cValueEl);
+      cBottom.appendChild(cLabelEl);
+
+      climateTile.appendChild(cTop);
+      climateTile.appendChild(cBottom);
+      return climateTile;
+    }
+
+    // Default: sensor-row-tile (anche per display_mode 'row' e 'auto')
     var tile = DOM.createElement('div', 'tile sensor-row-tile entity-sensor state-off');
     tile.dataset.entityId = entity_id;
     tile.dataset.isBinary = isBinary ? 'true' : 'false';
     tile.dataset.label = label;
     tile.dataset.icon = icon || '';
+    if (displayMode !== 'auto') {
+      tile.dataset.displayMode = displayMode;
+    }
 
     var iconWrap = DOM.createElement('div', 'sensor-row-icon');
     iconWrap.innerHTML = FMT.getIcon(icon, 20, entity_id);
@@ -158,6 +188,7 @@ window.SensorComponent = (function () {
     var attributes = stateObj.attributes || {};
     var isBinary = tile.dataset.isBinary === 'true';
     var isRowTile = tile.classList.contains('sensor-row-tile');
+    var forcedMode = tile.dataset.displayMode || 'auto';
 
     tile.classList.remove('state-on', 'state-off', 'state-unavailable');
 
@@ -170,9 +201,24 @@ window.SensorComponent = (function () {
       return;
     }
 
+    // Path climate forzato (display_mode: 'climate' impostato in createTile)
+    if (tile.dataset.climateForced === 'true') {
+      tile.classList.add('climate-tile', 'state-on');
+      var forcedNumVal = parseFloat(state);
+      if (!isNaN(forcedNumVal)) {
+        var forcedPct = Math.max(0, Math.min(100, forcedNumVal));
+        tile.style.setProperty('--climate-pct', String(Math.round(forcedPct)));
+        tile.style.setProperty('--climate-color', 'var(--color-accent)');
+      }
+      var forcedClimateVal = tile.querySelector('.tile-value');
+      if (forcedClimateVal) { forcedClimateVal.textContent = window.RP_FMT.formatSensorValue(state, attributes); }
+      return;
+    }
+
     if (!isBinary) {
       var dc = attributes.device_class;
-      if (dc && CLIMATE_CLASSES[dc]) {
+      // Auto-promozione climate solo se forcedMode non è 'row'
+      if (dc && CLIMATE_CLASSES[dc] && forcedMode !== 'row') {
         // Promote to climate tile on first update if still in row layout
         if (isRowTile) {
           rebuildAsClimateTile(tile);

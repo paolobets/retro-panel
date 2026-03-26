@@ -753,7 +753,7 @@
                 break;
               }
             }
-            targetSection.items.push({ type: 'entity', entity_id: eid, label: autoLabel, icon: '', hidden: false });
+            targetSection.items.push({ type: 'entity', entity_id: eid, label: autoLabel, icon: '', hidden: false, display_mode: 'auto' });
             added++;
           }
         }
@@ -1167,7 +1167,7 @@
     var items = contextItems();
     if (!items) { return; }
     if (isEntityInContext(entityId)) { return; }
-    items.push({ type: 'entity', entity_id: entityId, label: friendlyName || '', icon: '', hidden: false });
+    items.push({ type: 'entity', entity_id: entityId, label: friendlyName || '', icon: '', hidden: false, display_mode: 'auto' });
     refreshItemsList(pickerContext === 'overview' ? 'overview' : 'section');
     renderEntityList();
   }

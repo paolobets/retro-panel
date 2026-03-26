@@ -7,6 +7,30 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.6.1] — 2026-03-26
+
+### Fixed
+
+- **display_mode non salvato alla creazione entità** (`app/static/js/config.js`)
+  Quando un'entità veniva aggiunta (da picker o import area), il campo `display_mode`
+  non era incluso nell'oggetto item. Se l'utente non toccava il dropdown, il valore
+  non veniva mai persistito nel JSON. Aggiunto `display_mode: 'auto'` esplicitamente
+  in entrambi i punti di creazione item.
+
+- **display_mode 'climate' non crea il tile corretto** (`app/static/js/components/sensor.js`)
+  `createTile()` ignorava `cfg.display_mode` e creava sempre una `sensor-row-tile`.
+  Aggiunto branch in `createTile`: se `display_mode === 'climate'`, viene costruita
+  direttamente una `climate-tile` con `dataset.climateForced = 'true'`, senza attendere
+  la promozione automatica basata su `device_class`.
+
+- **display_mode 'row' non bloccava la promozione a climate** (`app/static/js/components/sensor.js`)
+  `updateTile()` ignorava `display_mode` e promuoveva a climate tile basandosi solo su
+  `device_class`. Un sensore temperatura con `display_mode: 'row'` veniva comunque promosso
+  a climate tile al primo update. Aggiunto controllo `forcedMode !== 'row'` sulla condizione
+  di auto-promozione, e path dedicato per `tile.dataset.climateForced === 'true'`.
+
+---
+
 ## [1.6.0] — 2026-03-26
 
 ### Refactoring — Frontend completo riscritto
