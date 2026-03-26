@@ -7,6 +7,16 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.6.4] — 2026-03-26
+
+### Fixed
+
+- **climate-tile schiacciata dai vicini nella grid** (`app/static/css/components.css`)
+  `.climate-tile` non aveva `min-height` propria (ereditava solo 120px da `.tile`) e usava
+  `align-self: stretch` (default), quindi veniva ridimensionata alla riga calcolata sui tile
+  vicini più bassi (es. switch 120px, sensor-row 72px). Fix: aggiunto `min-height: 160px` e
+  `align-self: start` — la tile mantiene ora le proprie dimensioni indipendentemente dai vicini.
+
 ## [1.6.3] — 2026-03-26
 
 ### Fixed

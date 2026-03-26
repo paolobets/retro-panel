@@ -396,6 +396,8 @@
   cursor: default;
   pointer-events: none;
   overflow: hidden;
+  min-height: 160px;
+  align-self: start;
 }
 
 .tile.climate-tile:active { transform: none; }
