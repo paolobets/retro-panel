@@ -145,6 +145,18 @@
         html += '<div class="selected-entity-info">';
         html += '<span class="selected-id">' + esc(item.entity_id) + '</span>';
         html += '<input type="text" class="item-label-input" placeholder="Display name\u2026" value="' + esc(item.label || '') + '" data-idx="' + i + '" data-ctx="' + esc(context) + '">';
+        html += '<select class="item-mode-select" data-idx="' + i + '" data-ctx="' + esc(context) + '">';
+        var modeOpts = [
+          { v: 'auto',    l: 'Automatico' },
+          { v: 'row',     l: 'Riga compatta (sensori)' },
+          { v: 'tile',    l: 'Riquadro standard' },
+          { v: 'climate', l: 'Clima (valore grande)' }
+        ];
+        var currentMode = item.display_mode || 'auto';
+        for (var mi = 0; mi < modeOpts.length; mi++) {
+          html += '<option value="' + modeOpts[mi].v + '"' + (currentMode === modeOpts[mi].v ? ' selected' : '') + '>' + modeOpts[mi].l + '</option>';
+        }
+        html += '</select>';
         html += '</div>';
         html += '<div class="selected-actions">';
         html += '<button class="item-visibility-btn" type="button" title="' + (isHidden ? 'Show' : 'Hide') + '" data-idx="' + i + '" data-ctx="' + esc(context) + '">' + (isHidden ? (window.RP_MDI ? window.RP_MDI('eye-off', 18) : '\uD83D\uDE48') : (window.RP_MDI ? window.RP_MDI('eye', 18) : '\uD83D\uDC41')) + '</button>';
@@ -204,6 +216,17 @@
         var items = getItemsForContext(ctx);
         if (items[idx]) {
           items[idx].label = this.value.trim();
+        }
+      });
+    });
+
+    container.querySelectorAll('.item-mode-select').forEach(function (sel) {
+      sel.addEventListener('change', function () {
+        var idx = parseInt(this.getAttribute('data-idx'), 10);
+        var ctx = this.getAttribute('data-ctx');
+        var items = getItemsForContext(ctx);
+        if (items[idx]) {
+          items[idx].display_mode = this.value || 'auto';
         }
       });
     });

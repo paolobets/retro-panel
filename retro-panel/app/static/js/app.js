@@ -83,7 +83,13 @@
     if (tile) {
       var domain = entityId.split('.')[0];
       var component = COMPONENTS[domain];
-      if (component) { component.updateTile(tile, newState); }
+      if (component) {
+        try {
+          component.updateTile(tile, newState);
+        } catch (err) {
+          console.error('[app] updateTile failed for', entityId, err);
+        }
+      }
     }
 
     for (var i = 0; i < AppState.energyTiles.length; i++) {
@@ -92,7 +98,11 @@
       if (entityId === cfg.solar_power || entityId === cfg.battery_soc ||
           entityId === cfg.battery_power || entityId === cfg.grid_power ||
           entityId === cfg.home_power) {
-        window.EnergyFlowComponent.updateTile(et.tile, AppState.states);
+        try {
+          window.EnergyFlowComponent.updateTile(et.tile, AppState.states);
+        } catch (err) {
+          console.error('[app] EnergyFlow updateTile failed:', err);
+        }
       }
     }
 
@@ -340,6 +350,22 @@
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Component resolver — rispetta item.display_mode se configurato
+  // ---------------------------------------------------------------------------
+  function resolveComponent(item) {
+    var domain = item.entity_id.split('.')[0];
+    var dm = item.display_mode || 'auto';
+
+    // display_mode override: 'row' e 'climate' usano sempre SensorComponent
+    // 'tile' usa il componente nativo del dominio (senza override)
+    // 'auto' = comportamento corrente (componente per dominio)
+    if (dm === 'row' || dm === 'climate') {
+      return window.SensorComponent || null;
+    }
+    return COMPONENTS[domain] || null;
+  }
+
   function renderItemsGrid(container, items, heading) {
     if (heading) {
       var h = DOM.createElement('h2', 'section-heading');
@@ -367,12 +393,15 @@
 
       if (item.type === 'entity') {
         var domain = item.entity_id.split('.')[0];
-        var component = COMPONENTS[domain];
+        var component = resolveComponent(item);
         if (!component) {
           console.warn('[app] No component for domain:', domain, item.entity_id);
           continue;
         }
         var tile = component.createTile(item);
+        if (item.display_mode && item.display_mode !== 'auto') {
+          tile.dataset.displayMode = item.display_mode;
+        }
         AppState.tileMap[item.entity_id] = tile;
 
         var stateObj = AppState.states[item.entity_id];
@@ -449,12 +478,15 @@
         try {
           if (item.type === 'entity') {
             var domain = item.entity_id.split('.')[0];
-            var component = COMPONENTS[domain];
+            var component = resolveComponent(item);
             if (!component) {
               console.warn('[app] No component for domain:', domain, item.entity_id);
               continue;
             }
             var tile = component.createTile(item);
+            if (item.display_mode && item.display_mode !== 'auto') {
+              tile.dataset.displayMode = item.display_mode;
+            }
             AppState.tileMap[item.entity_id] = tile;
             if (domain === 'alarm_control_panel') { tile.classList.add('alarm-tile'); }
             grid.appendChild(tile);                              // ← appendChild PRIMA

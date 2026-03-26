@@ -7,6 +7,36 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.5.4] — 2026-03-26
+
+### Fixed
+
+- **Sidebar frozen on iPad — WebSocket path** (`app/static/js/app.js`)
+  `updateEntityState()` called `component.updateTile()` without a try/catch. On
+  Safari/WKWebView an uncaught exception in a WebSocket `message` handler
+  blocks subsequent touch events exactly like an uncaught exception in a
+  `touchend` handler. The call is now wrapped in try/catch with a console.error
+  fallback, eliminating the remaining freeze vector after v1.5.3.
+  Same protection added around `EnergyFlowComponent.updateTile()` in the same
+  handler.
+
+### Added
+
+- **Per-entity display mode** (`app/static/js/app.js`, `app/static/js/config.js`)
+  Each entity in the config editor now shows a "Visualizzazione" dropdown with
+  four options:
+  - **Automatico** (default) — component chosen by domain, same behaviour as before
+  - **Riga compatta** — forces `SensorComponent` row layout (icon + name + value)
+  - **Riquadro standard** — forces native domain component (tile layout)
+  - **Clima (valore grande)** — forces `SensorComponent` climate/fill-bar layout
+
+  The selected value is stored as `display_mode` on the item object and
+  persisted to `entities.json`. `resolveComponent(item)` in `app.js` reads
+  `item.display_mode` and overrides the automatic domain → component lookup
+  when the value is not `'auto'`.
+
+---
+
 ## [1.5.3] — 2026-03-26
 
 ### Fixed
@@ -274,4 +304,4 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ---
 
 **Document Version**: 1.1.0
-**Last Updated**: 2026-03-25
+**Last Updated**: 2026-03-26
