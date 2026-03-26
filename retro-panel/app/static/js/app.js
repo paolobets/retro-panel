@@ -301,7 +301,11 @@
       showRoomsSubmenu(AppState.config);
     }
     setActiveSidebarItem(sectionId);
-    renderActiveSection();
+    try {
+      renderActiveSection();
+    } catch (err) {
+      console.error('[app] renderActiveSection failed:', err);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -442,26 +446,28 @@
 
       for (var j = 0; j < visibleItems.length; j++) {
         var item = visibleItems[j];
-
-        if (item.type === 'entity') {
-          var domain = item.entity_id.split('.')[0];
-          var component = COMPONENTS[domain];
-          if (!component) {
-            console.warn('[app] No component for domain:', domain, item.entity_id);
-            continue;
+        try {
+          if (item.type === 'entity') {
+            var domain = item.entity_id.split('.')[0];
+            var component = COMPONENTS[domain];
+            if (!component) {
+              console.warn('[app] No component for domain:', domain, item.entity_id);
+              continue;
+            }
+            var tile = component.createTile(item);
+            AppState.tileMap[item.entity_id] = tile;
+            if (domain === 'alarm_control_panel') { tile.classList.add('alarm-tile'); }
+            grid.appendChild(tile);                              // ← appendChild PRIMA
+            var stateObj = AppState.states[item.entity_id];
+            if (stateObj) { component.updateTile(tile, stateObj); }  // ← updateTile DOPO
+          } else if (item.type === 'energy_flow') {
+            var efTile = window.EnergyFlowComponent.createTile(item);
+            AppState.energyTiles.push({ tile: efTile, cfg: item });
+            grid.appendChild(efTile);
+            window.EnergyFlowComponent.updateTile(efTile, AppState.states);
           }
-          var tile = component.createTile(item);
-          AppState.tileMap[item.entity_id] = tile;
-          var stateObj = AppState.states[item.entity_id];
-          if (stateObj) { component.updateTile(tile, stateObj); }
-          if (domain === 'alarm_control_panel') { tile.classList.add('alarm-tile'); }
-          grid.appendChild(tile);
-
-        } else if (item.type === 'energy_flow') {
-          var efTile = window.EnergyFlowComponent.createTile(item);
-          window.EnergyFlowComponent.updateTile(efTile, AppState.states);
-          AppState.energyTiles.push({ tile: efTile, cfg: item });
-          grid.appendChild(efTile);
+        } catch (err) {
+          console.error('[app] Failed to render tile:', (item && item.entity_id) || item, err);
         }
       }
     }

@@ -7,6 +7,35 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.5.3] — 2026-03-26
+
+### Fixed
+
+- **Sidebar bloccata su iPad con stanze a sezioni** (`app/static/js/app.js`)
+  Su Safari iOS/WKWebView un'eccezione non catturata in `renderRoomSections()` —
+  scatenata da `updateTile()` chiamato su nodi non ancora nel DOM — propagava
+  fino al `touchend` handler della sidebar bloccando tutti gli eventi touch
+  successivi. Fix: `renderActiveSection()` avvolto in `try/catch` in
+  `navigateTo()`; loop tile avvolto in `try/catch` per-item; `appendChild(tile)`
+  spostato prima di `updateTile()` così il nodo è nel DOM al momento del rebuild.
+
+- **Allineamento visivo al mockup approvato** (`app/static/css/components.css`)
+  Corrette tutte le discrepanze tra implementazione e mockup `oggetti_definitivi.html`:
+  - Padding base tile 16px → **12px** (sistemico su tutti i componenti)
+  - Toggle pill 44×26px → **38×22px**; thumb 20px → **16px**; translateX 18→**16px**
+  - Alarm tile `min-height` 200px → **240px**
+  - Bottoni allarme: "Casa" arancione→**blu accent**; "Disarma" verde→**blu accent**
+  - `alarm-pin-display`: aggiunto `background-color`, `border-radius`, `padding 6px 12px`
+  - `srt-alert` border-color: colore pieno → **rgba(255,107,0,0.32)** (semitrasparente)
+  - Rimossa opacity ridotta su icona OFF (0.40), label luce OFF (0.55), toggle OFF (0.5)
+    — non previste dal mockup; icona usa solo cambio colore via JS
+  - Switch label OFF: corretta a **opacity 0.6** (valore mockup)
+  - `alarm-key` min-height 56→**52px**; delete key font-size 18→**16px**
+  - `sensor-row-value`: aggiunto `letter-spacing: -0.02em`
+  - `sensor-row-name`: aggiunto `line-height: 1.2`
+
+---
+
 ## [1.5.2] — 2026-03-26
 
 ### Fixed

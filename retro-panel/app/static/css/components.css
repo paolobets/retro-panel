@@ -6,7 +6,7 @@
 .tile {
   background-color: var(--color-surface);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 12px;
   min-height: 120px;
   cursor: pointer;
   position: relative;
@@ -49,7 +49,7 @@
 /* State: OFF */
 .tile.state-off {
   border-color: transparent;
-  opacity: 0.60;
+  opacity: 1;
 }
 
 /* ---- Entity-type semantic colors ---- */
@@ -121,9 +121,9 @@
 
 /* ---- iOS-style pill toggle (replaces old 14px dot indicator) ---- */
 .tile-toggle {
-  width: 44px;
-  height: 26px;
-  border-radius: 13px;
+  width: 38px;
+  height: 22px;
+  border-radius: 11px;
   background: var(--color-off);
   position: relative;
   flex-shrink: 0;
@@ -131,8 +131,8 @@
 }
 
 .tile-toggle-thumb {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: #fff;
   position: absolute;
@@ -147,7 +147,7 @@
 }
 
 .state-on .tile-toggle-thumb {
-  transform: translateX(18px);
+  transform: translateX(16px);
 }
 
 .tile-bottom {
@@ -249,7 +249,7 @@
 /* ---- Alarm Tile ---- */
 .tile.alarm-tile {
   cursor: default;
-  min-height: 200px;
+  min-height: 240px;
   padding: 18px;
   grid-column: 1 / -1;
   transition: border-color 0.3s ease, background-color 0.3s ease;
@@ -305,11 +305,14 @@
 /* PIN Input */
 .alarm-pin-display {
   font-size: 22px;
-  letter-spacing: 0.3em;
+  letter-spacing: 0.35em;
   color: var(--color-text-primary);
   font-family: monospace;
-  min-height: 32px;
-  margin: 10px 0;
+  min-height: 34px;
+  margin: 12px 0 8px;
+  background-color: var(--color-surface-2);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
 }
 
 /* PIN Keypad */
@@ -327,7 +330,7 @@
   color: var(--color-text-primary);
   font-size: 22px;
   font-weight: 600;
-  min-height: 56px;
+  min-height: 52px;
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -341,7 +344,7 @@
 }
 
 .alarm-key.key-delete {
-  font-size: 18px;
+  font-size: 16px;
   color: var(--color-warning);
 }
 
@@ -372,9 +375,9 @@
 
 .alarm-btn:active { opacity: 0.75; }
 
-.alarm-btn-arm-home  { background-color: var(--color-warning); color: #000; }
-.alarm-btn-arm-away  { background-color: var(--color-accent);  color: #fff; }
-.alarm-btn-disarm    { background-color: var(--color-on);      color: #000; }
+.alarm-btn-arm-home  { background-color: var(--color-accent); color: #fff; }
+.alarm-btn-arm-away  { background-color: var(--color-accent); color: #fff; }
+.alarm-btn-disarm    { background-color: var(--color-accent); color: #fff; }
 .alarm-btn-disarm-danger { background-color: var(--color-danger); color: #fff; }
 
 /* Alarm error message */
@@ -603,22 +606,15 @@
 /* ============================================================
    State OFF: selective opacity (NOT global — preserves text readability)
    ============================================================ */
-/* Override the old global opacity rule */
+/* State: OFF */
 .tile.state-off {
   border-color: transparent;
-  opacity: 1; /* remove global opacity */
+  opacity: 1;
 }
 
-.tile.state-off .tile-icon {
-  opacity: 0.40;
-}
-
-.tile.state-off .tile-label {
-  opacity: 0.55;
-}
-
-.tile.state-off .tile-toggle {
-  opacity: 0.5;
+/* Switch label OFF: opacity ridotta (come da mockup) */
+.tile.entity-switch.state-off .tile-label {
+  opacity: 0.6;
 }
 
 /* ============================================================
@@ -787,6 +783,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 500;
+  line-height: 1.2;
 }
 
 .sensor-row-value {
@@ -794,11 +791,12 @@
   font-weight: 700;
   color: var(--color-text-primary);
   line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
 /* Alert state: binary sensor triggered (door open, motion, etc.) */
 .tile.sensor-row-tile.srt-alert {
-  border-color: var(--color-binary-alert);
+  border-color: rgba(255,107,0,0.32);
 }
 
 .tile.sensor-row-tile.srt-alert::after {
