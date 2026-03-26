@@ -76,16 +76,7 @@
       titleEl.innerHTML = 'Retro <span style="color:var(--color-accent)">PANEL</span>';
     }
     document.title = config.title || 'Retro Panel';
-
-    // Colonne
-    var contentArea = DOM.qs('#content-area');
-    if (contentArea) {
-      var portrait = config.columns || 3;
-      var landscape = portrait + 1;
-      if (landscape > 4) { landscape = 4; }
-      contentArea.style.setProperty('--columns', String(portrait));
-      contentArea.style.setProperty('--columns-landscape', String(landscape));
-    }
+    // Colonne: gestite interamente dai media query CSS su --tile-cols
   }
 
   // ---------------------------------------------------------------------------

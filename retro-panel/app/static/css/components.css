@@ -54,6 +54,16 @@
 
 /* ---- Entity-type semantic colors ---- */
 
+/* Light: occupa 2 unità di altezza nella grid */
+.tile.entity-light {
+  grid-row: span 2;
+}
+
+/* Switch: occupa 2 unità di altezza nella grid */
+.tile.entity-switch {
+  grid-row: span 2;
+}
+
 /* Light ON: amber instead of generic green */
 .tile.entity-light.state-on {
   border-color: var(--color-light-on);
@@ -252,6 +262,7 @@
   min-height: 240px;
   padding: 18px;
   grid-column: 1 / -1;
+  grid-row: span 4;
   transition: border-color 0.3s ease, background-color 0.3s ease;
 }
 
@@ -396,8 +407,7 @@
   cursor: default;
   pointer-events: none;
   overflow: hidden;
-  min-height: 160px;
-  align-self: start;
+  grid-row: span 2;
 }
 
 .tile.climate-tile:active { transform: none; }
@@ -730,6 +740,7 @@
   flex-direction: row;
   -webkit-align-items: center;
   align-items: center;
+  grid-row: span 1;
   min-height: 72px;
   padding: 13px 16px;
   cursor: default;

@@ -7,6 +7,26 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.6.5] — 2026-03-26
+
+### Changed
+
+- **Layout proporzionale a unità fisse** (`app/static/css/layout.css`, `components.css`, `app/static/js/app.js`)
+  Rimossa la configurazione manuale delle colonne. Il sistema ora calcola automaticamente
+  le colonne dal viewport (2 su phone <600px, 3 su tablet portrait, 4 su landscape ≥1024px)
+  e posiziona le tile con proporzioni fisse:
+  - Light / Switch: 2 unità di altezza (`grid-row: span 2`)
+  - Sensor-row / Binary sensor: 1 unità (`grid-row: span 1`)
+  - 2 sensori sovrapposti = 1 luce/interruttore in altezza
+  - Climate tile: 2 unità
+  - Alarm: larghezza piena + 4 unità
+  Ogni tile mantiene le proprie dimensioni indipendentemente dai vicini.
+
+### Removed
+
+- **Campo `columns` dalla configurazione** (`config.yaml`, `app/config/loader.py`, `app/api/handlers_config.py`)
+  Non più necessario: il numero di colonne è determinato automaticamente dal viewport.
+
 ## [1.6.4] — 2026-03-26
 
 ### Fixed

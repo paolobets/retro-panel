@@ -168,7 +168,6 @@ class PanelConfig:
     ha_url: str
     ha_token: str
     title: str
-    columns: int
     theme: str
     kiosk_mode: bool
     refresh_interval: int
@@ -472,12 +471,6 @@ def load_config() -> PanelConfig:
         ha_url = "http://homeassistant:8123"
         logger.info("ha_url not configured, using default: %s", ha_url)
 
-    columns_raw = raw.get("columns", 3)
-    try:
-        columns = int(columns_raw)
-    except (TypeError, ValueError):
-        columns = 3
-
     entities_file = Path("/data/entities.json")
     options_entities = raw.get("entities", [])
     overview_items, overview_title, rooms, scenarios, header_sensors, cameras = _load_layout(
@@ -497,7 +490,6 @@ def load_config() -> PanelConfig:
         ha_url=ha_url,
         ha_token=ha_token,
         title=raw.get("panel_title", raw.get("title", "Retro Panel")),
-        columns=columns,
         theme=raw.get("theme", "dark"),
         kiosk_mode=bool(raw.get("kiosk_mode", False)),
         refresh_interval=int(raw.get("refresh_interval", 30) or 30),
@@ -510,9 +502,8 @@ def load_config() -> PanelConfig:
     )
 
     logger.info(
-        "Config loaded: title=%r, columns=%d, overview=%d entities, rooms=%d, scenarios=%d, cameras=%d, theme=%r",
+        "Config loaded: title=%r, overview=%d entities, rooms=%d, scenarios=%d, cameras=%d, theme=%r",
         config.title,
-        config.columns,
         total_entities,
         len(rooms),
         len(scenarios),

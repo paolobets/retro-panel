@@ -118,6 +118,19 @@
 :root {
   --sidebar-w: 200px;
   --sidebar-w-sm: 64px;
+
+  /* ---- Proportional tile grid ---- */
+  --tile-unit: 80px;   /* 1 unit = sensor-row height */
+  --tile-gap: 8px;
+  --tile-cols: 3;      /* default: iPad portrait */
+}
+
+@media (max-width: 599px) {
+  :root { --tile-cols: 2; }
+}
+
+@media (orientation: landscape) and (min-width: 1024px) {
+  :root { --tile-cols: 4; }
 }
 
 /* Sidebar base — sempre 200px su tutti gli schermi ≥ 600px */
@@ -579,20 +592,13 @@
    GRIGLIE TILE
    ============================================================ */
 
-/* Griglia fissa (colonne da config) */
-.tile-grid {
-  display: grid;
-  grid-template-columns: repeat(var(--columns, 3), 1fr);
-  gap: 12px;
-  margin-bottom: 24px;
-  align-content: start;
-}
-
-/* Griglia auto-fill per room sections */
+/* Griglia proporzionale a unità fisse */
+.tile-grid,
 .tile-grid-auto {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(var(--tile-cols), 1fr);
+  grid-auto-rows: var(--tile-unit);
+  gap: var(--tile-gap);
   margin-bottom: 24px;
   align-content: start;
 }
@@ -672,19 +678,4 @@
   }
 }
 
-/* ---- Responsive grids ---- */
-@media (max-width: 599px) {
-  .tile-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .tile-grid-auto {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (orientation: landscape) and (min-width: 600px) {
-  .tile-grid {
-    grid-template-columns: repeat(var(--columns-landscape, var(--columns, 4)), 1fr);
-  }
-}
+/* Colonne gestite interamente da --tile-cols in :root + media query su :root */
