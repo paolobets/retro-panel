@@ -731,11 +731,11 @@
   flex-direction: row;
   -webkit-align-items: center;
   align-items: center;
-  min-height: 56px;
-  padding: 10px 14px;
+  min-height: 72px;
+  padding: 13px 16px;
   cursor: default;
   pointer-events: none;
-  grid-column: 1 / -1;
+  border: 1px solid rgba(255,255,255,0.07);
 }
 
 .tile.sensor-row-tile:active { transform: none; }
@@ -745,9 +745,9 @@
 .tile.sensor-row-tile.state-on::before { display: none; }
 
 .sensor-row-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
   background-color: var(--color-surface-2);
   display: -webkit-flex;
   display: flex;
@@ -767,8 +767,8 @@
 }
 
 .sensor-row-icon.sri-alert {
-  background-color: rgba(255, 152, 0, 0.18);
-  color: var(--color-binary-alert);
+  background: rgba(255,107,0,0.20);
+  color: #FF6B00;
 }
 
 .sensor-row-text {
@@ -808,4 +808,56 @@
   background-color: var(--color-binary-alert);
   opacity: 0.08;
   pointer-events: none;
+}
+
+/* Icon bubble colors — semantic sensor states */
+.sensor-row-icon.sri-temp-warm   { background: rgba(239,108,0,0.18);  color: #ef6c00; }
+.sensor-row-icon.sri-temp-cool   { background: rgba(30,136,229,0.18); color: #1e88e5; }
+.sensor-row-icon.sri-humidity    { background: rgba(30,136,229,0.18); color: #29b6f6; }
+.sensor-row-icon.sri-co2         { background: rgba(156,39,176,0.20); color: #ab47bc; }
+.sensor-row-icon.sri-battery-low { background: rgba(244,67,54,0.18);  color: #ef5350; }
+.sensor-row-icon.sri-energy      { background: rgba(33,150,243,0.18); color: #2196f3; }
+.sensor-row-icon.sri-ok          { background: rgba(255,255,255,0.07); color: var(--color-text-secondary); }
+.sensor-row-icon.sri-presence    { background: rgba(76,175,80,0.20);  color: #4caf50; }
+.sensor-row-icon.sri-critical    { background: rgba(244,67,54,0.25);  color: #f44336; }
+
+/* Value color classes — semantic sensor states */
+.sensor-row-value.srv-temp-warm { color: #ef6c00; }
+.sensor-row-value.srv-temp-cool { color: #1e88e5; }
+.sensor-row-value.srv-humid     { color: #29b6f6; }
+.sensor-row-value.srv-co2       { color: #ab47bc; }
+.sensor-row-value.srv-danger    { color: var(--color-danger); }
+.sensor-row-value.srv-accent    { color: var(--color-accent); }
+.sensor-row-value.srv-muted     { color: var(--color-text-secondary); }
+.sensor-row-value.srv-alert     { color: var(--color-binary-alert); }
+.sensor-row-value.srv-on        { color: var(--color-on); }
+
+/* Tile state variants */
+.tile.sensor-row-tile.srt-presence { border-color: rgba(76,175,80,0.32); }
+.tile.sensor-row-tile.srt-presence::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  background: rgba(76,175,80,0.06);
+  pointer-events: none;
+}
+
+.tile.sensor-row-tile.srt-critical { border-color: rgba(244,67,54,0.50); }
+.tile.sensor-row-tile.srt-critical::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  background: rgba(244,67,54,0.09);
+  pointer-events: none;
+  -webkit-animation: critical-bg-pulse 1.4s ease-in-out infinite;
+  animation: critical-bg-pulse 1.4s ease-in-out infinite;
+}
+
+@-webkit-keyframes critical-bg-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+@keyframes critical-bg-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
 }

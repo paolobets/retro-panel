@@ -7,6 +7,28 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.5.2] — 2026-03-26
+
+### Fixed
+
+- **Sensor row tile — allineamento mockup** (`app/static/css/components.css`, `app/static/js/components/sensor.js`)
+  Il componente `sensor-row-tile` non corrispondeva al mockup approvato (`oggetti_definitivi.html`):
+  - `grid-column: 1/-1` rimosso: le tile occupano celle normali nella griglia (non più full-width)
+  - `min-height` 56px → 72px, `padding` 10px 14px → 13px 16px
+  - Icona `border-radius` 50% → 11px (rettangolo arrotondato, non cerchio)
+  - Icona dimensioni 38px → 42px
+  - Bordo base `1px solid rgba(255,255,255,0.07)` aggiunto (tile visibili anche senza stato attivo)
+  - Aggiunte 9 classi semantiche icona: `sri-temp-warm/cool`, `sri-humidity`, `sri-co2`,
+    `sri-battery-low`, `sri-energy`, `sri-ok`, `sri-presence`, `sri-critical`
+  - Aggiunte 9 classi semantiche valore: `srv-temp-warm/cool`, `srv-humid`, `srv-co2`,
+    `srv-danger`, `srv-accent`, `srv-muted`, `srv-alert`, `srv-on`
+  - Aggiunte varianti tile `srt-presence` (verde) e `srt-critical` (rosso pulsante)
+  - `sensor.js`: logica colori aggiornata con mapping `device_class` → `sri-*`/`srv-*`,
+    warm/cool automatico a soglia 18°C, battery-low sotto 20%, gerarchia
+    critical > presence > alert per binary sensor
+
+---
+
 ## [1.5.1] — 2026-03-26
 
 ### Fixed

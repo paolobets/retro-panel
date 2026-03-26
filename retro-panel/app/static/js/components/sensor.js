@@ -30,6 +30,71 @@ window.SensorComponent = (function () {
     moisture: true, smoke: true, vibration: true,
   };
 
+  // Binary sensor device classes that indicate presence/occupancy (ON → srt-presence)
+  var BINARY_PRESENCE_CLASSES = {
+    occupancy: true, presence: true,
+  };
+
+  // Binary sensor device classes that indicate critical hazard (ON → srt-critical)
+  var BINARY_CRITICAL_CLASSES = {
+    smoke: true, gas: true, carbon_monoxide: true,
+  };
+
+  // Icon bubble class mapping by device_class (non-binary sensors)
+  var SENSOR_ICON_CLASS = {
+    temperature:    'sri-temp-warm',
+    humidity:       'sri-humidity',
+    co2:            'sri-co2',
+    carbon_dioxide: 'sri-co2',
+    battery:        'sri-battery-low',
+    power:          'sri-energy',
+    energy:         'sri-energy',
+    voltage:        'sri-energy',
+    current:        'sri-energy',
+    illuminance:    'sri-ok',
+    _default:       'sri-ok',
+  };
+
+  // Value color class mapping by device_class (non-binary sensors)
+  var SENSOR_VALUE_CLASS = {
+    temperature:    'srv-temp-warm',
+    humidity:       'srv-humid',
+    co2:            'srv-co2',
+    carbon_dioxide: 'srv-co2',
+    power:          'srv-accent',
+    energy:         'srv-accent',
+    voltage:        'srv-muted',
+    current:        'srv-muted',
+    illuminance:    'srv-muted',
+    _default:       '',
+  };
+
+  // All possible sri-* classes — used for cleanup before applying new class
+  var ALL_SRI_CLASSES = [
+    'sri-on', 'sri-off', 'sri-ok',
+    'sri-temp-warm', 'sri-temp-cool',
+    'sri-humidity', 'sri-co2', 'sri-battery-low',
+    'sri-energy', 'sri-alert', 'sri-presence', 'sri-critical',
+  ];
+
+  // All possible srv-* classes — used for cleanup before applying new class
+  var ALL_SRV_CLASSES = [
+    'srv-temp-warm', 'srv-temp-cool', 'srv-humid', 'srv-co2',
+    'srv-danger', 'srv-accent', 'srv-muted', 'srv-alert', 'srv-on',
+  ];
+
+  function clearSriClasses(el) {
+    for (var i = 0; i < ALL_SRI_CLASSES.length; i++) {
+      el.classList.remove(ALL_SRI_CLASSES[i]);
+    }
+  }
+
+  function clearSrvClasses(el) {
+    for (var j = 0; j < ALL_SRV_CLASSES.length; j++) {
+      el.classList.remove(ALL_SRV_CLASSES[j]);
+    }
+  }
+
   function createTile(entityConfig) {
     var entity_id = entityConfig.entity_id;
     var label = entityConfig.label;
@@ -134,27 +199,61 @@ window.SensorComponent = (function () {
       var deviceClass = attributes.device_class;
       if (rowValueEl) { rowValueEl.textContent = window.RP_FMT.getBinarySensorLabel(state, deviceClass); }
       tile.classList.add(state === 'on' ? 'state-on' : 'state-off');
-      var isAlert = state === 'on' && deviceClass && BINARY_ALERT_CLASSES[deviceClass];
-      if (isAlert) {
-        tile.classList.add('sensor-alert', 'srt-alert');
-        if (iconWrap) {
-          iconWrap.classList.add('sri-alert');
-          iconWrap.classList.remove('sri-on', 'sri-off');
+
+      // Remove all tile state variants before reapplying
+      tile.classList.remove('sensor-alert', 'srt-alert', 'srt-presence', 'srt-critical');
+      if (iconWrap) { clearSriClasses(iconWrap); }
+
+      if (state === 'on' && deviceClass) {
+        if (BINARY_CRITICAL_CLASSES[deviceClass]) {
+          // Critical hazard (smoke, gas, carbon_monoxide) — highest priority
+          tile.classList.add('srt-critical');
+          if (iconWrap) { iconWrap.classList.add('sri-critical'); }
+        } else if (BINARY_PRESENCE_CLASSES[deviceClass]) {
+          // Presence / occupancy
+          tile.classList.add('srt-presence');
+          if (iconWrap) { iconWrap.classList.add('sri-presence'); }
+        } else if (BINARY_ALERT_CLASSES[deviceClass]) {
+          // Motion, door, window, moisture, vibration
+          tile.classList.add('sensor-alert', 'srt-alert');
+          if (iconWrap) { iconWrap.classList.add('sri-alert'); }
+        } else {
+          if (iconWrap) { iconWrap.classList.add('sri-on'); }
         }
       } else {
-        tile.classList.remove('sensor-alert', 'srt-alert');
-        if (iconWrap) {
-          iconWrap.classList.remove('sri-alert');
-          iconWrap.classList.toggle('sri-on', state === 'on');
-          iconWrap.classList.toggle('sri-off', state !== 'on');
-        }
+        if (iconWrap) { iconWrap.classList.add('sri-ok'); }
       }
     } else {
+      var dc = attributes.device_class || '';
+      var numericVal = parseFloat(state);
+
       tile.classList.add('state-on');
       if (rowValueEl) { rowValueEl.textContent = window.RP_FMT.formatSensorValue(state, attributes); }
+
+      // Determine icon class
+      var sriClass = SENSOR_ICON_CLASS[dc] || SENSOR_ICON_CLASS._default;
+      var srvClass = SENSOR_VALUE_CLASS[dc] || SENSOR_VALUE_CLASS._default;
+
+      // Temperature warm/cool split at 18 °C
+      if (dc === 'temperature' && !isNaN(numericVal) && numericVal < 18) {
+        sriClass = 'sri-temp-cool';
+        srvClass = 'srv-temp-cool';
+      }
+
+      // Battery low only below 20 % — otherwise use fallback
+      if (dc === 'battery') {
+        if (isNaN(numericVal) || numericVal >= 20) {
+          sriClass = 'sri-ok';
+        }
+      }
+
       if (iconWrap) {
-        iconWrap.classList.add('sri-on');
-        iconWrap.classList.remove('sri-off', 'sri-alert');
+        clearSriClasses(iconWrap);
+        if (sriClass) { iconWrap.classList.add(sriClass); }
+      }
+      if (rowValueEl) {
+        clearSrvClasses(rowValueEl);
+        if (srvClass) { rowValueEl.classList.add(srvClass); }
       }
     }
   }
