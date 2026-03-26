@@ -7,6 +7,36 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.5.1] — 2026-03-26
+
+### Fixed
+
+- **WebSocket 403 behind HA Ingress** (`app/server.py`)
+  The `ws_handler` was rejecting all WebSocket connections made through the HA
+  Supervisor Ingress proxy. The browser sends its HA dashboard origin
+  (e.g. `http://192.168.x.x:8123`) which does not match the container's
+  internal `ha_url` (`http://homeassistant:8123`) or its bind address, causing
+  the Origin check to return 403 on every WS upgrade.
+  Fix: the Origin check is now skipped entirely when the `X-Ingress-Path`
+  header is present (set by the Supervisor on every Ingress request, proving
+  the connection is already authenticated).
+
+- **Climate sensor tile `state-off` class leak** (`app/static/js/components/sensor.js`)
+  `rebuildAsClimateTile()` set `className` including `state-off`, which was
+  never removed after the tile transitioned to active state. The tile then
+  carried both `state-off` and `state-on` simultaneously, breaking the
+  fill-bar visual. Fix: `state-off` removed from the initial class list
+  assigned during promotion.
+
+- **Sensor row tile green overlay on `state-on`** (`app/static/css/components.css`)
+  The generic `.tile.state-on::before` green overlay was applied to
+  sensor-row-tiles because they correctly receive `state-on` for active
+  generic sensors. Sensor row tiles convey state via the icon bubble color
+  (`sri-on` / `sri-alert`) not the fill overlay. Added
+  `.tile.sensor-row-tile.state-on::before { display: none; }` to suppress it.
+
+---
+
 ## [1.5.0] — 2026-03-25
 
 ### Added

@@ -70,7 +70,7 @@ window.SensorComponent = (function () {
     var DOM = window.RP_DOM;
     var FMT = window.RP_FMT;
 
-    tile.className = 'tile climate-tile sensor-tile entity-sensor state-off';
+    tile.className = 'tile climate-tile sensor-tile entity-sensor';
     tile.innerHTML = '';
 
     var top = DOM.createElement('div', 'tile-top');

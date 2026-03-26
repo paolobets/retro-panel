@@ -199,19 +199,25 @@ async def ws_handler(request: web.Request) -> web.WebSocketResponse:
     WebSocket hijacking. Browser-to-server messages are explicitly discarded
     (the protocol is server-push only).
     """
-    # Origin validation: block cross-origin WebSocket connections
-    origin = request.headers.get("Origin", "")
-    ha_url: str = getattr(request.app.get("config"), "ha_url", "")
-    request_host = f"{request.scheme}://{request.host}"
+    # When running behind HA Ingress the Supervisor sets X-Ingress-Path and
+    # has already authenticated the request; skip Origin validation so the
+    # browser's HA dashboard origin (e.g. http://192.168.x.x:8123) is not
+    # incorrectly rejected against the container's internal ha_url.
+    ingress_path = request.headers.get("X-Ingress-Path", "")
+    if not ingress_path:
+        # Origin validation: block cross-origin WebSocket connections (local dev)
+        origin = request.headers.get("Origin", "")
+        ha_url: str = getattr(request.app.get("config"), "ha_url", "")
+        request_host = f"{request.scheme}://{request.host}"
 
-    # Allow: same host (Ingress) OR configured HA URL (for local dev)
-    # An empty origin is allowed for non-browser clients (e.g. curl testing)
-    if origin and ha_url and origin.rstrip("/") not in (
-        ha_url.rstrip("/"),
-        request_host.rstrip("/"),
-    ):
-        logger.warning("Rejected WebSocket from disallowed origin: %s", origin)
-        return web.Response(status=403, text="Forbidden: origin not allowed")
+        # Allow: same host OR configured HA URL.
+        # An empty origin is allowed for non-browser clients (e.g. curl testing)
+        if origin and ha_url and origin.rstrip("/") not in (
+            ha_url.rstrip("/"),
+            request_host.rstrip("/"),
+        ):
+            logger.warning("Rejected WebSocket from disallowed origin: %s", origin)
+            return web.Response(status=403, text="Forbidden: origin not allowed")
 
     ws_proxy: WSProxy = request.app["ws_proxy"]
     ws = web.WebSocketResponse(heartbeat=30)
