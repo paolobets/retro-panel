@@ -101,12 +101,16 @@ window.SensorComponent = (function () {
     var icon = entityConfig.icon;
     var isBinary = entity_id.indexOf('binary_sensor.') === 0;
     var displayMode = entityConfig.display_mode || 'auto';
+    var visualType = entityConfig.visual_type || '';
 
     var DOM = window.RP_DOM;
     var FMT = window.RP_FMT;
 
-    // Se display_mode è 'climate', crea direttamente una climate tile
-    if (displayMode === 'climate') {
+    // visual_type temperature/humidity → forza climate tile (come display_mode: 'climate')
+    var isClimateVisualType = (visualType === 'sensor_temperature' || visualType === 'sensor_humidity');
+
+    // Se display_mode è 'climate' oppure visual_type forza climate, crea direttamente una climate tile
+    if (displayMode === 'climate' || isClimateVisualType) {
       var climateTile = DOM.createElement('div', 'tile climate-tile sensor-tile entity-sensor');
       climateTile.dataset.entityId = entity_id;
       climateTile.dataset.isBinary = 'false';
@@ -114,6 +118,7 @@ window.SensorComponent = (function () {
       climateTile.dataset.icon = icon || '';
       climateTile.dataset.displayMode = 'climate';
       climateTile.dataset.climateForced = 'true';
+      if (visualType) { climateTile.dataset.visualType = visualType; }
 
       var cTop = DOM.createElement('div', 'tile-top');
       var cIconEl = DOM.createElement('span', 'tile-icon');
@@ -131,7 +136,7 @@ window.SensorComponent = (function () {
       return climateTile;
     }
 
-    // Default: sensor-row-tile (anche per display_mode 'row' e 'auto')
+    // Default: sensor-row-tile (anche per display_mode 'row' e 'auto', e tutti gli altri visual_type)
     var tile = DOM.createElement('div', 'tile sensor-row-tile entity-sensor state-off');
     tile.dataset.entityId = entity_id;
     tile.dataset.isBinary = isBinary ? 'true' : 'false';
@@ -139,6 +144,9 @@ window.SensorComponent = (function () {
     tile.dataset.icon = icon || '';
     if (displayMode !== 'auto') {
       tile.dataset.displayMode = displayMode;
+    }
+    if (visualType) {
+      tile.dataset.visualType = visualType;
     }
 
     var iconWrap = DOM.createElement('div', 'sensor-row-icon');
@@ -189,6 +197,7 @@ window.SensorComponent = (function () {
     var isBinary = tile.dataset.isBinary === 'true';
     var isRowTile = tile.classList.contains('sensor-row-tile');
     var forcedMode = tile.dataset.displayMode || 'auto';
+    var visualType = tile.dataset.visualType || '';
 
     tile.classList.remove('state-on', 'state-off', 'state-unavailable');
 
@@ -216,9 +225,22 @@ window.SensorComponent = (function () {
     }
 
     if (!isBinary) {
-      var dc = attributes.device_class;
-      // Auto-promozione climate solo se forcedMode non è 'row'
-      if (dc && CLIMATE_CLASSES[dc] && forcedMode !== 'row') {
+      var dc = attributes.device_class || '';
+
+      // Override device_class tramite visual_type
+      var overrideDc = '';
+      if (visualType === 'sensor_temperature')    { overrideDc = 'temperature'; }
+      else if (visualType === 'sensor_humidity')  { overrideDc = 'humidity'; }
+      else if (visualType === 'sensor_co2')       { overrideDc = 'co2'; }
+      else if (visualType === 'sensor_battery')   { overrideDc = 'battery'; }
+      else if (visualType === 'sensor_energy')    { overrideDc = 'energy'; }
+      if (overrideDc) { dc = overrideDc; }
+
+      // Auto-promozione climate: bloccata se visual_type forza un tipo sensor non-climate
+      var forceRowByVisualType = (visualType && visualType.indexOf('sensor_') === 0
+        && visualType !== 'sensor_temperature' && visualType !== 'sensor_humidity');
+
+      if (dc && CLIMATE_CLASSES[dc] && forcedMode !== 'row' && !forceRowByVisualType) {
         // Promote to climate tile on first update if still in row layout
         if (isRowTile) {
           rebuildAsClimateTile(tile);
@@ -243,6 +265,19 @@ window.SensorComponent = (function () {
 
     if (isBinary) {
       var deviceClass = attributes.device_class;
+
+      // Override device_class per binary sensor tramite visual_type
+      var overrideBinDc = '';
+      if (visualType === 'binary_door')           { overrideBinDc = 'door'; }
+      else if (visualType === 'binary_window')    { overrideBinDc = 'window'; }
+      else if (visualType === 'binary_motion')    { overrideBinDc = 'motion'; }
+      else if (visualType === 'binary_presence')  { overrideBinDc = 'occupancy'; }
+      else if (visualType === 'binary_standard')  { overrideBinDc = ''; }
+
+      if (overrideBinDc !== '' || visualType === 'binary_standard') {
+        deviceClass = overrideBinDc;
+      }
+
       if (rowValueEl) { rowValueEl.textContent = window.RP_FMT.getBinarySensorLabel(state, deviceClass); }
       tile.classList.add(state === 'on' ? 'state-on' : 'state-off');
 
@@ -270,24 +305,34 @@ window.SensorComponent = (function () {
         if (iconWrap) { iconWrap.classList.add('sri-ok'); }
       }
     } else {
-      var dc = attributes.device_class || '';
+      var dcRow = attributes.device_class || '';
+
+      // Override device_class tramite visual_type (ramo row — dc già usato sopra con diverso scope)
+      var overrideDcRow = '';
+      if (visualType === 'sensor_temperature')    { overrideDcRow = 'temperature'; }
+      else if (visualType === 'sensor_humidity')  { overrideDcRow = 'humidity'; }
+      else if (visualType === 'sensor_co2')       { overrideDcRow = 'co2'; }
+      else if (visualType === 'sensor_battery')   { overrideDcRow = 'battery'; }
+      else if (visualType === 'sensor_energy')    { overrideDcRow = 'energy'; }
+      if (overrideDcRow) { dcRow = overrideDcRow; }
+
       var numericVal = parseFloat(state);
 
       tile.classList.add('state-on');
       if (rowValueEl) { rowValueEl.textContent = window.RP_FMT.formatSensorValue(state, attributes); }
 
       // Determine icon class
-      var sriClass = SENSOR_ICON_CLASS[dc] || SENSOR_ICON_CLASS._default;
-      var srvClass = SENSOR_VALUE_CLASS[dc] || SENSOR_VALUE_CLASS._default;
+      var sriClass = SENSOR_ICON_CLASS[dcRow] || SENSOR_ICON_CLASS._default;
+      var srvClass = SENSOR_VALUE_CLASS[dcRow] || SENSOR_VALUE_CLASS._default;
 
       // Temperature warm/cool split at 18 °C
-      if (dc === 'temperature' && !isNaN(numericVal) && numericVal < 18) {
+      if (dcRow === 'temperature' && !isNaN(numericVal) && numericVal < 18) {
         sriClass = 'sri-temp-cool';
         srvClass = 'srv-temp-cool';
       }
 
       // Battery low only below 20 % — otherwise use fallback
-      if (dc === 'battery') {
+      if (dcRow === 'battery') {
         if (isNaN(numericVal) || numericVal >= 20) {
           sriClass = 'sri-ok';
         }

@@ -185,8 +185,9 @@ window.LightComponent = (function () {
   }
 
   function updateTile(tile, stateObj) {
-    var state  = stateObj.state;
-    var attrs  = stateObj.attributes || {};
+    var state      = stateObj.state;
+    var attrs      = stateObj.attributes || {};
+    var visualType = tile.dataset.visualType || 'light_standard';
     tile.dataset.state = state;
     tile._lastAttrs = attrs;
 
@@ -195,10 +196,29 @@ window.LightComponent = (function () {
     if (state === 'on') {
       tile.classList.add('state-on');
       var color = colorFromAttributes(attrs);
-      var bri   = (attrs.brightness !== undefined && attrs.brightness !== null)
-        ? (Math.round(attrs.brightness / 255 * 100) + '%')
-        : null;
+
+      // light_dimmer: mostra sempre brightness % (anche se 0)
+      var bri = null;
+      if (visualType === 'light_dimmer') {
+        if (attrs.brightness !== undefined && attrs.brightness !== null) {
+          bri = Math.round((parseInt(attrs.brightness, 10) / 255) * 100) + '%';
+        }
+      } else {
+        bri = (attrs.brightness !== undefined && attrs.brightness !== null)
+          ? (Math.round(attrs.brightness / 255 * 100) + '%')
+          : null;
+      }
+
       applyOnState(tile, color, bri);
+
+      // light_rgb: colora l'icona con il colore derivato dagli attributi
+      if (visualType === 'light_rgb') {
+        var iconEl = tile.querySelector('.tile-icon');
+        var hexColor = colorFromAttributes(attrs);
+        if (hexColor && iconEl) {
+          iconEl.style.color = hexColor;
+        }
+      }
 
     } else if (state === 'unavailable') {
       tile.classList.add('state-unavailable');

@@ -48,6 +48,10 @@ def _parse_item(raw: dict, idx: int, context: str) -> dict:
             item["icon"] = str(raw["icon"])[:_MAX_ICON]
         if raw.get("hidden"):
             item["hidden"] = True
+        if raw.get("visual_type"):
+            item["visual_type"] = str(raw["visual_type"])[:32]
+        if raw.get("display_mode"):
+            item["display_mode"] = str(raw["display_mode"])[:32]
         return item
     elif item_type == "energy_flow":
         item = {"type": "energy_flow"}

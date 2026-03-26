@@ -50,6 +50,105 @@
   // Active config tab
   var activeTab = 'overview';
 
+  // ── Visual type data ───────────────────────────────────────────────────────
+
+  var VISUAL_OPTIONS = {
+    sensor: [
+      { v: 'sensor_temperature', l: 'Temperatura' },
+      { v: 'sensor_humidity',    l: 'Umidità' },
+      { v: 'sensor_co2',         l: 'CO\u2082' },
+      { v: 'sensor_battery',     l: 'Batteria' },
+      { v: 'sensor_energy',      l: 'Consumo' },
+    ],
+    binary_sensor: [
+      { v: 'binary_door',      l: 'Porta' },
+      { v: 'binary_window',    l: 'Finestra' },
+      { v: 'binary_motion',    l: 'Movimento' },
+      { v: 'binary_presence',  l: 'Presenza' },
+      { v: 'binary_standard',  l: 'Standard' },
+    ],
+    light: [
+      { v: 'light_standard', l: 'Luce standard' },
+      { v: 'light_dimmer',   l: 'Luce dimmer' },
+      { v: 'light_rgb',      l: 'Luce RGB' },
+    ],
+  };
+
+  function _getVisualTypeLabel(vt, domain) {
+    var LABELS = {
+      sensor_temperature: 'Temperatura',
+      sensor_humidity:    'Umidità',
+      sensor_co2:         'CO\u2082',
+      sensor_battery:     'Batteria',
+      sensor_energy:      'Consumo',
+      binary_door:        'Porta',
+      binary_window:      'Finestra',
+      binary_motion:      'Movimento',
+      binary_presence:    'Presenza',
+      binary_standard:    'Standard',
+      light_standard:     'Standard',
+      light_dimmer:       'Dimmer',
+      light_rgb:          'RGB',
+    };
+    return LABELS[vt] || 'Tipo visivo';
+  }
+
+  // ── Visual type picker state ────────────────────────────────────────────────
+
+  var _vtPickerIdx = -1;
+  var _vtPickerCtx = '';
+  var _vtPickerBtn = null;
+
+  function _openVisualTypePicker(idx, ctx, domain, triggerBtn) {
+    _vtPickerIdx = idx;
+    _vtPickerCtx = ctx;
+    _vtPickerBtn = triggerBtn;
+
+    var items = getItemsForContext(ctx);
+    var currentVt = (items[idx] && items[idx].visual_type) || '';
+    var opts = VISUAL_OPTIONS[domain] || [];
+    var listEl = document.getElementById('visual-type-options');
+    if (!listEl) { return; }
+
+    var html = '';
+    for (var oi = 0; oi < opts.length; oi++) {
+      var opt = opts[oi];
+      var isSelected = (opt.v === currentVt);
+      html += '<button class="visual-type-option' + (isSelected ? ' selected' : '') + '" type="button" data-vt="' + esc(opt.v) + '">';
+      html += '<span class="visual-type-option-label">' + esc(opt.l) + '</span>';
+      if (isSelected) { html += '<span class="visual-type-check">&#10003;</span>'; }
+      html += '</button>';
+    }
+    listEl.innerHTML = html;
+
+    listEl.querySelectorAll('.visual-type-option').forEach(function (optBtn) {
+      optBtn.addEventListener('click', function () {
+        var vt = this.getAttribute('data-vt');
+        var items2 = getItemsForContext(_vtPickerCtx);
+        if (items2[_vtPickerIdx]) {
+          items2[_vtPickerIdx].visual_type = vt;
+          items2[_vtPickerIdx].display_mode = 'auto';
+        }
+        if (_vtPickerBtn) {
+          var labelEl = _vtPickerBtn.querySelector('.item-visual-label');
+          if (labelEl) {
+            var domain2 = _vtPickerBtn.getAttribute('data-domain');
+            labelEl.textContent = _getVisualTypeLabel(vt, domain2);
+          }
+        }
+        _closeVisualTypePicker();
+      });
+    });
+
+    var overlay = document.getElementById('visual-type-picker');
+    if (overlay) { overlay.classList.remove('hidden'); }
+  }
+
+  function _closeVisualTypePicker() {
+    var overlay = document.getElementById('visual-type-picker');
+    if (overlay) { overlay.classList.add('hidden'); }
+  }
+
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   function qs(id) { return document.getElementById(id); }
@@ -146,21 +245,19 @@
         html += '<button class="edit-energy-btn action-btn-sm" type="button" data-idx="' + i + '" data-ctx="' + esc(context) + '">Edit</button>';
         html += '<button class="remove-btn" type="button" data-idx="' + i + '" data-ctx="' + esc(context) + '">\u2715</button>';
       } else {
+        var domain = item.entity_id ? item.entity_id.split('.')[0] : '';
+        var showVisualBtn = (domain === 'sensor' || domain === 'binary_sensor' || domain === 'light');
         html += '<div class="selected-entity-info">';
         html += '<span class="selected-id">' + esc(item.entity_id) + '</span>';
         html += '<input type="text" class="item-label-input" placeholder="Display name\u2026" value="' + esc(item.label || '') + '" data-idx="' + i + '" data-ctx="' + esc(context) + '">';
-        html += '<select class="item-mode-select" data-idx="' + i + '" data-ctx="' + esc(context) + '">';
-        var modeOpts = [
-          { v: 'auto',    l: 'Automatico' },
-          { v: 'row',     l: 'Riga compatta (sensori)' },
-          { v: 'tile',    l: 'Riquadro standard' },
-          { v: 'climate', l: 'Clima (valore grande)' }
-        ];
-        var currentMode = item.display_mode || 'auto';
-        for (var mi = 0; mi < modeOpts.length; mi++) {
-          html += '<option value="' + modeOpts[mi].v + '"' + (currentMode === modeOpts[mi].v ? ' selected' : '') + '>' + modeOpts[mi].l + '</option>';
+        if (showVisualBtn) {
+          var currentVt = item.visual_type || '';
+          var vtLabel = _getVisualTypeLabel(currentVt, domain);
+          html += '<button class="item-visual-btn" type="button" data-idx="' + i + '" data-ctx="' + esc(context) + '" data-domain="' + esc(domain) + '">';
+          html += '<span class="item-visual-icon">&#9681;</span>';
+          html += '<span class="item-visual-label">' + esc(vtLabel) + '</span>';
+          html += '</button>';
         }
-        html += '</select>';
         html += '</div>';
         html += '<div class="selected-actions">';
         html += '<button class="item-visibility-btn" type="button" title="' + (isHidden ? 'Show' : 'Hide') + '" data-idx="' + i + '" data-ctx="' + esc(context) + '">' + (isHidden ? (window.RP_MDI ? window.RP_MDI('eye-off', 18) : '\uD83D\uDE48') : (window.RP_MDI ? window.RP_MDI('eye', 18) : '\uD83D\uDC41')) + '</button>';
@@ -224,14 +321,12 @@
       });
     });
 
-    container.querySelectorAll('.item-mode-select').forEach(function (sel) {
-      sel.addEventListener('change', function () {
+    container.querySelectorAll('.item-visual-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
         var idx = parseInt(this.getAttribute('data-idx'), 10);
         var ctx = this.getAttribute('data-ctx');
-        var items = getItemsForContext(ctx);
-        if (items[idx]) {
-          items[idx].display_mode = this.value || 'auto';
-        }
+        var domain = this.getAttribute('data-domain');
+        _openVisualTypePicker(idx, ctx, domain, this);
       });
     });
   }
@@ -753,7 +848,7 @@
                 break;
               }
             }
-            targetSection.items.push({ type: 'entity', entity_id: eid, label: autoLabel, icon: '', hidden: false, display_mode: 'auto' });
+            targetSection.items.push({ type: 'entity', entity_id: eid, label: autoLabel, icon: '', hidden: false, display_mode: 'auto', visual_type: '' });
             added++;
           }
         }
@@ -1167,7 +1262,7 @@
     var items = contextItems();
     if (!items) { return; }
     if (isEntityInContext(entityId)) { return; }
-    items.push({ type: 'entity', entity_id: entityId, label: friendlyName || '', icon: '', hidden: false, display_mode: 'auto' });
+    items.push({ type: 'entity', entity_id: entityId, label: friendlyName || '', icon: '', hidden: false, display_mode: 'auto', visual_type: '' });
     refreshItemsList(pickerContext === 'overview' ? 'overview' : 'section');
     renderEntityList();
   }
@@ -1484,7 +1579,7 @@
 
   // ── Overlay management ─────────────────────────────────────────────────────
 
-  var OVERLAYS = ['entity-picker', 'sensor-picker', 'scenario-picker', 'energy-editor', 'camera-picker'];
+  var OVERLAYS = ['entity-picker', 'sensor-picker', 'scenario-picker', 'energy-editor', 'camera-picker', 'visual-type-picker'];
 
   function showOverlay(id) {
     for (var i = 0; i < OVERLAYS.length; i++) {
@@ -1807,6 +1902,10 @@
 
     var energyFinishBtn = qs('energy-finish-btn');
     if (energyFinishBtn) { energyFinishBtn.addEventListener('click', commitEnergyCard); }
+
+    // ── Visual type picker controls ────────────────────────────────────────
+    var vtCancel = qs('visual-type-cancel');
+    if (vtCancel) { vtCancel.addEventListener('click', _closeVisualTypePicker); }
 
     // ── Save ───────────────────────────────────────────────────────────────
     var saveBtn = qs('save-btn');

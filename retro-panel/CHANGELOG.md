@@ -7,6 +7,42 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.6.2] — 2026-03-26
+
+### Added
+
+- **Selezione visual_type per entità** (`app/static/js/config.js`, `config.html`, `config.css`)
+  Ogni entità sensor/binary_sensor/light ora ha un pulsante dedicato (accanto a visibilità) che apre
+  un picker contestuale con opzioni specifiche per dominio:
+  - Sensor: Temperatura, Umidità, CO₂, Batteria, Consumo energetico
+  - Binary sensor: Porta, Finestra, Movimento, Presenza, Standard
+  - Light: Standard, Dimmer, RGB
+
+- **Componente Camera** (`app/static/js/components/camera.js`, `app/static/css/camera.css`)
+  Tile camera con snapshot polling, cleanup timer su navigazione, gestione errori.
+
+- **API Camera proxy** (`app/api/handlers_cameras.py`)
+  `GET /api/ha-cameras` e `GET /api/camera-proxy/{entity_id}` con validazione regex dominio,
+  timeout 8s, `Cache-Control: no-store`.
+
+### Fixed
+
+- **visual_type non salvato dal backend** (`app/api/handlers_config_save.py`)
+  `_parse_item` scartava `visual_type` e `display_mode` ad ogni salvataggio config.
+  Aggiunti esplicitamente alla lista dei campi copiati.
+
+- **Dashboard non rifletteva visual_type** (`app/static/js/components/sensor.js`, `light.js`, `renderer.js`)
+  - `sensor.js createTile`: legge `entityConfig.visual_type`; `sensor_temperature`/`sensor_humidity`
+    creano subito una climate-tile con `dataset.climateForced = 'true'`.
+  - `sensor.js updateTile`: applica `overrideDc` (sensor) e `overrideBinDc` (binary_sensor) dal
+    `visual_type` storato in `tile.dataset.visualType`; `forceRowByVisualType` blocca promozione
+    a climate per tipi non-climate.
+  - `light.js updateTile`: `light_dimmer` mostra sempre la percentuale luminosità; `light_rgb`
+    applica il colore corrente all'icona tramite `colorFromAttributes()`.
+  - `renderer.js`: imposta `tile.dataset.visualType = item.visual_type` e
+    `tile.dataset.displayMode = item.display_mode` dopo `createTile` in `renderItemsGrid`
+    e `renderRoomSections`.
+
 ## [1.6.1] — 2026-03-26
 
 ### Fixed

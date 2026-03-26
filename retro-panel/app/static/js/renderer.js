@@ -193,6 +193,9 @@ window.RP_Renderer = (function () {
             continue;
           }
           var tile = component.createTile(item);
+          if (item.visual_type) {
+            tile.dataset.visualType = item.visual_type;
+          }
           if (item.display_mode && item.display_mode !== 'auto') {
             tile.dataset.displayMode = item.display_mode;
           }
@@ -286,6 +289,9 @@ window.RP_Renderer = (function () {
               continue;
             }
             var tile = component.createTile(item);
+            if (item.visual_type) {
+              tile.dataset.visualType = item.visual_type;
+            }
             if (item.display_mode && item.display_mode !== 'auto') {
               tile.dataset.displayMode = item.display_mode;
             }
