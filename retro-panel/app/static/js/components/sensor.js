@@ -215,9 +215,21 @@ window.SensorComponent = (function () {
       tile.classList.add('climate-tile', 'state-on');
       var forcedNumVal = parseFloat(state);
       if (!isNaN(forcedNumVal)) {
-        var forcedPct = Math.max(0, Math.min(100, forcedNumVal));
+        var vt = tile.dataset.visualType || '';
+        var forcedDc = (vt === 'sensor_temperature') ? 'temperature'
+                     : (vt === 'sensor_humidity')    ? 'humidity'
+                     : null;
+        var forcedPct;
+        if (forcedDc && CLIMATE_RANGE[forcedDc]) {
+          var r = CLIMATE_RANGE[forcedDc];
+          forcedPct = Math.max(0, Math.min(100,
+            ((forcedNumVal - r.min) / (r.max - r.min)) * 100));
+          tile.style.setProperty('--climate-color', CLIMATE_COLOR[forcedDc] || 'var(--color-accent)');
+        } else {
+          forcedPct = Math.max(0, Math.min(100, forcedNumVal));
+          tile.style.setProperty('--climate-color', 'var(--color-accent)');
+        }
         tile.style.setProperty('--climate-pct', String(Math.round(forcedPct)));
-        tile.style.setProperty('--climate-color', 'var(--color-accent)');
       }
       var forcedClimateVal = tile.querySelector('.tile-value');
       if (forcedClimateVal) { forcedClimateVal.textContent = window.RP_FMT.formatSensorValue(state, attributes); }

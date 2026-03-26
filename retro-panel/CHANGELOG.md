@@ -7,6 +7,21 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.6.3] — 2026-03-26
+
+### Fixed
+
+- **visual_type perso al reload** (`app/config/loader.py`, `app/api/handlers_config.py`)
+  Root cause: `EntityConfig` dataclass non aveva i campi `visual_type` e `display_mode`;
+  `_parse_entity()` li scartava silenziosamente; `_serialize_item()` non li includeva nella
+  risposta JSON. Il dato veniva scritto correttamente su disco ma non tornava mai al frontend.
+  Fix: aggiunti i campi al dataclass, lettura in `_parse_entity`, emissione condizionale in
+  `_serialize_item`.
+
+- **Percentuale climate tile errata con visual_type forzato** (`app/static/js/components/sensor.js`)
+  Il ramo `climateForced === 'true'` calcolava `--climate-pct` come valore grezzo 0–100.
+  Ora normalizza tramite `CLIMATE_RANGE[forcedDc]` (es. temperatura 15–35 °C → pct corretta).
+
 ## [1.6.2] — 2026-03-26
 
 ### Added

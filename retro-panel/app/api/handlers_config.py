@@ -12,13 +12,18 @@ logger = logging.getLogger(__name__)
 def _serialize_item(item) -> dict:
     if item.type == "entity" and item.entity_config is not None:
         ec = item.entity_config
-        return {
+        d = {
             "type": "entity",
             "entity_id": ec.entity_id,
             "label": ec.label,
             "icon": ec.icon,
             "hidden": ec.hidden,
         }
+        if ec.visual_type:
+            d["visual_type"] = ec.visual_type
+        if ec.display_mode:
+            d["display_mode"] = ec.display_mode
+        return d
     elif item.type == "energy_flow" and item.energy_flow is not None:
         ef = item.energy_flow
         return {

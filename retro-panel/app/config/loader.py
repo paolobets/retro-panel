@@ -97,6 +97,8 @@ class EntityConfig:
     label: str
     icon: str
     hidden: bool = False
+    visual_type: str = ""
+    display_mode: str = ""
     row: Optional[int] = None
     col: Optional[int] = None
 
@@ -248,7 +250,10 @@ def _parse_entity(raw: dict) -> EntityConfig:
         or entity_id.replace("_", " ").split(".")[-1].title()
     )
     hidden: bool = bool(raw.get("hidden", False))
-    return EntityConfig(entity_id=entity_id, label=label, icon=icon, hidden=hidden)
+    visual_type: str = str(raw.get("visual_type") or "").strip()
+    display_mode: str = str(raw.get("display_mode") or "").strip()
+    return EntityConfig(entity_id=entity_id, label=label, icon=icon, hidden=hidden,
+                        visual_type=visual_type, display_mode=display_mode)
 
 
 def _parse_energy_flow(raw: dict) -> EnergyFlowConfig:
