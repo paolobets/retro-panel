@@ -7,6 +7,14 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.6.6] — 2026-03-26
+
+### Fixed
+
+- **Crash avvio backend** (`app/config/validator.py`)
+  `validate_config()` controllava `config.columns` rimosso in v1.6.5.
+  Rimossa la riga di validazione obsoleta.
+
 ## [1.6.5] — 2026-03-26
 
 ### Changed

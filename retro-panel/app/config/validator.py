@@ -29,9 +29,6 @@ def validate_config(config: "PanelConfig") -> tuple[bool, str]:
     if not config.ha_token:
         return False, "'ha_token' must not be empty"
 
-    if config.columns not in (2, 3, 4):
-        return False, f"'columns' must be 2, 3, or 4; got {config.columns}"
-
     if not isinstance(config.entities, list):
         return False, "'entities' must be a list"
 
