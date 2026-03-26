@@ -544,7 +544,7 @@
 }
 
 /* ---- Responsive: auto-collapse sidebar on narrow screens ---- */
-@media (max-width: 900px) {
+@media (max-width: 767px) {
   #sidebar {
     width: var(--sidebar-width-collapsed);
     min-width: var(--sidebar-width-collapsed);
@@ -553,5 +553,11 @@
   #sidebar .sidebar-item-chevron {
     opacity: 0;
     pointer-events: none;
+  }
+
+  #sidebar .sidebar-nav-item {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
   }
 }

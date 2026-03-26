@@ -35,6 +35,10 @@ window.RP_LightSheet = (function () {
     /* overlay */
     _overlay = document.createElement('div');
     _overlay.className = 'rp-bs-overlay hidden';
+    _overlay.addEventListener('touchend', function (e) {
+      e.preventDefault();
+      close();
+    });
     _overlay.addEventListener('click', close);
 
     /* sheet */
@@ -130,9 +134,16 @@ window.RP_LightSheet = (function () {
         el.className = 'rp-bs-swatch';
         el.style.background = sw.color;
         el.title = sw.label;
-        el.addEventListener('click', function () {
+        el.addEventListener('touchend', function (e) {
+          e.preventDefault();
           _hueSlider.value = sw.hue;
           _onHueInput();
+        });
+        el.addEventListener('click', function () {
+          if (!('ontouchstart' in window)) {
+            _hueSlider.value = sw.hue;
+            _onHueInput();
+          }
         });
         swatchWrap.appendChild(el);
       })(swatches[si]);

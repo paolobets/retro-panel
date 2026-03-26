@@ -7,6 +7,52 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.5.5] — 2026-03-26
+
+### Fixed
+
+- **Crash Overview — `resolveComponent` senza guardia** (`app/static/js/app.js`)
+  `resolveComponent(item)` accedeva a `item.entity_id.split('.')` senza verificare che
+  `entity_id` fosse presente. Un singolo item mal-configurato causava un `TypeError` non
+  catchato che interrompeva l'intera sequenza di boot, rendendo la dashboard inutilizzabile.
+  Aggiunta guardia `if (!item || !item.entity_id) { return null; }`.
+
+- **Overview — `updateTile` chiamato prima di `appendChild`** (`app/static/js/app.js`)
+  In `renderItemsGrid`, `component.updateTile(tile, stateObj)` era chiamato prima che
+  il tile fosse inserito nel DOM. Su WKWebView/iOS questo causa comportamenti non
+  deterministici. L'ordine è ora corretto (`appendChild` prima, `updateTile` dopo),
+  allineato a `renderRoomSections`.
+
+- **Overview — nessun try/catch nel loop di rendering** (`app/static/js/app.js`)
+  Il loop di `renderItemsGrid` non proteggeva ogni item con try/catch. Un singolo item
+  corrotto interrompeva il rendering di tutti gli item successivi. Aggiunto try/catch
+  per-item (stesso pattern di `renderRoomSections`).
+
+- **iPad — sidebar sempre collassata in portrait** (`app/static/css/layout.css`)
+  Il breakpoint `max-width: 900px` faceva collassare la sidebar anche su iPad portrait
+  (768px logici), nascondendo le label dei menu. Breakpoint abbassato a `767px`: iPad
+  portrait ora vede la sidebar espansa con label visibili.
+
+- **iPad — icone sidebar non centrate in modalità collassata** (`app/static/css/layout.css`)
+  In collapsed mode su schermi ≤767px, il label con `flex:1` spingeva le icone a sinistra.
+  Aggiunto `justify-content: center` e padding azzerato sui nav items in collapsed mode.
+
+- **iPad — bottom sheet scroll rigido senza momentum** (`app/static/css/components.css`)
+  Il bottom sheet `.rp-bottom-sheet` mancava di `-webkit-overflow-scrolling: touch`.
+  Su iOS 12-14 lo scroll interno era rigido e difficile da controllare. Aggiunta la
+  proprietà mancante.
+
+- **iPad — bottom sheet overlay chiusura con 300ms di ritardo** (`app/static/js/components/light-sheet.js`)
+  L'overlay usava solo `click`, producendo il classico ritardo da click sintetico su
+  WKWebView. Aggiunto listener `touchend` con `preventDefault()` per chiusura immediata.
+
+- **iPad — color swatches luce con 300ms di ritardo** (`app/static/js/components/light-sheet.js`)
+  I preset colore usavano solo `click`. Stessa causa e stesso fix dell'overlay:
+  aggiunto `touchend` con `preventDefault()`; il `click` è mantenuto con guard
+  `!('ontouchstart' in window)` per desktop.
+
+---
+
 ## [1.5.4] — 2026-03-26
 
 ### Fixed

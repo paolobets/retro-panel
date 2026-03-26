@@ -639,6 +639,7 @@
   padding: 0 0 env(safe-area-inset-bottom, 24px);
   max-height: 60vh;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   box-shadow: 0 -4px 32px rgba(0,0,0,0.5);
 }
 .rp-bottom-sheet.hidden { display: none; }

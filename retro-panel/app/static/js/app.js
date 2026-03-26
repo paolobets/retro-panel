@@ -354,6 +354,7 @@
   // Component resolver — rispetta item.display_mode se configurato
   // ---------------------------------------------------------------------------
   function resolveComponent(item) {
+    if (!item || !item.entity_id) { return null; }
     var domain = item.entity_id.split('.')[0];
     var dm = item.display_mode || 'auto';
 
@@ -386,35 +387,39 @@
     }
 
     for (var i = 0; i < items.length; i++) {
-      var item = items[i];
+      try {
+        var item = items[i];
 
-      // Skip items hidden via config
-      if (item.hidden) { continue; }
+        // Skip items hidden via config
+        if (item.hidden) { continue; }
 
-      if (item.type === 'entity') {
-        var domain = item.entity_id.split('.')[0];
-        var component = resolveComponent(item);
-        if (!component) {
-          console.warn('[app] No component for domain:', domain, item.entity_id);
-          continue;
+        if (item.type === 'entity') {
+          var domain = item.entity_id.split('.')[0];
+          var component = resolveComponent(item);
+          if (!component) {
+            console.warn('[app] No component for domain:', domain, item.entity_id);
+            continue;
+          }
+          var tile = component.createTile(item);
+          if (item.display_mode && item.display_mode !== 'auto') {
+            tile.dataset.displayMode = item.display_mode;
+          }
+          AppState.tileMap[item.entity_id] = tile;
+
+          if (domain === 'alarm_control_panel') { tile.classList.add('alarm-tile'); }
+          grid.appendChild(tile);
+
+          var stateObj = AppState.states[item.entity_id];
+          if (stateObj) { component.updateTile(tile, stateObj); }
+
+        } else if (item.type === 'energy_flow') {
+          var efTile = window.EnergyFlowComponent.createTile(item);
+          AppState.energyTiles.push({ tile: efTile, cfg: item });
+          grid.appendChild(efTile);
+          window.EnergyFlowComponent.updateTile(efTile, AppState.states);
         }
-        var tile = component.createTile(item);
-        if (item.display_mode && item.display_mode !== 'auto') {
-          tile.dataset.displayMode = item.display_mode;
-        }
-        AppState.tileMap[item.entity_id] = tile;
-
-        var stateObj = AppState.states[item.entity_id];
-        if (stateObj) { component.updateTile(tile, stateObj); }
-
-        if (domain === 'alarm_control_panel') { tile.classList.add('alarm-tile'); }
-        grid.appendChild(tile);
-
-      } else if (item.type === 'energy_flow') {
-        var efTile = window.EnergyFlowComponent.createTile(item);
-        window.EnergyFlowComponent.updateTile(efTile, AppState.states);
-        AppState.energyTiles.push({ tile: efTile, cfg: item });
-        grid.appendChild(efTile);
+      } catch (err) {
+        console.error('[app] renderItemsGrid item failed:', item && item.entity_id, err);
       }
     }
   }
