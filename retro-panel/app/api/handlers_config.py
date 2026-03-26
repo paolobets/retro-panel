@@ -68,6 +68,11 @@ async def get_panel_config(request: web.Request) -> web.Response:
         for hs in config.header_sensors
     ]
 
+    cameras_payload = [
+        {"entity_id": c.entity_id, "title": c.title, "refresh_interval": c.refresh_interval}
+        for c in config.cameras
+    ]
+
     payload = {
         "title": config.title,
         "columns": config.columns,
@@ -78,13 +83,15 @@ async def get_panel_config(request: web.Request) -> web.Response:
         "overview": {"title": config.overview_title, "items": overview_payload},
         "rooms": rooms_payload,
         "scenarios": scenarios_payload,
+        "cameras": cameras_payload,
     }
 
     logger.debug(
-        "Panel config requested: overview=%d items, rooms=%d, scenarios=%d, header_sensors=%d",
+        "Panel config requested: overview=%d items, rooms=%d, scenarios=%d, header_sensors=%d, cameras=%d",
         len(overview_payload),
         len(rooms_payload),
         len(scenarios_payload),
         len(header_sensors_payload),
+        len(cameras_payload),
     )
     return web.json_response(payload)

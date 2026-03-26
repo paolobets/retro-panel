@@ -23,6 +23,9 @@ _MAX_ITEMS = 100
 _MAX_SECTIONS = 20
 _MAX_SCENARIOS = 50
 _MAX_HEADER_SENSORS = 6
+_MAX_CAMERAS = 20
+
+_CAMERA_ENTITY_RE = re.compile(r"^camera\.[a-z0-9_]+$")
 
 
 def _validate_entity_id(eid: str) -> str:
@@ -199,12 +202,38 @@ async def save_config(request: web.Request) -> web.Response:
             "label": str(hs.get("label") or "").strip()[:_MAX_LABEL],
         })
 
+    # --- cameras ---
+    cameras_raw = body.get("cameras") or []
+    if not isinstance(cameras_raw, list):
+        cameras_raw = []
+    if len(cameras_raw) > _MAX_CAMERAS:
+        return web.json_response({"error": f"Too many cameras (max {_MAX_CAMERAS})"}, status=400)
+    cameras = []
+    for cam_raw in cameras_raw:
+        if not isinstance(cam_raw, dict):
+            continue
+        eid = str(cam_raw.get("entity_id") or "").strip()
+        if not eid or not _CAMERA_ENTITY_RE.match(eid) or len(eid) > 64:
+            continue
+        title = str(cam_raw.get("title") or "").strip()[:_MAX_TITLE]
+        try:
+            refresh_interval = int(cam_raw.get("refresh_interval", 10))
+        except (TypeError, ValueError):
+            refresh_interval = 10
+        refresh_interval = max(3, min(60, refresh_interval))
+        cameras.append({
+            "entity_id": eid,
+            "title": title,
+            "refresh_interval": refresh_interval,
+        })
+
     v4_data = {
         "version": 4,
         "header_sensors": header_sensors,
         "overview": {"title": overview_title, "items": overview_items},
         "rooms": rooms,
         "scenarios": scenarios,
+        "cameras": cameras,
     }
 
     try:
@@ -218,8 +247,8 @@ async def save_config(request: web.Request) -> web.Response:
     total_overview = sum(1 for it in overview_items if it.get("type") == "entity")
     total_sections = sum(len(r.get("sections", [])) for r in rooms)
     logger.info(
-        "Config v4 saved: overview=%d entities, rooms=%d, sections=%d, scenarios=%d, header_sensors=%d",
-        total_overview, len(rooms), total_sections, len(scenarios), len(header_sensors),
+        "Config v4 saved: overview=%d entities, rooms=%d, sections=%d, scenarios=%d, header_sensors=%d, cameras=%d",
+        total_overview, len(rooms), total_sections, len(scenarios), len(header_sensors), len(cameras),
     )
 
     # Reload in-memory config and update WS proxy entity filter

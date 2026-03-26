@@ -47,6 +47,7 @@ from api.handlers_config import get_panel_config
 from api.handlers_entities import get_all_entities
 from api.handlers_config_save import save_config
 from api.handlers_areas import get_ha_areas
+from api.handlers_cameras import get_ha_cameras, get_camera_proxy
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -287,6 +288,8 @@ def create_app(config, ha_client: HAClient, ws_proxy: WSProxy) -> web.Applicatio
     app.router.add_get("/api/state/{entity_id:.+}", get_state)
     app.router.add_get("/api/entities", get_all_entities)
     app.router.add_get("/api/ha-areas", get_ha_areas)
+    app.router.add_get("/api/ha-cameras", get_ha_cameras)
+    app.router.add_get("/api/camera-proxy/{entity_id}", get_camera_proxy)
     app.router.add_post("/api/config", save_config)
     app.router.add_post("/api/service/{domain}/{service}", call_service)
     app.router.add_get("/ws", ws_handler)

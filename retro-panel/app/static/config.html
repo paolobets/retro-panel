@@ -25,6 +25,7 @@
     <button class="cfg-tab" type="button" data-tab="rooms">Rooms</button>
     <button class="cfg-tab" type="button" data-tab="scenarios">Scenarios</button>
     <button class="cfg-tab" type="button" data-tab="header">Header</button>
+    <button class="cfg-tab" type="button" data-tab="cameras">Telecamere</button>
   </div>
 
   <div id="cfg-body">
@@ -194,6 +195,26 @@
 
     </section>
 
+    <!-- ══════════════════════════════════════════════
+         TAB: CAMERAS
+         ══════════════════════════════════════════════ -->
+    <section id="tab-cameras" class="cfg-section hidden">
+
+      <div class="section-header">
+        <h2 class="section-title">Telecamere</h2>
+        <p class="cfg-hint">Aggiungi le telecamere da mostrare nel pannello. Puoi impostare un nome e l'intervallo di aggiornamento.</p>
+      </div>
+
+      <div id="cameras-list">
+        <p class="cfg-placeholder">Nessuna telecamera configurata.</p>
+      </div>
+
+      <div class="items-actions">
+        <button id="add-camera-btn" type="button" class="action-btn">+ Aggiungi Telecamera</button>
+      </div>
+
+    </section>
+
   </div><!-- /cfg-body -->
 
   <!-- ══════════════════════════════════════════════
@@ -260,6 +281,25 @@
     </div>
     <div id="scenario-list">
       <p class="cfg-placeholder">Loading…</p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       CAMERA PICKER
+       ══════════════════════════════════════════════ -->
+  <section id="camera-picker" class="cfg-overlay hidden">
+    <div id="camera-picker-header">
+      <button id="camera-picker-cancel-btn" type="button" class="action-btn-outline">Annulla</button>
+      <h2 class="section-title" style="margin:0;">Aggiungi Telecamera</h2>
+    </div>
+    <div id="camera-search-wrap">
+      <input id="camera-search-input" type="text"
+        placeholder="Cerca telecamere…"
+        autocomplete="off" autocorrect="off"
+        autocapitalize="off" spellcheck="false">
+    </div>
+    <div id="camera-list">
+      <p class="cfg-placeholder">Caricamento telecamere…</p>
     </div>
   </section>
 

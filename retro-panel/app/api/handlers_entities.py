@@ -21,10 +21,11 @@ logger = logging.getLogger(__name__)
 
 _ALLOWED_DOMAINS = frozenset({
     "light", "switch", "sensor", "binary_sensor", "alarm_control_panel",
+    "scene", "script", "camera",
 })
 
 _TEMPLATE = (
-    "{% set allowed_domains = ['light','switch','sensor','binary_sensor','alarm_control_panel'] %}"
+    "{% set allowed_domains = ['light','switch','sensor','binary_sensor','alarm_control_panel','scene','script','camera'] %}"
     "{% set ns = namespace(r=[]) %}"
     "{% for state in states %}"
     "{% if state.domain in allowed_domains %}"

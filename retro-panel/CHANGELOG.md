@@ -7,6 +7,55 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.6.0] — 2026-03-26
+
+### Refactoring — Frontend completo riscritto
+
+Refactoring totale del frontend per risolvere problemi di stabilità su iPad iOS 12 e
+aggiungere la sezione Telecamere. Il backend Python e tutti i componenti JS esistenti
+(light, switch, sensor, alarm, energy, scenario, light-sheet) sono stati mantenuti invariati.
+
+#### Architettura JS
+
+- **`app.js`** ridotto da 720 a ~200 righe: contiene solo boot, AppState e WebSocket handler
+- **`nav.js`** (nuovo): sidebar state machine — buildSidebar, showRoomsSubmenu, toggleSidebar,
+  setActiveSidebarItem. Nessun accesso diretto ad AppState; riceve callback da app.js
+- **`renderer.js`** (nuovo): tutte le funzioni di rendering — renderActiveSection, renderItemsGrid,
+  renderRoomSections, renderScenariosGrid, renderCamerasGrid, resolveComponent.
+  Lazy rendering a blocchi di 10 via `requestAnimationFrame` per performance su grandi liste.
+  Tile default generico per domini HA non mappati.
+
+#### CSS
+
+- **`layout.css`** riscritto da zero: breakpoint sidebar spostato da `≤900px/767px` a `≤599px`
+  (iPhone). iPad portrait (768px) e landscape (1024px) mostrano ora la sidebar espansa (200px)
+  con label visibili. Icone centrate in collapsed mode.
+- **`camera.css`** (nuovo): stili per le tile camera snapshot.
+
+#### Sicurezza e compatibilità iOS 12
+
+- Tutti i nuovi file JS verificati: nessun `const`/`let`/arrow function/import/export/`?.`/`??`
+- Nessun `gap` su elementi flex, nessun `inset:` shorthand
+- `touchend` + `preventDefault()` su tutti i nav items per risposta immediata senza 300ms delay
+
+### Added
+
+- **Sezione Telecamere** — frontend + backend
+  - `GET /api/ha-cameras`: lista camera entities da HA
+  - `GET /api/camera-proxy/{entity_id}`: proxy JPEG token-side (5 layer sicurezza:
+    regex `^camera\.[a-z0-9_]+$`, whitelist config, timeout 8s, `Cache-Control: no-store`)
+  - Componente `camera.js`: tile con snapshot polling configurabile (3–60s), spinner loading,
+    errore graceful, cleanup timer automatico a ogni navigazione
+  - Tab "Telecamere" nella config UI con picker overlay e campi title/refresh_interval
+
+- **Tile default** per entità HA non mappate a nessun componente noto:
+  mostra icona MDI auto-detected + label + stato grezzo
+
+- **Sezione Cameras nel data model** (`app/config/loader.py`):
+  `CameraConfig(entity_id, title, refresh_interval)` + campo `cameras[]` in `PanelConfig`
+
+---
+
 ## [1.5.5] — 2026-03-26
 
 ### Fixed

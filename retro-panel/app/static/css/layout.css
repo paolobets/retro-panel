@@ -1,19 +1,31 @@
 /* ============================================================
    layout.css — Sidebar, header, content area, loading screen
+   Breakpoint fondamentale:
+     ≥ 600px → sidebar 200px (iPad portrait, landscape, desktop)
+     < 600px → sidebar 64px icon-only (iPhone)
    ============================================================ */
 
 /* ---- Loading Screen ---- */
 #loading-screen {
   position: fixed;
-  top: 0; right: 0; bottom: 0; left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 200;
+  background: var(--color-bg);
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--color-bg);
-  z-index: 200;
   transition: opacity 0.25s ease;
 }
 
+#loading-screen.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Backward-compat: fade-out class used by current app.js hideLoadingScreen() */
 #loading-screen.fade-out {
   opacity: 0;
   pointer-events: none;
@@ -23,8 +35,19 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 16px;
 }
-.loading-content > * + * { margin-top: 20px; }
+
+.loading-title {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+}
+
+/* Backward-compat alias used in existing HTML */
+.loading-text {
+  font-size: 15px;
+  color: var(--color-text-secondary);
+}
 
 .spinner {
   width: 48px;
@@ -39,12 +62,6 @@
   to { transform: rotate(360deg); }
 }
 
-.loading-text {
-  color: var(--color-text-secondary);
-  font-size: 16px;
-  letter-spacing: 0.02em;
-}
-
 /* ---- Disconnect Banner ---- */
 #disconnect-banner {
   position: fixed;
@@ -52,20 +69,21 @@
   left: 0;
   right: 0;
   z-index: 100;
-  background-color: var(--color-warning);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--color-warning);
   color: #000;
   font-size: 13px;
   font-weight: 600;
-  text-align: center;
-  padding: 8px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
-#disconnect-banner > * + * { margin-left: 8px; }
+
+#disconnect-banner.hidden {
+  display: none;
+}
 
 .banner-dot {
-  display: inline-block;
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -78,175 +96,147 @@
   50% { opacity: 0.3; }
 }
 
-/* ---- Panel: root flex container ---- */
+/* ---- Panel root ---- */
+/* NO -webkit-fill-available: in kiosk WKWebView non c'è barra browser, 100vh funziona */
 #panel {
   display: flex;
   flex-direction: row;
   height: 100vh;
-  height: -webkit-fill-available;
   height: 100dvh;
+  background: var(--color-bg);
   overflow: hidden;
 }
 
-/* ============================================================
-   SIDEBAR
-   ============================================================ */
-
-:root {
-  --sidebar-width-expanded: 200px;
-  --sidebar-width-collapsed: 64px;
-}
-
-#sidebar {
-  width: var(--sidebar-width-expanded);
-  min-width: var(--sidebar-width-expanded);
-  flex-shrink: 0;
-  background-color: var(--color-surface);
-  border-right: 1px solid var(--color-surface-2);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  transition: width 0.25s ease, min-width 0.25s ease;
-  z-index: 20;
-}
-
-#sidebar.collapsed {
-  width: var(--sidebar-width-collapsed);
-  min-width: var(--sidebar-width-collapsed);
-}
-
-/* Toggle button — left-aligned icon */
-#sidebar-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  width: 100%;
-  height: 52px;
-  min-height: 52px;
-  padding: 0 18px;
-  background: none;
-  border: none;
-  color: var(--color-text-secondary);
-  font-size: 20px;
-  cursor: pointer;
-  flex-shrink: 0;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-
-#sidebar-toggle:active { background-color: var(--color-surface-2); }
-
-.sidebar-toggle-icon { line-height: 1; }
-
-/* Settings link — bottom of sidebar, icon only */
-.sidebar-settings {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  height: 52px;
-  min-height: 52px;
-  padding: 0 18px;
-  color: var(--color-text-secondary);
-  text-decoration: none;
-  flex-shrink: 0;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.sidebar-settings > * + * { margin-left: 12px; }
-
-.sidebar-settings:active { background-color: var(--color-surface-2); }
-
-/* Bottom settings: only icon, no label even when expanded */
-.sidebar-settings-bottom .sidebar-item-label {
+#panel.hidden {
   display: none;
 }
 
-.sidebar-divider {
-  height: 1px;
-  background-color: var(--color-surface-2);
-  margin: 4px 0;
-  flex-shrink: 0;
+/* ============================================================
+   SIDEBAR — variabili e regole base
+   ============================================================ */
+
+:root {
+  --sidebar-w: 200px;
+  --sidebar-w-sm: 64px;
 }
 
-/* Rooms submenu back button */
-#sidebar-rooms-back {
+/* Sidebar base — sempre 200px su tutti gli schermi ≥ 600px */
+#sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  height: 100%;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-surface-2);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  transition: width 0.25s ease, min-width 0.25s ease;
+  overflow: hidden;
+}
+
+/* Collapsed via toggle manuale (sempre disponibile, su qualsiasi screen size) */
+#sidebar.collapsed {
+  width: var(--sidebar-w-sm);
+  min-width: var(--sidebar-w-sm);
+}
+
+/* Su iPhone (< 600px): sidebar sempre icon-only */
+@media (max-width: 599px) {
+  #sidebar {
+    width: var(--sidebar-w-sm);
+    min-width: var(--sidebar-w-sm);
+  }
+}
+
+/* ---- Sidebar header (toggle button + titolo) ---- */
+#sidebar-header {
   display: flex;
   align-items: center;
-  height: 44px;
-  min-height: 44px;
+  height: 60px;
   padding: 0 12px;
-  background: none;
-  border: none;
   border-bottom: 1px solid var(--color-surface-2);
-  color: var(--color-accent);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  width: 100%;
-  text-align: left;
   flex-shrink: 0;
+}
+
+#sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  color: var(--color-text-primary);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+#sidebar-toggle:active {
+  background: var(--color-surface-2);
+}
+
+/* Backward-compat per vecchio markup del toggle */
+.sidebar-toggle-icon {
+  line-height: 1;
+}
+
+#sidebar-title {
+  flex: 1;
+  font-size: 17px;
+  font-weight: 700;
+  margin-left: 8px;
   white-space: nowrap;
   overflow: hidden;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
 }
 
-#sidebar-rooms-back > * + * { margin-left: 8px; }
-
-#sidebar-rooms-back:active { background-color: var(--color-surface-2); }
-
-#sidebar-rooms-back .sidebar-item-label {
-  opacity: 1;
-}
-
-/* Nav container */
+/* ---- Nav container ---- */
 #sidebar-nav {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  padding: 8px 0;
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
-  padding: 4px 0;
 }
 
-/* Individual nav item */
+/* ---- Nav items ---- */
 .sidebar-nav-item {
+  position: relative;
   display: flex;
+  flex-direction: row;
   align-items: center;
-  height: 52px;
-  min-height: 52px;
   padding: 0 16px;
-  background: none;
-  border: none;
+  height: 52px;
+  cursor: pointer;
   color: var(--color-text-secondary);
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
   font-size: 14px;
   font-family: inherit;
   font-weight: 500;
-  cursor: pointer;
-  text-align: left;
   white-space: nowrap;
   overflow: hidden;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  width: 100%;
-  position: relative;
 }
 
-.sidebar-nav-item > * + * { margin-left: 12px; }
-
-.sidebar-nav-item:active { background-color: var(--color-surface-2); }
+.sidebar-nav-item:active {
+  background: var(--color-surface-2);
+}
 
 .sidebar-nav-item.active {
   color: var(--color-accent);
-  background-color: var(--color-surface-2);
+  background: var(--color-accent-bg);
 }
 
-/* Active indicator bar */
 .sidebar-nav-item.active::before {
   content: '';
   position: absolute;
@@ -259,113 +249,223 @@
 }
 
 .sidebar-item-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  width: 28px;
   font-size: 20px;
   line-height: 1;
 }
 
 .sidebar-item-label {
   flex: 1;
-  min-width: 0;
+  font-size: 14px;
+  font-weight: 500;
+  margin-left: 12px;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   transition: opacity 0.2s ease;
 }
 
 .sidebar-item-chevron {
-  font-size: 16px;
-  color: var(--color-text-secondary);
   flex-shrink: 0;
+  opacity: 0.5;
+  font-size: 16px;
   transition: opacity 0.2s ease;
 }
 
-/* When collapsed: hide labels and chevrons */
+/* ---- Nascondi labels in collapsed mode (toggle manuale) ---- */
 #sidebar.collapsed .sidebar-item-label,
-#sidebar.collapsed .sidebar-item-chevron {
+#sidebar.collapsed .sidebar-item-chevron,
+#sidebar.collapsed #sidebar-title {
   opacity: 0;
   pointer-events: none;
+}
+
+/* ---- Centra icona in collapsed mode ---- */
+#sidebar.collapsed .sidebar-nav-item {
+  justify-content: center;
+  padding: 0;
+}
+
+/* ---- Su iPhone: stesse regole collapsed ---- */
+@media (max-width: 599px) {
+  .sidebar-item-label,
+  .sidebar-item-chevron,
+  #sidebar-title {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .sidebar-nav-item {
+    justify-content: center;
+    padding: 0;
+  }
+}
+
+/* ---- Back button per rooms submenu ---- */
+#sidebar-rooms-back {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0 16px;
+  height: 44px;
+  cursor: pointer;
+  color: var(--color-accent);
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  border-bottom: 1px solid var(--color-surface-2);
+  margin-bottom: 4px;
+  box-sizing: border-box;
+  font-family: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+#sidebar-rooms-back.hidden {
+  display: none;
+}
+
+#sidebar-rooms-back:active {
+  background: var(--color-surface-2);
+}
+
+/* Il label del back-button rimane sempre visibile (anche collapsed) */
+#sidebar-rooms-back .sidebar-item-label {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ---- Sidebar bottom (settings link) ---- */
+#sidebar-bottom {
+  padding: 8px 0 12px 0;
+  border-top: 1px solid var(--color-surface-2);
+  flex-shrink: 0;
+}
+
+/* Backward-compat: vecchio markup con .sidebar-divider */
+.sidebar-divider {
+  height: 1px;
+  background: var(--color-surface-2);
+  margin: 4px 0;
+  flex-shrink: 0;
+}
+
+/* Settings link */
+.sidebar-settings {
+  display: flex;
+  align-items: center;
+  height: 52px;
+  padding: 0 18px;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  white-space: nowrap;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.sidebar-settings:active {
+  background: var(--color-surface-2);
+}
+
+.sidebar-settings-bottom .sidebar-item-label {
+  display: none;
 }
 
 /* ============================================================
    MAIN AREA (header + content)
    ============================================================ */
 
-#main-area {
+/* Backward-compat: vecchio markup usa #main-area */
+#main-area,
+#main-content {
   flex: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
+  min-width: 0;
   overflow: hidden;
 }
 
 /* ---- Header ---- */
 #panel-header {
   display: flex;
+  flex-direction: row;
   align-items: center;
-  height: var(--header-height);
+  height: 60px;
   padding: 0 16px;
-  background-color: var(--color-surface);
+  background: var(--color-surface);
   border-bottom: 1px solid var(--color-surface-2);
   flex-shrink: 0;
   overflow: hidden;
 }
-#panel-header > * + * { margin-left: 12px; }
+
+#panel-header > * + * {
+  margin-left: 12px;
+}
 
 #panel-title {
   font-size: 17px;
   font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 200px;
   flex-shrink: 0;
-  max-width: 160px;
 }
 
 #header-info {
   display: flex;
+  flex-direction: row;
   align-items: center;
+  gap: 8px;
   flex-shrink: 0;
-}
-#header-info > * + * { margin-left: 8px; }
-
-#panel-date {
-  font-size: 13px;
-  color: var(--color-text-secondary);
-  font-weight: 400;
-  white-space: nowrap;
 }
 
 #panel-clock {
   font-size: 15px;
   font-weight: 600;
-  color: var(--color-text-primary);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  letter-spacing: 0.02em;
 }
 
-/* Mini header sensor chips */
-#header-sensors {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  min-width: 0;
+#panel-date {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
 }
-#header-sensors > * + * { margin-left: 8px; }
+
+#header-sensors {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
 
 .header-sensor-chip {
   display: inline-flex;
+  flex-direction: row;
   align-items: center;
-  background-color: var(--color-surface-2);
-  border-radius: 12px;
+  gap: 4px;
   padding: 4px 10px;
+  background: var(--color-surface-2);
+  border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
   color: var(--color-text-primary);
@@ -373,6 +473,11 @@
   flex-shrink: 0;
 }
 
+.header-sensor-chip svg {
+  flex-shrink: 0;
+}
+
+/* Backward-compat selectors */
 .header-sensor-icon {
   font-size: 13px;
   line-height: 1;
@@ -384,6 +489,16 @@
 }
 
 /* Connection status dot */
+#connection-status {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-left: 8px;
+  transition: background-color 0.3s ease;
+}
+
+/* Backward-compat: classi usate dall'attuale app.js */
 .status-dot {
   width: 10px;
   height: 10px;
@@ -392,75 +507,60 @@
   transition: background-color 0.3s ease;
 }
 
-.status-connected    { background-color: var(--color-on); }
-.status-disconnected { background-color: var(--color-danger); }
-.status-connecting   { background-color: var(--color-warning); animation: pulse-dot 1.2s ease-in-out infinite; }
+.status-connected,
+#connection-status.connected {
+  background: var(--color-on);
+}
+
+.status-disconnected,
+#connection-status.disconnected {
+  background: var(--color-danger);
+}
+
+.status-connecting,
+#connection-status.connecting {
+  background: var(--color-warning);
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
 
 /* ---- Content area ---- */
 #content-area {
   flex: 1;
   overflow-y: auto;
+  padding: 12px;
   -webkit-overflow-scrolling: touch;
-  padding: var(--gap);
 }
 
-/* ---- Section heading (shown inside content area) ---- */
 .section-heading {
   font-size: 13px;
   font-weight: 700;
   color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin: 0 0 12px;
-  padding-bottom: 6px;
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
   border-bottom: 1px solid var(--color-surface-2);
 }
 
-/* ---- Tile grid inside content area ---- */
-.tile-grid {
-  display: grid;
-  grid-template-columns: repeat(var(--columns, 3), 1fr);
-  grid-auto-rows: min-content;
-  gap: var(--gap);
-  align-content: start;
-  margin-bottom: 24px;
-}
-
-@media (max-width: 480px) {
-  .tile-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (orientation: landscape) {
-  .tile-grid {
-    grid-template-columns: repeat(var(--columns-landscape, var(--columns, 4)), 1fr);
-  }
-}
-
-/* Alarm tile: full width on narrow content */
-@media (max-width: 600px) {
-  .tile.alarm-tile {
-    grid-column: 1 / -1;
-  }
-}
-
-/* Empty state */
+/* ---- Empty state ---- */
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
+  padding: 48px 24px;
   text-align: center;
   grid-column: 1 / -1;
 }
 
-.empty-state > * + * { margin-top: 8px; }
+.empty-state > * + * {
+  margin-top: 8px;
+}
 
 .empty-state-icon {
-  font-size: 40px;
-  opacity: 0.3;
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
 }
 
 .empty-state-title {
@@ -475,64 +575,71 @@
   opacity: 0.7;
 }
 
-/* ---- Scenarios grid ---- */
-.scenarios-grid {
+/* ============================================================
+   GRIGLIE TILE
+   ============================================================ */
+
+/* Griglia fissa (colonne da config) */
+.tile-grid {
   display: grid;
   grid-template-columns: repeat(var(--columns, 3), 1fr);
-  gap: var(--gap);
+  gap: 12px;
+  margin-bottom: 24px;
   align-content: start;
 }
 
-@media (max-width: 480px) {
-  .scenarios-grid { grid-template-columns: repeat(2, 1fr); }
-}
-
-/* ---- Auto-fill tile grid (room sections) ---- */
+/* Griglia auto-fill per room sections */
 .tile-grid-auto {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  grid-auto-rows: min-content;
-  gap: var(--gap);
+  gap: 12px;
+  margin-bottom: 24px;
   align-content: start;
-  margin-bottom: 16px;
 }
 
-/* ---- Room sections layout ---- */
+/* Room section header con badge */
 .room-section {
   margin-bottom: 24px;
 }
 
 .room-section-header {
   display: flex;
+  flex-direction: row;
   align-items: center;
+  gap: 8px;
   margin-bottom: 10px;
+  margin-top: 20px;
+}
+
+.room-section-header:first-child {
+  margin-top: 0;
 }
 
 .room-section-title {
   font-size: 11px;
   font-weight: 700;
-  color: var(--color-text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
   flex-shrink: 0;
 }
 
 .room-section-count {
   font-size: 10px;
   font-weight: 700;
+  background: var(--color-surface-2);
   color: var(--color-text-secondary);
-  background-color: var(--color-surface-2);
-  border-radius: 10px;
+  border-radius: 20px;
   padding: 2px 7px;
-  margin-left: 8px;
   flex-shrink: 0;
 }
 
 .room-section-line {
   flex: 1;
   height: 1px;
-  background-color: var(--color-surface-2);
-  margin-left: 10px;
+  background: var(--color-surface-2);
+  margin-left: 4px;
 }
 
 .room-section-empty {
@@ -543,21 +650,41 @@
   margin: 0;
 }
 
-/* ---- Responsive: auto-collapse sidebar on narrow screens ---- */
-@media (max-width: 767px) {
-  #sidebar {
-    width: var(--sidebar-width-collapsed);
-    min-width: var(--sidebar-width-collapsed);
+/* Griglia scenari */
+.scenarios-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  align-content: start;
+}
+
+/* Griglia camere */
+.cameras-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+/* Alarm tile: full width su schermi stretti */
+@media (max-width: 600px) {
+  .tile.alarm-tile {
+    grid-column: 1 / -1;
   }
-  #sidebar .sidebar-item-label,
-  #sidebar .sidebar-item-chevron {
-    opacity: 0;
-    pointer-events: none;
+}
+
+/* ---- Responsive grids ---- */
+@media (max-width: 599px) {
+  .tile-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  #sidebar .sidebar-nav-item {
-    justify-content: center;
-    padding-left: 0;
-    padding-right: 0;
+  .tile-grid-auto {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (orientation: landscape) and (min-width: 600px) {
+  .tile-grid {
+    grid-template-columns: repeat(var(--columns-landscape, var(--columns, 4)), 1fr);
   }
 }

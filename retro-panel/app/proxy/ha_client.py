@@ -115,6 +115,28 @@ class HAClient:
         except asyncio.TimeoutError as exc:
             raise TimeoutError(f"Service call {domain}.{service} timed out") from exc
 
+    async def get_camera_proxy(self, entity_id: str) -> tuple[bytes, str]:
+        """Fetch camera snapshot from HA. Returns (jpeg_bytes, content_type)."""
+        url = f"{self._ha_url}/api/camera_proxy/{entity_id}"
+        session = self._get_session()
+        try:
+            async with session.get(
+                url,
+                timeout=aiohttp.ClientTimeout(total=8),
+            ) as resp:
+                if resp.status == 401:
+                    raise PermissionError("HA token rejected for camera proxy")
+                if resp.status == 404:
+                    raise FileNotFoundError(f"Camera entity not found: {entity_id}")
+                resp.raise_for_status()
+                data = await resp.read()
+                ct = resp.headers.get("Content-Type", "image/jpeg")
+                return data, ct
+        except aiohttp.ClientConnectorError as exc:
+            raise ConnectionRefusedError(str(exc)) from exc
+        except asyncio.TimeoutError as exc:
+            raise TimeoutError(f"Camera proxy request for '{entity_id}' timed out") from exc
+
     async def get_all_entity_states(self) -> list[dict[str, Any]]:
         """Fetch ALL entity states from HA (used by the entity picker config page).
 

@@ -21,6 +21,7 @@
     rooms:          [],           // [{id, title, icon, hidden, sections:[{id, title, items:[]}]}]
     scenarios:      [],           // [{entity_id, title, icon}]
     header_sensors: [],           // [{entity_id, icon, label}]
+    cameras:        [],           // [{entity_id, title, refresh_interval}]
   };
 
   var allEntities  = [];   // from /api/entities
@@ -99,11 +100,14 @@
       tabs[i].classList.toggle('active', tabs[i].getAttribute('data-tab') === tabId);
     }
 
-    var sections = ['overview', 'rooms', 'scenarios', 'header'];
+    var sections = ['overview', 'rooms', 'scenarios', 'header', 'cameras'];
     for (var j = 0; j < sections.length; j++) {
       var el = qs('tab-' + sections[j]);
       if (el) { el.classList.toggle('hidden', sections[j] !== tabId); }
     }
+
+    // Refresh cameras list when switching to that tab
+    if (tabId === 'cameras') { renderCamerasList(); }
 
     // Close room editor when leaving rooms tab
     if (tabId !== 'rooms') { closeRoomEditor(); }
@@ -972,6 +976,170 @@
     if (searchEl) { setTimeout(function () { searchEl.focus(); }, 100); }
   }
 
+  // ── Cameras ────────────────────────────────────────────────────────────────
+
+  var allCameras = [];        // entity list from /api/entities?domain=camera
+  var cameraSearchText = '';  // filter text in the camera picker
+
+  function renderCamerasList() {
+    var container = qs('cameras-list');
+    if (!container) { return; }
+
+    if (state.cameras.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">Nessuna telecamera configurata.</p>';
+      return;
+    }
+
+    var html = '';
+    for (var i = 0; i < state.cameras.length; i++) {
+      var c = state.cameras[i];
+      var isFirst = (i === 0);
+      var isLast  = (i === state.cameras.length - 1);
+      html += '<div class="selected-row">';
+      html += '<div class="selected-entity-info">';
+      html += '<span class="selected-id">' + esc(c.entity_id) + '</span>';
+      html += '<input type="text" class="camera-title-input item-label-input" placeholder="Nome display\u2026" maxlength="64"'
+        + ' value="' + esc(c.title || '') + '" data-idx="' + i + '">';
+      html += '<div class="camera-refresh-row">';
+      html += '<label class="camera-refresh-label">Refresh (sec):</label>';
+      html += '<input type="number" class="camera-refresh-input" min="3" max="60"'
+        + ' value="' + (c.refresh_interval || 10) + '" data-idx="' + i + '">';
+      html += '</div>';
+      html += '</div>';
+      html += '<div class="selected-actions">';
+      if (!isFirst) {
+        html += '<button class="reorder-btn" type="button" data-action="cam-up" data-idx="' + i + '">\u2191</button>';
+      }
+      if (!isLast) {
+        html += '<button class="reorder-btn" type="button" data-action="cam-down" data-idx="' + i + '">\u2193</button>';
+      }
+      html += '<button class="remove-btn cam-remove-btn" type="button" data-cam-idx="' + i + '">\u2715</button>';
+      html += '</div>';
+      html += '</div>';
+    }
+    container.innerHTML = html;
+
+    container.querySelectorAll('.camera-title-input').forEach(function (inp) {
+      inp.addEventListener('change', function () {
+        var idx = parseInt(this.getAttribute('data-idx'), 10);
+        if (state.cameras[idx]) { state.cameras[idx].title = this.value.trim(); }
+      });
+    });
+
+    container.querySelectorAll('.camera-refresh-input').forEach(function (inp) {
+      inp.addEventListener('change', function () {
+        var idx = parseInt(this.getAttribute('data-idx'), 10);
+        var val = parseInt(this.value, 10);
+        if (isNaN(val) || val < 3)  { val = 3; }
+        if (val > 60)               { val = 60; }
+        this.value = val;
+        if (state.cameras[idx]) { state.cameras[idx].refresh_interval = val; }
+      });
+    });
+
+    container.querySelectorAll('.reorder-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var idx   = parseInt(this.getAttribute('data-idx'), 10);
+        var delta = this.getAttribute('data-action') === 'cam-up' ? -1 : 1;
+        var newIdx = idx + delta;
+        if (newIdx < 0 || newIdx >= state.cameras.length) { return; }
+        var tmp = state.cameras[idx]; state.cameras[idx] = state.cameras[newIdx]; state.cameras[newIdx] = tmp;
+        renderCamerasList();
+      });
+    });
+
+    container.querySelectorAll('.cam-remove-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        state.cameras.splice(parseInt(this.getAttribute('data-cam-idx'), 10), 1);
+        renderCamerasList();
+      });
+    });
+  }
+
+  function openCameraPicker() {
+    cameraSearchText = '';
+    var searchEl = qs('camera-search-input');
+    if (searchEl) { searchEl.value = ''; }
+    showOverlay('camera-picker');
+
+    if (allCameras.length > 0) {
+      renderCameraPickerList();
+    } else {
+      var listEl = qs('camera-list');
+      if (listEl) { listEl.innerHTML = '<p class="cfg-placeholder">Caricamento telecamere\u2026</p>'; }
+      cfgFetchCameras()
+        .then(function (cameras) {
+          allCameras = cameras || [];
+          renderCameraPickerList();
+        })
+        .catch(function (err) {
+          var el = qs('camera-list');
+          if (el) { el.innerHTML = '<p class="cfg-placeholder">Errore: ' + esc(err.message) + '</p>'; }
+        });
+    }
+
+    if (searchEl) { setTimeout(function () { searchEl.focus(); }, 100); }
+  }
+
+  function renderCameraPickerList() {
+    var container = qs('camera-list');
+    if (!container) { return; }
+
+    if (allCameras.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">Nessuna telecamera trovata in HA.</p>';
+      return;
+    }
+
+    var filtered = allCameras.filter(function (e) {
+      if (!cameraSearchText) { return true; }
+      var hay = (e.entity_id + ' ' + (e.friendly_name || '')).toLowerCase();
+      return hay.indexOf(cameraSearchText) !== -1;
+    });
+
+    if (filtered.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">Nessun risultato.</p>';
+      return;
+    }
+
+    var html = '';
+    for (var i = 0; i < filtered.length; i++) {
+      var e = filtered[i];
+      var already = false;
+      for (var j = 0; j < state.cameras.length; j++) {
+        if (state.cameras[j].entity_id === e.entity_id) { already = true; break; }
+      }
+      html += '<div class="entity-row' + (already ? ' entity-row--selected' : '') + '">';
+      html += '<span class="entity-domain">camera</span>';
+      html += '<span class="entity-info">';
+      html += '<span class="entity-name">' + esc(e.friendly_name || e.entity_id) + '</span>';
+      html += '<span class="entity-id-label">' + esc(e.entity_id) + '</span>';
+      html += '</span>';
+      if (already) {
+        html += '<span class="entity-check">&#10003;</span>';
+      } else {
+        html += '<button class="add-btn cam-pick-btn" type="button"'
+          + ' data-id="' + esc(e.entity_id) + '"'
+          + ' data-name="' + esc(e.friendly_name || '') + '">+</button>';
+      }
+      html += '</div>';
+    }
+    container.innerHTML = html;
+
+    container.querySelectorAll('.cam-pick-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var eid  = this.getAttribute('data-id');
+        var name = this.getAttribute('data-name');
+        state.cameras.push({
+          entity_id:        eid,
+          title:            name || eid.split('.')[1] || eid,
+          refresh_interval: 10,
+        });
+        renderCameraPickerList();
+        renderCamerasList();
+      });
+    });
+  }
+
   // ── Entity picker ──────────────────────────────────────────────────────────
 
   function openEntityPicker(context) {
@@ -1316,7 +1484,7 @@
 
   // ── Overlay management ─────────────────────────────────────────────────────
 
-  var OVERLAYS = ['entity-picker', 'sensor-picker', 'scenario-picker', 'energy-editor'];
+  var OVERLAYS = ['entity-picker', 'sensor-picker', 'scenario-picker', 'energy-editor', 'camera-picker'];
 
   function showOverlay(id) {
     for (var i = 0; i < OVERLAYS.length; i++) {
@@ -1432,6 +1600,7 @@
         });
         state.scenarios       = cfg.scenarios       || [];
         state.header_sensors  = cfg.header_sensors  || [];
+        state.cameras         = cfg.cameras         || [];
 
         allEntities = entities || [];
 
@@ -1443,6 +1612,7 @@
         renderRoomsList();
         renderScenariosList();
         renderHeaderSensorsList();
+        renderCamerasList();
       })
       .catch(function (err) {
         var el = qs('entity-list');
@@ -1450,7 +1620,7 @@
       });
 
     // ── Tab buttons — inject MDI icons and wire clicks ────────────────────
-    var TAB_ICONS = { overview: 'home', rooms: 'floor-plan', scenarios: 'palette', header: 'thermometer' };
+    var TAB_ICONS = { overview: 'home', rooms: 'floor-plan', scenarios: 'palette', header: 'thermometer', cameras: 'cctv' };
     document.querySelectorAll('.cfg-tab').forEach(function (btn) {
       var tab = btn.getAttribute('data-tab');
       if (window.RP_MDI && TAB_ICONS[tab]) {
@@ -1541,6 +1711,21 @@
     // ── Header sensor buttons ──────────────────────────────────────────────
     var addHeaderBtn = qs('add-header-sensor-btn');
     if (addHeaderBtn) { addHeaderBtn.addEventListener('click', openHeaderSensorPicker); }
+
+    // ── Camera buttons ─────────────────────────────────────────────────────
+    var addCameraBtn = qs('add-camera-btn');
+    if (addCameraBtn) { addCameraBtn.addEventListener('click', openCameraPicker); }
+
+    var camPickerCancelBtn = qs('camera-picker-cancel-btn');
+    if (camPickerCancelBtn) { camPickerCancelBtn.addEventListener('click', hideOverlay); }
+
+    var camSearchEl = qs('camera-search-input');
+    if (camSearchEl) {
+      camSearchEl.addEventListener('input', function () {
+        cameraSearchText = this.value.toLowerCase();
+        renderCameraPickerList();
+      });
+    }
 
     // ── Entity picker controls ─────────────────────────────────────────────
     var pickerCancelBtn = qs('picker-cancel-btn');

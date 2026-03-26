@@ -143,6 +143,13 @@ class ScenarioConfig:
 
 
 @dataclass
+class CameraConfig:
+    entity_id: str
+    title: str = ""
+    refresh_interval: int = 10
+
+
+@dataclass
 class RoomConfig:
     """A room/area with its own entity grid."""
     id: str
@@ -167,6 +174,7 @@ class PanelConfig:
     overview_items: List[SectionItem] = field(default_factory=list)
     rooms: List[RoomConfig] = field(default_factory=list)
     scenarios: List[ScenarioConfig] = field(default_factory=list)
+    cameras: List[CameraConfig] = field(default_factory=list)
     overview_title: str = "Overview"
 
     # --------------- backward compat helpers ---------------
@@ -208,6 +216,9 @@ class PanelConfig:
 
         for hs in self.header_sensors:
             _add(hs.entity_id)
+
+        for cam in self.cameras:
+            _add(cam.entity_id)
 
         return ids
 
@@ -354,9 +365,10 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
     list[RoomConfig],      # rooms
     list[ScenarioConfig],  # scenarios
     list[HeaderSensor],    # header_sensors
+    list[CameraConfig],    # cameras
 ]:
     """Load layout from /data/entities.json, migrating older formats."""
-    empty = ([], "Overview", [], [], [])
+    empty = ([], "Overview", [], [], [], [])
 
     if entities_file.exists():
         try:
@@ -387,18 +399,27 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
                     hs = _parse_header_sensor(hs_raw)
                     if hs is not None:
                         header_sensors.append(hs)
-            return overview_items, overview_title, rooms, scenarios, header_sensors
+            raw_cameras = raw.get("cameras", [])
+            cameras: list[CameraConfig] = []
+            for c in raw_cameras:
+                if isinstance(c, dict) and c.get("entity_id"):
+                    cameras.append(CameraConfig(
+                        entity_id=c["entity_id"],
+                        title=c.get("title", ""),
+                        refresh_interval=int(c.get("refresh_interval", 10)),
+                    ))
+            return overview_items, overview_title, rooms, scenarios, header_sensors, cameras
 
         # v2 format: migrate first page to overview
         if isinstance(raw, dict) and raw.get("version") == 2:
             logger.info("Migrating v2 pages format to v4")
             overview_items = _migrate_v2_pages(raw.get("pages") or [])
-            return overview_items, "Overview", [], [], []
+            return overview_items, "Overview", [], [], [], []
 
         # v1 format: plain list
         if isinstance(raw, list):
             logger.info("Migrating v1 flat entities format to v4")
-            return _migrate_v1_flat(raw), "Overview", [], [], []
+            return _migrate_v1_flat(raw), "Overview", [], [], [], []
 
         logger.warning("Unrecognised entities.json format, using empty layout")
         return empty
@@ -406,7 +427,7 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
     # Fall back to options.json entities
     if options_fallback:
         logger.info("No entities.json found, migrating from options.json")
-        return _migrate_v1_flat(options_fallback), "Overview", [], [], []
+        return _migrate_v1_flat(options_fallback), "Overview", [], [], [], []
 
     return empty
 
@@ -454,7 +475,7 @@ def load_config() -> PanelConfig:
 
     entities_file = Path("/data/entities.json")
     options_entities = raw.get("entities", [])
-    overview_items, overview_title, rooms, scenarios, header_sensors = _load_layout(
+    overview_items, overview_title, rooms, scenarios, header_sensors, cameras = _load_layout(
         entities_file,
         options_entities if isinstance(options_entities, list) else [],
     )
@@ -479,16 +500,18 @@ def load_config() -> PanelConfig:
         overview_items=overview_items,
         rooms=rooms,
         scenarios=scenarios,
+        cameras=cameras,
         overview_title=overview_title,
     )
 
     logger.info(
-        "Config loaded: title=%r, columns=%d, overview=%d entities, rooms=%d, scenarios=%d, theme=%r",
+        "Config loaded: title=%r, columns=%d, overview=%d entities, rooms=%d, scenarios=%d, cameras=%d, theme=%r",
         config.title,
         config.columns,
         total_entities,
         len(rooms),
         len(scenarios),
+        len(cameras),
         config.theme,
     )
     return config
