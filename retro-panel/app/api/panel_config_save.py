@@ -114,7 +114,7 @@ async def save_config(request: web.Request) -> web.Response:
     for sec_raw in (ov_raw.get("sections") or []):
         if not isinstance(sec_raw, dict):
             continue
-        sec_id = str(sec_raw.get("id") or "").strip()[:64]
+        sec_id = str(sec_raw.get("id") or "").strip()[:_MAX_ID]
         if not sec_id:
             continue
         sec_title = str(sec_raw.get("title") or "").strip()[:_MAX_TITLE]
@@ -193,7 +193,7 @@ async def save_config(request: web.Request) -> web.Response:
     for sec_raw in (body.get("scenarios") or []):
         if not isinstance(sec_raw, dict):
             continue
-        sec_id = str(sec_raw.get("id") or "").strip()[:64]
+        sec_id = str(sec_raw.get("id") or "").strip()[:_MAX_ID]
         if not sec_id:
             continue
         sec_title = str(sec_raw.get("title") or "").strip()[:_MAX_TITLE]
@@ -204,10 +204,12 @@ async def save_config(request: web.Request) -> web.Response:
             eid = str(sc.get("entity_id") or "").strip()
             if not eid:
                 continue
+            if not _ENTITY_ID_RE.match(eid):
+                continue
             items.append({
                 "entity_id": eid,
                 "title": str(sc.get("title") or "").strip()[:_MAX_TITLE],
-                "icon": str(sc.get("icon") or "🎭").strip()[:8],
+                "icon": str(sc.get("icon") or "🎭").strip()[:_MAX_ICON],
             })
         scenario_sections.append({"id": sec_id, "title": sec_title, "items": items})
 
@@ -241,7 +243,7 @@ async def save_config(request: web.Request) -> web.Response:
     for sec_raw in (body.get("cameras") or []):
         if not isinstance(sec_raw, dict):
             continue
-        sec_id = str(sec_raw.get("id") or "").strip()[:64]
+        sec_id = str(sec_raw.get("id") or "").strip()[:_MAX_ID]
         if not sec_id:
             continue
         sec_title = str(sec_raw.get("title") or "").strip()[:_MAX_TITLE]
@@ -251,6 +253,8 @@ async def save_config(request: web.Request) -> web.Response:
                 continue
             eid = str(c.get("entity_id") or "").strip()
             if not eid:
+                continue
+            if not _CAMERA_ENTITY_RE.match(eid):
                 continue
             ri = int(c.get("refresh_interval") or 10)
             if ri < 3: ri = 3
