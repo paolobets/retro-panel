@@ -1661,21 +1661,18 @@
       })
       .catch(function (e) { console.warn('[config] ha-areas:', e.message); });
 
-    // Load config + entity list
-    Promise.all([cfgFetchPanelConfig(), cfgFetchEntities()])
-      .then(function (results) {
-        var cfg = results[0];
-        var entities = results[1];
-
+    // Load saved panel config first (critical — reads local entities.json, works offline)
+    cfgFetchPanelConfig()
+      .then(function (cfg) {
         document.body.className = 'theme-' + (cfg.theme || 'dark');
 
-        // Populate state from v3 config
+        // Populate state from saved config
         var ovRaw = cfg.overview || {};
         state.overview = {
           title: ovRaw.title || 'Overview',
           items: ovRaw.items || [],
         };
-        state.rooms           = (cfg.rooms || []).map(function (r) {
+        state.rooms = (cfg.rooms || []).map(function (r) {
           var sections;
           if (r.sections && r.sections.length > 0) {
             sections = r.sections.map(function (sec) {
@@ -1683,7 +1680,10 @@
                 id:    sec.id    || genSecId(),
                 title: sec.title || '',
                 items: (sec.items || []).map(function (it) {
-                  return Object.assign({}, it, { hidden: !!it.hidden });
+                  var copy = {};
+                  for (var k in it) { if (Object.prototype.hasOwnProperty.call(it, k)) { copy[k] = it[k]; } }
+                  copy.hidden = !!it.hidden;
+                  return copy;
                 }),
               };
             });
@@ -1692,7 +1692,10 @@
               id: genSecId(),
               title: '',
               items: (r.items || []).map(function (it) {
-                return Object.assign({}, it, { hidden: !!it.hidden });
+                var copy = {};
+                for (var k in it) { if (Object.prototype.hasOwnProperty.call(it, k)) { copy[k] = it[k]; } }
+                copy.hidden = !!it.hidden;
+                return copy;
               }),
             }];
           } else {
@@ -1706,26 +1709,35 @@
             sections: sections,
           };
         });
-        state.scenarios       = cfg.scenarios       || [];
-        state.header_sensors  = cfg.header_sensors  || [];
-        state.cameras         = cfg.cameras         || [];
+        state.scenarios      = cfg.scenarios      || [];
+        state.header_sensors = cfg.header_sensors || [];
+        state.cameras        = cfg.cameras        || [];
 
-        allEntities = entities || [];
-
-        // Populate overview title input
+        // Render UI immediately with saved data
         var ovTitleInput = qs('overview-title-input');
         if (ovTitleInput) { ovTitleInput.value = state.overview.title; }
-
         renderOverviewItems();
         renderRoomsList();
         renderScenariosList();
         renderHeaderSensorsList();
         renderCamerasList();
+
+        // Load live entities from HA separately — non-fatal if HA is offline
+        cfgFetchEntities()
+          .then(function (entities) { allEntities = entities || []; })
+          .catch(function (e) {
+            console.warn('[config] entities unavailable (HA offline?):', e.message);
+            showFeedback('HA offline — entity picker will be empty', true);
+          });
       })
       .catch(function (err) {
         showFeedback('Failed to load config: ' + (err.message || 'Network error'), true);
         var body = qs('cfg-body');
-        if (body) { body.innerHTML = '<p class="cfg-placeholder" style="padding:40px;text-align:center;">Could not load configuration. Check that Home Assistant is reachable.<br><br><small>' + esc(err.message || '') + '</small></p>'; }
+        if (body) {
+          body.innerHTML = '<p class="cfg-placeholder" style="padding:40px;text-align:center;">'
+            + 'Could not load configuration.<br>Check that Home Assistant is reachable.'
+            + '<br><br><small>' + esc(err.message || '') + '</small></p>';
+        }
       });
 
     // ── Tab buttons — inject MDI icons and wire clicks ────────────────────
