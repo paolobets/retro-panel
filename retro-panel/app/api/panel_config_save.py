@@ -1,4 +1,4 @@
-"""POST /api/config — saves v4 configuration to /data/entities.json."""
+"""POST /api/config — saves v5 configuration to /data/entities.json."""
 
 from __future__ import annotations
 
@@ -86,27 +86,43 @@ def _parse_section_for_save(sec_raw: dict, sec_idx: int, room_id: str) -> dict:
     return {"id": sec_id, "title": sec_title, "items": sec_items}
 
 
+def _parse_items_from_body(items_raw: list) -> list:
+    """Parse and validate a list of entity/energy_flow items from the request body."""
+    if not isinstance(items_raw, list):
+        items_raw = []
+    result = []
+    for idx, raw in enumerate(items_raw[:_MAX_ITEMS]):
+        if not isinstance(raw, dict):
+            continue
+        result.append(_parse_item(raw, idx, ""))
+    return result
+
+
 async def save_config(request: web.Request) -> web.Response:
-    """Accept v4 structure, write to /data/entities.json, reload in-memory config."""
+    """Accept v5 structure, write to /data/entities.json, reload in-memory config."""
     try:
         body = await request.json()
     except Exception:
         return web.json_response({"error": "Invalid JSON body"}, status=400)
 
     # --- overview ---
-    overview_raw = body.get("overview") or {}
-    overview_title = str(overview_raw.get("title") or "Overview").strip()[:64] or "Overview"
-    overview_raw = overview_raw.get("items") or [] if isinstance(overview_raw, dict) else []
-    if not isinstance(overview_raw, list):
-        overview_raw = []
-    overview_items = []
-    for idx, raw in enumerate(overview_raw[:_MAX_ITEMS]):
-        if not isinstance(raw, dict):
+    ov_raw = body.get("overview") or {}
+    overview_title = str(ov_raw.get("title") or "Overview").strip()[:64] or "Overview"
+    overview_icon = str(ov_raw.get("icon") or "home").strip()[:_MAX_ICON] or "home"
+
+    overview_sections = []
+    for sec_raw in (ov_raw.get("sections") or []):
+        if not isinstance(sec_raw, dict):
             continue
+        sec_id = str(sec_raw.get("id") or "").strip()[:64]
+        if not sec_id:
+            continue
+        sec_title = str(sec_raw.get("title") or "").strip()[:_MAX_TITLE]
         try:
-            overview_items.append(_parse_item(raw, idx, "overview"))
+            sec_items = _parse_items_from_body(sec_raw.get("items") or [])
         except ValueError as exc:
-            return web.json_response({"error": f"overview item {idx}: {exc}"}, status=400)
+            return web.json_response({"error": f"overview section [{sec_id}]: {exc}"}, status=400)
+        overview_sections.append({"id": sec_id, "title": sec_title, "items": sec_items})
 
     # --- rooms ---
     rooms_raw = body.get("rooms") or []
@@ -173,22 +189,34 @@ async def save_config(request: web.Request) -> web.Response:
             })
 
     # --- scenarios ---
-    scenarios_raw = body.get("scenarios") or []
-    if not isinstance(scenarios_raw, list):
-        scenarios_raw = []
-    scenarios = []
-    for sc_raw in scenarios_raw[:_MAX_SCENARIOS]:
-        if not isinstance(sc_raw, dict):
+    scenario_sections = []
+    for sec_raw in (body.get("scenarios") or []):
+        if not isinstance(sec_raw, dict):
             continue
-        try:
-            eid = _validate_entity_id(sc_raw.get("entity_id") or "")
-        except ValueError:
+        sec_id = str(sec_raw.get("id") or "").strip()[:64]
+        if not sec_id:
             continue
-        scenarios.append({
-            "entity_id": eid,
-            "title": str(sc_raw.get("title") or eid.split(".")[-1]).strip()[:_MAX_TITLE],
-            "icon": str(sc_raw.get("icon") or "\U0001f3ad").strip()[:_MAX_ICON],
-        })
+        sec_title = str(sec_raw.get("title") or "").strip()[:_MAX_TITLE]
+        items = []
+        for sc in (sec_raw.get("items") or []):
+            if not isinstance(sc, dict):
+                continue
+            eid = str(sc.get("entity_id") or "").strip()
+            if not eid:
+                continue
+            items.append({
+                "entity_id": eid,
+                "title": str(sc.get("title") or "").strip()[:_MAX_TITLE],
+                "icon": str(sc.get("icon") or "🎭").strip()[:8],
+            })
+        scenario_sections.append({"id": sec_id, "title": sec_title, "items": items})
+
+    # --- scenarios_section (container metadata) ---
+    sc_sec_raw = body.get("scenarios_section") or {}
+    scenarios_section = {
+        "title": str(sc_sec_raw.get("title") or "Scenarios").strip()[:_MAX_TITLE] or "Scenarios",
+        "icon": str(sc_sec_raw.get("icon") or "palette").strip()[:_MAX_ICON] or "palette",
+    }
 
     # --- header_sensors ---
     hs_raw = body.get("header_sensors") or []
@@ -209,52 +237,66 @@ async def save_config(request: web.Request) -> web.Response:
         })
 
     # --- cameras ---
-    cameras_raw = body.get("cameras") or []
-    if not isinstance(cameras_raw, list):
-        cameras_raw = []
-    if len(cameras_raw) > _MAX_CAMERAS:
-        return web.json_response({"error": f"Too many cameras (max {_MAX_CAMERAS})"}, status=400)
-    cameras = []
-    for cam_raw in cameras_raw:
-        if not isinstance(cam_raw, dict):
+    camera_sections = []
+    for sec_raw in (body.get("cameras") or []):
+        if not isinstance(sec_raw, dict):
             continue
-        eid = str(cam_raw.get("entity_id") or "").strip()
-        if not eid or not _CAMERA_ENTITY_RE.match(eid) or len(eid) > 64:
+        sec_id = str(sec_raw.get("id") or "").strip()[:64]
+        if not sec_id:
             continue
-        title = str(cam_raw.get("title") or "").strip()[:_MAX_TITLE]
-        try:
-            refresh_interval = int(cam_raw.get("refresh_interval", 10))
-        except (TypeError, ValueError):
-            refresh_interval = 10
-        refresh_interval = max(3, min(60, refresh_interval))
-        cameras.append({
-            "entity_id": eid,
-            "title": title,
-            "refresh_interval": refresh_interval,
-        })
+        sec_title = str(sec_raw.get("title") or "").strip()[:_MAX_TITLE]
+        items = []
+        for c in (sec_raw.get("items") or []):
+            if not isinstance(c, dict):
+                continue
+            eid = str(c.get("entity_id") or "").strip()
+            if not eid:
+                continue
+            ri = int(c.get("refresh_interval") or 10)
+            if ri < 3: ri = 3
+            if ri > 60: ri = 60
+            items.append({
+                "entity_id": eid,
+                "title": str(c.get("title") or "").strip()[:_MAX_TITLE],
+                "refresh_interval": ri,
+            })
+        camera_sections.append({"id": sec_id, "title": sec_title, "items": items})
 
-    v4_data = {
-        "version": 4,
+    # --- cameras_section (container metadata) ---
+    cam_sec_raw = body.get("cameras_section") or {}
+    cameras_section = {
+        "title": str(cam_sec_raw.get("title") or "Telecamere").strip()[:_MAX_TITLE] or "Telecamere",
+        "icon": str(cam_sec_raw.get("icon") or "cctv").strip()[:_MAX_ICON] or "cctv",
+    }
+
+    v5_data = {
+        "version": 5,
         "header_sensors": header_sensors,
-        "overview": {"title": overview_title, "items": overview_items},
+        "overview": {
+            "title": overview_title,
+            "icon": overview_icon,
+            "sections": overview_sections,
+        },
         "rooms": rooms,
-        "scenarios": scenarios,
-        "cameras": cameras,
+        "scenarios": scenario_sections,
+        "scenarios_section": scenarios_section,
+        "cameras": camera_sections,
+        "cameras_section": cameras_section,
     }
 
     try:
         _ENTITIES_FILE.write_text(
-            json.dumps(v4_data, ensure_ascii=False, indent=2), encoding="utf-8"
+            json.dumps(v5_data, ensure_ascii=False, indent=2), encoding="utf-8"
         )
     except Exception as exc:
         logger.error("Failed to write %s: %s", _ENTITIES_FILE, exc)
         return web.json_response({"error": "Failed to save configuration"}, status=500)
 
-    total_overview = sum(1 for it in overview_items if it.get("type") == "entity")
-    total_sections = sum(len(r.get("sections", [])) for r in rooms)
+    total_overview_sections = len(overview_sections)
+    total_room_sections = sum(len(r.get("sections", [])) for r in rooms)
     logger.info(
-        "Config v4 saved: overview=%d entities, rooms=%d, sections=%d, scenarios=%d, header_sensors=%d, cameras=%d",
-        total_overview, len(rooms), total_sections, len(scenarios), len(header_sensors), len(cameras),
+        "Config v5 saved: overview=%d sections, rooms=%d, room_sections=%d, scenario_sections=%d, header_sensors=%d, camera_sections=%d",
+        total_overview_sections, len(rooms), total_room_sections, len(scenario_sections), len(header_sensors), len(camera_sections),
     )
 
     # Reload in-memory config and update WS proxy entity filter
@@ -270,7 +312,8 @@ async def save_config(request: web.Request) -> web.Response:
 
     return web.json_response({
         "ok": True,
-        "overview_entities": total_overview,
+        "overview_sections": total_overview_sections,
         "rooms": len(rooms),
-        "scenarios": len(scenarios),
+        "scenario_sections": len(scenario_sections),
+        "camera_sections": len(camera_sections),
     })
