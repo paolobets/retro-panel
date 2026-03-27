@@ -12,7 +12,7 @@ function cfgFetchPanelConfig() {
 }
 
 function cfgFetchEntities() {
-  return fetch('api/entities').then(function (r) {
+  return fetch('api/picker/entities').then(function (r) {
     if (!r.ok) {
       return r.json().then(function (body) {
         throw new Error(body && body.error ? body.error : 'Failed to load entities (' + r.status + ')');
@@ -25,7 +25,7 @@ function cfgFetchEntities() {
 }
 
 function cfgFetchSensors() {
-  return fetch('api/entities?domain=sensor').then(function (r) {
+  return fetch('api/picker/entities?domain=sensor').then(function (r) {
     if (!r.ok) { throw new Error('Failed to load sensors (' + r.status + ')'); }
     return r.json();
   });
@@ -34,22 +34,28 @@ function cfgFetchSensors() {
 function cfgFetchScenarios() {
   // Fetch scenes and scripts for the scenario picker
   return Promise.all([
-    fetch('api/entities?domain=scene').then(function (r) { return r.ok ? r.json() : []; }),
-    fetch('api/entities?domain=script').then(function (r) { return r.ok ? r.json() : []; }),
+    fetch('api/picker/entities?domain=scene').then(function (r) { return r.ok ? r.json() : []; }),
+    fetch('api/picker/entities?domain=script').then(function (r) { return r.ok ? r.json() : []; }),
   ]).then(function (results) {
     return (results[0] || []).concat(results[1] || []);
   });
 }
 
 function cfgFetchHaAreas() {
-  return fetch('api/ha-areas').then(function (r) {
-    if (!r.ok) { throw new Error('Failed to load HA areas (' + r.status + ')'); }
+  return fetch('api/picker/areas').then(function (r) {
+    if (!r.ok) {
+      return r.json().then(function (body) {
+        throw new Error(body && body.error ? body.error : 'Failed to load areas (' + r.status + ')');
+      }, function () {
+        throw new Error('Failed to load areas (' + r.status + ')');
+      });
+    }
     return r.json();
   });
 }
 
 function cfgFetchCameras() {
-  return fetch('api/entities?domain=camera').then(function (r) {
+  return fetch('api/picker/cameras').then(function (r) {
     if (!r.ok) { throw new Error('Failed to load cameras (' + r.status + ')'); }
     return r.json().then(function (data) {
       return Array.isArray(data) ? data : [];

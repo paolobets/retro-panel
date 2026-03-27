@@ -1,13 +1,8 @@
-"""Camera endpoints.
-
-GET /api/ha-cameras      — list all camera entities from HA (for the config picker).
-GET /api/camera-proxy/{entity_id} — proxy a camera snapshot from HA, whitelist-gated.
-"""
+"""GET /api/camera-proxy/{entity_id} — proxy a camera snapshot from HA, whitelist-gated."""
 
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import re
 
@@ -16,41 +11,6 @@ from aiohttp import web
 logger = logging.getLogger(__name__)
 
 _CAMERA_ENTITY_RE = re.compile(r"^camera\.[a-z0-9_]+$")
-
-_CAMERAS_TEMPLATE = (
-    "{{ states | selectattr('domain', 'equalto', 'camera')"
-    " | map(attribute='entity_id') | list | tojson }}"
-)
-
-
-async def get_ha_cameras(request: web.Request) -> web.Response:
-    """Return all camera entities from HA (entity_id + friendly_name)."""
-    ha_client = request.app.get("ha_client")
-    if ha_client is None:
-        return web.json_response({"error": "HA client not available"}, status=503)
-
-    try:
-        raw = await ha_client.call_template(_CAMERAS_TEMPLATE)
-        entity_ids: list[str] = json.loads(raw)
-    except Exception as exc:
-        logger.error("Failed to fetch camera entities from HA template API: %s", exc)
-        return web.json_response({"error": "Failed to fetch cameras from HA"}, status=502)
-
-    # Fetch friendly_name for each camera entity
-    cameras: list[dict] = []
-    for eid in entity_ids:
-        friendly_name = eid
-        try:
-            state = await ha_client.get_state(eid)
-            friendly_name = (
-                state.get("attributes", {}).get("friendly_name") or eid
-            )
-        except Exception as exc:
-            logger.warning("Could not fetch state for camera %s: %s", eid, exc)
-        cameras.append({"entity_id": eid, "friendly_name": friendly_name})
-
-    cameras.sort(key=lambda c: c["entity_id"])
-    return web.json_response(cameras)
 
 
 async def get_camera_proxy(request: web.Request) -> web.Response:

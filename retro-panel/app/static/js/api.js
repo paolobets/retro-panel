@@ -77,6 +77,10 @@
 
   window.getPanelConfig = function () { return apiFetch('api/panel-config'); };
   window.getAllStates   = function () { return apiFetch('api/states'); };
+  window.getStates      = function (entityIds) {
+    if (!entityIds || entityIds.length === 0) { return Promise.resolve([]); }
+    return apiFetch('api/states?ids=' + entityIds.join(','));
+  };
   window.getState       = function (entityId) { return apiFetch('api/state/' + entityId); };
   window.callService    = function (domain, service, data) {
     return apiFetch('api/service/' + domain + '/' + service, {
@@ -84,5 +88,5 @@
       body: JSON.stringify(data),
     });
   };
-  window.getHaAreas = function () { return apiFetch('api/ha-areas'); };
+  window.getHaAreas = function () { return apiFetch('api/picker/areas'); };
 }());

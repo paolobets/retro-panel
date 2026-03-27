@@ -76,6 +76,9 @@ async def get_all_states(request: web.Request) -> web.Response:
     Intended for the frontend initial load to avoid N sequential requests.
     Entities that fail to load are included with state='unavailable'.
 
+    Supports optional ?ids= query parameter for lazy loading: only the
+    requested entity IDs (validated against the whitelist) are fetched.
+
     Returns:
         200 JSON list of state dicts (one per configured entity).
         502 if all upstream HA calls fail entirely.
@@ -83,12 +86,22 @@ async def get_all_states(request: web.Request) -> web.Response:
     config = request.app["config"]
     ha_client = request.app["ha_client"]
 
-    entity_ids = config.all_entity_ids
+    # Optional ?ids= for lazy loading (only fetch visible entities)
+    ids_param = request.rel_url.query.get("ids", "").strip()
+    if ids_param:
+        requested = [i.strip() for i in ids_param.split(",") if i.strip()]
+        allowed = set(config.all_entity_ids)
+        entity_ids = [eid for eid in requested if _ENTITY_ID_RE.match(eid) and eid in allowed]
+        if not entity_ids:
+            return web.json_response([])
+    else:
+        entity_ids = config.all_entity_ids
+
     if not entity_ids:
         return web.json_response([])
 
     try:
-        states = await ha_client.get_all_states(entity_ids)
+        states = await ha_client.get_states_bulk(entity_ids)
         return web.json_response(states)
     except (ConnectionRefusedError, TimeoutError):
         logger.error("HA unreachable fetching all states")

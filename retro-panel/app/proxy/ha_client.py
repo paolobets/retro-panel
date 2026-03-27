@@ -78,7 +78,7 @@ class HAClient:
         except asyncio.TimeoutError as exc:
             raise TimeoutError(f"Request for entity '{entity_id}' timed out") from exc
 
-    async def get_all_states(self, entity_ids: list[str]) -> list[dict[str, Any]]:
+    async def get_states_bulk(self, entity_ids: list[str]) -> list[dict[str, Any]]:
         """Fetch states for multiple entities concurrently."""
         tasks = [self.get_state(eid) for eid in entity_ids]
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -157,25 +157,27 @@ class HAClient:
         except asyncio.TimeoutError as exc:
             raise TimeoutError("Request for all entity states timed out") from exc
 
-    async def call_template(self, template: str) -> str:
-        """Evaluate a Jinja2 template via the HA template API.
+    async def get_area_registry(self) -> list[dict]:
+        """Fetch area registry via HA WebSocket API (config/area_registry/list).
 
-        Returns the rendered result as a plain string.
-        Used for area registry queries and other template-based data.
+        Opens a short-lived WebSocket connection, authenticates, sends the command,
+        reads the result, and closes the connection.
         """
-        url = f"{self._ha_url}/api/template"
-        session = self._get_session()
-        timeout = aiohttp.ClientTimeout(total=15)
+        ws = await self.ws_connect()
+        cmd_id = 98  # arbitrary id distinct from entity registry (99) and WSProxy (1)
         try:
-            async with session.post(url, json={"template": template}, timeout=timeout) as resp:
-                if resp.status == 401:
-                    raise PermissionError("HA returned 401 Unauthorized")
-                resp.raise_for_status()
-                return await resp.text()
-        except aiohttp.ClientConnectorError as exc:
-            raise ConnectionRefusedError(str(exc)) from exc
+            await ws.send_json({"id": cmd_id, "type": "config/area_registry/list"})
+            msg = await asyncio.wait_for(ws.receive_json(), timeout=15)
+            if not msg.get("success"):
+                raise ValueError(
+                    f"HA area registry list command failed: {msg.get('error')}"
+                )
+            return msg.get("result") or []
         except asyncio.TimeoutError as exc:
-            raise TimeoutError("Template API request timed out") from exc
+            raise TimeoutError("Area registry WebSocket request timed out") from exc
+        finally:
+            if not ws.closed:
+                await ws.close()
 
     async def get_entity_registry(self) -> list[dict]:
         """Fetch entity registry via HA WebSocket API (config/entity_registry/list).

@@ -41,13 +41,14 @@ from config.validator import validate_config, validate_ha_connection
 from proxy.ha_client import HAClient
 from proxy.supervisor_client import SupervisorClient
 from proxy.ws_proxy import WSProxy
-from api.handlers_state import get_state, get_all_states
-from api.handlers_service import call_service
-from api.handlers_config import get_panel_config
-from api.handlers_entities import get_all_entities
-from api.handlers_config_save import save_config
-from api.handlers_areas import get_ha_areas
-from api.handlers_cameras import get_ha_cameras, get_camera_proxy
+from api.panel_config import get_panel_config
+from api.panel_states import get_state, get_all_states
+from api.panel_service import call_service
+from api.panel_config_save import save_config
+from api.camera_proxy import get_camera_proxy
+from api.picker_entities import get_picker_entities
+from api.picker_areas import get_picker_areas
+from api.picker_cameras import get_picker_cameras
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -286,9 +287,9 @@ def create_app(config, ha_client: HAClient, ws_proxy: WSProxy) -> web.Applicatio
     app.router.add_get("/api/panel-config", get_panel_config)
     app.router.add_get("/api/states", get_all_states)
     app.router.add_get("/api/state/{entity_id:.+}", get_state)
-    app.router.add_get("/api/entities", get_all_entities)
-    app.router.add_get("/api/ha-areas", get_ha_areas)
-    app.router.add_get("/api/ha-cameras", get_ha_cameras)
+    app.router.add_get("/api/picker/entities", get_picker_entities)
+    app.router.add_get("/api/picker/areas", get_picker_areas)
+    app.router.add_get("/api/picker/cameras", get_picker_cameras)
     app.router.add_get("/api/camera-proxy/{entity_id}", get_camera_proxy)
     app.router.add_post("/api/config", save_config)
     app.router.add_post("/api/service/{domain}/{service}", call_service)
