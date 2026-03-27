@@ -1,4 +1,4 @@
-"""GET /api/panel-config — exposes v4 panel configuration to the frontend."""
+"""GET /api/panel-config — exposes v5 panel configuration to the frontend."""
 
 from __future__ import annotations
 
@@ -42,13 +42,11 @@ def _serialize_item(item) -> dict:
 
 
 async def get_panel_config(request: web.Request) -> web.Response:
-    """Return the panel configuration (v4) for the frontend.
+    """Return the panel configuration (v5) for the frontend.
 
     Excludes sensitive fields (ha_url, ha_token).
     """
     config = request.app["config"]
-
-    overview_payload = [s for it in config.overview_items if (s := _serialize_item(it))]
 
     rooms_payload = []
     for room in config.rooms:
@@ -67,19 +65,9 @@ async def get_panel_config(request: web.Request) -> web.Response:
             "sections": sections_payload,
         })
 
-    scenarios_payload = [
-        {"entity_id": sc.entity_id, "title": sc.title, "icon": sc.icon}
-        for sc in config.scenarios
-    ]
-
     header_sensors_payload = [
         {"entity_id": hs.entity_id, "icon": hs.icon, "label": hs.label}
         for hs in config.header_sensors
-    ]
-
-    cameras_payload = [
-        {"entity_id": c.entity_id, "title": c.title, "refresh_interval": c.refresh_interval}
-        for c in config.cameras
     ]
 
     payload = {
@@ -88,18 +76,49 @@ async def get_panel_config(request: web.Request) -> web.Response:
         "kiosk_mode": config.kiosk_mode,
         "refresh_interval": config.refresh_interval,
         "header_sensors": header_sensors_payload,
-        "overview": {"title": config.overview_title, "items": overview_payload},
+        "overview": {
+            "title": config.overview_title,
+            "icon": config.overview_icon,
+            "sections": [
+                {
+                    "id": sec.id,
+                    "title": sec.title,
+                    "items": [s for it in sec.items if (s := _serialize_item(it))],
+                }
+                for sec in config.overview_sections
+            ],
+        },
         "rooms": rooms_payload,
-        "scenarios": scenarios_payload,
-        "cameras": cameras_payload,
+        "scenarios": [
+            {
+                "id": sec.id,
+                "title": sec.title,
+                "items": [
+                    {"entity_id": s.entity_id, "title": s.title, "icon": s.icon}
+                    for s in sec.items
+                ],
+            }
+            for sec in config.scenario_sections
+        ],
+        "cameras": [
+            {
+                "id": sec.id,
+                "title": sec.title,
+                "items": [
+                    {"entity_id": c.entity_id, "title": c.title, "refresh_interval": c.refresh_interval}
+                    for c in sec.items
+                ],
+            }
+            for sec in config.camera_sections
+        ],
     }
 
     logger.debug(
-        "Panel config requested: overview=%d items, rooms=%d, scenarios=%d, header_sensors=%d, cameras=%d",
-        len(overview_payload),
+        "Panel config requested: overview=%d sections, rooms=%d, scenarios=%d sections, header_sensors=%d, cameras=%d sections",
+        len(payload["overview"]["sections"]),
         len(rooms_payload),
-        len(scenarios_payload),
+        len(payload["scenarios"]),
         len(header_sensors_payload),
-        len(cameras_payload),
+        len(payload["cameras"]),
     )
     return web.json_response(payload)
