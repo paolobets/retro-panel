@@ -474,15 +474,10 @@ def _migrate_v4_to_v5(raw: dict) -> tuple[
     scenario_sections = [ScenarioSection(id="sec_default", title="", items=sc_flat)] if sc_flat else []
 
     # cameras: parse flat list and wrap in single CameraSection
-    cam_flat: list[CameraConfig] = []
-    for c in (raw.get("cameras") or []):
-        if isinstance(c, dict) and c.get("entity_id"):
-            cam_flat.append(CameraConfig(
-                entity_id=str(c["entity_id"]).strip(),
-                title=str(c.get("title") or "").strip(),
-                refresh_interval=int(c.get("refresh_interval") or 10),
-            ))
-    camera_sections = [CameraSection(id="sec_default", title="", items=cam_flat)] if cam_flat else []
+    cam_flat = raw.get("cameras") or []
+    camera_sections = []
+    if cam_flat:
+        camera_sections = [_parse_camera_section({"id": "sec_default", "title": "", "items": cam_flat}, 0)]
 
     return overview_sections, rooms, scenario_sections, camera_sections
 
