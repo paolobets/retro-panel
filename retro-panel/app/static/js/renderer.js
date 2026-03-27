@@ -214,23 +214,34 @@ window.RP_Renderer = (function () {
     if (!config) { return; }
 
     if (sectionId === 'overview') {
-      var ovItems = config.overview_items
-        || (config.overview && config.overview.items)
-        || [];
-      var ovTitle = (config.overview && config.overview.title) || null;
-      if (ovTitle) {
-        var h = document.createElement('h2');
-        h.className = 'section-heading';
-        h.textContent = ovTitle;
-        contentArea.appendChild(h);
-      }
-      renderItems(contentArea, ovItems, appState);
+      _renderGenericSections(
+        contentArea,
+        config.overview && config.overview.sections,
+        renderItems,
+        appState,
+        '\uD83C\uDFE0',
+        'No sections configured'
+      );
 
     } else if (sectionId === 'scenarios') {
-      _renderScenariosSection(contentArea, config.scenarios || []);
+      _renderGenericSections(
+        contentArea,
+        config.scenarios,
+        _renderScenarioItems,
+        appState,
+        '\uD83C\uDFAD',
+        'No scenarios configured'
+      );
 
     } else if (sectionId === 'cameras') {
-      _renderCamerasSection(contentArea, config.cameras || []);
+      _renderGenericSections(
+        contentArea,
+        config.cameras,
+        _renderCameraItems,
+        appState,
+        '\uD83D\uDCF9',
+        'No cameras configured'
+      );
 
     } else if (sectionId.indexOf('room:') === 0) {
       var roomId = sectionId.slice(5);
@@ -301,7 +312,48 @@ window.RP_Renderer = (function () {
   }
 
   // ---------------------------------------------------------------------------
-  // Scenarios section (flat grid)
+  // Scenario items (grid of tiles, no heading) — used by _renderGenericSections
+  // ---------------------------------------------------------------------------
+  function _renderScenarioItems(container, items) {
+    if (!items || items.length === 0) { return; }
+
+    var grid = window.RP_DOM.createElement('div', 'scenarios-grid');
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].hidden) { continue; }
+      try {
+        var tile;
+        if (window.ScenarioComponent.createTile) {
+          tile = window.ScenarioComponent.createTile(items[i]);
+        } else {
+          tile = window.ScenarioComponent.createCard(items[i]);
+        }
+        grid.appendChild(tile);
+      } catch (err) {
+        console.error('[renderer] scenario tile failed:', err);
+      }
+    }
+    container.appendChild(grid);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Camera items (full-width tiles, no heading) — used by _renderGenericSections
+  // ---------------------------------------------------------------------------
+  function _renderCameraItems(container, items) {
+    if (!items || items.length === 0) { return; }
+
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].hidden) { continue; }
+      try {
+        var tile = window.CameraComponent.createTile(items[i]);
+        container.appendChild(tile);
+      } catch (err) {
+        console.error('[renderer] camera tile failed:', items[i] && items[i].entity_id, err);
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Scenarios section (flat grid) — legacy wrapper
   // ---------------------------------------------------------------------------
   function _renderScenariosSection(container, scenarios) {
     var DOM = window.RP_DOM;
@@ -318,26 +370,11 @@ window.RP_Renderer = (function () {
       return;
     }
 
-    var grid = DOM.createElement('div', 'scenarios-grid');
-    for (var i = 0; i < scenarios.length; i++) {
-      if (scenarios[i].hidden) { continue; }
-      try {
-        var tile;
-        if (window.ScenarioComponent.createTile) {
-          tile = window.ScenarioComponent.createTile(scenarios[i]);
-        } else {
-          tile = window.ScenarioComponent.createCard(scenarios[i]);
-        }
-        grid.appendChild(tile);
-      } catch (err) {
-        console.error('[renderer] scenario tile failed:', err);
-      }
-    }
-    container.appendChild(grid);
+    _renderScenarioItems(container, scenarios);
   }
 
   // ---------------------------------------------------------------------------
-  // Cameras section (full-width tiles)
+  // Cameras section (full-width tiles) — legacy wrapper
   // ---------------------------------------------------------------------------
   function _renderCamerasSection(container, cameras) {
     var DOM = window.RP_DOM;
@@ -354,14 +391,44 @@ window.RP_Renderer = (function () {
       return;
     }
 
-    for (var i = 0; i < cameras.length; i++) {
-      if (cameras[i].hidden) { continue; }
-      try {
-        var tile = window.CameraComponent.createTile(cameras[i]);
-        container.appendChild(tile);
-      } catch (err) {
-        console.error('[renderer] camera tile failed:', cameras[i] && cameras[i].entity_id, err);
+    _renderCameraItems(container, cameras);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Generic sections helper — renders an array of {title, items[]} sections
+  // ---------------------------------------------------------------------------
+  function _renderGenericSections(container, sections, renderItemsFn, appState, emptyIcon, emptyMsg) {
+    var DOM = window.RP_DOM;
+
+    if (!sections || sections.length === 0) {
+      var empty = DOM.createElement('div', 'empty-state');
+      empty.innerHTML = '<span class="empty-state-icon">' + (emptyIcon || '\u2699') + '</span>'
+        + '<p class="empty-state-title">' + (emptyMsg || 'No sections configured') + '</p>'
+        + '<p class="empty-state-hint">Open Config to add sections.</p>';
+      container.appendChild(empty);
+      return;
+    }
+
+    for (var s = 0; s < sections.length; s++) {
+      var section = sections[s];
+      var items = section.items || [];
+      var sectionEl = DOM.createElement('div', 'room-section');
+
+      if (section.title) {
+        var sectionHeader = DOM.createElement('div', 'room-section-header');
+        var titleEl = DOM.createElement('span', 'room-section-title');
+        titleEl.textContent = section.title;
+        sectionHeader.appendChild(titleEl);
+        var countEl = DOM.createElement('span', 'room-section-count');
+        countEl.textContent = String(items.length);
+        sectionHeader.appendChild(countEl);
+        var lineEl = DOM.createElement('span', 'room-section-line');
+        sectionHeader.appendChild(lineEl);
+        sectionEl.appendChild(sectionHeader);
       }
+
+      container.appendChild(sectionEl);
+      renderItemsFn(sectionEl, items, appState);
     }
   }
 
