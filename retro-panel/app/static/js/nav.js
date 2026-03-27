@@ -44,7 +44,9 @@ window.RP_Nav = (function () {
   // ---------------------------------------------------------------------------
 
   function _getRoomIcon(iconName) {
-    var mdiName = ROOM_ICONS[iconName] || 'home';
+    // Support direct MDI name (new style) — fall back to legacy semantic key map
+    var paths = window.RP_MDI_PATHS || {};
+    var mdiName = paths[iconName] ? iconName : (ROOM_ICONS[iconName] || 'home');
     return window.RP_MDI ? window.RP_MDI(mdiName, 22) : '';
   }
 
@@ -130,9 +132,11 @@ window.RP_Nav = (function () {
     if (!nav) { return; }
     nav.innerHTML = '';
 
-    var overviewTitle = (config.overview && config.overview.title) || 'Overview';
+    var ovCfg = config.overview || {};
+    var overviewTitle = ovCfg.title || 'Overview';
+    var overviewIcon  = ovCfg.icon  || 'home';
 
-    addNavItem(nav, 'overview', _mdi('home', 22), overviewTitle);
+    addNavItem(nav, 'overview', _mdi(overviewIcon, 22), overviewTitle);
 
     // "Rooms" entry: apre il submenu se ci sono stanze, altrimenti è un normale nav item
     var visibleRooms = [];
@@ -149,12 +153,14 @@ window.RP_Nav = (function () {
 
     // Scenari
     if (config.scenarios && config.scenarios.length > 0) {
-      addNavItem(nav, 'scenarios', _mdi('palette', 22), 'Scenari');
+      var scSec = config.scenarios_section || {};
+      addNavItem(nav, 'scenarios', _mdi(scSec.icon || 'palette', 22), scSec.title || 'Scenari');
     }
 
     // Telecamere
     if (config.cameras && config.cameras.length > 0) {
-      addNavItem(nav, 'cameras', _mdi('cctv', 22), 'Telecamere');
+      var camSec = config.cameras_section || {};
+      addNavItem(nav, 'cameras', _mdi(camSec.icon || 'cctv', 22), camSec.title || 'Telecamere');
     }
   }
 

@@ -17,11 +17,13 @@
 
   // v4 data model
   var state = {
-    overview:       { items: [] },
-    rooms:          [],           // [{id, title, icon, hidden, sections:[{id, title, items:[]}]}]
-    scenarios:      [],           // [{entity_id, title, icon}]
-    header_sensors: [],           // [{entity_id, icon, label}]
-    cameras:        [],           // [{entity_id, title, refresh_interval}]
+    overview:          { title: 'Overview', icon: 'home', items: [] },
+    rooms:             [],  // [{id, title, icon, hidden, sections:[{id, title, items:[]}]}]
+    scenarios:         [],  // [{entity_id, title, icon}]
+    scenarios_section: { title: 'Scenarios', icon: 'palette' },
+    header_sensors:    [],  // [{entity_id, icon, label}]
+    cameras:           [],  // [{entity_id, title, refresh_interval}]
+    cameras_section:   { title: 'Telecamere', icon: 'cctv' },
   };
 
   var allEntities  = [];   // from /api/entities
@@ -591,66 +593,83 @@
   };
 
   function getRoomEmoji(icon) {
-    var mdiName = ROOM_MDI_MAP[icon] || 'home';
+    // Support direct MDI name (new) and legacy semantic key (old)
+    var paths = window.RP_MDI_PATHS || {};
+    var mdiName = paths[icon] ? icon : (ROOM_MDI_MAP[icon] || 'home');
     return window.RP_MDI ? window.RP_MDI(mdiName, 20) : (icon || '\uD83C\uDFE0');
   }
 
   function updateIconPreview(iconKey) {
     var preview = qs('room-icon-preview');
     var nameEl = qs('room-icon-name');
-    var mdiName = ROOM_MDI_MAP[iconKey] || 'home';
+    var paths = window.RP_MDI_PATHS || {};
+    var mdiName = paths[iconKey] ? iconKey : (ROOM_MDI_MAP[iconKey] || 'home');
     if (preview && window.RP_MDI) { preview.innerHTML = window.RP_MDI(mdiName, 22); }
-    if (nameEl) { nameEl.textContent = ROOM_LABELS[iconKey] || iconKey; }
+    if (nameEl) { nameEl.textContent = iconKey; }
+  }
+
+  // ── Shared icon picker modal ────────────────────────────────────────────
+
+  var _iconPickerCallback = null;
+  var _iconPickerCurrentIcon = 'home';
+
+  function openIconPickerModal(currentIcon, callback) {
+    _iconPickerCurrentIcon = currentIcon || 'home';
+    _iconPickerCallback = callback;
+    var searchEl = qs('icon-picker-modal-search');
+    if (searchEl) { searchEl.value = ''; }
+    renderIconPickerGrid('');
+    showOverlay('icon-picker-modal');
+    if (searchEl) { setTimeout(function () { searchEl.focus(); }, 150); }
+  }
+
+  function renderIconPickerGrid(query) {
+    var grid = qs('icon-picker-modal-grid');
+    if (!grid) { return; }
+    var names = window.RP_MDI_NAMES || Object.keys(window.RP_MDI_PATHS || {});
+    var q = query.toLowerCase().trim();
+    var filtered = q ? names.filter(function (n) { return n.indexOf(q) !== -1; }) : names;
+    var html = '';
+    for (var i = 0; i < filtered.length; i++) {
+      var name = filtered[i];
+      var isSel = name === _iconPickerCurrentIcon;
+      html += '<div class="icon-grid-item' + (isSel ? ' icon-grid-item--selected' : '') + '" data-name="' + name + '">';
+      html += '<span class="icon-grid-icon">' + (window.RP_MDI ? window.RP_MDI(name, 28) : '') + '</span>';
+      html += '<span class="icon-grid-label">' + name + '</span>';
+      html += '</div>';
+    }
+    grid.innerHTML = html;
+    grid.querySelectorAll('.icon-grid-item').forEach(function (item) {
+      item.addEventListener('click', function () {
+        var name = this.getAttribute('data-name');
+        if (_iconPickerCallback) { _iconPickerCallback(name); }
+        hideOverlay();
+        _iconPickerCallback = null;
+      });
+    });
+  }
+
+  // ── Section icon previews (overview / scenarios / cameras) ────────────────
+
+  function updateSectionIconPreview(section, iconName) {
+    var preview = qs(section + '-icon-preview');
+    var nameEl  = qs(section + '-icon-name');
+    var hidden  = qs(section + '-icon-value');
+    if (preview && window.RP_MDI) { preview.innerHTML = window.RP_MDI(iconName, 22); }
+    if (nameEl)  { nameEl.textContent = iconName; }
+    if (hidden)  { hidden.value = iconName; }
   }
 
   function openIconPicker() {
-    var dropdown = qs('icon-dropdown');
-    var chevron  = qs('room-icon-chevron');
-    if (!dropdown) { return; }
-
-    // Toggle: close if already open
-    if (!dropdown.classList.contains('hidden')) {
-      dropdown.classList.add('hidden');
-      if (chevron) { chevron.classList.remove('icon-picker-chevron--open'); }
-      return;
-    }
-
-    // Build list
     var room = activeRoomObj();
     var currentIcon = (room && room.icon) || 'home';
-    var html = '';
-    var keys = Object.keys(ROOM_MDI_MAP);
-    for (var i = 0; i < keys.length; i++) {
-      var key = keys[i];
-      var mdiName = ROOM_MDI_MAP[key];
-      var label = ROOM_LABELS[key] || key;
-      var isSel = key === currentIcon;
-      html += '<div class="icon-dropdown-item' + (isSel ? ' icon-dropdown-item--selected' : '') + '" data-icon="' + key + '">';
-      html += '<span class="icon-dropdown-item-icon">' + (window.RP_MDI ? window.RP_MDI(mdiName, 22) : '') + '</span>';
-      html += '<span class="icon-dropdown-item-label">' + esc(label) + '</span>';
-      if (isSel) { html += '<span class="icon-dropdown-check">&#10003;</span>'; }
-      html += '</div>';
-    }
-    dropdown.innerHTML = html;
-    dropdown.classList.remove('hidden');
-    if (chevron) { chevron.classList.add('icon-picker-chevron--open'); }
-
-    // Scroll selected item into view
-    var selItem = dropdown.querySelector('.icon-dropdown-item--selected');
-    if (selItem) { selItem.scrollIntoView({ block: 'nearest' }); }
-
-    dropdown.querySelectorAll('.icon-dropdown-item').forEach(function (item) {
-      item.addEventListener('click', function () {
-        var iconKey = this.getAttribute('data-icon');
-        var r = activeRoomObj();
-        if (r) { r.icon = iconKey; }
-        var iconValue = qs('room-icon-value');
-        if (iconValue) { iconValue.value = iconKey; }
-        updateIconPreview(iconKey);
-        renderRoomsList();
-        dropdown.classList.add('hidden');
-        if (chevron) { chevron.classList.remove('icon-picker-chevron--open'); }
-      });
+    openIconPickerModal(currentIcon, function (iconName) {
+      var r = activeRoomObj();
+      if (r) { r.icon = iconName; }
+      var iconValue = qs('room-icon-value');
+      if (iconValue) { iconValue.value = iconName; }
+      updateIconPreview(iconName);
+      renderRoomsList();
     });
   }
 
@@ -1084,6 +1103,22 @@
 
   // ── Scenarios ──────────────────────────────────────────────────────────────
 
+  function renderScenariosPreview() {
+    var box = qs('scenarios-live-preview');
+    if (!box) { return; }
+    if (!state.scenarios.length) {
+      box.innerHTML = '<p class="preview-empty-section">No scenarios yet.</p>';
+      return;
+    }
+    var html = '<div class="preview-tiles-row">';
+    for (var i = 0; i < state.scenarios.length; i++) {
+      var sc = state.scenarios[i];
+      html += '<div class="preview-tile-chip"><span class="chip-domain">' + esc(sc.icon || '▶') + '</span>' + esc(sc.title) + '</div>';
+    }
+    html += '</div>';
+    box.innerHTML = html;
+  }
+
   function renderScenariosList() {
     var container = qs('scenarios-list');
     if (!container) { return; }
@@ -1132,6 +1167,8 @@
         renderScenariosList();
       });
     });
+
+    renderScenariosPreview();
   }
 
   function openScenarioPicker() {
@@ -1355,6 +1392,24 @@
         renderCamerasList();
       });
     });
+
+    renderCamerasPreview();
+  }
+
+  function renderCamerasPreview() {
+    var box = qs('cameras-live-preview');
+    if (!box) { return; }
+    if (!state.cameras.length) {
+      box.innerHTML = '<p class="preview-empty-section">No cameras yet.</p>';
+      return;
+    }
+    var html = '<div class="preview-tiles-row">';
+    for (var i = 0; i < state.cameras.length; i++) {
+      var c = state.cameras[i];
+      html += '<div class="preview-tile-chip"><span class="chip-domain">cam</span>' + esc(c.title || c.entity_id) + '</div>';
+    }
+    html += '</div>';
+    box.innerHTML = html;
   }
 
   function openCameraPicker() {
@@ -1789,7 +1844,7 @@
 
   // ── Overlay management ─────────────────────────────────────────────────────
 
-  var OVERLAYS = ['entity-picker', 'sensor-picker', 'scenario-picker', 'energy-editor', 'camera-picker', 'visual-type-picker'];
+  var OVERLAYS = ['entity-picker', 'sensor-picker', 'scenario-picker', 'energy-editor', 'camera-picker', 'visual-type-picker', 'icon-picker-modal'];
 
   function showOverlay(id) {
     for (var i = 0; i < OVERLAYS.length; i++) {
@@ -1872,7 +1927,18 @@
         var ovRaw = cfg.overview || {};
         state.overview = {
           title: ovRaw.title || 'Overview',
+          icon:  ovRaw.icon  || 'home',
           items: ovRaw.items || [],
+        };
+        var scRaw = cfg.scenarios_section || {};
+        state.scenarios_section = {
+          title: scRaw.title || 'Scenarios',
+          icon:  scRaw.icon  || 'palette',
+        };
+        var camRaw = cfg.cameras_section || {};
+        state.cameras_section = {
+          title: camRaw.title || 'Telecamere',
+          icon:  camRaw.icon  || 'cctv',
         };
         state.rooms = (cfg.rooms || []).map(function (r) {
           var sections;
@@ -1918,6 +1984,16 @@
         // Render UI immediately with saved data
         var ovTitleInput = qs('overview-title-input');
         if (ovTitleInput) { ovTitleInput.value = state.overview.title; }
+        updateSectionIconPreview('overview', state.overview.icon);
+
+        var scTitleInput = qs('scenarios-title-input');
+        if (scTitleInput) { scTitleInput.value = state.scenarios_section.title; }
+        updateSectionIconPreview('scenarios', state.scenarios_section.icon);
+
+        var camTitleInput = qs('cameras-title-input');
+        if (camTitleInput) { camTitleInput.value = state.cameras_section.title; }
+        updateSectionIconPreview('cameras', state.cameras_section.icon);
+
         renderOverviewItems();
         renderRoomsList();
         renderScenariosList();
@@ -1957,11 +2033,21 @@
       });
     });
 
-    // ── Overview title ─────────────────────────────────────────────────────
+    // ── Overview title & icon ──────────────────────────────────────────────
     var ovTitleInput = qs('overview-title-input');
     if (ovTitleInput) {
       ovTitleInput.addEventListener('input', function () {
         state.overview.title = this.value.trim() || 'Overview';
+      });
+    }
+
+    var ovIconBtn = qs('overview-icon-btn');
+    if (ovIconBtn) {
+      ovIconBtn.addEventListener('click', function () {
+        openIconPickerModal(state.overview.icon, function (name) {
+          state.overview.icon = name;
+          updateSectionIconPreview('overview', name);
+        });
       });
     }
 
@@ -1971,6 +2057,42 @@
 
     var ovAddEnergyBtn = qs('ov-add-energy-btn');
     if (ovAddEnergyBtn) { ovAddEnergyBtn.addEventListener('click', function () { openEnergyEditor('overview', null); }); }
+
+    // ── Scenarios title & icon ─────────────────────────────────────────────
+    var scTitleInput2 = qs('scenarios-title-input');
+    if (scTitleInput2) {
+      scTitleInput2.addEventListener('input', function () {
+        state.scenarios_section.title = this.value.trim() || 'Scenarios';
+      });
+    }
+
+    var scIconBtn = qs('scenarios-icon-btn');
+    if (scIconBtn) {
+      scIconBtn.addEventListener('click', function () {
+        openIconPickerModal(state.scenarios_section.icon, function (name) {
+          state.scenarios_section.icon = name;
+          updateSectionIconPreview('scenarios', name);
+        });
+      });
+    }
+
+    // ── Cameras title & icon ───────────────────────────────────────────────
+    var camTitleInput2 = qs('cameras-title-input');
+    if (camTitleInput2) {
+      camTitleInput2.addEventListener('input', function () {
+        state.cameras_section.title = this.value.trim() || 'Telecamere';
+      });
+    }
+
+    var camIconBtn = qs('cameras-icon-btn');
+    if (camIconBtn) {
+      camIconBtn.addEventListener('click', function () {
+        openIconPickerModal(state.cameras_section.icon, function (name) {
+          state.cameras_section.icon = name;
+          updateSectionIconPreview('cameras', name);
+        });
+      });
+    }
 
     // ── Rooms buttons ──────────────────────────────────────────────────────
     var addRoomBtn = qs('add-room-btn');
@@ -2026,6 +2148,22 @@
 
     var deleteRoomBtn = qs('delete-room-btn');
     if (deleteRoomBtn) { deleteRoomBtn.addEventListener('click', deleteRoom); }
+
+    // ── Icon picker modal ──────────────────────────────────────────────────
+    var iconPickerCancelBtn = qs('icon-picker-modal-cancel');
+    if (iconPickerCancelBtn) {
+      iconPickerCancelBtn.addEventListener('click', function () {
+        hideOverlay();
+        _iconPickerCallback = null;
+      });
+    }
+
+    var iconPickerSearch = qs('icon-picker-modal-search');
+    if (iconPickerSearch) {
+      iconPickerSearch.addEventListener('input', function () {
+        renderIconPickerGrid(this.value);
+      });
+    }
 
     // ── Scenarios buttons ──────────────────────────────────────────────────
     var addScenarioBtn = qs('add-scenario-btn');

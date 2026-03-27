@@ -51,6 +51,15 @@
                 maxlength="32" autocomplete="off" autocorrect="off"
                 autocapitalize="words" spellcheck="false" placeholder="Overview">
             </div>
+            <div class="field-row">
+              <label class="field-label">Icon</label>
+              <input id="overview-icon-value" type="hidden" value="home">
+              <button id="overview-icon-btn" type="button" class="icon-picker-btn">
+                <span id="overview-icon-preview" class="icon-picker-btn-icon"></span>
+                <span id="overview-icon-name" class="icon-picker-btn-label">home</span>
+                <span class="icon-picker-chevron" aria-hidden="true">&#8964;</span>
+              </button>
+            </div>
           </div>
           <div id="overview-items-list">
             <p class="cfg-placeholder">No items yet.</p>
@@ -199,15 +208,49 @@
 
       <div class="section-header">
         <h2 class="section-title">Scenarios</h2>
-        <p class="cfg-hint">Select scenes and scripts to show in the Scenarios section. Tap a scenario card to activate it.</p>
       </div>
+      <p class="cfg-hint">Select scenes and scripts to show in the Scenarios section. Tap a scenario card to activate it.</p>
 
-      <div id="scenarios-list">
-        <p class="cfg-placeholder">No scenarios configured.</p>
-      </div>
+      <div id="scenarios-body">
 
-      <div class="items-actions">
-        <button id="add-scenario-btn" type="button" class="action-btn">+ Add Scenario</button>
+        <!-- Left: list + settings -->
+        <div id="scenarios-left">
+          <div class="field-group" style="margin-bottom:12px;">
+            <div class="field-row">
+              <label class="field-label" for="scenarios-title-input">Section name</label>
+              <input id="scenarios-title-input" type="text" class="field-input"
+                maxlength="32" autocomplete="off" autocorrect="off"
+                autocapitalize="words" spellcheck="false" placeholder="Scenarios">
+            </div>
+            <div class="field-row">
+              <label class="field-label">Icon</label>
+              <input id="scenarios-icon-value" type="hidden" value="palette">
+              <button id="scenarios-icon-btn" type="button" class="icon-picker-btn">
+                <span id="scenarios-icon-preview" class="icon-picker-btn-icon"></span>
+                <span id="scenarios-icon-name" class="icon-picker-btn-label">palette</span>
+                <span class="icon-picker-chevron" aria-hidden="true">&#8964;</span>
+              </button>
+            </div>
+          </div>
+          <div id="scenarios-list">
+            <p class="cfg-placeholder">No scenarios configured.</p>
+          </div>
+          <div class="items-actions">
+            <button id="add-scenario-btn" type="button" class="action-btn">+ Add Scenario</button>
+          </div>
+        </div>
+
+        <!-- Right: live preview -->
+        <div id="scenarios-right">
+          <div class="cfg-preview-section">
+            <div class="cfg-preview-header">
+              <span class="cfg-preview-label">Scenarios Preview</span>
+              <span class="live-badge">&#9679; LIVE</span>
+            </div>
+            <div class="cfg-preview-box" id="scenarios-live-preview"></div>
+          </div>
+        </div>
+
       </div>
 
     </section>
@@ -219,15 +262,49 @@
 
       <div class="section-header">
         <h2 class="section-title">Telecamere</h2>
-        <p class="cfg-hint">Aggiungi le telecamere da mostrare nel pannello. Puoi impostare un nome e l'intervallo di aggiornamento.</p>
       </div>
+      <p class="cfg-hint">Aggiungi le telecamere da mostrare nel pannello. Puoi impostare un nome e l'intervallo di aggiornamento.</p>
 
-      <div id="cameras-list">
-        <p class="cfg-placeholder">Nessuna telecamera configurata.</p>
-      </div>
+      <div id="cameras-body">
 
-      <div class="items-actions">
-        <button id="add-camera-btn" type="button" class="action-btn">+ Aggiungi Telecamera</button>
+        <!-- Left: list + settings -->
+        <div id="cameras-left">
+          <div class="field-group" style="margin-bottom:12px;">
+            <div class="field-row">
+              <label class="field-label" for="cameras-title-input">Section name</label>
+              <input id="cameras-title-input" type="text" class="field-input"
+                maxlength="32" autocomplete="off" autocorrect="off"
+                autocapitalize="words" spellcheck="false" placeholder="Telecamere">
+            </div>
+            <div class="field-row">
+              <label class="field-label">Icon</label>
+              <input id="cameras-icon-value" type="hidden" value="cctv">
+              <button id="cameras-icon-btn" type="button" class="icon-picker-btn">
+                <span id="cameras-icon-preview" class="icon-picker-btn-icon"></span>
+                <span id="cameras-icon-name" class="icon-picker-btn-label">cctv</span>
+                <span class="icon-picker-chevron" aria-hidden="true">&#8964;</span>
+              </button>
+            </div>
+          </div>
+          <div id="cameras-list">
+            <p class="cfg-placeholder">Nessuna telecamera configurata.</p>
+          </div>
+          <div class="items-actions">
+            <button id="add-camera-btn" type="button" class="action-btn">+ Aggiungi Telecamera</button>
+          </div>
+        </div>
+
+        <!-- Right: live preview -->
+        <div id="cameras-right">
+          <div class="cfg-preview-section">
+            <div class="cfg-preview-header">
+              <span class="cfg-preview-label">Cameras Preview</span>
+              <span class="live-badge">&#9679; LIVE</span>
+            </div>
+            <div class="cfg-preview-box" id="cameras-live-preview"></div>
+          </div>
+        </div>
+
       </div>
 
     </section>
@@ -372,6 +449,26 @@
         <button id="visual-type-cancel" class="cfg-overlay-close" type="button">&#10005;</button>
       </div>
       <div id="visual-type-options" class="visual-type-list"></div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       ICON PICKER MODAL (shared for all icon pickers)
+       ══════════════════════════════════════════════ -->
+  <section id="icon-picker-modal" class="cfg-overlay hidden" role="dialog" aria-modal="true">
+    <div id="icon-picker-modal-panel">
+      <div id="icon-picker-modal-header">
+        <button id="icon-picker-modal-cancel" type="button" class="action-btn-outline">Cancel</button>
+        <h2 class="section-title" style="margin:0;">Choose Icon</h2>
+        <div style="min-width:64px;"></div>
+      </div>
+      <div id="icon-picker-modal-search-wrap">
+        <input id="icon-picker-modal-search" type="text"
+          placeholder="Search icons&#x2026;"
+          autocomplete="off" autocorrect="off"
+          autocapitalize="off" spellcheck="false">
+      </div>
+      <div id="icon-picker-modal-grid"></div>
     </div>
   </section>
 
