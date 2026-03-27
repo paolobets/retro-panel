@@ -2,13 +2,16 @@
 Loads and parses /data/options.json injected by HA Supervisor at runtime.
 Falls back to ./data/options.json for local development.
 
-Entity layout is stored in /data/entities.json (v4 schema):
+Entity layout is stored in /data/entities.json (v5 schema):
   {
-    "version": 4,
+    "version": 5,
     "header_sensors": [{"entity_id", "icon", "label"}],
-    "overview": {"items": [...]},
+    "overview": {"title", "icon", "sections": [{"id", "title", "items": [...]}]},
     "rooms": [{"id", "title", "icon", "hidden", "sections": [{"id", "title", "items": [...]}]}],
-    "scenarios": [{"entity_id", "title", "icon"}]
+    "scenarios": [{"id", "title", "items": [{"entity_id", "title", "icon"}]}],
+    "cameras": [{"id", "title", "items": [{"entity_id", "title", "refresh_interval"}]}],
+    "scenarios_section": {"title", "icon"},
+    "cameras_section": {"title", "icon"}
   }
 
 Each item is one of:
@@ -16,6 +19,8 @@ Each item is one of:
   {"type": "energy_flow", "solar_power", "battery_soc", "battery_power",
    "grid_power", "home_power"}
 
+v4 format is auto-migrated: flat overview.items -> single RoomSection,
+  flat scenarios/cameras lists -> single ScenarioSection/CameraSection.
 v3 rooms with flat items[] are auto-migrated: wrapped in a single default section.
 v2 pages format is auto-migrated: first page -> overview, other pages -> discarded.
 v1 flat arrays are migrated to overview items.
@@ -131,6 +136,22 @@ class RoomSection:
 
 
 @dataclass
+class ScenarioSection:
+    """A named section within the Scenarios tab."""
+    id: str
+    title: str
+    items: List["ScenarioConfig"] = field(default_factory=list)
+
+
+@dataclass
+class CameraSection:
+    """A named section within the Cameras tab."""
+    id: str
+    title: str
+    items: List["CameraConfig"] = field(default_factory=list)
+
+
+@dataclass
 class HeaderSensor:
     """Mini sensor displayed in the header bar."""
     entity_id: str
@@ -165,7 +186,7 @@ class RoomConfig:
 
 @dataclass
 class PanelConfig:
-    """Top-level configuration for Retro Panel v4."""
+    """Top-level configuration for Retro Panel v5."""
 
     ha_url: str
     ha_token: str
@@ -174,11 +195,16 @@ class PanelConfig:
     kiosk_mode: bool
     refresh_interval: int
     header_sensors: List[HeaderSensor] = field(default_factory=list)
-    overview_items: List[SectionItem] = field(default_factory=list)
+    overview_sections: List[RoomSection] = field(default_factory=list)
     rooms: List[RoomConfig] = field(default_factory=list)
-    scenarios: List[ScenarioConfig] = field(default_factory=list)
-    cameras: List[CameraConfig] = field(default_factory=list)
+    scenario_sections: List[ScenarioSection] = field(default_factory=list)
+    camera_sections: List[CameraSection] = field(default_factory=list)
     overview_title: str = "Overview"
+    overview_icon: str = "home"
+    scenarios_section_title: str = "Scenarios"
+    scenarios_section_icon: str = "palette"
+    cameras_section_title: str = "Telecamere"
+    cameras_section_icon: str = "cctv"
 
     # --------------- backward compat helpers ---------------
 
@@ -192,7 +218,9 @@ class PanelConfig:
         return result
 
     def _all_items(self) -> list[SectionItem]:
-        items: list[SectionItem] = list(self.overview_items)
+        items: list[SectionItem] = []
+        for sec in self.overview_sections:
+            items.extend(sec.items)
         for room in self.rooms:
             for section in room.sections:
                 items.extend(section.items)
@@ -220,8 +248,9 @@ class PanelConfig:
         for hs in self.header_sensors:
             _add(hs.entity_id)
 
-        for cam in self.cameras:
-            _add(cam.entity_id)
+        for sec in self.camera_sections:
+            for cam in sec.items:
+                _add(cam.entity_id)
 
         return ids
 
@@ -388,6 +417,34 @@ def _parse_scenario(raw: dict) -> Optional[ScenarioConfig]:
     )
 
 
+def _parse_overview_section(raw: dict, idx: int) -> RoomSection:
+    sec_id = str(raw.get("id") or f"sec_{idx}").strip()
+    title = str(raw.get("title") or "").strip()
+    items = _parse_items(raw.get("items") or [], f"overview/sec[{sec_id}]")
+    return RoomSection(id=sec_id, title=title, items=items)
+
+
+def _parse_scenario_section(raw: dict, idx: int) -> ScenarioSection:
+    sec_id = str(raw.get("id") or f"sc_sec_{idx}").strip()
+    title = str(raw.get("title") or "").strip()
+    items = [s for s in [_parse_scenario(x) for x in (raw.get("items") or [])] if s]
+    return ScenarioSection(id=sec_id, title=title, items=items)
+
+
+def _parse_camera_section(raw: dict, idx: int) -> CameraSection:
+    sec_id = str(raw.get("id") or f"cam_sec_{idx}").strip()
+    title = str(raw.get("title") or "").strip()
+    cam_items: list[CameraConfig] = []
+    for c in (raw.get("items") or []):
+        if isinstance(c, dict) and c.get("entity_id"):
+            cam_items.append(CameraConfig(
+                entity_id=str(c["entity_id"]).strip(),
+                title=str(c.get("title") or "").strip(),
+                refresh_interval=int(c.get("refresh_interval") or 10),
+            ))
+    return CameraSection(id=sec_id, title=title, items=cam_items)
+
+
 def _migrate_v1_flat(raw_entities: list) -> list[SectionItem]:
     """Migrate v1 flat entity list to overview items."""
     items: list[SectionItem] = []
@@ -410,15 +467,20 @@ def _migrate_v2_pages(pages_raw: list) -> list[SectionItem]:
 
 
 def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
-    list[SectionItem],     # overview_items
-    str,                   # overview_title
-    list[RoomConfig],      # rooms
-    list[ScenarioConfig],  # scenarios
-    list[HeaderSensor],    # header_sensors
-    list[CameraConfig],    # cameras
+    list[RoomSection],         # overview_sections       [0]
+    str,                       # overview_title           [1]
+    str,                       # overview_icon            [2]
+    list[RoomConfig],          # rooms                    [3]
+    list[ScenarioSection],     # scenario_sections        [4]
+    list[HeaderSensor],        # header_sensors           [5]
+    list[CameraSection],       # camera_sections          [6]
+    str,                       # scenarios_section_title  [7]
+    str,                       # scenarios_section_icon   [8]
+    str,                       # cameras_section_title    [9]
+    str,                       # cameras_section_icon     [10]
 ]:
     """Load layout from /data/entities.json, migrating older formats."""
-    empty = ([], "Overview", [], [], [], [])
+    empty = ([], "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv")
 
     if entities_file.exists():
         try:
@@ -427,49 +489,109 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
             logger.warning("Failed to read %s: %s — using empty layout", entities_file, exc)
             return empty
 
-        # v4 format (also handles v3 rooms via _parse_room migration logic)
-        if isinstance(raw, dict) and raw.get("version") in (3, 4):
-            overview_items = _parse_items(
-                (raw.get("overview") or {}).get("items") or [], "overview"
+        # v5 format (native sections)
+        if isinstance(raw, dict) and raw.get("version") == 5:
+            _ov = raw.get("overview") or {}
+            overview_sections = [
+                _parse_overview_section(s, i)
+                for i, s in enumerate(_ov.get("sections") or [])
+                if isinstance(s, dict)
+            ]
+            overview_title = str(_ov.get("title") or "Overview").strip() or "Overview"
+            overview_icon = str(_ov.get("icon") or "home").strip() or "home"
+            rooms: list[RoomConfig] = [
+                _parse_room(r, i)
+                for i, r in enumerate(raw.get("rooms") or [])
+                if isinstance(r, dict)
+            ]
+            scenario_sections = [
+                _parse_scenario_section(s, i)
+                for i, s in enumerate(raw.get("scenarios") or [])
+                if isinstance(s, dict)
+            ]
+            header_sensors: list[HeaderSensor] = [
+                h for h in [_parse_header_sensor(x) for x in (raw.get("header_sensors") or [])] if h
+            ]
+            camera_sections = [
+                _parse_camera_section(s, i)
+                for i, s in enumerate(raw.get("cameras") or [])
+                if isinstance(s, dict)
+            ]
+            sc_sec = raw.get("scenarios_section") or {}
+            cam_sec = raw.get("cameras_section") or {}
+            return (
+                overview_sections, overview_title, overview_icon,
+                rooms, scenario_sections, header_sensors, camera_sections,
+                str(sc_sec.get("title") or "Scenarios").strip() or "Scenarios",
+                str(sc_sec.get("icon") or "palette").strip() or "palette",
+                str(cam_sec.get("title") or "Telecamere").strip() or "Telecamere",
+                str(cam_sec.get("icon") or "cctv").strip() or "cctv",
             )
-            overview_title = str((raw.get("overview") or {}).get("title") or "Overview").strip() or "Overview"
-            rooms: list[RoomConfig] = []
+
+        # v3/v4 format — migrate to v5 shape (also handles v3 rooms via _parse_room migration logic)
+        if isinstance(raw, dict) and raw.get("version") in (3, 4):
+            _ov = raw.get("overview") or {}
+            overview_title = str(_ov.get("title") or "Overview").strip() or "Overview"
+            overview_icon = "home"
+
+            # overview: wrap flat items in single RoomSection
+            overview_items_flat = _parse_items(_ov.get("items") or [], "overview")
+            overview_sections = [RoomSection(id="sec_default", title="", items=overview_items_flat)] if overview_items_flat else []
+
+            rooms = []
             for idx, room_raw in enumerate(raw.get("rooms") or []):
                 if isinstance(room_raw, dict):
                     rooms.append(_parse_room(room_raw, idx))
-            scenarios: list[ScenarioConfig] = []
-            for s_raw in raw.get("scenarios") or []:
-                if isinstance(s_raw, dict):
-                    sc = _parse_scenario(s_raw)
-                    if sc is not None:
-                        scenarios.append(sc)
-            header_sensors: list[HeaderSensor] = []
+
+            # scenarios: parse flat list and wrap in single ScenarioSection
+            sc_flat = [s for s in [_parse_scenario(x) for x in (raw.get("scenarios") or []) if isinstance(x, dict)] if s]
+            scenario_sections = [ScenarioSection(id="sec_default", title="", items=sc_flat)] if sc_flat else []
+
+            header_sensors = []
             for hs_raw in raw.get("header_sensors") or []:
                 if isinstance(hs_raw, dict):
                     hs = _parse_header_sensor(hs_raw)
                     if hs is not None:
                         header_sensors.append(hs)
-            raw_cameras = raw.get("cameras", [])
-            cameras: list[CameraConfig] = []
-            for c in raw_cameras:
+
+            # cameras: parse flat list and wrap in single CameraSection
+            cam_flat: list[CameraConfig] = []
+            for c in (raw.get("cameras") or []):
                 if isinstance(c, dict) and c.get("entity_id"):
-                    cameras.append(CameraConfig(
-                        entity_id=c["entity_id"],
-                        title=c.get("title", ""),
-                        refresh_interval=int(c.get("refresh_interval", 10)),
+                    cam_flat.append(CameraConfig(
+                        entity_id=str(c["entity_id"]).strip(),
+                        title=str(c.get("title") or "").strip(),
+                        refresh_interval=int(c.get("refresh_interval") or 10),
                     ))
-            return overview_items, overview_title, rooms, scenarios, header_sensors, cameras
+            camera_sections = [CameraSection(id="sec_default", title="", items=cam_flat)] if cam_flat else []
+
+            sc_sec = raw.get("scenarios_section") or {}
+            cam_sec = raw.get("cameras_section") or {}
+            scenarios_section_title = str(sc_sec.get("title") or "Scenarios").strip() or "Scenarios"
+            scenarios_section_icon = str(sc_sec.get("icon") or "palette").strip() or "palette"
+            cameras_section_title = str(cam_sec.get("title") or "Telecamere").strip() or "Telecamere"
+            cameras_section_icon = str(cam_sec.get("icon") or "cctv").strip() or "cctv"
+
+            return (
+                overview_sections, overview_title, overview_icon,
+                rooms, scenario_sections, header_sensors, camera_sections,
+                scenarios_section_title, scenarios_section_icon,
+                cameras_section_title, cameras_section_icon,
+            )
 
         # v2 format: migrate first page to overview
         if isinstance(raw, dict) and raw.get("version") == 2:
-            logger.info("Migrating v2 pages format to v4")
-            overview_items = _migrate_v2_pages(raw.get("pages") or [])
-            return overview_items, "Overview", [], [], [], []
+            logger.info("Migrating v2 pages format to v5")
+            ov_items = _migrate_v2_pages(raw.get("pages") or [])
+            ov_secs = [RoomSection(id="sec_default", title="", items=ov_items)] if ov_items else []
+            return (ov_secs, "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv")
 
         # v1 format: plain list
         if isinstance(raw, list):
-            logger.info("Migrating v1 flat entities format to v4")
-            return _migrate_v1_flat(raw), "Overview", [], [], [], []
+            logger.info("Migrating v1 flat entities format to v5")
+            ov_items = _migrate_v1_flat(raw)
+            ov_secs = [RoomSection(id="sec_default", title="", items=ov_items)] if ov_items else []
+            return (ov_secs, "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv")
 
         logger.warning("Unrecognised entities.json format, using empty layout")
         return empty
@@ -477,7 +599,9 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
     # Fall back to options.json entities
     if options_fallback:
         logger.info("No entities.json found, migrating from options.json")
-        return _migrate_v1_flat(options_fallback), "Overview", [], [], [], []
+        ov_items = _migrate_v1_flat(options_fallback)
+        ov_secs = [RoomSection(id="sec_default", title="", items=ov_items)] if ov_items else []
+        return (ov_secs, "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv")
 
     return empty
 
@@ -520,12 +644,16 @@ def load_config() -> PanelConfig:
 
     entities_file = Path("/data/entities.json")
     options_entities = raw.get("entities", [])
-    overview_items, overview_title, rooms, scenarios, header_sensors, cameras = _load_layout(
+    (overview_sections, overview_title, overview_icon, rooms, scenario_sections, header_sensors, camera_sections,
+     scenarios_section_title, scenarios_section_icon,
+     cameras_section_title, cameras_section_icon) = _load_layout(
         entities_file,
         options_entities if isinstance(options_entities, list) else [],
     )
 
-    total_entities = sum(1 for it in overview_items if it.type == "entity")
+    total_entities = sum(
+        1 for sec in overview_sections for it in sec.items if it.type == "entity"
+    )
     total_entities += sum(
         1 for room in rooms
         for section in room.sections
@@ -541,11 +669,16 @@ def load_config() -> PanelConfig:
         kiosk_mode=bool(raw.get("kiosk_mode", False)),
         refresh_interval=int(raw.get("refresh_interval", 30) or 30),
         header_sensors=header_sensors,
-        overview_items=overview_items,
+        overview_sections=overview_sections,
         rooms=rooms,
-        scenarios=scenarios,
-        cameras=cameras,
+        scenario_sections=scenario_sections,
+        camera_sections=camera_sections,
         overview_title=overview_title,
+        overview_icon=overview_icon,
+        scenarios_section_title=scenarios_section_title,
+        scenarios_section_icon=scenarios_section_icon,
+        cameras_section_title=cameras_section_title,
+        cameras_section_icon=cameras_section_icon,
     )
 
     logger.info(
@@ -553,8 +686,8 @@ def load_config() -> PanelConfig:
         config.title,
         total_entities,
         len(rooms),
-        len(scenarios),
-        len(cameras),
+        len(scenario_sections),
+        len(camera_sections),
         config.theme,
     )
     return config
