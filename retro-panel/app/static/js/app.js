@@ -210,6 +210,24 @@
         if (window.CameraComponent) { window.CameraComponent.destroyAll(); }
         window.RP_Renderer.renderActiveSection(AppState);
         window.RP_Nav.setActiveSidebarItem(sectionId);
+        // Lazy-load states for the newly visible section entities
+        if (window.getStates && window.RP_Nav.getSectionEntityIds) {
+          var sectionIds = window.RP_Nav.getSectionEntityIds(sectionId);
+          if (sectionIds && sectionIds.length > 0) {
+            window.getStates(sectionIds).then(function (statesArray) {
+              if (Array.isArray(statesArray)) {
+                for (var i = 0; i < statesArray.length; i++) {
+                  var s = statesArray[i];
+                  if (s && s.entity_id) {
+                    updateEntityState(s.entity_id, { state: s.state, attributes: s.attributes });
+                  }
+                }
+              }
+            }).catch(function (err) {
+              console.warn('[app] Section state refresh failed:', err);
+            });
+          }
+        }
       });
 
       // Sidebar toggle

@@ -134,6 +134,50 @@ Retro Panel — Python 3.11 + aiohttp (port 7654)
 
 ---
 
+## Security
+
+Retro Panel is designed with a layered security model. The following setup is recommended:
+
+### Backend token (required)
+
+Create a dedicated Home Assistant user for the add-on backend — do **not** use your personal account:
+
+1. In HA: **Settings → People → Add Person** — name it e.g. `Retro Panel`, enable **Allow login**.
+2. Set the **Administrator** role.
+3. Log in as that user, go to **Profile → Long-Lived Access Tokens → Create Token**.
+4. Copy the token and set it as `ha_token` in the add-on configuration.
+
+The token is stored server-side and **never sent to the browser**.
+
+### Kiosk tablet user (recommended)
+
+Use a **separate, non-admin** HA account for the tablet:
+
+1. Create a new HA user (e.g. `Tablet`) without the Administrator role.
+2. On the tablet, log in to Home Assistant with that account.
+3. The tablet user can view and control entities, but cannot access add-on administration.
+4. Keep the tablet on your **local network only** — do not expose it directly to the internet.
+
+### External access
+
+If you access Home Assistant from outside your network:
+
+- Use **Cloudflare Tunnel** or a **VPN** (e.g. WireGuard built into HA) — avoid direct port forwarding.
+- Enable **Multi-Factor Authentication (2FA)** for all admin accounts: **Settings → People → [user] → Multi-factor Authentication**.
+- The add-on API is only accessible through HA Ingress — it is not reachable without a valid HA session.
+
+### Summary
+
+| Layer | Mechanism | Who configures it |
+|-------|-----------|-------------------|
+| Network | Cloudflare Tunnel or VPN | You (router/HA) |
+| Authentication | HA Ingress (session required) | HA (automatic) |
+| Admin protection | 2FA for admin accounts | You (HA settings) |
+| Token isolation | LLAT stays server-side | Add-on (by design) |
+| Kiosk isolation | Non-admin local-only user | You (HA settings) |
+
+---
+
 ## Roadmap
 
 | Version | Status | Content |

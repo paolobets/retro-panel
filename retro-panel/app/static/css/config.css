@@ -953,6 +953,117 @@ html, body {
 }
 .room-row-actions > * + * { margin-left: 10px; }
 
+/* ---- Room live preview ---- */
+.cfg-preview-section {
+  margin-top: 20px;
+}
+.cfg-preview-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.cfg-preview-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+}
+.live-badge {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: rgba(76, 175, 80, 0.12);
+  color: var(--color-on);
+  letter-spacing: 0.06em;
+  animation: live-pulse 2s ease-in-out infinite;
+}
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+.cfg-preview-box {
+  background: var(--color-bg);
+  border: 1px solid var(--color-surface-2);
+  border-radius: var(--radius);
+  padding: 16px;
+  min-height: 64px;
+}
+.preview-room-section { margin-bottom: 16px; }
+.preview-room-section:last-child { margin-bottom: 0; }
+.preview-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-text-secondary);
+  margin-bottom: 8px;
+}
+.preview-tiles-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.preview-tile-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-2);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  transition: opacity 0.2s;
+}
+.preview-tile-chip.hidden {
+  opacity: 0.3;
+  text-decoration: line-through;
+}
+.chip-domain {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+}
+.preview-empty-section {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  opacity: 0.5;
+  font-style: italic;
+}
+
+/* ---- Room drag handle ---- */
+.room-drag-handle {
+  font-size: 16px;
+  color: var(--color-text-secondary);
+  opacity: 0.35;
+  cursor: grab;
+  flex-shrink: 0;
+  padding: 4px 6px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.room-drag-handle:active { cursor: grabbing; opacity: 0.7; }
+
+.room-row--dragging { opacity: 0.3; }
+
+.room-row--insert-before { border-top: 2px solid var(--color-accent); }
+.room-row--insert-after  { border-bottom: 2px solid var(--color-accent); }
+
+.drag-ghost {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  opacity: 0.92;
+  border-radius: var(--radius-sm);
+}
+
 /* ---- iOS-style toggle ---- */
 .toggle-wrap {
   position: relative;
@@ -1254,7 +1365,15 @@ html, body {
   color: var(--color-text-secondary);
   opacity: 0.4;
   flex-shrink: 0;
+  cursor: grab;
+  padding: 4px 6px;
+  user-select: none;
 }
+.section-row-drag:active { cursor: grabbing; opacity: 0.8; }
+
+.section-row--dragging { opacity: 0.3; }
+.section-row--insert-before { border-top: 2px solid var(--color-accent); }
+.section-row--insert-after  { border-bottom: 2px solid var(--color-accent); }
 
 .section-row-info {
   flex: 1;

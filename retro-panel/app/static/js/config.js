@@ -360,7 +360,7 @@
   // ── Rooms ──────────────────────────────────────────────────────────────────
 
   function renderRoomsList() {
-    var container = qs('rooms-list');
+    const container = qs('rooms-list');
     if (!container) { return; }
 
     if (state.rooms.length === 0) {
@@ -368,64 +368,111 @@
       return;
     }
 
-    var html = '';
-    for (var i = 0; i < state.rooms.length; i++) {
-      var room = state.rooms[i];
-      var entityCount = 0;
-      var roomSecs = room.sections || [];
-      for (var si = 0; si < roomSecs.length; si++) {
-        entityCount += (roomSecs[si].items || []).filter(function (it) { return it.type === 'entity'; }).length;
-      }
-      html += '<div class="room-row" data-id="' + esc(room.id) + '">';
-      html += '<div class="room-row-info">';
-      html += '<span class="room-row-icon">' + getRoomEmoji(room.icon) + '</span>';
-      html += '<div>';
-      html += '<div class="room-row-title">' + esc(room.title) + '</div>';
-      html += '<div class="room-row-meta">' + entityCount + ' entit' + (entityCount === 1 ? 'y' : 'ies') + '</div>';
-      html += '</div></div>';
-      html += '<div class="room-row-actions">';
-      html += '<label class="toggle-wrap" title="' + (room.hidden ? 'Hidden' : 'Visible') + '">';
-      html += '<input type="checkbox" class="room-visible-toggle" data-id="' + esc(room.id) + '"' + (room.hidden ? '' : ' checked') + '>';
-      html += '<span class="toggle-slider"></span>';
-      html += '</label>';
-      if (i > 0) {
-        html += '<button class="reorder-btn room-reorder-btn" type="button" data-action="up" data-idx="' + i + '">\u2191</button>';
-      }
-      if (i < state.rooms.length - 1) {
-        html += '<button class="reorder-btn room-reorder-btn" type="button" data-action="down" data-idx="' + i + '">\u2193</button>';
-      }
-      html += '<button class="action-btn-sm room-edit-btn" type="button" data-id="' + esc(room.id) + '">Edit</button>';
-      html += '</div>';
-      html += '</div>';
-    }
-    container.innerHTML = html;
+    container.innerHTML = state.rooms.map((room) => {
+      const entityCount = (room.sections || [])
+        .flatMap(s => s.items || [])
+        .filter(it => it.type === 'entity').length;
+      const countLabel = `${entityCount} entit${entityCount === 1 ? 'y' : 'ies'}`;
+      const visibleAttr = room.hidden ? '' : ' checked';
+      return `
+        <div class="room-row" data-id="${esc(room.id)}">
+          <span class="room-drag-handle">&#9776;</span>
+          <div class="room-row-info">
+            <span class="room-row-icon">${getRoomEmoji(room.icon)}</span>
+            <div>
+              <div class="room-row-title">${esc(room.title)}</div>
+              <div class="room-row-meta">${countLabel}</div>
+            </div>
+          </div>
+          <div class="room-row-actions">
+            <label class="toggle-wrap" title="${room.hidden ? 'Hidden' : 'Visible'}">
+              <input type="checkbox" class="room-visible-toggle" data-id="${esc(room.id)}"${visibleAttr}>
+              <span class="toggle-slider"></span>
+            </label>
+            <button class="action-btn-sm room-edit-btn" type="button" data-id="${esc(room.id)}">Edit</button>
+          </div>
+        </div>`.trim();
+    }).join('');
 
-    container.querySelectorAll('.room-reorder-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var idx = parseInt(this.getAttribute('data-idx'), 10);
-        var delta = this.getAttribute('data-action') === 'up' ? -1 : 1;
-        var newIdx = idx + delta;
-        if (newIdx < 0 || newIdx >= state.rooms.length) { return; }
-        var tmp = state.rooms[idx]; state.rooms[idx] = state.rooms[newIdx]; state.rooms[newIdx] = tmp;
+    initRoomDragDrop(container);
+
+    container.querySelectorAll('.room-edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => openRoomEditor(btn.getAttribute('data-id')));
+    });
+
+    container.querySelectorAll('.room-visible-toggle').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const room = state.rooms.find(r => r.id === cb.getAttribute('data-id'));
+        if (room) { room.hidden = !cb.checked; }
+      });
+    });
+  }
+
+  function initRoomDragDrop(container) {
+    let dragIdx = -1;
+    let ghostEl = null;
+    let startY = 0;
+    let rowEls = [];
+    let rowRects = [];
+
+    const calcTargetIdx = (dy) => {
+      const ghostCenter = rowRects[dragIdx].top + dy + rowRects[dragIdx].height / 2;
+      return rowRects.reduce((target, rc, i) =>
+        ghostCenter > rc.top + rc.height / 2 ? i : target, dragIdx);
+    };
+
+    const updateIndicator = (targetIdx) => {
+      rowEls.forEach(r => r.classList.remove('room-row--insert-before', 'room-row--insert-after'));
+      if (targetIdx === dragIdx) { return; }
+      rowEls[targetIdx].classList.add(targetIdx < dragIdx ? 'room-row--insert-before' : 'room-row--insert-after');
+    };
+
+    const onDragStart = (e, handle) => {
+      const row = handle.parentNode;
+      rowEls = [...container.querySelectorAll('.room-row')];
+      dragIdx = rowEls.indexOf(row);
+      if (dragIdx < 0) { return; }
+      startY = e.clientY;
+      rowRects = rowEls.map(r => r.getBoundingClientRect());
+      const rect = rowRects[dragIdx];
+      ghostEl = row.cloneNode(true);
+      ghostEl.className = 'room-row drag-ghost';
+      ghostEl.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;z-index:9999;pointer-events:none;`;
+      document.body.appendChild(ghostEl);
+      row.classList.add('room-row--dragging');
+      e.preventDefault();
+    };
+
+    const onDragMove = (e) => {
+      if (dragIdx < 0 || !ghostEl) { return; }
+      e.preventDefault();
+      const dy = e.clientY - startY;
+      ghostEl.style.top = `${rowRects[dragIdx].top + dy}px`;
+      updateIndicator(calcTargetIdx(dy));
+    };
+
+    const onDragEnd = (e) => {
+      if (dragIdx < 0) { return; }
+      const targetIdx = calcTargetIdx(e.clientY - startY);
+      rowEls.forEach(r => r.classList.remove('room-row--dragging', 'room-row--insert-before', 'room-row--insert-after'));
+      ghostEl?.remove();
+      ghostEl = null;
+      const fromIdx = dragIdx;
+      dragIdx = -1;
+      if (targetIdx !== fromIdx) {
+        const [moved] = state.rooms.splice(fromIdx, 1);
+        state.rooms.splice(targetIdx, 0, moved);
         renderRoomsList();
-      });
-    });
+      }
+    };
 
-    container.querySelectorAll('.room-edit-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        openRoomEditor(this.getAttribute('data-id'));
-      });
-    });
-
-    container.querySelectorAll('.room-visible-toggle').forEach(function (cb) {
-      cb.addEventListener('change', function () {
-        var roomId = this.getAttribute('data-id');
-        for (var i = 0; i < state.rooms.length; i++) {
-          if (state.rooms[i].id === roomId) {
-            state.rooms[i].hidden = !this.checked;
-            break;
-          }
-        }
+    container.querySelectorAll('.room-drag-handle').forEach(handle => {
+      handle.addEventListener('mousedown', (e) => {
+        onDragStart(e, handle);
+        const onMove = (e) => onDragMove(e);
+        const onUp = (e) => { onDragEnd(e); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
       });
     });
   }
@@ -602,15 +649,12 @@
   }
 
   function reorderSection(secId, delta) {
-    var sections = activeRoomSections();
-    var idx = -1;
-    for (var i = 0; i < sections.length; i++) {
-      if (sections[i].id === secId) { idx = i; break; }
-    }
+    const sections = activeRoomSections();
+    const idx = sections.findIndex(s => s.id === secId);
     if (idx < 0) { return; }
-    var newIdx = idx + delta;
+    const newIdx = idx + delta;
     if (newIdx < 0 || newIdx >= sections.length) { return; }
-    var tmp = sections[idx]; sections[idx] = sections[newIdx]; sections[newIdx] = tmp;
+    [sections[idx], sections[newIdx]] = [sections[newIdx], sections[idx]];
     renderSectionsList();
   }
 
@@ -621,77 +665,148 @@
   }
 
   function commitSectionTitle(secId, newTitle) {
-    var sections = activeRoomSections();
-    for (var i = 0; i < sections.length; i++) {
-      if (sections[i].id === secId) {
-        sections[i].title = (newTitle || '').trim().slice(0, 64);
-        break;
-      }
-    }
+    const sec = activeRoomSections().find(s => s.id === secId);
+    if (sec) { sec.title = (newTitle || '').trim().slice(0, 64); }
     renderSectionsList();
   }
 
   function renderSectionsList() {
-    var container = qs('room-sections-list');
+    const container = qs('room-sections-list');
     if (!container) { return; }
-    var sections = activeRoomSections();
+    const sections = activeRoomSections();
 
     if (sections.length === 0) {
       container.innerHTML = '<p class="cfg-placeholder">No sections. Click &ldquo;+ Add&rdquo;.</p>';
       return;
     }
 
-    var html = '';
-    for (var i = 0; i < sections.length; i++) {
-      var sec = sections[i];
-      var isActive = sec.id === editingSectionId;
-      var count = (sec.items || []).filter(function (it) { return it.type === 'entity'; }).length;
-      html += '<div class="section-row' + (isActive ? ' section-row--active' : '') + '" data-id="' + esc(sec.id) + '">';
-      html += '<span class="section-row-drag">\u2630</span>';
-      html += '<div class="section-row-info">';
-      html += '<span class="section-row-title">' + esc(sec.title || 'Unnamed') + '</span>';
-      html += '<span class="section-row-count">' + count + ' entit' + (count === 1 ? 'y' : 'ies') + '</span>';
-      html += '</div>';
-      html += '<div class="section-row-actions">';
-      if (i > 0) {
-        html += '<button class="reorder-btn sec-up-btn" type="button" data-id="' + esc(sec.id) + '">\u2191</button>';
-      }
-      if (i < sections.length - 1) {
-        html += '<button class="reorder-btn sec-dn-btn" type="button" data-id="' + esc(sec.id) + '">\u2193</button>';
-      }
-      html += '<button class="remove-btn sec-del-btn" type="button" data-id="' + esc(sec.id) + '">\u2715</button>';
-      html += '</div>';
-      html += '</div>';
-    }
-    container.innerHTML = html;
+    container.innerHTML = sections.map(sec => {
+      const isActive = sec.id === editingSectionId;
+      const count = (sec.items || []).filter(it => it.type === 'entity').length;
+      return `
+        <div class="section-row${isActive ? ' section-row--active' : ''}" data-id="${esc(sec.id)}">
+          <span class="section-row-drag">&#9776;</span>
+          <div class="section-row-info">
+            <span class="section-row-title">${esc(sec.title || 'Unnamed')}</span>
+            <span class="section-row-count">${count} entit${count === 1 ? 'y' : 'ies'}</span>
+          </div>
+          <div class="section-row-actions">
+            <button class="remove-btn sec-del-btn" type="button" data-id="${esc(sec.id)}">&#10005;</button>
+          </div>
+        </div>`.trim();
+    }).join('');
 
-    container.querySelectorAll('.section-row').forEach(function (row) {
-      row.addEventListener('click', function (e) {
+    initSectionDragDrop(container);
+
+    container.querySelectorAll('.section-row').forEach(row => {
+      row.addEventListener('click', (e) => {
         if (e.target.tagName === 'BUTTON') { return; }
-        selectSection(this.getAttribute('data-id'));
+        selectSection(row.getAttribute('data-id'));
       });
     });
 
-    container.querySelectorAll('.sec-up-btn').forEach(function (btn) {
-      btn.addEventListener('click', function (e) {
+    container.querySelectorAll('.sec-del-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        reorderSection(this.getAttribute('data-id'), -1);
+        deleteSection(btn.getAttribute('data-id'));
       });
     });
 
-    container.querySelectorAll('.sec-dn-btn').forEach(function (btn) {
-      btn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        reorderSection(this.getAttribute('data-id'), 1);
-      });
-    });
+    renderRoomPreview();
+  }
 
-    container.querySelectorAll('.sec-del-btn').forEach(function (btn) {
-      btn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        deleteSection(this.getAttribute('data-id'));
+  function initSectionDragDrop(container) {
+    let dragIdx = -1;
+    let ghostEl = null;
+    let startY = 0;
+    let rowEls = [];
+    let rowRects = [];
+
+    const calcTargetIdx = (dy) => {
+      const ghostCenter = rowRects[dragIdx].top + dy + rowRects[dragIdx].height / 2;
+      return rowRects.reduce((target, rc, i) =>
+        ghostCenter > rc.top + rc.height / 2 ? i : target, dragIdx);
+    };
+
+    const updateIndicator = (targetIdx) => {
+      rowEls.forEach(r => r.classList.remove('section-row--insert-before', 'section-row--insert-after'));
+      if (targetIdx === dragIdx) { return; }
+      rowEls[targetIdx].classList.add(targetIdx < dragIdx ? 'section-row--insert-before' : 'section-row--insert-after');
+    };
+
+    const onDragStart = (e, handle) => {
+      const row = handle.parentNode;
+      rowEls = [...container.querySelectorAll('.section-row')];
+      dragIdx = rowEls.indexOf(row);
+      if (dragIdx < 0) { return; }
+      startY = e.clientY;
+      rowRects = rowEls.map(r => r.getBoundingClientRect());
+      const rect = rowRects[dragIdx];
+      ghostEl = row.cloneNode(true);
+      ghostEl.className = 'section-row drag-ghost';
+      ghostEl.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;z-index:9999;pointer-events:none;`;
+      document.body.appendChild(ghostEl);
+      row.classList.add('section-row--dragging');
+      e.preventDefault();
+    };
+
+    const onDragMove = (e) => {
+      if (dragIdx < 0 || !ghostEl) { return; }
+      const dy = e.clientY - startY;
+      ghostEl.style.top = `${rowRects[dragIdx].top + dy}px`;
+      updateIndicator(calcTargetIdx(dy));
+    };
+
+    const onDragEnd = (e) => {
+      if (dragIdx < 0) { return; }
+      const targetIdx = calcTargetIdx(e.clientY - startY);
+      rowEls.forEach(r => r.classList.remove('section-row--dragging', 'section-row--insert-before', 'section-row--insert-after'));
+      ghostEl?.remove();
+      ghostEl = null;
+      const fromIdx = dragIdx;
+      dragIdx = -1;
+      if (targetIdx !== fromIdx) {
+        const sections = activeRoomSections();
+        const [moved] = sections.splice(fromIdx, 1);
+        sections.splice(targetIdx, 0, moved);
+        renderSectionsList();
+      }
+    };
+
+    container.querySelectorAll('.section-row-drag').forEach(handle => {
+      handle.addEventListener('mousedown', (e) => {
+        onDragStart(e, handle);
+        const onMove = (e) => onDragMove(e);
+        const onUp = (e) => { onDragEnd(e); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
       });
     });
+  }
+
+  function renderRoomPreview() {
+    const box = qs('room-live-preview');
+    if (!box) { return; }
+    const room = activeRoomObj();
+    if (!room || !(room.sections || []).length) {
+      box.innerHTML = '<div class="preview-empty-section">No sections configured.</div>';
+      return;
+    }
+    box.innerHTML = room.sections.map(sec => {
+      const entities = (sec.items || []).filter(it => it.type === 'entity');
+      const chipsHtml = entities.length === 0
+        ? '<div class="preview-empty-section">No entities</div>'
+        : `<div class="preview-tiles-row">${entities.map(it => {
+            const domain = (it.entity_id || '').split('.')[0];
+            return `<div class="preview-tile-chip${it.hidden ? ' hidden' : ''}">
+              <span class="chip-domain">${domain}</span>${esc(it.label || it.entity_id)}
+            </div>`;
+          }).join('')}</div>`;
+      return `<div class="preview-room-section">
+        <div class="preview-section-title">${esc(sec.title || 'Unnamed')} <span style="opacity:.5">(${entities.length})</span></div>
+        ${chipsHtml}
+      </div>`;
+    }).join('');
   }
 
   function renderSectionDetail() {
@@ -731,6 +846,7 @@
     var items = activeRoomItems();
     if (countEl) { countEl.textContent = String(items.length); }
     renderItemsList(container, items, 'section');
+    renderRoomPreview();
   }
 
   function commitRoomTitle() {
