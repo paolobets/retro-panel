@@ -30,6 +30,9 @@ html, body {
   padding: 0;
 }
 
+/* Utility: hide elements — was in base.css, re-declared here */
+.hidden { display: none !important; }
+
 /* ---- Header ---- */
 #cfg-header {
   position: sticky;
@@ -1324,7 +1327,7 @@ html, body {
 .camera-refresh-input {
   width: 60px;
   background: var(--color-surface-2);
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid var(--color-surface-2);
   border-radius: var(--radius-sm);
   color: var(--color-text-primary);
   font-size: 13px;
@@ -1348,12 +1351,13 @@ html, body {
 #camera-search-wrap {
   padding: 10px 16px 6px;
 }
+#camera-search-wrap input:focus { border-color: var(--color-accent); }
 
 #camera-search-wrap input {
   width: 100%;
   box-sizing: border-box;
   background: var(--color-surface-2);
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid var(--color-surface-2);
   border-radius: var(--radius-sm);
   color: var(--color-text-primary);
   font-size: 15px;
@@ -1374,7 +1378,7 @@ html, body {
   flex-direction: row;
   align-items: center;
   background: var(--color-surface-2);
-  border: 1px solid rgba(255,255,255,0.10);
+  border: 1px solid var(--color-surface-2);
   border-radius: var(--radius-sm);
   color: var(--color-text-secondary);
   font-size: 11px;
@@ -1407,7 +1411,7 @@ html, body {
 .cfg-overlay-panel {
   background: var(--color-surface);
   border: 1px solid var(--color-surface-2);
-  border-radius: var(--radius-md, 12px);
+  border-radius: var(--radius);
   width: 90%;
   max-width: 320px;
   overflow: hidden;
