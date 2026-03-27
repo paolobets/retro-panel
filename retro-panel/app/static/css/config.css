@@ -242,7 +242,26 @@ html, body {
   gap: 10px;
 }
 .selected-row:last-child { border-bottom: none; }
-.selected-row--hidden { opacity: 0.45; }
+.selected-row--hidden   { opacity: 0.45; }
+.selected-row--dragging { opacity: 0.25; }
+.selected-row--insert-before { border-top: 2px solid var(--color-accent); }
+.selected-row--insert-after  { border-bottom: 2px solid var(--color-accent); }
+
+.item-drag-handle {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  opacity: 0.35;
+  cursor: grab;
+  flex-shrink: 0;
+  padding: 4px 2px;
+  user-select: none;
+}
+.item-drag-handle:active { cursor: grabbing; opacity: 0.7; }
+
+.section-row--drop-target {
+  border-color: var(--color-accent) !important;
+  background-color: rgba(33, 150, 243, 0.12) !important;
+}
 
 .selected-entity-info {
   flex: 1;

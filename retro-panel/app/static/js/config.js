@@ -228,105 +228,180 @@
       return;
     }
 
-    var html = '';
-    for (var i = 0; i < items.length; i++) {
-      var item = items[i];
-      var isHidden = !!item.hidden;
-      html += '<div class="selected-row' + (isHidden ? ' selected-row--hidden' : '') + '">';
+    container.innerHTML = items.map((item, i) => {
+      const isHidden = !!item.hidden;
       if (item.type === 'energy_flow') {
-        html += '<span class="selected-id selected-id-energy">&#9889; Power Flow Card</span>';
-        html += '<div class="selected-actions">';
-        if (i > 0) {
-          html += '<button class="reorder-btn" type="button" data-action="up" data-idx="' + i + '" data-ctx="' + esc(context) + '">\u2191</button>';
-        }
-        if (i < items.length - 1) {
-          html += '<button class="reorder-btn" type="button" data-action="down" data-idx="' + i + '" data-ctx="' + esc(context) + '">\u2193</button>';
-        }
-        html += '<button class="edit-energy-btn action-btn-sm" type="button" data-idx="' + i + '" data-ctx="' + esc(context) + '">Edit</button>';
-        html += '<button class="remove-btn" type="button" data-idx="' + i + '" data-ctx="' + esc(context) + '">\u2715</button>';
-      } else {
-        var domain = item.entity_id ? item.entity_id.split('.')[0] : '';
-        var showVisualBtn = (domain === 'sensor' || domain === 'binary_sensor' || domain === 'light');
-        html += '<div class="selected-entity-info">';
-        html += '<span class="selected-id">' + esc(item.entity_id) + '</span>';
-        html += '<input type="text" class="item-label-input" placeholder="Display name\u2026" value="' + esc(item.label || '') + '" data-idx="' + i + '" data-ctx="' + esc(context) + '">';
-        if (showVisualBtn) {
-          var currentVt = item.visual_type || '';
-          var vtLabel = _getVisualTypeLabel(currentVt, domain);
-          html += '<button class="item-visual-btn" type="button" data-idx="' + i + '" data-ctx="' + esc(context) + '" data-domain="' + esc(domain) + '">';
-          html += '<span class="item-visual-icon">&#9681;</span>';
-          html += '<span class="item-visual-label">' + esc(vtLabel) + '</span>';
-          html += '</button>';
-        }
-        html += '</div>';
-        html += '<div class="selected-actions">';
-        html += '<button class="item-visibility-btn" type="button" title="' + (isHidden ? 'Show' : 'Hide') + '" data-idx="' + i + '" data-ctx="' + esc(context) + '">' + (isHidden ? (window.RP_MDI ? window.RP_MDI('eye-off', 18) : '\uD83D\uDE48') : (window.RP_MDI ? window.RP_MDI('eye', 18) : '\uD83D\uDC41')) + '</button>';
-        if (i > 0) {
-          html += '<button class="reorder-btn" type="button" data-action="up" data-idx="' + i + '" data-ctx="' + esc(context) + '">\u2191</button>';
-        }
-        if (i < items.length - 1) {
-          html += '<button class="reorder-btn" type="button" data-action="down" data-idx="' + i + '" data-ctx="' + esc(context) + '">\u2193</button>';
-        }
-        html += '<button class="remove-btn" type="button" data-idx="' + i + '" data-ctx="' + esc(context) + '">\u2715</button>';
+        return `<div class="selected-row" data-idx="${i}" data-ctx="${esc(context)}">
+          <span class="item-drag-handle">&#9776;</span>
+          <span class="selected-id selected-id-energy">&#9889; Power Flow Card</span>
+          <div class="selected-actions">
+            <button class="edit-energy-btn action-btn-sm" type="button" data-idx="${i}" data-ctx="${esc(context)}">Edit</button>
+            <button class="remove-btn" type="button" data-idx="${i}" data-ctx="${esc(context)}">&#10005;</button>
+          </div>
+        </div>`;
       }
-      html += '</div></div>';
-    }
-    container.innerHTML = html;
+      const domain = item.entity_id ? item.entity_id.split('.')[0] : '';
+      const showVisualBtn = domain === 'sensor' || domain === 'binary_sensor' || domain === 'light';
+      const vtLabel = showVisualBtn ? _getVisualTypeLabel(item.visual_type || '', domain) : '';
+      const eyeIcon = isHidden
+        ? (window.RP_MDI ? window.RP_MDI('eye-off', 18) : '&#128584;')
+        : (window.RP_MDI ? window.RP_MDI('eye', 18) : '&#128065;');
+      return `<div class="selected-row${isHidden ? ' selected-row--hidden' : ''}" data-idx="${i}" data-ctx="${esc(context)}">
+        <span class="item-drag-handle">&#9776;</span>
+        <div class="selected-entity-info">
+          <span class="selected-id">${esc(item.entity_id)}</span>
+          <input type="text" class="item-label-input" placeholder="Display name\u2026" value="${esc(item.label || '')}" data-idx="${i}" data-ctx="${esc(context)}">
+          ${showVisualBtn ? `<button class="item-visual-btn" type="button" data-idx="${i}" data-ctx="${esc(context)}" data-domain="${esc(domain)}">
+            <span class="item-visual-icon">&#9681;</span>
+            <span class="item-visual-label">${esc(vtLabel)}</span>
+          </button>` : ''}
+        </div>
+        <div class="selected-actions">
+          <button class="item-visibility-btn" type="button" title="${isHidden ? 'Show' : 'Hide'}" data-idx="${i}" data-ctx="${esc(context)}">${eyeIcon}</button>
+          <button class="remove-btn" type="button" data-idx="${i}" data-ctx="${esc(context)}">&#10005;</button>
+        </div>
+      </div>`;
+    }).join('');
 
-    container.querySelectorAll('.reorder-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var idx = parseInt(this.getAttribute('data-idx'), 10);
-        var ctx = this.getAttribute('data-ctx');
-        var delta = this.getAttribute('data-action') === 'up' ? -1 : 1;
-        reorderItem(ctx, idx, delta);
+    initItemDragDrop(container, context, items);
+
+    container.querySelectorAll('.remove-btn').forEach(btn => {
+      btn.addEventListener('click', () => removeItem(btn.getAttribute('data-ctx'), parseInt(btn.getAttribute('data-idx'), 10)));
+    });
+
+    container.querySelectorAll('.item-visibility-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.getAttribute('data-idx'), 10);
+        const ctx = btn.getAttribute('data-ctx');
+        const its = getItemsForContext(ctx);
+        if (its[idx]) { its[idx].hidden = !its[idx].hidden; refreshItemsList(ctx); }
       });
     });
 
-    container.querySelectorAll('.remove-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var idx = parseInt(this.getAttribute('data-idx'), 10);
-        var ctx = this.getAttribute('data-ctx');
-        removeItem(ctx, idx);
+    container.querySelectorAll('.edit-energy-btn').forEach(btn => {
+      btn.addEventListener('click', () => openEnergyEditor(btn.getAttribute('data-ctx'), parseInt(btn.getAttribute('data-idx'), 10)));
+    });
+
+    container.querySelectorAll('.item-label-input').forEach(input => {
+      input.addEventListener('change', () => {
+        const its = getItemsForContext(input.getAttribute('data-ctx'));
+        const idx = parseInt(input.getAttribute('data-idx'), 10);
+        if (its[idx]) { its[idx].label = input.value.trim(); }
       });
     });
 
-    container.querySelectorAll('.item-visibility-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var idx = parseInt(this.getAttribute('data-idx'), 10);
-        var ctx = this.getAttribute('data-ctx');
-        var items = getItemsForContext(ctx);
-        if (items[idx]) {
-          items[idx].hidden = !items[idx].hidden;
-          refreshItemsList(ctx);
+    container.querySelectorAll('.item-visual-btn').forEach(btn => {
+      btn.addEventListener('click', () => _openVisualTypePicker(
+        parseInt(btn.getAttribute('data-idx'), 10), btn.getAttribute('data-ctx'), btn.getAttribute('data-domain'), btn
+      ));
+    });
+  }
+
+  function initItemDragDrop(container, ctx, items) {
+    let dragIdx = -1;
+    let ghostEl = null;
+    let startY = 0;
+    let rowEls = [];
+    let rowRects = [];
+    let crossSecTarget = null;
+
+    const sectionsCol = ctx === 'section' ? qs('room-sections-list') : null;
+    const getSectionRows = () => sectionsCol ? [...sectionsCol.querySelectorAll('.section-row')] : [];
+
+    const calcTargetIdx = (dy) => {
+      const ghostCenter = rowRects[dragIdx].top + dy + rowRects[dragIdx].height / 2;
+      return rowRects.reduce((t, rc, i) => ghostCenter > rc.top + rc.height / 2 ? i : t, dragIdx);
+    };
+
+    const clearIndicators = () => {
+      rowEls.forEach(r => r.classList.remove('selected-row--insert-before', 'selected-row--insert-after'));
+      getSectionRows().forEach(r => r.classList.remove('section-row--drop-target'));
+      crossSecTarget = null;
+    };
+
+    const updateIndicator = (e) => {
+      clearIndicators();
+      if (sectionsCol) {
+        const colRect = sectionsCol.getBoundingClientRect();
+        if (e.clientX >= colRect.left && e.clientX <= colRect.right &&
+            e.clientY >= colRect.top  && e.clientY <= colRect.bottom) {
+          for (const sr of getSectionRows()) {
+            const rc = sr.getBoundingClientRect();
+            if (e.clientY >= rc.top && e.clientY <= rc.bottom) {
+              if (sr.getAttribute('data-id') !== editingSectionId) {
+                sr.classList.add('section-row--drop-target');
+                crossSecTarget = sr;
+              }
+              break;
+            }
+          }
+          return;
         }
-      });
-    });
+      }
+      // Within-list indicator
+      const tIdx = calcTargetIdx(e.clientY - startY);
+      if (tIdx < dragIdx) { rowEls[tIdx]?.classList.add('selected-row--insert-before'); }
+      else if (tIdx > dragIdx) { rowEls[tIdx]?.classList.add('selected-row--insert-after'); }
+    };
 
-    container.querySelectorAll('.edit-energy-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var idx = parseInt(this.getAttribute('data-idx'), 10);
-        var ctx = this.getAttribute('data-ctx');
-        openEnergyEditor(ctx, idx);
-      });
-    });
+    const onDragStart = (e, handle) => {
+      const row = handle.parentNode;
+      rowEls = [...container.querySelectorAll('.selected-row')];
+      dragIdx = rowEls.indexOf(row);
+      if (dragIdx < 0) { return; }
+      startY = e.clientY;
+      rowRects = rowEls.map(r => r.getBoundingClientRect());
+      const rect = rowRects[dragIdx];
+      ghostEl = row.cloneNode(true);
+      ghostEl.classList.add('drag-ghost');
+      ghostEl.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;z-index:9999;pointer-events:none;`;
+      document.body.appendChild(ghostEl);
+      row.classList.add('selected-row--dragging');
+      e.preventDefault();
+    };
 
-    container.querySelectorAll('.item-label-input').forEach(function (input) {
-      input.addEventListener('change', function () {
-        var idx = parseInt(this.getAttribute('data-idx'), 10);
-        var ctx = this.getAttribute('data-ctx');
-        var items = getItemsForContext(ctx);
-        if (items[idx]) {
-          items[idx].label = this.value.trim();
+    const onDragMove = (e) => {
+      if (dragIdx < 0 || !ghostEl) { return; }
+      ghostEl.style.top = `${rowRects[dragIdx].top + (e.clientY - startY)}px`;
+      updateIndicator(e);
+    };
+
+    const onDragEnd = (e) => {
+      if (dragIdx < 0) { return; }
+      const targetSecId = crossSecTarget?.getAttribute('data-id') ?? null;
+      const targetIdx = calcTargetIdx(e.clientY - startY);
+
+      rowEls.forEach(r => r.classList.remove('selected-row--dragging', 'selected-row--insert-before', 'selected-row--insert-after'));
+      getSectionRows().forEach(r => r.classList.remove('section-row--drop-target'));
+      ghostEl?.remove();
+      ghostEl = null;
+      const fromIdx = dragIdx;
+      dragIdx = -1;
+      crossSecTarget = null;
+
+      if (targetSecId) {
+        const [moved] = items.splice(fromIdx, 1);
+        const targetSec = activeRoomSections().find(s => s.id === targetSecId);
+        if (targetSec) {
+          targetSec.items.push(moved);
+          selectSection(targetSecId);
+        } else {
+          items.splice(fromIdx, 0, moved); // rollback
         }
-      });
-    });
+      } else if (targetIdx !== fromIdx) {
+        const [moved] = items.splice(fromIdx, 1);
+        items.splice(targetIdx, 0, moved);
+        refreshItemsList(ctx);
+      }
+    };
 
-    container.querySelectorAll('.item-visual-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var idx = parseInt(this.getAttribute('data-idx'), 10);
-        var ctx = this.getAttribute('data-ctx');
-        var domain = this.getAttribute('data-domain');
-        _openVisualTypePicker(idx, ctx, domain, this);
+    container.querySelectorAll('.item-drag-handle').forEach(handle => {
+      handle.addEventListener('mousedown', (e) => {
+        onDragStart(e, handle);
+        const onMove = (e) => onDragMove(e);
+        const onUp   = (e) => { onDragEnd(e); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
       });
     });
   }
