@@ -1,9 +1,34 @@
 /* ============================================================
-   config.css — Entity picker configuration page
+   config.css — Settings page (Retro Panel v2.0)
    ============================================================ */
 
-/* Override base.css overflow:hidden so the config page scrolls */
-html, body { overflow: auto; height: auto; }
+/* Token aliases — config.css was written with --color-* names;
+   map them to the v2.0 design tokens from tokens.css */
+:root {
+  --color-bg:             var(--c-bg);
+  --color-surface:        var(--c-surface);
+  --color-surface-2:      var(--c-surface-2);
+  --color-surface-3:      var(--c-surface-3);
+  --color-text-primary:   var(--c-text-pri);
+  --color-text-secondary: var(--c-text-sec);
+  --color-accent:         var(--c-accent);
+  --color-accent-bg:      var(--c-accent-bg);
+  --color-on:             var(--c-on);
+  --color-danger:         var(--c-danger);
+  --color-warning:        var(--c-warning);
+}
+
+/* Base page styles (base.css removed in v2.0) */
+html, body {
+  overflow: auto;
+  height: auto;
+  background-color: var(--c-bg);
+  color: var(--c-text-pri);
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  margin: 0;
+  padding: 0;
+}
 
 /* ---- Header ---- */
 #cfg-header {

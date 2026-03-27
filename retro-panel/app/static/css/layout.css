@@ -320,10 +320,9 @@ html, body {
 /* Sidebar spacer pushes settings to bottom */
 .sidebar-spacer { -webkit-flex: 1; flex: 1; }
 
-/* Sidebar settings link */
+/* Sidebar settings link — hidden on touch/tablet, visible on desktop mouse */
 .sidebar-settings {
-  display: -webkit-flex;
-  display: flex;
+  display: none;
   -webkit-align-items: center;
   align-items: center;
   padding: 10px 12px;
@@ -341,6 +340,13 @@ html, body {
 }
 .sidebar-settings:active { background: var(--c-surface-2); }
 .sidebar-settings .sidebar-item-label { margin-left: 10px; }
+
+@media (hover: hover) and (pointer: fine) {
+  .sidebar-settings {
+    display: -webkit-flex;
+    display: flex;
+  }
+}
 
 /* Header info (date + clock) */
 #header-info {
