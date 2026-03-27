@@ -243,9 +243,6 @@
       const domain = item.entity_id ? item.entity_id.split('.')[0] : '';
       const showVisualBtn = domain === 'sensor' || domain === 'binary_sensor' || domain === 'light';
       const vtLabel = showVisualBtn ? _getVisualTypeLabel(item.visual_type || '', domain) : '';
-      const eyeIcon = isHidden
-        ? (window.RP_MDI ? window.RP_MDI('eye-off', 18) : '&#128584;')
-        : (window.RP_MDI ? window.RP_MDI('eye', 18) : '&#128065;');
       return `<div class="selected-row${isHidden ? ' selected-row--hidden' : ''}" data-idx="${i}" data-ctx="${esc(context)}">
         <span class="item-drag-handle">&#9776;</span>
         <div class="selected-entity-info">
@@ -257,7 +254,10 @@
           </button>` : ''}
         </div>
         <div class="selected-actions">
-          <button class="item-visibility-btn" type="button" title="${isHidden ? 'Show' : 'Hide'}" data-idx="${i}" data-ctx="${esc(context)}">${eyeIcon}</button>
+          <label class="toggle-wrap" title="${isHidden ? 'Hidden' : 'Visible'}">
+            <input type="checkbox" class="item-visible-toggle" data-idx="${i}" data-ctx="${esc(context)}"${isHidden ? '' : ' checked'}>
+            <span class="toggle-slider"></span>
+          </label>
           <button class="remove-btn" type="button" data-idx="${i}" data-ctx="${esc(context)}">&#10005;</button>
         </div>
       </div>`;
@@ -269,12 +269,11 @@
       btn.addEventListener('click', () => removeItem(btn.getAttribute('data-ctx'), parseInt(btn.getAttribute('data-idx'), 10)));
     });
 
-    container.querySelectorAll('.item-visibility-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = parseInt(btn.getAttribute('data-idx'), 10);
-        const ctx = btn.getAttribute('data-ctx');
-        const its = getItemsForContext(ctx);
-        if (its[idx]) { its[idx].hidden = !its[idx].hidden; refreshItemsList(ctx); }
+    container.querySelectorAll('.item-visible-toggle').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const its = getItemsForContext(cb.getAttribute('data-ctx'));
+        const idx = parseInt(cb.getAttribute('data-idx'), 10);
+        if (its[idx]) { its[idx].hidden = !cb.checked; refreshItemsList(cb.getAttribute('data-ctx')); }
       });
     });
 
