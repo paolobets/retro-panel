@@ -58,7 +58,7 @@ async def get_all_entities(request: web.Request) -> web.Response:
         all_entities: list[dict] = json.loads(raw)
     except Exception as exc:
         logger.error("Failed to fetch entities from HA template API: %s", exc)
-        return web.json_response({"error": "Failed to fetch entities from HA"}, status=502)
+        return web.json_response({"error": f"Cannot reach HA: {exc}"}, status=502)
 
     # Cross-reference the entity registry to exclude hidden or disabled entities.
     # The HA `states` variable includes hidden entities — hidden_by / disabled_by

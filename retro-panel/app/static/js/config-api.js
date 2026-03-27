@@ -13,7 +13,13 @@ function cfgFetchPanelConfig() {
 
 function cfgFetchEntities() {
   return fetch('api/entities').then(function (r) {
-    if (!r.ok) { throw new Error('Failed to load entities (' + r.status + ')'); }
+    if (!r.ok) {
+      return r.json().then(function (body) {
+        throw new Error(body && body.error ? body.error : 'Failed to load entities (' + r.status + ')');
+      }, function () {
+        throw new Error('Failed to load entities (' + r.status + ')');
+      });
+    }
     return r.json();
   });
 }
