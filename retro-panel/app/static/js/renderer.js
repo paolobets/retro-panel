@@ -321,6 +321,7 @@ window.RP_Renderer = (function () {
     for (var i = 0; i < items.length; i++) {
       if (items[i].hidden) { continue; }
       try {
+        if (!window.ScenarioComponent) { continue; }
         var tile;
         if (window.ScenarioComponent.createTile) {
           tile = window.ScenarioComponent.createTile(items[i]);
@@ -344,6 +345,7 @@ window.RP_Renderer = (function () {
     for (var i = 0; i < items.length; i++) {
       if (items[i].hidden) { continue; }
       try {
+        if (!window.CameraComponent) { continue; }
         var tile = window.CameraComponent.createTile(items[i]);
         container.appendChild(tile);
       } catch (err) {
@@ -420,7 +422,11 @@ window.RP_Renderer = (function () {
         titleEl.textContent = section.title;
         sectionHeader.appendChild(titleEl);
         var countEl = DOM.createElement('span', 'room-section-count');
-        countEl.textContent = String(items.length);
+        var visCount = 0;
+        for (var vi = 0; vi < items.length; vi++) {
+          if (!items[vi].hidden) { visCount++; }
+        }
+        countEl.textContent = String(visCount);
         sectionHeader.appendChild(countEl);
         var lineEl = DOM.createElement('span', 'room-section-line');
         sectionHeader.appendChild(lineEl);

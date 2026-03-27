@@ -111,6 +111,14 @@ async def get_panel_config(request: web.Request) -> web.Response:
             }
             for sec in config.camera_sections
         ],
+        "scenarios_section": {
+            "title": config.scenarios_section_title,
+            "icon":  config.scenarios_section_icon,
+        },
+        "cameras_section": {
+            "title": config.cameras_section_title,
+            "icon":  config.cameras_section_icon,
+        },
     }
 
     logger.debug(
