@@ -35,53 +35,89 @@
          ══════════════════════════════════════════════ -->
     <section id="tab-overview" class="cfg-section">
 
-      <div class="section-header">
-        <h2 class="section-title">Overview</h2>
-      </div>
-      <p class="cfg-hint">Items shown on the home section. Add your most important devices here.</p>
+  <div class="section-header">
+    <h2 class="section-title">Overview</h2>
+  </div>
+  <p class="cfg-hint">Organise your home screen into named sections. Add entities to each section.</p>
 
-      <div id="overview-body">
+  <div class="field-group" style="margin-bottom:12px;">
+    <div class="field-row">
+      <label class="field-label" for="overview-title-input">Section name</label>
+      <input id="overview-title-input" type="text" class="field-input"
+        maxlength="32" autocomplete="off" autocorrect="off"
+        autocapitalize="words" spellcheck="false" placeholder="Overview">
+    </div>
+    <div class="field-row">
+      <label class="field-label">Icon</label>
+      <input id="overview-icon-value" type="hidden" value="home">
+      <button id="overview-icon-btn" type="button" class="icon-picker-btn">
+        <span id="overview-icon-preview" class="icon-picker-btn-icon"></span>
+        <span id="overview-icon-name" class="icon-picker-btn-label">home</span>
+        <span class="icon-picker-chevron" aria-hidden="true">&#8964;</span>
+      </button>
+    </div>
+  </div>
 
-        <!-- Left: entity list -->
-        <div id="overview-left">
-          <div class="field-group" style="margin-bottom:12px;">
-            <div class="field-row">
-              <label class="field-label" for="overview-title-input">Section name</label>
-              <input id="overview-title-input" type="text" class="field-input"
-                maxlength="32" autocomplete="off" autocorrect="off"
-                autocapitalize="words" spellcheck="false" placeholder="Overview">
-            </div>
-            <div class="field-row">
-              <label class="field-label">Icon</label>
-              <input id="overview-icon-value" type="hidden" value="home">
-              <button id="overview-icon-btn" type="button" class="icon-picker-btn">
-                <span id="overview-icon-preview" class="icon-picker-btn-icon"></span>
-                <span id="overview-icon-name" class="icon-picker-btn-label">home</span>
-                <span class="icon-picker-chevron" aria-hidden="true">&#8964;</span>
-              </button>
-            </div>
-          </div>
-          <div id="overview-items-list">
-            <p class="cfg-placeholder">No items yet.</p>
-          </div>
-          <div class="items-actions">
-            <button id="ov-add-entity-btn" type="button" class="action-btn">+ Add Entities</button>
-            <button id="ov-add-energy-btn" type="button" class="action-btn">+ Add Power Flow Card</button>
-          </div>
-        </div>
+  <!-- Editor + Preview side by side (same as room-editor-body) -->
+  <div id="overview-editor-body" class="room-editor-body">
 
-        <!-- Right: live preview -->
-        <div id="overview-right">
-          <div class="cfg-preview-section">
-            <div class="cfg-preview-header">
-              <span class="cfg-preview-label">Overview Preview</span>
-              <span class="live-badge">&#9679; LIVE</span>
-            </div>
-            <div class="cfg-preview-box" id="overview-live-preview"></div>
+    <!-- Left 50%: sections list + entity editor -->
+    <div id="overview-editor-left" class="room-editor-left">
+      <div id="ov-sections-editor" class="sections-editor">
+
+        <!-- Col left: sections list -->
+        <div id="ov-sections-col-left" class="sections-col-left">
+          <div class="sections-col-header">
+            <span class="sections-col-label">Sections</span>
+            <button id="ov-add-section-btn" type="button" class="action-btn-sm">+ Add</button>
+          </div>
+          <div id="ov-sections-list">
+            <p class="cfg-placeholder">No sections.</p>
           </div>
         </div>
 
+        <!-- Col right: section detail -->
+        <div id="ov-sections-col-right" class="sections-col-right">
+          <div id="ov-section-detail-placeholder" class="section-detail-placeholder">
+            <p>Select a section to edit its entities.</p>
+          </div>
+          <div id="ov-section-detail-content" class="hidden">
+            <div class="field-group" style="margin-bottom:12px;">
+              <div class="field-row">
+                <label class="field-label" for="ov-section-title-input">Section name</label>
+                <input id="ov-section-title-input" type="text" class="field-input"
+                  maxlength="64" autocomplete="off" autocorrect="off"
+                  autocapitalize="words" spellcheck="false" placeholder="e.g. Lights, Climate…">
+              </div>
+            </div>
+            <div class="section-entities-header">
+              <span class="sections-col-label">Entities <span id="ov-section-items-count">0</span></span>
+            </div>
+            <div id="ov-section-items-list">
+              <p class="cfg-placeholder">No entities in this section.</p>
+            </div>
+            <div class="items-actions">
+              <button id="ov-add-entity-btn" type="button" class="action-btn">+ Add Entities</button>
+              <button id="ov-add-energy-btn" type="button" class="action-btn">+ Add Power Flow Card</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /ov-sections-editor -->
+    </div><!-- /overview-editor-left -->
+
+    <!-- Right 50%: live preview -->
+    <div id="overview-editor-right" class="room-editor-right">
+      <div class="cfg-preview-section">
+        <div class="cfg-preview-header">
+          <span class="cfg-preview-label">Overview Preview</span>
+          <span class="live-badge">&#9679; LIVE</span>
+        </div>
+        <div class="cfg-preview-box" id="overview-live-preview"></div>
       </div>
+    </div>
+
+  </div><!-- /overview-editor-body -->
 
     </section>
 
@@ -206,52 +242,83 @@
          ══════════════════════════════════════════════ -->
     <section id="tab-scenarios" class="cfg-section hidden">
 
-      <div class="section-header">
-        <h2 class="section-title">Scenarios</h2>
-      </div>
-      <p class="cfg-hint">Select scenes and scripts to show in the Scenarios section. Tap a scenario card to activate it.</p>
+  <div class="section-header">
+    <h2 class="section-title">Scenarios</h2>
+  </div>
+  <p class="cfg-hint">Group scenes and scripts into named sections. Tap a scenario to activate it.</p>
 
-      <div id="scenarios-body">
+  <div class="field-group" style="margin-bottom:12px;">
+    <div class="field-row">
+      <label class="field-label" for="scenarios-title-input">Section name</label>
+      <input id="scenarios-title-input" type="text" class="field-input"
+        maxlength="32" autocomplete="off" autocorrect="off"
+        autocapitalize="words" spellcheck="false" placeholder="Scenarios">
+    </div>
+    <div class="field-row">
+      <label class="field-label">Icon</label>
+      <input id="scenarios-icon-value" type="hidden" value="palette">
+      <button id="scenarios-icon-btn" type="button" class="icon-picker-btn">
+        <span id="scenarios-icon-preview" class="icon-picker-btn-icon"></span>
+        <span id="scenarios-icon-name" class="icon-picker-btn-label">palette</span>
+        <span class="icon-picker-chevron" aria-hidden="true">&#8964;</span>
+      </button>
+    </div>
+  </div>
 
-        <!-- Left: list + settings -->
-        <div id="scenarios-left">
-          <div class="field-group" style="margin-bottom:12px;">
-            <div class="field-row">
-              <label class="field-label" for="scenarios-title-input">Section name</label>
-              <input id="scenarios-title-input" type="text" class="field-input"
-                maxlength="32" autocomplete="off" autocorrect="off"
-                autocapitalize="words" spellcheck="false" placeholder="Scenarios">
-            </div>
-            <div class="field-row">
-              <label class="field-label">Icon</label>
-              <input id="scenarios-icon-value" type="hidden" value="palette">
-              <button id="scenarios-icon-btn" type="button" class="icon-picker-btn">
-                <span id="scenarios-icon-preview" class="icon-picker-btn-icon"></span>
-                <span id="scenarios-icon-name" class="icon-picker-btn-label">palette</span>
-                <span class="icon-picker-chevron" aria-hidden="true">&#8964;</span>
-              </button>
-            </div>
-          </div>
-          <div id="scenarios-list">
-            <p class="cfg-placeholder">No scenarios configured.</p>
-          </div>
-          <div class="items-actions">
-            <button id="add-scenario-btn" type="button" class="action-btn">+ Add Scenario</button>
-          </div>
-        </div>
+  <div id="scenarios-editor-body" class="room-editor-body">
 
-        <!-- Right: live preview -->
-        <div id="scenarios-right">
-          <div class="cfg-preview-section">
-            <div class="cfg-preview-header">
-              <span class="cfg-preview-label">Scenarios Preview</span>
-              <span class="live-badge">&#9679; LIVE</span>
-            </div>
-            <div class="cfg-preview-box" id="scenarios-live-preview"></div>
+    <div id="scenarios-editor-left" class="room-editor-left">
+      <div id="sc-sections-editor" class="sections-editor">
+
+        <div id="sc-sections-col-left" class="sections-col-left">
+          <div class="sections-col-header">
+            <span class="sections-col-label">Sections</span>
+            <button id="sc-add-section-btn" type="button" class="action-btn-sm">+ Add</button>
+          </div>
+          <div id="sc-sections-list">
+            <p class="cfg-placeholder">No sections.</p>
           </div>
         </div>
 
+        <div id="sc-sections-col-right" class="sections-col-right">
+          <div id="sc-section-detail-placeholder" class="section-detail-placeholder">
+            <p>Select a section to edit its scenarios.</p>
+          </div>
+          <div id="sc-section-detail-content" class="hidden">
+            <div class="field-group" style="margin-bottom:12px;">
+              <div class="field-row">
+                <label class="field-label" for="sc-section-title-input">Section name</label>
+                <input id="sc-section-title-input" type="text" class="field-input"
+                  maxlength="64" autocomplete="off" autocorrect="off"
+                  autocapitalize="words" spellcheck="false" placeholder="e.g. Morning, Evening…">
+              </div>
+            </div>
+            <div class="section-entities-header">
+              <span class="sections-col-label">Scenarios <span id="sc-section-items-count">0</span></span>
+            </div>
+            <div id="sc-section-items-list">
+              <p class="cfg-placeholder">No scenarios in this section.</p>
+            </div>
+            <div class="items-actions">
+              <button id="sc-add-scenario-btn" type="button" class="action-btn">+ Add Scenario</button>
+            </div>
+          </div>
+        </div>
+
       </div>
+    </div>
+
+    <div id="scenarios-editor-right" class="room-editor-right">
+      <div class="cfg-preview-section">
+        <div class="cfg-preview-header">
+          <span class="cfg-preview-label">Scenarios Preview</span>
+          <span class="live-badge">&#9679; LIVE</span>
+        </div>
+        <div class="cfg-preview-box" id="scenarios-live-preview"></div>
+      </div>
+    </div>
+
+  </div>
 
     </section>
 
@@ -260,52 +327,83 @@
          ══════════════════════════════════════════════ -->
     <section id="tab-cameras" class="cfg-section hidden">
 
-      <div class="section-header">
-        <h2 class="section-title">Telecamere</h2>
-      </div>
-      <p class="cfg-hint">Aggiungi le telecamere da mostrare nel pannello. Puoi impostare un nome e l'intervallo di aggiornamento.</p>
+  <div class="section-header">
+    <h2 class="section-title">Telecamere</h2>
+  </div>
+  <p class="cfg-hint">Raggruppa le telecamere in sezioni nominate. Ogni sezione appare con un'intestazione nel pannello.</p>
 
-      <div id="cameras-body">
+  <div class="field-group" style="margin-bottom:12px;">
+    <div class="field-row">
+      <label class="field-label" for="cameras-title-input">Section name</label>
+      <input id="cameras-title-input" type="text" class="field-input"
+        maxlength="32" autocomplete="off" autocorrect="off"
+        autocapitalize="words" spellcheck="false" placeholder="Telecamere">
+    </div>
+    <div class="field-row">
+      <label class="field-label">Icon</label>
+      <input id="cameras-icon-value" type="hidden" value="cctv">
+      <button id="cameras-icon-btn" type="button" class="icon-picker-btn">
+        <span id="cameras-icon-preview" class="icon-picker-btn-icon"></span>
+        <span id="cameras-icon-name" class="icon-picker-btn-label">cctv</span>
+        <span class="icon-picker-chevron" aria-hidden="true">&#8964;</span>
+      </button>
+    </div>
+  </div>
 
-        <!-- Left: list + settings -->
-        <div id="cameras-left">
-          <div class="field-group" style="margin-bottom:12px;">
-            <div class="field-row">
-              <label class="field-label" for="cameras-title-input">Section name</label>
-              <input id="cameras-title-input" type="text" class="field-input"
-                maxlength="32" autocomplete="off" autocorrect="off"
-                autocapitalize="words" spellcheck="false" placeholder="Telecamere">
-            </div>
-            <div class="field-row">
-              <label class="field-label">Icon</label>
-              <input id="cameras-icon-value" type="hidden" value="cctv">
-              <button id="cameras-icon-btn" type="button" class="icon-picker-btn">
-                <span id="cameras-icon-preview" class="icon-picker-btn-icon"></span>
-                <span id="cameras-icon-name" class="icon-picker-btn-label">cctv</span>
-                <span class="icon-picker-chevron" aria-hidden="true">&#8964;</span>
-              </button>
-            </div>
-          </div>
-          <div id="cameras-list">
-            <p class="cfg-placeholder">Nessuna telecamera configurata.</p>
-          </div>
-          <div class="items-actions">
-            <button id="add-camera-btn" type="button" class="action-btn">+ Aggiungi Telecamera</button>
-          </div>
-        </div>
+  <div id="cameras-editor-body" class="room-editor-body">
 
-        <!-- Right: live preview -->
-        <div id="cameras-right">
-          <div class="cfg-preview-section">
-            <div class="cfg-preview-header">
-              <span class="cfg-preview-label">Cameras Preview</span>
-              <span class="live-badge">&#9679; LIVE</span>
-            </div>
-            <div class="cfg-preview-box" id="cameras-live-preview"></div>
+    <div id="cameras-editor-left" class="room-editor-left">
+      <div id="cam-sections-editor" class="sections-editor">
+
+        <div id="cam-sections-col-left" class="sections-col-left">
+          <div class="sections-col-header">
+            <span class="sections-col-label">Sections</span>
+            <button id="cam-add-section-btn" type="button" class="action-btn-sm">+ Add</button>
+          </div>
+          <div id="cam-sections-list">
+            <p class="cfg-placeholder">No sections.</p>
           </div>
         </div>
 
+        <div id="cam-sections-col-right" class="sections-col-right">
+          <div id="cam-section-detail-placeholder" class="section-detail-placeholder">
+            <p>Seleziona una sezione per modificarne le telecamere.</p>
+          </div>
+          <div id="cam-section-detail-content" class="hidden">
+            <div class="field-group" style="margin-bottom:12px;">
+              <div class="field-row">
+                <label class="field-label" for="cam-section-title-input">Section name</label>
+                <input id="cam-section-title-input" type="text" class="field-input"
+                  maxlength="64" autocomplete="off" autocorrect="off"
+                  autocapitalize="words" spellcheck="false" placeholder="e.g. Esterne, Interne…">
+              </div>
+            </div>
+            <div class="section-entities-header">
+              <span class="sections-col-label">Telecamere <span id="cam-section-items-count">0</span></span>
+            </div>
+            <div id="cam-section-items-list">
+              <p class="cfg-placeholder">Nessuna telecamera in questa sezione.</p>
+            </div>
+            <div class="items-actions">
+              <button id="cam-add-camera-btn" type="button" class="action-btn">+ Aggiungi Telecamera</button>
+            </div>
+          </div>
+        </div>
+
       </div>
+    </div>
+
+    <div id="cameras-editor-right" class="room-editor-right">
+      <div class="cfg-preview-section">
+        <div class="cfg-preview-header">
+          <span class="cfg-preview-label">Cameras Preview</span>
+          <span class="live-badge">&#9679; LIVE</span>
+        </div>
+        <div class="cfg-preview-box" id="cameras-live-preview"></div>
+      </div>
+    </div>
+
+  </div>
 
     </section>
 
