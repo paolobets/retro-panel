@@ -1484,37 +1484,44 @@ html, body {
   font-family: inherit;
 }
 
-#room-editor-body {
+#room-editor-body,
+.room-editor-body {
   display: flex;
   gap: 20px;
   align-items: flex-start;
   margin-top: 16px;
 }
 
-#room-editor-left {
+#room-editor-left,
+.room-editor-left {
   flex: 1 1 50%;
   min-width: 0;
 }
 
-#room-editor-right {
+#room-editor-right,
+.room-editor-right {
   flex: 1 1 50%;
   min-width: 0;
   position: sticky;
   top: 70px;
 }
 
-#room-editor-right .cfg-preview-section {
+#room-editor-right .cfg-preview-section,
+.room-editor-right .cfg-preview-section {
   margin-top: 0;
 }
 
-#sections-editor {
+#sections-editor,
+.sections-editor {
   display: flex;
   min-height: 300px;
 }
 
-#sections-editor > * + * { margin-left: 16px; }
+#sections-editor > * + *,
+.sections-editor > * + * { margin-left: 16px; }
 
-#sections-col-left {
+#sections-col-left,
+.sections-col-left {
   width: 200px;
   min-width: 160px;
   flex-shrink: 0;
@@ -1522,7 +1529,8 @@ html, body {
   flex-direction: column;
 }
 
-#sections-col-right {
+#sections-col-right,
+.sections-col-right {
   flex: 1;
   min-width: 0;
 }
@@ -1624,35 +1632,29 @@ html, body {
 
 @media (max-width: 900px) {
   #room-editor-body,
-  #overview-body,
-  #scenarios-body,
-  #cameras-body {
+  .room-editor-body {
     flex-direction: column;
   }
   #room-editor-left,
   #room-editor-right,
-  #overview-left,
-  #overview-right,
-  #scenarios-left,
-  #scenarios-right,
-  #cameras-left,
-  #cameras-right {
+  .room-editor-left,
+  .room-editor-right {
     flex: none;
     width: 100%;
   }
   #room-editor-right,
-  #overview-right,
-  #scenarios-right,
-  #cameras-right {
+  .room-editor-right {
     position: static;
   }
 }
 
 @media (max-width: 600px) {
-  #sections-editor {
+  #sections-editor,
+  .sections-editor {
     flex-direction: column;
   }
-  #sections-col-left {
+  #sections-col-left,
+  .sections-col-left {
     width: 100%;
     min-width: 0;
   }
