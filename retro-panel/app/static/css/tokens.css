@@ -1,0 +1,41 @@
+/* ============================================================
+   Retro Panel 2.0 — Design Tokens
+   ============================================================ */
+:root {
+  /* Dark theme (default) */
+  --c-bg:           #0f0f0f;
+  --c-surface:      #1a1a1a;
+  --c-surface-2:    #252525;
+  --c-surface-3:    #2e2e2e;
+  --c-text-pri:     #f0f0f0;
+  --c-text-sec:     #999999;
+  --c-accent:       #2196f3;
+  --c-accent-bg:    rgba(33,150,243,0.10);
+  --c-on:           #4caf50;
+  --c-danger:       #f44336;
+  --c-warning:      #ff9800;
+  --c-light-on:     #FFB700;
+  --c-light-on-bg:  rgba(255,183,0,0.12);
+  --c-binary-alert: #FF6B00;
+  --c-temp-fill:    #ef6c00;
+  --c-humid-fill:   #1e88e5;
+
+  /* Shape */
+  --radius:         14px;
+  --radius-sm:      8px;
+
+  /* Layout */
+  --sidebar-w:      200px;
+  --sidebar-w-sm:   64px;
+  --header-h:       56px;
+}
+
+/* Light theme */
+body.theme-light {
+  --c-bg:        #f0f2f5;
+  --c-surface:   #ffffff;
+  --c-surface-2: #e8eaed;
+  --c-surface-3: #dde0e5;
+  --c-text-pri:  #111111;
+  --c-text-sec:  #555555;
+}

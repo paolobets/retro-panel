@@ -1,9 +1,12 @@
 /**
  * energy.js — Power Flow Card component
+ * Retro Panel v2.0
+ *
  * Shows solar production, battery SOC/power, grid import/export, home consumption.
  * All sensors are configured by the user — nothing is hardcoded.
  *
- * No ES modules — loaded as regular script. iOS 15 Safari safe.
+ * No ES modules — IIFE + window global. iOS 12+ Safari safe.
+ * No const/let/=>/?./?? — only var, function declarations, IIFE pattern.
  *
  * Exposes globally: window.EnergyFlowComponent = { createTile, updateTile }
  *
@@ -11,13 +14,16 @@
  *   { type: "energy_flow",
  *     solar_power, battery_soc, battery_power, grid_power, home_power }
  * Each value is an HA entity_id string (may be empty = sensor not configured).
+ *
+ * Note: energy CSS classes (.energy-node, .energy-connector, etc.) are not in
+ * tiles.css — they will be in a future CSS file. DOM structure is preserved as-is.
  */
 window.EnergyFlowComponent = (function () {
   'use strict';
 
   // Format a watt value: 0→"0 W", 1200→"1.2 kW"
   function fmtPower(val) {
-    if (val === null || val === undefined || isNaN(val)) { return '—'; }
+    if (val === null || val === undefined || isNaN(val)) { return '\u2014'; }
     var abs = Math.abs(val);
     if (abs >= 1000) {
       return (val / 1000).toFixed(1) + ' kW';
@@ -27,7 +33,7 @@ window.EnergyFlowComponent = (function () {
 
   // Format a percentage (battery SOC)
   function fmtPct(val) {
-    if (val === null || val === undefined || isNaN(val)) { return '—'; }
+    if (val === null || val === undefined || isNaN(val)) { return '\u2014'; }
     return Math.round(val) + '%';
   }
 
@@ -42,7 +48,7 @@ window.EnergyFlowComponent = (function () {
 
     var valueEl = document.createElement('div');
     valueEl.className = 'energy-node-value ' + valueClass;
-    valueEl.textContent = '—';
+    valueEl.textContent = '\u2014';
 
     node.appendChild(iconEl);
     node.appendChild(valueEl);
@@ -73,7 +79,8 @@ window.EnergyFlowComponent = (function () {
   function createTile(itemConfig) {
     var DOM = window.RP_DOM;
 
-    var tile = DOM.createElement('div', 'tile energy-card');
+    var tile = DOM.createElement('div', 'tile');
+    tile.dataset.layoutType = 'energy_flow';
 
     var titleEl = DOM.createElement('div', 'energy-card-title', 'Power Flow');
     tile.appendChild(titleEl);
@@ -91,11 +98,11 @@ window.EnergyFlowComponent = (function () {
     // Main row: battery — home — grid
     var mainRow = DOM.createElement('div', 'energy-main-row');
 
-    var battNode = makeNode('battery', '\uD83D\uDD0B', 'ef-batt-soc', 'Battery', 'ef-batt-pwr');
-    var connLeft = makeConnector('\u2194');   // ↔
-    var homeNode = makeNode('home', '\uD83C\uDFE0', 'ef-home-val', 'Home', null);
+    var battNode  = makeNode('battery', '\uD83D\uDD0B', 'ef-batt-soc', 'Battery', 'ef-batt-pwr');
+    var connLeft  = makeConnector('\u2194');   // ↔
+    var homeNode  = makeNode('home', '\uD83C\uDFE0', 'ef-home-val', 'Home', null);
     var connRight = makeConnector('\u2194');  // ↔
-    var gridNode = makeNode('grid', '\u26A1', 'ef-grid-val', 'Grid', null);
+    var gridNode  = makeNode('grid', '\u26A1', 'ef-grid-val', 'Grid', null);
 
     mainRow.appendChild(battNode);
     mainRow.appendChild(connLeft);
@@ -106,7 +113,7 @@ window.EnergyFlowComponent = (function () {
 
     // Store references for updateTile
     tile._ef = {
-      cfg: itemConfig,
+      cfg:       itemConfig,
       solarVal:  solarNode.querySelector('.ef-solar-val'),
       connV:     connV,
       battSoc:   battNode.querySelector('.ef-batt-soc'),
@@ -134,11 +141,11 @@ window.EnergyFlowComponent = (function () {
       return isNaN(n) ? null : n;
     }
 
-    var solar   = getNum(cfg.solar_power);
-    var batSoc  = getNum(cfg.battery_soc);
-    var batPwr  = getNum(cfg.battery_power);
-    var grid    = getNum(cfg.grid_power);
-    var home    = getNum(cfg.home_power);
+    var solar  = getNum(cfg.solar_power);
+    var batSoc = getNum(cfg.battery_soc);
+    var batPwr = getNum(cfg.battery_power);
+    var grid   = getNum(cfg.grid_power);
+    var home   = getNum(cfg.home_power);
 
     // Solar node
     ef.solarVal.textContent = fmtPower(solar);
@@ -188,7 +195,7 @@ window.EnergyFlowComponent = (function () {
       var suffix = grid > 10 ? ' import' : grid < -10 ? ' export' : '';
       ef.gridVal.textContent = fmtPower(absGrid) + suffix;
     } else {
-      ef.gridVal.textContent = '—';
+      ef.gridVal.textContent = '\u2014';
     }
   }
 

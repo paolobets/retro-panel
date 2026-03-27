@@ -1,6 +1,9 @@
 /**
  * alarm.js — alarm_control_panel tile component with PIN keypad
- * No ES modules — loaded as regular script. iOS 15 Safari safe.
+ * Retro Panel v2.0
+ *
+ * No ES modules — IIFE + window global. iOS 12+ Safari safe.
+ * No const/let/=>/?./?? — only var, function declarations, IIFE pattern.
  *
  * iOS Safari note: type="tel" with autocomplete="off" gives numeric keyboard
  * without autocomplete interference. Do NOT use type="password".
@@ -18,14 +21,38 @@ window.AlarmComponent = (function () {
     armed_vacation: true,
   };
 
+  var PENDING_STATES = {
+    pending: true,
+    arming: true,
+    disarming: true,
+  };
+
+  function _getAlarmStateInfo(state) {
+    if (state === 'disarmed') {
+      return { label: 'Disarmed', cssClass: 'disarmed' };
+    }
+    if (ARMED_STATES[state]) {
+      return { label: 'Armed', cssClass: 'armed' };
+    }
+    if (state === 'triggered') {
+      return { label: 'TRIGGERED!', cssClass: 'triggered' };
+    }
+    if (PENDING_STATES[state]) {
+      return { label: 'Arming...', cssClass: 'pending' };
+    }
+    return { label: state || 'Unknown', cssClass: 'pending' };
+  }
+
   function createTile(entityConfig) {
     var entity_id = entityConfig.entity_id;
     var label = entityConfig.label;
 
     var DOM = window.RP_DOM;
 
-    var tile = DOM.createElement('div', 'tile alarm-tile alarm-disarmed');
+    var tile = DOM.createElement('div', 'tile tile-alarm');
     tile.dataset.entityId = entity_id;
+    tile.dataset.layoutType = 'alarm';
+    tile.dataset.alarmState = 'disarmed';
 
     // Header row
     var top = DOM.createElement('div', 'tile-top');
@@ -79,12 +106,12 @@ window.AlarmComponent = (function () {
       if (k === '\u232B') {
         btn.classList.add('key-delete');
         btn.addEventListener('touchend', function (e) { e.preventDefault(); deleteDigit(); });
-        btn.addEventListener('click', function () { if (!('ontouchstart' in window)) deleteDigit(); });
+        btn.addEventListener('click', function () { if (!('ontouchstart' in window)) { deleteDigit(); } });
       } else if (k === '') {
         btn.style.visibility = 'hidden';
       } else {
         btn.addEventListener('touchend', function (e) { e.preventDefault(); addDigit(k); });
-        btn.addEventListener('click', function () { if (!('ontouchstart' in window)) addDigit(k); });
+        btn.addEventListener('click', function () { if (!('ontouchstart' in window)) { addDigit(k); } });
       }
       keypad.appendChild(btn);
     });
@@ -106,7 +133,7 @@ window.AlarmComponent = (function () {
 
     function triggerAction(service) {
       var data = { entity_id: entity_id };
-      if (pin) data.code = pin;
+      if (pin) { data.code = pin; }
       return window.callService('alarm_control_panel', 'alarm_' + service, data)
         .then(function () { clearPin(); })
         .catch(function (err) {
@@ -122,7 +149,7 @@ window.AlarmComponent = (function () {
         triggerAction(btn.dataset.action);
       });
       btn.addEventListener('click', function () {
-        if (!('ontouchstart' in window)) triggerAction(btn.dataset.action);
+        if (!('ontouchstart' in window)) { triggerAction(btn.dataset.action); }
       });
     });
 
@@ -147,18 +174,26 @@ window.AlarmComponent = (function () {
     var btnArmAway = tile.querySelector('[data-action="arm_away"]');
     var btnDisarm  = tile.querySelector('[data-action="disarm"]');
 
-    var info = window.RP_FMT.getAlarmStateInfo(state);
+    // Use global formatter if available, otherwise fall back to local implementation
+    var info;
+    if (window.RP_FMT && window.RP_FMT.getAlarmStateInfo) {
+      info = window.RP_FMT.getAlarmStateInfo(state);
+    } else {
+      info = _getAlarmStateInfo(state);
+    }
 
-    tile.classList.remove('alarm-disarmed', 'alarm-armed', 'alarm-triggered', 'alarm-pending');
-    tile.classList.add(info.cssClass);
+    // Store current state in dataset (v2 — no alarm-* CSS state classes on the tile)
+    tile.dataset.alarmState = state;
 
+    // Update state text label and its CSS class
     stateText.textContent = info.label;
-    stateText.className = 'alarm-state-text alarm-state-' + info.cssClass.replace('alarm-', '');
+    stateText.className = 'alarm-state-text alarm-state-' + info.cssClass;
 
     if (state === 'disarmed') {
       btnArmHome.style.display = '';
       btnArmAway.style.display = '';
       btnDisarm.style.display = 'none';
+      btnDisarm.className = 'alarm-btn alarm-btn-disarm';
     } else if (ARMED_STATES[state] || state === 'triggered') {
       btnArmHome.style.display = 'none';
       btnArmAway.style.display = 'none';
@@ -169,7 +204,7 @@ window.AlarmComponent = (function () {
         btnDisarm.className = 'alarm-btn alarm-btn-disarm';
       }
     } else {
-      // pending / arming / disarming
+      // pending / arming / disarming — show only disarm
       btnArmHome.style.display = 'none';
       btnArmAway.style.display = 'none';
       btnDisarm.style.display = '';

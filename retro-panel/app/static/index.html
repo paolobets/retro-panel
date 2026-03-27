@@ -7,14 +7,13 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Retro Panel">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#121212">
+  <meta name="theme-color" content="#0f0f0f">
   <title>Retro Panel</title>
 
-  <link rel="stylesheet" href="static/css/base.css">
-  <link rel="stylesheet" href="static/css/themes.css">
+  <link rel="stylesheet" href="static/css/tokens.css">
   <link rel="stylesheet" href="static/css/layout.css">
-  <link rel="stylesheet" href="static/css/components.css">
-  <link rel="stylesheet" href="static/css/camera.css">
+  <link rel="stylesheet" href="static/css/tiles.css">
+  <link rel="stylesheet" href="static/css/bottom-sheet.css">
 </head>
 <body class="theme-dark">
 
@@ -22,7 +21,7 @@
   <div id="loading-screen">
     <div class="loading-content">
       <div class="spinner"></div>
-      <p class="loading-text">Loading…</p>
+      <p class="loading-text">Connecting…</p>
     </div>
   </div>
 
@@ -37,29 +36,25 @@
 
     <!-- Sidebar -->
     <nav id="sidebar">
-      <!-- Toggle button (left-aligned) -->
-      <button id="sidebar-toggle" type="button" aria-label="Toggle sidebar" title="Toggle menu">
+      <button id="sidebar-toggle" type="button" aria-label="Toggle sidebar">
         <span class="sidebar-toggle-icon">&#9776;</span>
       </button>
-
       <div class="sidebar-divider"></div>
-
-      <!-- Navigation items (populated by JS) -->
       <div id="sidebar-nav"></div>
-
-      <!-- Settings gear (bottom of sidebar, icon only) -->
+      <div class="sidebar-spacer"></div>
       <div class="sidebar-divider"></div>
-      <a id="config-link" href="config" class="sidebar-settings sidebar-settings-bottom" title="Settings" aria-label="Settings">
+      <a id="config-link" href="config" class="sidebar-settings" title="Config" aria-label="Open Config">
         <span class="sidebar-item-icon">&#9881;</span>
+        <span class="sidebar-item-label">Config</span>
       </a>
     </nav>
 
-    <!-- Main area (header + content) -->
+    <!-- Main area -->
     <div id="main-area">
 
       <!-- Header -->
       <header id="panel-header">
-        <h1 id="panel-title">Retro Panel</h1>
+        <h1 id="panel-title">Retro <span style="color:var(--c-accent)">PANEL</span></h1>
         <div id="header-info">
           <span id="panel-date"></span>
           <span id="panel-clock"></span>
@@ -68,8 +63,65 @@
         <div id="connection-status" class="status-dot status-connected" title="Connected"></div>
       </header>
 
-      <!-- Content area (section grids rendered here) -->
+      <!-- Content area -->
       <main id="content-area"></main>
+
+    </div>
+  </div>
+
+  <!-- Bottom sheet overlay -->
+  <div id="bs-overlay"></div>
+
+  <!-- Bottom sheet (light controls) -->
+  <div id="bottom-sheet">
+    <div class="bs-handle"></div>
+    <div class="bs-header">
+      <span class="bs-title"></span>
+      <button class="bs-close" type="button" aria-label="Close">&#10005;</button>
+    </div>
+    <div class="bs-body">
+
+      <!-- Brightness section -->
+      <div class="bs-section" id="bs-section-bri">
+        <div class="bs-section-label">Brightness</div>
+        <div class="bs-row">
+          <span class="bs-label-text">Level</span>
+          <span class="bs-val" id="bs-bri-val">100%</span>
+        </div>
+        <input id="bs-bri-slider" class="bs-slider" type="range" min="1" max="255" value="255">
+      </div>
+
+      <!-- Color temperature section -->
+      <div class="bs-section" id="bs-section-temp">
+        <div class="bs-section-label">Color temperature</div>
+        <div class="bs-row">
+          <span class="bs-label-text">Kelvin</span>
+          <span class="bs-val" id="bs-temp-val">3000K</span>
+        </div>
+        <input id="bs-temp-slider" class="bs-slider" type="range" min="153" max="500" value="300">
+      </div>
+
+      <!-- Color (hue) section -->
+      <div class="bs-section" id="bs-section-color">
+        <div class="bs-section-label">Color</div>
+        <div class="bs-row">
+          <span class="bs-label-text">Hue</span>
+          <span class="bs-val">
+            <span class="bs-hue-dot" style="display:inline-block;width:16px;height:16px;border-radius:50%;background:hsl(50,80%,55%);vertical-align:middle;"></span>
+          </span>
+        </div>
+        <input id="bs-hue-slider" class="bs-slider" type="range" min="0" max="360" value="50">
+        <div class="bs-swatches">
+          <div class="bs-swatch" data-hue="50"  style="background:#fffaf0;" title="Warm white"></div>
+          <div class="bs-swatch" data-hue="0"   style="background:#ffffff;" title="White"></div>
+          <div class="bs-swatch" data-hue="210" style="background:#2196f3;" title="Blue"></div>
+          <div class="bs-swatch" data-hue="270" style="background:#845EC2;" title="Purple"></div>
+          <div class="bs-swatch" data-hue="120" style="background:#4caf50;" title="Green"></div>
+          <div class="bs-swatch" data-hue="0"   style="background:#f44336;" title="Red"></div>
+          <div class="bs-swatch" data-hue="30"  style="background:#ff9800;" title="Orange"></div>
+          <div class="bs-swatch" data-hue="330" style="background:#e91e63;" title="Pink"></div>
+        </div>
+      </div>
 
     </div>
   </div>
@@ -79,7 +131,7 @@
   <script src="static/js/utils/format.js"></script>
   <script src="static/js/api.js"></script>
   <script src="static/js/ws.js"></script>
-  <script src="static/js/components/light-sheet.js"></script>
+  <script src="static/js/components/bottom-sheet.js"></script>
   <script src="static/js/components/light.js"></script>
   <script src="static/js/components/switch.js"></script>
   <script src="static/js/components/sensor.js"></script>

@@ -842,13 +842,15 @@
           }
           if (!exists) {
             var autoLabel = '';
+            var autoDc = '';
             for (var m = 0; m < allEntities.length; m++) {
               if (allEntities[m].entity_id === eid) {
                 autoLabel = allEntities[m].friendly_name || '';
+                autoDc = allEntities[m].device_class || '';
                 break;
               }
             }
-            targetSection.items.push({ type: 'entity', entity_id: eid, label: autoLabel, icon: '', hidden: false, display_mode: 'auto', visual_type: '' });
+            targetSection.items.push({ type: 'entity', entity_id: eid, label: autoLabel, icon: '', hidden: false, visual_type: '', device_class: autoDc });
             added++;
           }
         }
@@ -1262,7 +1264,11 @@
     var items = contextItems();
     if (!items) { return; }
     if (isEntityInContext(entityId)) { return; }
-    items.push({ type: 'entity', entity_id: entityId, label: friendlyName || '', icon: '', hidden: false, display_mode: 'auto', visual_type: '' });
+    var dc = '';
+    for (var i = 0; i < allEntities.length; i++) {
+      if (allEntities[i].entity_id === entityId) { dc = allEntities[i].device_class || ''; break; }
+    }
+    items.push({ type: 'entity', entity_id: entityId, label: friendlyName || '', icon: '', hidden: false, visual_type: '', device_class: dc });
     refreshItemsList(pickerContext === 'overview' ? 'overview' : 'section');
     renderEntityList();
   }

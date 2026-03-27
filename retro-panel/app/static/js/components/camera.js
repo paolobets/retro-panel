@@ -1,27 +1,29 @@
 /**
  * camera.js — Camera snapshot tile component
- * Mostra snapshot JPEG aggiornato periodicamente via /api/camera-proxy/{entity_id}
- * No ES modules. iOS 12+ Safari safe (no const/let/arrow/import/export).
+ * Retro Panel v2.0
  *
- * Espone globalmente: window.CameraComponent = { createTile, updateTile, destroyAll, destroyForEntity }
+ * Shows snapshot JPEG updated periodically via /api/camera-proxy/{entity_id}.
+ * No ES modules — IIFE + window global. iOS 12+ Safari safe.
+ * No const/let/=>/?./?? — only var, function declarations, IIFE pattern.
+ *
+ * Exposes globally: window.CameraComponent = { createTile, updateTile, destroyAll, destroyForEntity }
  */
 window.CameraComponent = (function () {
   'use strict';
 
-  var _timers = []; // Array di { entityId, timerId }
+  var _timers = []; // Array of { entityId, timerId }
 
   function createTile(cfg) {
     var DOM = window.RP_DOM;
-    var tile = DOM.createElement('div', 'tile camera-tile');
+    var tile = DOM.createElement('div', 'tile tile-camera');
     tile.dataset.entityId = cfg.entity_id;
+    tile.dataset.layoutType = 'camera';
 
     var imgWrap = DOM.createElement('div', 'camera-img-wrap');
 
     var img = document.createElement('img');
     img.className = 'camera-img';
     img.alt = cfg.title || cfg.entity_id;
-
-    var spinner = DOM.createElement('div', 'camera-spinner');
 
     var overlay = DOM.createElement('div', 'camera-overlay');
     var nameEl = DOM.createElement('span', 'camera-name');
@@ -32,21 +34,20 @@ window.CameraComponent = (function () {
     errorEl.textContent = 'Camera unavailable';
 
     imgWrap.appendChild(img);
-    imgWrap.appendChild(spinner);
     imgWrap.appendChild(overlay);
     imgWrap.appendChild(errorEl);
     tile.appendChild(imgWrap);
 
-    // Carica prima immagine
-    _loadSnapshot(img, spinner, errorEl, cfg.entity_id);
+    // Load first snapshot immediately
+    _loadSnapshot(img, errorEl, cfg.entity_id);
 
-    // Polling — clamp tra 3s e 60s
+    // Polling — clamp between 3s and 60s
     var intervalMs = cfg.refresh_interval ? cfg.refresh_interval * 1000 : 10000;
     if (intervalMs < 3000) { intervalMs = 3000; }
     if (intervalMs > 60000) { intervalMs = 60000; }
 
     var timerId = setInterval(function () {
-      _loadSnapshot(img, spinner, errorEl, cfg.entity_id);
+      _loadSnapshot(img, errorEl, cfg.entity_id);
     }, intervalMs);
 
     _timers.push({ entityId: cfg.entity_id, timerId: timerId });
@@ -54,15 +55,13 @@ window.CameraComponent = (function () {
     return tile;
   }
 
-  function _loadSnapshot(img, spinner, errorEl, entityId) {
-    spinner.classList.remove('hidden');
+  function _loadSnapshot(img, errorEl, entityId) {
     errorEl.classList.add('hidden');
     var newSrc = 'api/camera-proxy/' + entityId + '?t=' + Date.now();
     img.onload = function () {
-      spinner.classList.add('hidden');
+      errorEl.classList.add('hidden');
     };
     img.onerror = function () {
-      spinner.classList.add('hidden');
       errorEl.classList.remove('hidden');
     };
     img.src = newSrc;

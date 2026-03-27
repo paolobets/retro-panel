@@ -1,792 +1,791 @@
-# Retro Panel Architecture
+# Retro Panel v2.0 Architecture
 
 ## Project Overview
 
-Retro Panel is a Home Assistant Add-on that provides a lightweight, mobile-friendly control panel for Home Assistant. It delivers a simple, nostalgic interface for controlling smart home entities with minimal overhead and maximum compatibility.
+Retro Panel v2.0 is a Home Assistant Add-on providing a touch-optimized kiosk dashboard for wall-mounted tablets (primarily iPad with iOS 12+ WKWebView). It separates the dashboard (read-only, `/`) from the config admin UI (`/config`).
 
-**Purpose**: Enable users to create retro-styled control panels for Home Assistant that work seamlessly on older devices and mobile browsers (particularly legacy devices no longer receiving OS updates).
+The architecture is built around a **layout_type system** where the backend computes a fully self-describing type for every entity, eliminating the need for domain inference on the frontend. This enables clean separation of concerns: the backend handles Home Assistant integration and entity classification, while the frontend focuses on rendering and interaction.
 
-**Target Users**:
-- Home Assistant enthusiasts who want a simple, fast control interface
-- Users with older devices or slow networks
-- Developers building custom HA frontends
-- Anyone who values simplicity and fast load times
+## Technology Stack
 
-**Why It Exists**: While Lovelace is feature-rich, it's resource-intensive. Retro Panel fills a niche for users who want a lightweight alternative that prioritizes speed, compatibility, and usability over feature count.
+### Backend: Python 3.11 + aiohttp
 
-## Technology Stack with Justifications
+The backend is a lightweight async HTTP server providing:
 
-### Python 3.11 + aiohttp
+- **Main server**: `app/server.py` — aiohttp server initialization and route registration
+- **Home Assistant client**: `app/proxy/ha_client.py` — HA REST API client for entity states and service calls
+- **WebSocket bridge**: `app/proxy/ws_proxy.py` — bi-directional WebSocket proxy between browser and HA
+- **Supervisor integration**: `app/proxy/supervisor_client.py` — HA Supervisor token fetching for secure authentication
+- **Config endpoints**:
+  - `app/api/handlers_config.py` — GET `/api/panel-config` (returns computed layout_type for all entities)
+  - `app/api/handlers_config_save.py` — POST `/api/config` (saves user configuration)
+- **Entity endpoints**:
+  - `app/api/handlers_entities.py` — GET `/api/entities` (domain filtering support)
+  - `app/api/handlers_areas.py` — GET `/api/ha-areas` (Home Assistant area structure)
+  - `app/api/handlers_cameras.py` — GET `/api/cameras` (camera listing with refresh_interval)
+- **State endpoints**:
+  - `app/api/handlers_state.py` — GET `/api/states` (current entity states)
+- **Service endpoints**:
+  - `app/api/handlers_service.py` — POST `/api/services/{domain}/{service}` (service call routing)
+- **Configuration loading**: `app/config/loader.py` — loads `panel_config.json` and computes `layout_type` for every entity
+- **Validation**: `app/config/validator.py` — validates configuration schema against defined rules
 
-**Choice**: Python 3.11 with aiohttp ASGI server
+### Frontend: Vanilla JavaScript (iOS 12 WKWebView Safe)
 
-**Justifications**:
-- **HA Ecosystem**: Home Assistant is Python-based. Using Python keeps the codebase in the same ecosystem, reducing complexity for HA developers and improving integration.
-- **aiohttp**: Lightweight async web framework (minimal dependencies) vs. FastAPI (requires Pydantic, uvicorn, multiple deps) or Flask (blocking I/O).
-- **Memory Footprint**: aiohttp + Python runtime ~50-80 MB RSS vs. Node.js frameworks ~80-120 MB.
-- **Deployment**: Home Assistant add-on environment is optimized for Python; binary dependencies are simpler.
-- **WebSocket Support**: Native asyncio + aiohttp WebSocket handling without external libraries.
+**Zero transpilation policy**: The codebase uses only ES5 features compatible with iOS 12 WKWebView:
+- Only `var` declarations (no `const`, `let`)
+- Only `function` keyword (no arrow functions `=>`)
+- No optional chaining `?.` or nullish coalescing `??`
+- No module syntax (`import`/`export`)
+- IIFE pattern for scoping: `(function() { 'use strict'; ... }())`
+- No `async`/`await` in component files
 
-**Not FastAPI/Flask**:
-- FastAPI adds unnecessary complexity for this use case (no OpenAPI docs needed).
-- Flask is blocking and requires threading for concurrent requests.
-- Both add significant dependency weight.
+**No frameworks, no bundlers**: All code is hand-written vanilla JavaScript with explicit global namespace usage.
 
-### Vanilla JavaScript (ES2017)
+Two pages:
+- `index.html` — Dashboard (read-only kiosk for end users)
+- `config.html` — Admin configuration UI (for setup/customization)
 
-**Choice**: Plain JavaScript without bundlers, transpilers, or frameworks
+### CSS: Vanilla CSS with Design System
 
-**Justifications**:
-- **Bundle Size**: No build step means no webpack/rollup overhead. Assets are served directly: ~15 KB JS vs. React ~35 KB + polyfills.
-- **Legacy Browser Compatibility**: ES2017 is fully supported in legacy mobile Safari (WebKit). Avoiding Babel transpilation eliminates polyfill bloat.
-- **Network**: Every KB matters on slow connections. Direct ES2017 is fastest.
-- **Maintenance**: No build pipeline to maintain. File-based modularization using ES6 imports.
-- **Developer Experience**: Developers can edit and refresh. No build wait times.
+**Design tokens**: `app/static/css/tokens.css` defines CSS custom properties:
+- Color palette: `--c-bg`, `--c-surface`, `--c-accent`, `--c-text-primary`, `--c-text-secondary`
+- Dimensions: `--radius`, `--sidebar-w` (200px), `--header-h` (56px)
+- Spacing: `--spacing-xs`, `--spacing-sm`, `--spacing-md`, `--spacing-lg`
 
-**Why not React/Vue**:
-- React requires Babel transpilation (even for ES2017), adding ~40 KB.
-- Virtual DOM diffing is overkill for a simple control panel.
-- State management complexity not justified for this UI.
+**Layout system**:
+- `app/static/css/layout.css` — sidebar (200px), header (56px), content area, `.hidden` utility
+- `app/static/css/tiles.css` — triple-lock tile dimensions, `.tile-row` / `.tile-col-*` flexbox columns, sensor styles, component-specific styles
+- `app/static/css/bottom-sheet.css` — overlay + sheet slide-up animation for light controls
+- `app/static/css/config.css` — configuration admin UI exclusive styles
 
-### Plain CSS (No preprocessors)
-
-**Choice**: Vanilla CSS with CSS Grid and Flexbox
-
-**Justifications**:
-- **Size**: Plain CSS is the smallest possible asset (no compilation overhead).
-- **Compatibility**: CSS Grid and Flexbox are native in all target browsers.
-- **Maintainability**: Fewer abstraction layers. CSS is straightforward.
-- **Browser Dev Tools**: Direct CSS debugging without source maps.
-
-**Why not Tailwind/SASS**:
-- Tailwind adds utility class overhead and requires a build process.
-- SASS compilation adds build complexity without significant benefit.
-- Plain CSS custom properties (variables) provide enough reusability.
-
-**CSS Pattern: Dynamic Tints and Inline Styles**:
-- Inline styles take priority over CSS for dynamic colors (e.g., `style="color: rgb(100, 200, 255)"`)
-- `.light-tint` overlay div allows smooth opacity transitions without repainting element borders
-- Suppressed `::before` pseudo-elements on light/switch tiles to prevent double-tint effect
-- Tile value text sized at 15px for legacy device compatibility (small screen optimization)
-
-### Process Management: s6-overlay
-
-**Choice**: s6-overlay for process supervision
-
-**Justifications**:
-- **HA Add-on Standard**: Home Assistant add-on framework uses s6-overlay natively.
-- **Reliability**: Automatic process restart if server crashes.
-- **Logging**: Integrated logging without separate log management.
-- **Signals**: Proper shutdown handling via SIGTERM.
-
-### HA Ingress Integration
-
-**Choice**: Access through HA Ingress proxy rather than direct port exposure
-
-**Justifications**:
-- **Security**: Ingress proxy validates HA session tokens before forwarding requests.
-- **Network**: Works behind NAT/firewalls automatically.
-- **Isolation**: Add-on doesn't expose ports to the host network.
-- **Authentication**: No separate auth layer needed (piggybacks on HA auth).
+**iOS 12 CSS constraints**:
+- No `gap:` on `display:flex` (OK on `display:grid`)
+- No `inset:` shorthand (use `top`/`right`/`bottom`/`left` individually)
+- No `100dvh` dynamic viewport (use `100vh` instead)
+- `-webkit-` prefixes included where needed for older Safari versions
 
 ## Directory Structure
 
 ```
 retro-panel/
-├── addon/                          # Home Assistant add-on container
-│   ├── Dockerfile                  # Multi-arch build configuration
-│   ├── config.yaml                 # Add-on metadata
-│   ├── options.json                # Default configuration schema
-│   ├── run.sh                       # Entry point script
-│   └── rootfs/
-│       ├── etc/s6-overlay/         # Process supervision config
-│       └── etc/services.d/
-│           └── retro-panel/        # Service definition
-├── app/                            # Backend application
-│   ├── server.py                   # Main ASGI server entry point
-│   ├── ha_client.py               # Home Assistant REST/WebSocket client
-│   ├── ws_proxy.py                # WebSocket bridge (HA → Browser)
-│   ├── config_loader.py           # Load and validate options.json
-│   ├── service_whitelist.py       # Service call whitelist
-│   ├── handlers/
-│   │   ├── static.py              # Static file serving
-│   │   ├── api.py                 # REST API endpoints
-│   │   ├── ws.py                  # WebSocket handler
-│   │   └── panel_config.py        # Panel configuration endpoint
-│   └── utils/
-│       ├── logger.py              # Logging setup
-│       └── validators.py          # Input validation
-├── frontend/                       # Browser frontend
-│   ├── index.html                 # Main HTML document
-│   ├── js/
-│   │   ├── app.js                 # Application entry point, routing
-│   │   ├── api.js                 # REST API client module
-│   │   ├── ws.js                  # WebSocket client module
-│   │   ├── state.js               # AppState management
-│   │   └── components/            # Entity type renderers
-│   │       ├── light.js           # Light entity component
-│   │       ├── switch.js          # Switch entity component
-│   │       ├── cover.js           # Cover entity component (future)
-│   │       ├── sensor.js          # Sensor entity component
-│   │       ├── binary_sensor.js   # Binary sensor component
-│   │       ├── input_boolean.js   # Input boolean (future)
-│   │       └── custom.js          # Custom/fallback renderer
-│   └── css/
-│       ├── reset.css              # Normalize browser defaults
-│       ├── layout.css             # Grid/flexbox layouts
-│       ├── components.css         # Tile and button styles
-│       └── theme.css              # Color scheme variables
-├── docs/                          # Documentation
-│   ├── ARCHITECTURE.md            # This file
-│   ├── DEVELOPMENT.md             # Developer guide
-│   ├── API.md                     # Internal API reference
-│   ├── PROJECT.md                 # Project goals and decisions
-│   └── ROADMAP.md                 # Future features
-├── tests/                         # Test suite (future)
-│   ├── conftest.py                # Pytest fixtures
-│   ├── test_ha_client.py          # HAClient unit tests
-│   └── test_api_handlers.py       # API handler tests
-├── .github/workflows/             # CI/CD (future)
-│   └── build.yml                  # Multi-arch Docker build
-├── README.md                      # User-facing README
-├── requirements.txt               # Python dependencies
-└── .gitignore
-
+├── config.yaml                    HA add-on manifest (version 2.0.0)
+├── build.yaml                     Docker multi-arch build configuration
+├── DOCS.md                        User-facing documentation
+├── CHANGELOG.md                   Version history and release notes
+├── app/
+│   ├── server.py                  aiohttp server + route registration
+│   ├── requirements.txt           Python dependencies (aiohttp, pyyaml)
+│   ├── api/
+│   │   ├── handlers_config.py     GET /api/panel-config
+│   │   ├── handlers_config_save.py POST /api/config
+│   │   ├── handlers_entities.py   GET /api/entities[?domain=...]
+│   │   ├── handlers_areas.py      GET /api/ha-areas
+│   │   ├── handlers_cameras.py    GET /api/cameras
+│   │   ├── handlers_service.py    POST /api/services/{domain}/{service}
+│   │   └── handlers_state.py      GET /api/states
+│   ├── config/
+│   │   ├── loader.py              panel_config.json loader + layout_type computation
+│   │   └── validator.py           config schema validation
+│   ├── proxy/
+│   │   ├── ha_client.py           HA REST API client
+│   │   ├── ws_proxy.py            WebSocket bridge (browser ↔ HA)
+│   │   └── supervisor_client.py   Supervisor token fetcher
+│   ├── data/
+│   │   └── options.json.example   Sample add-on options
+│   └── static/
+│       ├── index.html             Dashboard (read-only kiosk)
+│       ├── config.html            Configuration admin UI
+│       ├── css/
+│       │   ├── tokens.css         Design system variables
+│       │   ├── layout.css         Sidebar + header + content structure
+│       │   ├── tiles.css          Tile dimensions + column system + component styles
+│       │   ├── bottom-sheet.css   Light control bottom sheet overlay
+│       │   └── config.css         Configuration UI styles
+│       └── js/
+│           ├── api.js             callService(), getAllStates(), getPanelConfig() - REST API layer
+│           ├── ws.js              connectWS() - WebSocket bridge client
+│           ├── app.js             AppState, boot(), updateEntityState() - application lifecycle
+│           ├── nav.js             window.RP_Nav — sidebar navigation and section routing
+│           ├── renderer.js        window.RP_Renderer — dynamic component rendering
+│           ├── config-api.js      Configuration UI API wrappers
+│           ├── config.js          Configuration UI application logic
+│           ├── mdi-icons.js       Material Design Icons map (entity → icon_class)
+│           ├── utils/
+│           │   ├── dom.js         window.RP_DOM - DOM manipulation helpers
+│           │   └── format.js      window.RP_FMT - formatting utilities (state, temperature, etc.)
+│           └── components/
+│               ├── alarm.js       window.AlarmComponent (alarm_control_panel tiles)
+│               ├── bottom-sheet.js window.RP_BottomSheet (light control overlay)
+│               ├── camera.js      window.CameraComponent (camera tiles)
+│               ├── energy.js      window.EnergyFlowComponent (energy flow widget)
+│               ├── light.js       window.LightComponent (light entity tiles)
+│               ├── scenario.js    window.ScenarioComponent (scene/script/automation tiles)
+│               ├── sensor.js      window.SensorComponent (all sensor variants)
+│               └── switch.js      window.SwitchComponent (switch and input_boolean tiles)
+├── tests/
+│   ├── test_handlers_areas.py     9 tests for /api/ha-areas endpoint
+│   └── test_handlers_entities.py  13 tests for /api/entities endpoint
+└── docs/
+    ├── README.md                  Documentation index
+    ├── ARCHITECTURE.md            (this file) - System design and internals
+    ├── API.md                     Internal API reference
+    ├── DEVELOPMENT.md             Developer setup and contribution guide
+    ├── PROJECT.md                 Project management and ADRs
+    ├── ROADMAP.md                 Feature roadmap
+    ├── INSTALLATION.md            Installation and configuration guide
+    └── TESTING.md                 Testing strategy and runbook
 ```
 
-## Component Architecture
+## layout_type System (Core v2.0 Concept)
 
-### Backend Architecture
+The **layout_type** is the central abstraction of v2.0 architecture. The backend computes a `layout_type` for every entity in `loader.py` based on domain, device_class, and optional user override. The frontend receives entities that are fully self-describing — no domain inference needed on the client side.
 
-#### HAClient (app/ha_client.py)
+This design ensures:
+- **Single source of truth**: Entity classification happens once on the backend
+- **Clean component dispatch**: Frontend looks up the component by `layout_type` with zero ambiguity
+- **Extensibility**: New entity types can be added by adding a `layout_type` and corresponding component
+- **User customization**: `visual_type` field allows users to override the automatic classification
 
-Manages all communication with Home Assistant.
+### Mapping Reference
 
-**Responsibilities**:
-- REST API calls to fetch entity states and call services
-- WebSocket connection management with automatic reconnection
-- Token management (received from HA Ingress headers)
-- Event subscription handling
+| layout_type | Domain | device_class | Component | Tile Height | Column |
+|-------------|--------|-------------|-----------|-------------|--------|
+| `light` | light | * | LightComponent | 120px (fixed) | tile-col-compact |
+| `switch` | switch, input_boolean | * | SwitchComponent | 120px (fixed) | tile-col-compact |
+| `sensor_temperature` | sensor | temperature | SensorComponent | min 72px | tile-col-sensor |
+| `sensor_humidity` | sensor | humidity | SensorComponent | min 72px | tile-col-sensor |
+| `sensor_co2` | sensor | co2, carbon_dioxide | SensorComponent | min 72px | tile-col-sensor |
+| `sensor_battery` | sensor | battery | SensorComponent | min 72px | tile-col-sensor |
+| `sensor_energy` | sensor | power, energy | SensorComponent | min 72px | tile-col-sensor |
+| `sensor_generic` | sensor | (any other) | SensorComponent | min 72px | tile-col-sensor |
+| `binary_door` | binary_sensor | door, window | SensorComponent | min 72px | tile-col-sensor |
+| `binary_motion` | binary_sensor | motion, occupancy | SensorComponent | min 72px | tile-col-sensor |
+| `binary_standard` | binary_sensor | (any other) | SensorComponent | min 72px | tile-col-sensor |
+| `alarm` | alarm_control_panel | * | AlarmComponent | min 240px | tile-col-full |
+| `camera` | camera | * | CameraComponent | min 160px | tile-col-full |
+| `scenario` | scene, script, automation | * | ScenarioComponent | min 110px | tile-col-compact |
+| `energy_flow` | (special widget) | — | EnergyFlowComponent | min 240px | tile-col-full |
 
-**Key Methods**:
-- `async def connect()` - Establish authenticated WebSocket to HA
-- `async def disconnect()` - Clean shutdown
-- `async def get_state(entity_id)` - Fetch current state via REST
-- `async def get_all_states()` - Fetch all entities' states
-- `async def call_service(domain, service, service_data)` - Call HA service
-- `async def subscribe_to_events()` - Subscribe to state_changed events
-- `on_state_changed(callback)` - Register callback for state updates
+### Computation Algorithm
 
-**State Tracking**:
-- Maintains in-memory cache of all entity states
-- Updates cache on WebSocket state_changed events
-- Periodically syncs with HA (configurable interval, default 60s)
+Implemented in `app/config/loader.py`:
 
-#### WSProxy (app/ws_proxy.py)
+```python
+def _compute_layout_type(entity_id, device_class, visual_type):
+    """
+    Compute layout_type for an entity.
 
-Bridges browser WebSocket connection to Home Assistant WebSocket.
+    Args:
+        entity_id: Full entity ID (e.g. "light.living_room")
+        device_class: Optional device_class attribute
+        visual_type: Optional user override (highest priority)
 
-**Responsibilities**:
-- Accept browser WebSocket connections
-- Forward HA state changes to all connected browsers
-- Maintain subscriber list
+    Returns:
+        layout_type string or 'sensor_generic' as fallback
+    """
+    domain = entity_id.split('.')[0]
 
-**Data Flow**:
-1. Browser connects via `/ws` endpoint
-2. WSProxy registers callback with HAClient
-3. When HA sends state_changed event, forward to all connected browsers
-4. Browser disconnects → remove from subscriber list
+    # User override takes highest priority
+    if visual_type:
+        return visual_type
 
-#### API Handlers (app/handlers/api.py)
+    # Domain-based classification
+    if domain == 'light':
+        return 'light'
 
-Expose REST endpoints for panel operations.
+    if domain in ('switch', 'input_boolean'):
+        return 'switch'
 
-**Endpoints**:
-- `GET /api/panel-config` - Panel layout and entity list
-- `GET /api/state/{entity_id}` - Get single entity state
-- `GET /api/states/all` - Get all entity states (for page load)
-- `POST /api/service/{domain}/{service}` - Call HA service
+    if domain == 'sensor':
+        dc = device_class or ''
+        if dc == 'temperature': return 'sensor_temperature'
+        if dc == 'humidity': return 'sensor_humidity'
+        if dc in ('co2', 'carbon_dioxide'): return 'sensor_co2'
+        if dc == 'battery': return 'sensor_battery'
+        if dc in ('power', 'energy'): return 'sensor_energy'
+        return 'sensor_generic'
 
-**Service Call Security**:
-- All calls validated against service_whitelist
-- Only whitelisted domain/service pairs allowed
-- Service data validated against config schema
+    if domain == 'binary_sensor':
+        dc = device_class or ''
+        if dc in ('door', 'window'): return 'binary_door'
+        if dc in ('motion', 'occupancy'): return 'binary_motion'
+        return 'binary_standard'
 
-#### ConfigLoader (app/config_loader.py)
+    if domain == 'alarm_control_panel':
+        return 'alarm'
 
-Validates and manages add-on configuration.
+    if domain == 'camera':
+        return 'camera'
 
-**Responsibilities**:
-- Load options.json from `/data/` directory
-- Validate against schema
-- Provide typed configuration objects
-- Hot-reload on file changes (future)
+    if domain in ('scene', 'script', 'automation'):
+        return 'scenario'
 
-**Configuration Sections**:
-- `ha_url` - HA WebSocket URL
-- `ha_token` - HA API token
-- `panels` - Panel definitions (rows, cols, entities)
-- `service_whitelist` - Allowed service calls
-- `layout_config` - Grid sizing, spacing
+    # Fallback
+    return 'sensor_generic'
+```
 
-### Frontend Architecture
+### Using layout_type in Entity Config
 
-#### AppState (frontend/js/state.js)
+Every entity item in `panel_config.json` includes a `layout_type` field (computed by the backend):
 
-Central state container for frontend.
-
-**Shape**:
-```javascript
+```json
 {
-  entities: {
-    [entityId]: {
-      state: string,
-      attributes: object,
-      lastUpdated: timestamp,
-      config: entityConfig
-    }
-  },
-  connectionStatus: "connected" | "reconnecting" | "disconnected",
-  lastSyncTime: timestamp,
-  panelConfig: {
-    title: string,
-    rows: [
-      {
-        cols: [
-          {
-            entity_id: string,
-            size: "small" | "medium" | "large",
-            ...
-          }
-        ]
-      }
-    ]
-  }
+  "type": "entity",
+  "entity_id": "light.living_room",
+  "label": "Living Room",
+  "icon": "lightbulb",
+  "hidden": false,
+  "visual_type": "",
+  "device_class": "",
+  "layout_type": "light"
 }
 ```
 
-**Methods**:
-- `updateEntityState(entityId, newState, newAttributes)` - Update entity in state
-- `getEntity(entityId)` - Retrieve entity object
-- `getPanel()` - Get panel configuration
-- `setConnectionStatus(status)` - Update connection indicator
-- `subscribe(callback)` - Register state change listener
+The frontend uses `layout_type` to:
+1. Assign column class via `COL_CLASS_MAP[layout_type]`
+2. Look up component via `window.RP_Renderer.getComponent(layoutType)`
+3. Call the correct `createTile()` and `updateTile()` methods
+4. Apply state CSS classes (`is-on`, `is-off`, `is-unavail`)
 
-#### api.js Module
+## Tile Dimension System (Triple-Lock)
 
-Handles all REST API communication.
+The triple-lock CSS pattern prevents any tile from being resized by its neighbors' content. Every tile type has exact or minimum dimensions locked on all three axes: `height`, `min-height`, `max-height`.
 
-**Key Functions**:
-```javascript
-async function fetchPanelConfig()
-  // Returns: { title, rows, [...] }
+### Tile Height Specifications
 
-async function fetchAllStates()
-  // Returns: { [entityId]: { state, attributes } }
+Defined in `app/static/css/tiles.css`:
 
-async function callService(domain, service, serviceData)
-  // Throws on validation errors
-  // Returns: service response object
+```css
+.tile-light    { height: 120px; min-height: 120px; max-height: 120px; }
+.tile-switch   { height: 120px; min-height: 120px; max-height: 120px; }
+.tile-scenario { height: 110px; min-height: 110px; max-height: 110px; }
 
-function getAbsoluteUrl(path)
-  // Convert /api/foo to full HA Ingress URL
+.tile-sensor   { min-height: 72px; }
+.tile-alarm    { min-height: 240px; }
+.tile-camera   { min-height: 160px; }
+
+.tile-energy   { min-height: 240px; }
 ```
 
-**Error Handling**:
-- Network errors → throw Error
-- API errors (4xx/5xx) → throw APIError with details
-- Validation errors → throw ValidationError
+**Design intent**:
+- Fixed-height tiles (light, switch, scenario) use all three locks for absolute consistency
+- Flexible tiles (sensor, alarm, camera, energy) use `min-height` only, allowing content to grow if needed
+- This prevents layout jank when tiles load asynchronously or when content updates dynamically
 
-#### ws.js Module
+## Column System (Flexbox)
 
-Manages WebSocket connection to backend.
+Layout is responsive and touch-friendly across all viewport sizes. The column system uses CSS media queries to adjust grid width without any JavaScript recalculation.
 
-**Key Functions**:
-```javascript
-async function connectWS()
-  // Establish WebSocket connection
-  // Return: WebSocket object
+### Column Class Assignment
 
-function onStateChanged(handler)
-  // Register callback for state updates
-  // handler(entityId, state, attributes)
-
-function reconnectWithBackoff()
-  // Auto-reconnect with exponential backoff
-  // Backoff: 1s, 2s, 4s, 8s, max 30s
-
-function disconnect()
-  // Clean WebSocket closure
-```
-
-**Message Protocol**:
-- Server sends: `{type: "state_changed", entity_id, state, attributes}`
-- Server sends: `{type: "connection_status", status: "ok"}`
-- All messages are JSON
-
-#### Component Model
-
-Each entity type has a component module (e.g., `js/components/light.js`).
-
-**Component Interface**:
-```javascript
-export function createTile(config, state) {
-  // Create DOM element for this entity
-  // config: { entity_id, size, name, ... }
-  // state: { state, attributes }
-  // Return: HTMLElement
-
-  const tile = document.createElement('div');
-  tile.className = 'tile tile-light';
-  tile.dataset.entityId = config.entity_id;
-  // ... build tile DOM ...
-  return tile;
-}
-
-export function updateTile(element, state) {
-  // Update tile DOM based on new state
-  // element: HTMLElement from createTile()
-  // state: { state, attributes }
-
-  element.dataset.state = state.state;
-  // ... update tile appearance ...
-}
-
-export function handleInteraction(entityId, action) {
-  // Called when user interacts with tile
-  // action: { type: "toggle", "set_brightness": value, ... }
-  // Return: Promise
-}
-```
-
-**Component Registration** (in `app.js`):
-```javascript
-const COMPONENTS = {
-  'light': lightComponent,
-  'switch': switchComponent,
-  'sensor': sensorComponent,
-  // ...
+```js
+var COL_CLASS_MAP = {
+  'light': 'tile-col-compact',
+  'switch': 'tile-col-compact',
+  'scenario': 'tile-col-compact',
+  'sensor_temperature': 'tile-col-sensor',
+  'sensor_humidity': 'tile-col-sensor',
+  'sensor_co2': 'tile-col-sensor',
+  'sensor_battery': 'tile-col-sensor',
+  'sensor_energy': 'tile-col-sensor',
+  'sensor_generic': 'tile-col-sensor',
+  'binary_door': 'tile-col-sensor',
+  'binary_motion': 'tile-col-sensor',
+  'binary_standard': 'tile-col-sensor',
+  'alarm': 'tile-col-full',
+  'camera': 'tile-col-full',
+  'energy_flow': 'tile-col-full',
 };
 ```
 
-#### Light Component Advanced Interactions
+### CSS Media Query Breakpoints
 
-The light component (`js/components/light.js`) implements a two-step interaction model for enhanced UX on touch devices:
+Base styles (iPad portrait, `≥ 600px`):
 
-**Interaction Patterns**:
-1. **Short Tap** (< 500ms): Toggle on/off immediately
-2. **Long Press** (500ms+): Opens bottom sheet for advanced controls
+```css
+.tile-row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-right: -12px;
+}
 
-**Color Support**:
-- **RGB Color** (`rgb_color` attribute): Converted to hex color for tile tint
-- **Color Temperature** (`color_temp` in mireds): Converted to Kelvin gradient for visual feedback
-- **Dynamic Tint**: `.light-tint` div overlay shows active color with state-dependent opacity
+.tile-col-compact {
+  width: 33.333%;          /* 3 columns */
+  padding-right: 12px;
+  padding-bottom: 12px;
+}
 
-**Bottom Sheet Control Panel** (`js/components/light-sheet.js`):
-A modal singleton (`window.RP_LightSheet`) that lazy-loads on first open and provides:
-- Brightness slider (1-255 converted to percentage display)
-- Color temperature slider (153-500 mireds converted to Kelvin)
-- Hue slider (0-360°) with 8 color swatch presets
-- Live tile color updates while adjusting
-- Service calls debounced to 300ms intervals
+.tile-col-sensor {
+  width: 50%;              /* 2 columns */
+  padding-right: 8px;
+  padding-bottom: 8px;
+}
 
-**Visual Design**:
-- `.light-tint` div (absolute positioned overlay) animates opacity from 0 (off) to 1 (on)
-- Inline style takes priority over CSS for dynamic colors
-- Green theme (`#4caf50`) for on state with rgba background tint
-- iOS 12+ safe IIFE pattern with no optional chaining
-
-**Feature Flags** (via `supported_features` bitmask):
-- Bit 1 (BRIGHTNESS=1): Enables brightness slider in bottom sheet
-- Bit 2 (COLOR_TEMP=2): Enables color temperature slider
-- Bit 16 (COLOR=16): Enables hue and color swatch controls
-
-#### Switch Component Styling
-
-The switch component (`js/components/switch.js`) mirrors the light component structure with simplified controls:
-- Short tap toggles on/off (no long-press)
-- Green inline styles (`#4caf50`) when ON
-- `.light-tint` div with rgba(76,175,80,0.12) background
-- Empty tile-value (no "On/Off" text display)
-- Consistent 120px tile size with light component
-
-#### app.js Entry Point
-
-Main application orchestration.
-
-**Responsibilities**:
-- Load panel configuration via `api.fetchPanelConfig()`
-- Fetch initial state via `api.fetchAllStates()`
-- Initialize AppState
-- Render panel layout
-- Connect WebSocket and register state listeners
-- Handle user interactions (button taps, etc.)
-
-**Flow**:
-1. DOMContentLoaded → call `initApp()`
-2. Fetch panel config + initial states (parallel)
-3. Render UI using components
-4. Connect WebSocket
-5. Register state change listener → update UI on changes
-
-## Data Flow Diagrams
-
-### Initial Page Load Sequence
-
-```
-Browser                          Backend                    Home Assistant
-   |                              |                              |
-   |-- GET / ------------------>|                              |
-   |                          [Load index.html]                  |
-   |<-- 200 OK ---|                              |
-   |              [HTML with embedded JS]       |
-   |                              |                              |
-   |-- GET /api/panel-config ---->|                              |
-   |                          [Load options.json]                |
-   |<-- panel config <------------|                              |
-   |                              |                              |
-   |-- GET /api/states/all ------>|                              |
-   |                          [HAClient.get_all_states()]        |
-   |                              |----- REST API query -------->|
-   |                              |<-- all entity states --------|
-   |<-- all states <-------------|                              |
-   |                              |                              |
-   |-- Render UI (sync) --|       |                              |
-   |                              |                              |
-   |-- GET /ws ------(upgrade)--->|                              |
-   |  <---- WebSocket (connected) |                              |
-   |       |                      |------ Subscribe events ----->|
-   |       |                      |<---- state_changed events ---|
-```
-
-### User Taps a Button (Service Call Flow)
-
-```
-Browser (User tap on light)        Backend                    Home Assistant
-   |                              |                              |
-   |-- onClick handler fires      |                              |
-   |-- Optimistic update (UI)     |                              |
-   |                              |                              |
-   |-- POST /api/service/light/turn_on ---|                     |
-   |   {entity_id: "light.bedroom"}       |                     |
-   |                              |                              |
-   |                          [Validate service call]            |
-   |                          [Check whitelist]                  |
-   |                              |                              |
-   |                              |----- REST POST service ----->|
-   |                              |<-- service response ---------|
-   |                              |                              |
-   |                          [HAClient updates state]           |
-   |                              |                              |
-   |<-- 200 OK <---|              |                              |
-   |   {state: "on"}              |                              |
-   |                              |                              |
-   | [Update optimistic state]    |                              |
-   |                              |                              |
-   | (Shortly after, WebSocket    |                              |
-   |  receives state_changed      |                              |
-   |  confirming the state)       |                              |
-```
-
-### WebSocket State Update Flow
-
-```
-Home Assistant                     Backend                    Browser
-   |                              |                              |
-   |-- state_changed event ------>|                              |
-   |   (e.g., light turned on)    |                              |
-   |                              |                              |
-   |                          [HAClient receives event]          |
-   |                          [Update internal cache]            |
-   |                          [Notify WSProxy]                   |
-   |                              |                              |
-   |                              |-- WebSocket frame: state_changed -->|
-   |                              |     {entity_id, state, attributes} |
-   |                              |                              |
-   |                              |  [Browser JS receives]       |
-   |                              |  [Update AppState]           |
-   |                              |  [Find tile DOM element]     |
-   |                              |  [Call component.updateTile()]|
-   |                              |  [Update visual appearance]  |
-```
-
-### WebSocket Reconnection Flow
-
-```
-Browser                          Backend                    Home Assistant
-   |                              |                              |
-   |-- Connection lost ---|       |                              |
-   |                              |                              |
-   |-- Retry loop:                |                              |
-   |   wait 1s                    |                              |
-   |-- GET /ws --(upgrade)------->|                              |
-   |                          [Connection accepted]              |
-   |<---- WebSocket (connected) --|                              |
-   |                              |                              |
-   |-- Request full state sync    |                              |
-   |   POST /api/states/all       |                              |
-   |                              |----- REST query ------------>|
-   |                              |<-- all states ------------|  |
-   |<-- merged states ---|        |                              |
-   |                              |                              |
-   |-- Reconnect successful       |                              |
-   |-- Resume normal operation    |                              |
-```
-
-## Security Model
-
-### Token Isolation
-
-**Design**: Authentication tokens are never sent to the browser.
-
-**Implementation**:
-- HA Ingress proxy extracts token from session cookie
-- Token passed to backend via `X-HA-Access` header (internal only)
-- Backend uses token exclusively on server-side
-- Frontend never has access to raw token
-- No token stored in localStorage or sessionStorage
-
-**Benefit**: If frontend is compromised, attacker cannot impersonate user to HA.
-
-### Ingress Proxy Authentication
-
-**Design**: All requests go through HA Ingress proxy before reaching add-on.
-
-**Flow**:
-1. User logs into Home Assistant (gets session cookie)
-2. User accesses add-on via Ingress URL: `http://homeassistant.local:8123/api/hassio_ingress/{slug}`
-3. HA Ingress proxy verifies session cookie
-4. If valid, proxy forwards request to add-on (backend) with `X-HA-Access` header
-5. If invalid, proxy returns 401 Unauthorized
-
-**Security**:
-- Only authenticated HA users can reach the add-on
-- No network exposure (add-on listens only on internal Docker network)
-
-### Service Call Whitelist
-
-**Design**: Only explicitly whitelisted services can be called.
-
-**Configuration** (in options.json):
-```json
-{
-  "service_whitelist": [
-    {"domain": "light", "service": "turn_on"},
-    {"domain": "light", "service": "turn_off"},
-    {"domain": "light", "service": "toggle"},
-    {"domain": "switch", "service": "turn_on"},
-    {"domain": "switch", "service": "turn_off"}
-  ]
+.tile-col-full {
+  width: 100%;             /* Full width */
+  padding-right: 0;
+  padding-bottom: 12px;
 }
 ```
 
-**Validation**:
-1. User clicks button → browser sends `POST /api/service/light/turn_on`
-2. Backend checks if `{domain: "light", service: "turn_on"}` exists in whitelist
-3. If not found, return 403 Forbidden
-4. If found, proceed with service call
+Mobile portrait (`max-width: 599px`):
 
-**Service Data Validation**:
-- Schema defined in options.json for each whitelisted service
-- Backend validates all service_data against schema
-- Rejects unexpected keys or wrong types
+```css
+@media (max-width: 599px) {
+  .tile-col-compact {
+    width: 50%;            /* 2 columns */
+  }
 
-### Rate Limiting
-
-**Design**: Prevent abuse via excessive requests.
-
-**Implementation** (future):
-- Per-IP rate limit: 100 requests per minute
-- Per-entity rate limit: 10 service calls per minute
-- Exponential backoff for repeated failures
-- Connection limit: max 10 concurrent WebSocket connections
-
-**Current**: No rate limiting in v1.0 (trusted local network assumed).
-
-## HA Integration
-
-### REST API Usage
-
-**Endpoints Called**:
-
-| Endpoint | Purpose | Called When | Frequency |
-|----------|---------|-------------|-----------|
-| `GET /api/states` | Fetch all entities | Page load, full sync | On demand |
-| `GET /api/states/{entity_id}` | Get single entity | Tile click (to verify state) | Rarely |
-| `POST /api/services/{domain}/{service}` | Call service | User interaction | On demand |
-| `GET /api/config/entity_registry` | Fetch entity registry | Entity picker load | On demand |
-
-> **Note — entity registry usage**: The HA `states` variable in Jinja2 templates
-> does **not** carry `hidden_by` / `disabled_by` metadata; those fields live
-> exclusively in the entity registry. Any handler that must exclude hidden or
-> disabled entities (`handlers_entities.py`, `handlers_areas.py`) must call
-> `/api/config/entity_registry` explicitly. If the call fails, the policy is to
-> proceed without the filter and log a warning (graceful degradation).
-
-**Headers**:
-```
-Authorization: Bearer {token}
-Content-Type: application/json
-```
-
-**Token Source**: Extracted from `X-HA-Access` header (from Ingress proxy).
-
-### WebSocket API Usage
-
-**Connection**:
-- Target: HA WebSocket endpoint (via HAClient)
-- URL: `ws://homeassistant:8123/api/websocket` (internal Docker network)
-- Port: 8123 (HA internal port)
-
-**Authentication Sequence**:
-```
-Client                              HA Server
-  |                                  |
-  |-- WebSocket connect ----------->|
-  |<-- {type: "auth_required"} ------|
-  |                                  |
-  |-- {type: "auth",                 |
-  |    access_token: "eyJ..."}  --->|
-  |                                  |
-  |<-- {type: "auth_ok"} ------------|
-```
-
-**Subscription**:
-```javascript
-{
-  "type": "subscribe_events",
-  "event_type": "state_changed"
+  .tile-col-sensor {
+    width: 100%;           /* 1 column */
+  }
+  /* .tile-col-full stays 100% */
 }
 ```
 
-**Incoming Events**:
-```javascript
+Landscape tablet (`orientation: landscape` and `min-width: 1024px`):
+
+```css
+@media (orientation: landscape) and (min-width: 1024px) {
+  .tile-col-compact {
+    width: 25%;            /* 4 columns */
+  }
+
+  .tile-col-sensor {
+    width: 33.333%;        /* 3 columns */
+  }
+  /* .tile-col-full stays 100% */
+}
+```
+
+**Flexbox considerations**:
+- No `gap:` property used (iOS 12 incompatible on flex)
+- Margins and negative container margins used instead for gutters
+- `flex-wrap: wrap` ensures responsive reflowing without JavaScript
+
+## Component Architecture
+
+Every renderable entity type has a corresponding component. Components follow a strict interface for consistency and lifecycle management.
+
+### Component Interface
+
+Each component exports two methods on a global window object:
+
+```js
+window.XxxComponent = {
+  /**
+   * Create a new tile element for an entity.
+   * Must return an HTMLElement with tile.dataset.layoutType set.
+   *
+   * @param {Object} entityConfig - Entity configuration
+   * @returns {HTMLElement} Tile DOM element
+   */
+  createTile: function(entityConfig) {
+    // Build DOM, attach event listeners
+    var tile = document.createElement('div');
+    tile.className = 'tile tile-xxx';
+    tile.dataset.layoutType = entityConfig.layout_type;
+    // ... initialize with current state from AppState.states[entityConfig.entity_id]
+    return tile;
+  },
+
+  /**
+   * Update tile display when entity state changes.
+   * Must not recreate the DOM, only mutate existing element.
+   *
+   * @param {HTMLElement} tile - Tile element to update
+   * @param {Object} stateObj - Current state object { state, attributes }
+   */
+  updateTile: function(tile, stateObj) {
+    // Update text, classes, visuals based on stateObj
+    tile.classList.toggle('is-on', stateObj.state === 'on');
+    tile.classList.toggle('is-off', stateObj.state === 'off');
+    tile.classList.toggle('is-unavail', stateObj.state === 'unavailable');
+    // ... update display
+  },
+};
+```
+
+### entityConfig Structure
+
+All `entityConfig` objects contain:
+
+```js
 {
-  "type": "event",
-  "event": {
-    "event_type": "state_changed",
-    "data": {
-      "entity_id": "light.bedroom",
-      "old_state": {state: "off", attributes: {...}},
-      "new_state": {state: "on", attributes: {...}}
-    }
+  entity_id: "light.living_room",      // Full entity ID
+  label: "Living Room",                 // Display label
+  icon: "lightbulb",                    // MDI icon name (without mdi-)
+  layout_type: "light",                 // Computed type (light, switch, sensor_*, etc.)
+  device_class: "dimmer",               // Optional device_class
+  visual_type: "",                      // Optional user override
+  hidden: false                         // Hidden from dashboard
+}
+```
+
+### State Object Structure
+
+State objects follow the Home Assistant state schema:
+
+```js
+{
+  state: "on",                          // Current state as string
+  attributes: {
+    friendly_name: "Living Room",
+    brightness: 200,
+    color_temp: 350,
+    supported_features: 191,
+    // ... entity-specific attributes
   }
 }
 ```
 
-### Ingress Proxy Behavior
+### State CSS Classes
 
-**Request Path Transformation**:
-- Browser requests: `http://homeassistant.local:8123/api/hassio_ingress/{slug}/api/service/light/on`
-- Ingress proxy strips prefix: `/api/service/light/on`
-- Proxy forwards to add-on backend
+All tiles have state classes automatically applied by `app.js` via `updateEntityState()`:
 
-**Header Injection**:
-- Ingress proxy adds: `X-HA-Access: {token}`
-- Backend extracts token from this header
+```css
+.tile.is-on       { /* Entity is on/active */ }
+.tile.is-off      { /* Entity is off/inactive */ }
+.tile.is-unavail  { /* Entity state is unavailable or unknown */ }
+```
 
-**CORS Handling**:
-- Browser makes same-origin requests (all URLs under Ingress prefix)
-- No CORS headers needed (same origin)
+### Component Life Cycle
 
-## Browser Compatibility Matrix
+1. **Create phase**: `component.createTile(entityConfig)` called once on initial render
+2. **Store phase**: Result stored in `AppState.tileMap[entity_id]` and inserted into DOM
+3. **Update phase**: `component.updateTile(tile, stateObj)` called on every state change
+4. **Lifecycle**: Tile element persists; component methods called repeatedly with new state
 
-### legacy mobile Safari (WebKit)
+### Available Components
 
-| Feature | Status | Notes |
-|---------|--------|-------|
-| ES2017 syntax (async/await, arrow functions) | ✓ | Native support |
-| Fetch API | ✓ | Native support |
-| WebSocket API | ✓ | Native support |
-| CSS Grid | ✓ | Full support, no prefix needed |
-| CSS Flexbox | ✓ | Full support |
-| CSS Custom Properties (variables) | ✓ | No IE11 support needed |
-| CSS backdrop-filter | ✓ | Requires `-webkit-` prefix |
-| localStorage | ✓ | Full support |
-| CSS Grid auto-fill/auto-fit | ✓ | Native support |
-| ES6 Modules (import/export) | ✓ | Supported in same-origin scripts |
-| Intersection Observer | ✓ | For lazy loading (future) |
-| Media Queries | ✓ | Full support including prefers-color-scheme |
-| Touch Events | ✓ | Native support for touchstart/touchend |
-| Service Workers | ✓ | For offline support (future) |
+**LightComponent** (`app/static/js/components/light.js`):
+- Tile height: 120px (fixed)
+- Brightness slider in bottom sheet (if supported)
+- Color temperature control (if supported)
+- Hue/color swatches (if supported)
+- State: on/off
 
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Babel transpilation | ✗ | Avoid - adds bloat, unnecessary in legacy mobile Safari |
-| CSS-in-JS libraries | ✗ | Avoid - extra bytes, not needed |
-| Async generators | ✗ | Use Promise chains instead |
-| Optional chaining (?.) | ✗ | AVOID — not available on legacy WebKit (pre-2020 devices) |
-| Nullish coalescing (??) | ✗ | AVOID — not available on legacy WebKit (pre-2020 devices) |
+**SwitchComponent** (`app/static/js/components/switch.js`):
+- Tile height: 120px (fixed)
+- Toggle on/off via tap
+- Supports `input_boolean` as well as `switch` domain
 
-### CSS Compatibility Notes
+**SensorComponent** (`app/static/js/components/sensor.js`):
+- Tile height: min 72px (flexible)
+- Displays state + formatted unit
+- Variants: temperature, humidity, co2, battery, energy, generic
+- Icon color varies by type and state
 
-| CSS Feature | legacy mobile Safari | Prefix Required |
-|-------------|--------|-----------------|
-| backdrop-filter | ✓ | `-webkit-backdrop-filter` |
-| user-select | ✓ | `-webkit-user-select` |
-| appearance | ✓ | `-webkit-appearance` |
-| transform | ✓ | Not needed |
-| transition | ✓ | Not needed |
-| box-shadow | ✓ | Not needed |
-| border-radius | ✓ | Not needed |
+**AlarmComponent** (`app/static/js/components/alarm.js`):
+- Tile height: min 240px (flexible)
+- State indicators (armed, disarmed, triggered, pending)
+- Arm/disarm buttons if user role permits
+- State transitions with visual feedback
 
-### Device Testing
+**CameraComponent** (`app/static/js/components/camera.js`):
+- Tile height: min 160px (flexible)
+- Image refresh at configured interval (`refresh_interval` from panel_config)
+- MJPEG stream support
+- Tap to open full view in overlay
 
-**Minimum Devices**:
-- iPhone 6S or newer (A9 chip, 2015+)
-- iPad Air 2 or newer (A8X chip, 2014+)
-- any device with a legacy WebKit browser
+**ScenarioComponent** (`app/static/js/components/scenario.js`):
+- Tile height: min 110px (flexible)
+- Tap to activate scene/script/automation
+- Feedback on activation (loading state)
+- Last triggered timestamp
 
-**Network Conditions Tested**:
-- 3G: ~400 Kbps, 100ms latency
-- 4G: ~10 Mbps, 30ms latency
-- WiFi: 50+ Mbps, <10ms latency
+**EnergyFlowComponent** (`app/static/js/components/energy.js`):
+- Tile height: min 240px (flexible)
+- Special widget not tied to single entity
+- Displays energy flow diagram (grid, home, battery, solar)
+- Requires special configuration
 
-## Data Model (v4 Schema)
+## Renderer (window.RP_Renderer)
 
-### Room Structure with Sections
+The renderer is the view layer responsible for creating tiles, managing the component map, and rendering sections. It bridges the AppState model to the DOM.
 
-Starting in v1.4, rooms support a **sections** array that groups related items. This allows for logical organization of items within a room.
+### Renderer API
 
-**Schema v4 Features**:
-- Each room contains `sections: [{id, title, items:[]}]` instead of direct `items[]`
-- Sections provide organizational hierarchy
-- Backward compatibility: v3 rooms with `items[]` are auto-migrated to a default section
+```js
+window.RP_Renderer = {
+  /**
+   * Initialize renderer and resolve component map from window globals.
+   * Must be called once after all component files are loaded.
+   */
+  init: function() {
+    // Map layout_type → component global
+    // Validate all components are loaded
+  },
 
-**Auto-Migration from v3 to v4**:
-When loading a configuration with v3 format (rooms containing `items[]` directly), the system automatically migrates to v4:
-- Creates a single section with `id: "sec_default"` and `title: ""` (empty)
-- All `items[]` from v3 are moved into this default section
-- Migration happens transparently on first load
-- Original config file is not modified
+  /**
+   * Render the currently active section into #content-area.
+   *
+   * @param {Object} appState - Current application state
+   */
+  renderActiveSection: function(appState) {
+    var contentArea = document.getElementById('content-area');
+    contentArea.innerHTML = '';
 
-**Schema v4 Example**:
+    switch(appState.activeSectionId) {
+      case 'overview':
+        // Render overview items
+        break;
+      case 'scenarios':
+        // Render scenarios grid
+        break;
+      case 'cameras':
+        // Render cameras list
+        break;
+      default:
+        // room:room_id section
+        if (appState.activeSectionId.indexOf('room:') === 0) {
+          // Render room and its subsections
+        }
+    }
+  },
+
+  /**
+   * Render an array of items into a container.
+   *
+   * @param {HTMLElement} container - Destination container
+   * @param {Array} items - Entity/scenario/camera items from config
+   * @param {Object} appState - Current application state
+   */
+  renderItems: function(container, items, appState) {
+    var row = document.createElement('div');
+    row.className = 'tile-row';
+
+    items.forEach(function(item) {
+      if (item.hidden) return;
+      var component = window.RP_Renderer.getComponent(item.layout_type);
+      if (!component) return;
+
+      var tile = component.createTile(item);
+      var colClass = COL_CLASS_MAP[item.layout_type];
+
+      var wrapper = document.createElement('div');
+      wrapper.className = 'tile-col ' + colClass;
+      wrapper.appendChild(tile);
+      row.appendChild(wrapper);
+
+      // Store for later updates
+      appState.tileMap[item.entity_id] = tile;
+    });
+
+    container.appendChild(row);
+  },
+
+  /**
+   * Retrieve component for a layout_type.
+   *
+   * @param {string} layoutType - layout_type to look up
+   * @returns {Object|null} Component object or null if not found
+   */
+  getComponent: function(layoutType) {
+    return COMPONENT_MAP[layoutType] || null;
+  },
+};
+```
+
+### Section Types
+
+**overview**:
+- First section in navigation
+- Displays items from `config.overview.items`
+- Typically contains most-used lights and controls
+
+**room:room_id**:
+- One section per room in `config.rooms[]`
+- Loops through `room.sections[]` and renders subsections
+- Each subsection (e.g., lights, climate) has own `.tile-row`
+
+**scenarios**:
+- Displays items from `config.scenarios[]`
+- Grid of runnable scenes/scripts/automations
+
+**cameras**:
+- Displays items from `config.cameras[]`
+- List of camera feeds with refresh intervals
+
+## App State and Boot
+
+### AppState Object
+
+Global application state singleton:
+
+```js
+var AppState = {
+  config: null,              // Full panel_config from GET /api/panel-config
+  states: {},                // Map: { entity_id: { state, attributes } }
+  tileMap: {},               // Map: { entity_id: HTMLElement tile }
+  energyTiles: [],           // Array: [{ tile: HTMLElement, cfg: config }]
+  wsConnected: false,        // WebSocket connection status
+  activeSectionId: 'overview', // Currently displayed section
+};
+```
+
+### Boot Sequence (app.js)
+
+Application initialization follows a strict sequence to ensure all dependencies are satisfied:
+
+```
+1. getPanelConfig()
+   └─ applyConfig() — set theme, title, favicon
+
+2. window.RP_Renderer.init()
+   └─ Validate all components loaded in window
+
+3. getAllStates()
+   └─ Populate AppState.states with current HA entities
+
+4. window.RP_Nav.init()
+   └─ Build sidebar navigation from config.rooms
+
+5. window.RP_Renderer.renderActiveSection(AppState)
+   └─ Render initial overview section
+
+6. showPanel() / hideLoadingScreen()
+   └─ Fade out loader, show dashboard
+
+7. connectWS()
+   └─ Establish WebSocket to HA
+   └─ If WebSocket unavailable, schedule fallback REST polling
+```
+
+### State Update Flow
+
+When an entity state changes (via WebSocket or polling):
+
+```
+WebSocket message / REST response
+  ↓
+updateEntityState(entity_id, newStateObj)
+  ↓
+AppState.states[entity_id] = newStateObj
+  ↓
+Component lookup via AppState.tileMap[entity_id].dataset.layoutType
+  ↓
+component.updateTile(tile, newStateObj)
+  ↓
+DOM mutation (classes, text, styles updated)
+```
+
+### Connection Management
+
+WebSocket connection with automatic fallback:
+
+```
+connectWS()
+  ↓
+Try WebSocket connection
+  ├─ Success: setConnectionStatus(true) → cancel polling
+  ├─ Failure: setConnectionStatus(false) → startStatePoll(interval)
+  │            └─ Exponential backoff: 1s → 2s → 4s → 8s → 16s → 30s max
+  └─ Disconnect: auto-reconnect with backoff
+```
+
+## Bottom Sheet (Light Controls)
+
+Light brightness, color temperature, and color adjustment interface. Implemented as a singleton modal overlay that slides up from the bottom.
+
+### RP_BottomSheet API
+
+```js
+window.RP_BottomSheet = {
+  /**
+   * Open the bottom sheet for a light entity.
+   *
+   * @param {string} entityId - Entity ID of the light
+   * @param {string} label - Display label
+   * @param {Object} attributes - State attributes (brightness, color_temp, rgb_color, etc.)
+   */
+  open: function(entityId, label, attributes) {
+    // Show overlay
+    // Populate sliders from attributes
+    // Set up event listeners for changes
+  },
+
+  /**
+   * Close the bottom sheet.
+   */
+  close: function() {
+    // Hide overlay
+    // Unbind event listeners
+  },
+};
+```
+
+### Implementation Details
+
+Pre-built DOM structure in `index.html`:
+
+```html
+<div id="bs-overlay"></div>
+<div id="bottom-sheet">
+  <div class="bs-header">
+    <h2 id="bs-label"></h2>
+    <button id="bs-close">×</button>
+  </div>
+  <div class="bs-content">
+    <!-- Sliders built dynamically on first open() -->
+  </div>
+</div>
+```
+
+### Feature Gates (supported_features Bitmask)
+
+Controls are conditionally shown based on `state.attributes.supported_features`:
+
+- **Bit 1 (BRIGHTNESS = 1)**: Brightness slider (0–255 or 0–100)
+- **Bit 2 (COLOR_TEMP = 2)**: Color temperature slider (mirek or Kelvin)
+- **Bit 16 (COLOR = 16)**: RGB color picker with predefined swatches
+
+Example:
+```js
+var attrs = stateObj.attributes;
+var hasColor = (attrs.supported_features & 16) !== 0;
+if (hasColor) {
+  // Show color controls
+}
+```
+
+### Lifecycle
+
+1. **First open**: `_build()` creates all DOM elements and attaches listeners
+2. **Subsequent opens**: Reuse pre-built DOM, update slider values from `attributes`
+3. **Close**: Hide overlay, do not destroy DOM
+4. **Service calls**: On slider change, call `callService('light', 'turn_on', params)`
+
+## Config Data Model (panel_config.json)
+
+The configuration file defines the dashboard layout, sections, and entity associations.
+
+### Complete Config Structure
+
 ```json
 {
-  "version": 4,
-  "header_sensors": [
-    {
-      "entity_id": "sensor.temperature",
-      "icon": "mdi:thermometer",
-      "label": "Temp"
-    }
-  ],
+  "version": 2,
   "overview": {
-    "title": "Overview",
+    "title": "Home",
     "items": [
       {
         "type": "entity",
-        "entity_id": "light.main",
-        "label": "Main Light",
-        "icon": "mdi:bulb"
+        "entity_id": "light.living_room",
+        "label": "Living Room",
+        "icon": "lightbulb",
+        "hidden": false,
+        "visual_type": "",
+        "device_class": "",
+        "layout_type": "light"
       }
     ]
   },
   "rooms": [
     {
-      "id": "living_room",
-      "title": "Living Room",
-      "icon": "mdi:sofa",
+      "id": "room_soggiorno",
+      "title": "Soggiorno",
+      "icon": "sofa",
       "hidden": false,
       "sections": [
         {
@@ -795,15 +794,13 @@ When loading a configuration with v3 format (rooms containing `items[]` directly
           "items": [
             {
               "type": "entity",
-              "entity_id": "light.ceiling",
-              "label": "Ceiling Light",
-              "icon": "mdi:bulb",
-              "hidden": false
-            },
-            {
-              "type": "entity",
-              "entity_id": "light.table",
-              "label": "Table Lamp"
+              "entity_id": "light.sofa",
+              "label": "Sofa",
+              "icon": "lightbulb",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": "",
+              "layout_type": "light"
             }
           ]
         },
@@ -813,246 +810,289 @@ When loading a configuration with v3 format (rooms containing `items[]` directly
           "items": [
             {
               "type": "entity",
-              "entity_id": "climate.thermostat",
-              "label": "Thermostat"
+              "entity_id": "sensor.living_room_temp",
+              "label": "Temperature",
+              "icon": "thermometer",
+              "hidden": false,
+              "visual_type": "",
+              "device_class": "temperature",
+              "layout_type": "sensor_temperature"
             }
           ]
         }
       ]
     }
   ],
-  "scenarios": []
-}
-```
-
-## Configuration Schema
-
-### options.json Structure (Legacy v1.0-v1.3 Format)
-
-```json
-{
-  "ha_url": "ws://homeassistant:8123",
-  "ha_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-
-  "panels": [
+  "scenarios": [
     {
-      "name": "Living Room",
-      "icon": "mdi:sofa",
-      "rows": [
-        {
-          "cols": [
-            {
-              "entity_id": "light.living_room",
-              "size": "medium",
-              "name": "Main Light",
-              "show_state": true
-            }
-          ]
-        },
-        {
-          "cols": [
-            {
-              "entity_id": "light.lamp",
-              "size": "small"
-            },
-            {
-              "entity_id": "switch.fan",
-              "size": "small"
-            }
-          ]
-        }
-      ]
+      "type": "entity",
+      "entity_id": "scene.evening",
+      "label": "Evening",
+      "hidden": false,
+      "layout_type": "scenario"
     }
   ],
-
-  "service_whitelist": [
-    {"domain": "light", "service": "turn_on"},
-    {"domain": "light", "service": "turn_off"},
-    {"domain": "light", "service": "toggle"},
-    {"domain": "light", "service": "turn_on", "service_data_schema": {
-      "brightness": "integer(0-255)"
-    }},
-    {"domain": "switch", "service": "turn_on"},
-    {"domain": "switch", "service": "turn_off"},
-    {"domain": "switch", "service": "toggle"}
-  ],
-
-  "layout_config": {
-    "tile_size_px": 80,
-    "grid_gap_px": 8,
-    "show_state_labels": true,
-    "state_label_position": "bottom"
-  }
+  "cameras": [
+    {
+      "entity_id": "camera.front_door",
+      "label": "Front Door",
+      "hidden": false,
+      "refresh_interval": 10
+    }
+  ]
 }
 ```
 
-### Entity Configuration Options
+### Field Definitions
 
-**Common Options** (all entity types):
-- `entity_id` (string, required) - HA entity ID
-- `name` (string) - Display name (defaults to entity friendly_name from HA)
-- `size` (string) - "small", "medium", or "large"
-- `show_state` (boolean) - Display state label on tile
-- `icon` (string) - MDI icon code (overrides entity icon)
-- `hidden` (boolean) - Hide this tile
+**Top-level**:
+- `version` (int): Schema version (currently 2)
 
-**Light-Specific Options**:
-- `show_brightness` (boolean) - Show brightness slider
-- `brightness_control` (string) - "slider" or "buttons"
-- `show_color_picker` (boolean) - Show color selection (future)
+**overview**:
+- `title` (string): Section title in header
+- `items` (array): Entity items to display
 
-**Switch-Specific Options**:
-- `confirm_before_toggle` (boolean) - Show confirmation dialog
+**rooms[]**:
+- `id` (string): Unique room identifier (used in nav)
+- `title` (string): Room display name
+- `icon` (string): MDI icon name
+- `hidden` (bool): Exclude from navigation
+- `sections[]`: Subsections within room
 
-**Sensor-Specific Options**:
-- `show_history` (boolean) - Show sparkline history (future)
-- `precision` (integer) - Decimal places for display
+**sections[]**:
+- `id` (string): Unique section identifier
+- `title` (string): Section display name
+- `items` (array): Entity items
 
-## Entity Types
+**items** (entity):
+- `type` (string): Always "entity"
+- `entity_id` (string): Full Home Assistant entity ID
+- `label` (string): Display label
+- `icon` (string): MDI icon name
+- `hidden` (bool): Hide from view
+- `visual_type` (string): User override for layout_type (optional)
+- `device_class` (string): Device class (optional, computed from HA if empty)
+- `layout_type` (string): Computed layout_type (set by backend)
 
-### Light Entity
+**cameras[]**:
+- `entity_id` (string): camera.* entity ID
+- `label` (string): Display label
+- `hidden` (bool): Hide from view
+- `refresh_interval` (int): Polling interval in seconds (default 10)
 
-**HA Entity Domain**: `light.*`
+## Data Flow Diagrams
 
-**Supported Attributes**:
-- `state`: "on" or "off"
-- `brightness`: 0-255
-- `color_temp`: color temperature in mireds (153-500)
-- `xy_color`: [x, y] coordinates
-- `rgb_color`: [r, g, b] 0-255
-- `hs_color`: [h, s] (0-360, 0-100)
-- `supported_features`: bitmask indicating available controls (BRIGHTNESS=1, COLOR_TEMP=2, COLOR=16)
+### Page Load
 
-**Service Calls**:
-- `light/turn_on` → `{entity_id, brightness?, color_temp?, rgb_color?, hs_color?, ...}`
-- `light/turn_off` → `{entity_id}`
-- `light/toggle` → `{entity_id}`
+```
+┌─────────────┐
+│   Browser   │
+└──────┬──────┘
+       │ GET /
+       ├────────────────────────────┐
+       │                            │
+       ├─ GET /api/panel-config     │
+       │   │                        │
+       │   └─ loader.py             │
+       │       ├─ Load config file  │
+       │       ├─ Compute layout_type
+       │       └─ Return JSON        │
+       │                            │
+       ├─ GET /api/states           │
+       │   │                        │
+       │   └─ ha_client.py          │
+       │       └─ HA REST /api/states
+       │           └─ Return states │
+       │                            │
+       └─ WS /ws                    │
+           │                        │
+           └─ ws_proxy.py           │
+               ├─ HA WebSocket      │
+               ├─ state_changed     │
+               │ messages           │
+               └─ Browser WS stream │
+       ┌───────────────────────────┘
+       │
+       ├─ app.js:boot()
+       │   ├─ getPanelConfig()
+       │   ├─ getAllStates()
+       │   ├─ RP_Renderer.init()
+       │   ├─ RP_Nav.init()
+       │   ├─ RP_Renderer.renderActiveSection()
+       │   └─ connectWS()
+       │
+       └─ Dashboard visible
+```
 
-**Tile Rendering**:
-- 120px tile with dynamic background tint
-- Short tap: toggle on/off
-- Long press (500ms+): open bottom sheet for advanced controls
-- Brightness shown as "XX%" in tile-value (empty when OFF)
-- `.light-tint` div overlay shows dynamic color based on:
-  - RGB color converted to hex
-  - Color temp (mireds) converted to Kelvin gradient
-- Bottom sheet sections shown based on `supported_features`:
-  - BRIGHTNESS (bit 1): brightness slider
-  - COLOR_TEMP (bit 2): color temperature slider
-  - COLOR (bit 16): hue slider + 8 color presets
-- Live tile color updates while adjusting sliders
-- Service calls debounced to 300ms to avoid flooding HA
+### Service Call (Toggle Light)
 
-### Switch Entity
+```
+┌─────────────────────┐
+│  User taps light    │
+└──────┬──────────────┘
+       │
+       ├─ Light component tap handler
+       │
+       └─ callService('light', 'turn_on', {entity_id: ...})
+           │
+           └─ POST /api/services/light/turn_on
+               │
+               ├─ handlers_service.py
+               │   ├─ Whitelist check
+               │   └─ ha_client.py
+               │       └─ HA REST /api/services/light/turn_on
+               │           │
+               │           └─ HA broadcasts state_changed event
+               │
+               └─ ws_proxy.py receives state_changed
+                   │
+                   └─ Browser WebSocket message
+                       │
+                       └─ app.js:updateEntityState()
+                           │
+                           └─ AppState.tileMap lookup
+                               │
+                               └─ component.updateTile()
+                                   │
+                                   └─ DOM class + text update
+```
 
-**HA Entity Domain**: `switch.*`
+### WebSocket Reconnection
 
-**Supported Attributes**:
-- `state`: "on" or "off"
-- `icon`: MDI icon code
+```
+┌─────────────────────┐
+│  WS connection lost │
+└──────┬──────────────┘
+       │
+       ├─ ws.js:onClose()
+       │   │
+       │   └─ setConnectionStatus(false)
+       │       │
+       │       └─ Schedule stat poll
+       │           │
+       │           ├─ Interval 1s
+       │           │   ├─ getAllStates() retry
+       │           │   └─ connectWS() retry
+       │           │
+       │           ├─ Exponential backoff
+       │           │   └─ 1s → 2s → 4s → 8s → 16s → 30s
+       │           │
+       │           └─ On connection success
+       │               ├─ setConnectionStatus(true)
+       │               ├─ Cancel polling
+       │               └─ Resume normal operation
+       │
+       └─ Dashboard stays responsive
+           (REST polling provides updates)
+```
 
-**Service Calls**:
-- `switch/turn_on` → `{entity_id}`
-- `switch/turn_off` → `{entity_id}`
-- `switch/turn_toggle` → `{entity_id}`
+## Security Model
 
-**Tile Rendering**:
-- Toggle button with on/off state
-- Icon and name
-- Simple binary visual (on = highlighted, off = greyed)
+### Token Isolation
 
-### Sensor Entity
+- **Server-side only**: HA long-lived token stored in server memory, never sent to browser
+- **Supervisor token**: Fetched from HA Supervisor via environment variable `SUPERVISOR_TOKEN`
+- **No localStorage/sessionStorage**: Sensitive data never written to client storage
 
-**HA Entity Domain**: `sensor.*`
+### Ingress Proxy
 
-**Supported Attributes**:
-- `state`: string (numeric or text)
-- `unit_of_measurement`: "°C", "%", etc.
-- `icon`: MDI icon code
+- Home Assistant Supervisor acts as authentication gateway
+- Only authenticated HA users can access `/`
+- `/config` requires HA Ingress session with admin role
+- Token is validated on every request in middleware
 
-**Service Calls**: None (read-only)
+### Service Call Validation
 
-**Tile Rendering**:
-- Read-only display
-- State value + unit
-- Icon
-- No interactive elements
+`handlers_service.py` validates every service call against a whitelist:
 
-### Binary Sensor Entity
+```python
+ALLOWED_SERVICES = {
+    'light': ['turn_on', 'turn_off', 'toggle'],
+    'switch': ['turn_on', 'turn_off', 'toggle'],
+    'scene': ['turn_on'],
+    'script': ['turn_on'],
+    'alarm_control_panel': ['arm_away', 'arm_home', 'disarm'],
+    # ... etc
+}
+```
 
-**HA Entity Domain**: `binary_sensor.*`
+Attempts to call unlisted service/domain combinations are rejected with 403 Forbidden.
 
-**Supported Attributes**:
-- `state`: "on" or "off"
-- `device_class`: "motion", "window", "door", etc.
+### CORS Policy
 
-**Service Calls**: None (read-only)
+Custom CORS middleware:
+- Echoes `Origin` header only if it matches `ha_url` configuration
+- Credentials required for cross-origin requests
+- Preflight requests validated
 
-**Tile Rendering**:
-- Status indicator showing on/off
-- Device class icon (motion → motion detector icon)
-- Updated in real-time via WebSocket
+### Config Endpoint Protection
 
-### Cover Entity
+GET `/api/panel-config` and POST `/api/config`:
+- Require valid HA Ingress session
+- Admin role check before allowing config modification
+- Configuration file validated against schema
 
-**HA Entity Domain**: `cover.*` (future)
+### WebSocket Security
 
-**Supported Attributes**:
-- `state`: "open", "closed", or "opening" / "closing"
-- `current_position`: 0-100
-- `supported_features`: determines available actions
+- WebSocket connection authenticated via HA token
+- Message filtering: only state_changed events forwarded to browser
+- Service calls require matching entity domain validation
 
-**Service Calls**:
-- `cover/open_cover`
-- `cover/close_cover`
-- `cover/stop_cover`
-- `cover/set_cover_position` → `{entity_id, position}`
+## Browser Compatibility Matrix
 
-**Tile Rendering** (future):
-- Open/Close/Stop buttons
-- Position slider if position attribute present
-- State label (opening, closing, etc.)
+### iOS Safari (Primary Target)
 
-### Input Boolean Entity
+| Platform | Version | Support | Notes |
+|----------|---------|---------|-------|
+| iOS | 12.x | Full | WKWebView, ES5 only |
+| iOS | 13–14.x | Full | WKWebView |
+| iOS | 15+ | Full | WKWebView, preferred |
 
-**HA Entity Domain**: `input_boolean.*` (future)
+**iOS 12 constraints** (enforced for maximum compatibility):
+- No `const`/`let` (use `var`)
+- No arrow functions `=>` (use `function`)
+- No optional chaining `?.` or nullish coalescing `??`
+- No `async`/`await` in component files
+- No module syntax (`import`/`export`)
+- IIFE pattern: `(function() { 'use strict'; ... }())`
 
-**Supported Attributes**:
-- `state`: "on" or "off"
+**iOS 12 CSS constraints** (enforced):
+- No `gap:` on `display:flex` (use margins instead)
+- No `inset:` shorthand (use `top`/`right`/`bottom`/`left`)
+- No `100dvh` (use `100vh`)
+- Require `-webkit-` prefixes for flexbox: `-webkit-flex`
 
-**Service Calls**:
-- `input_boolean/turn_on`
-- `input_boolean/turn_off`
-- `input_boolean/toggle`
+### Other Platforms
 
-**Tile Rendering** (future):
-- Toggle button similar to switch
-- User-defined friendly name
+| Browser | Version | Support |
+|---------|---------|---------|
+| Chrome Android | Last 3 versions | Full |
+| Chrome Desktop | Last 3 versions | Full |
+| Firefox Desktop | Last 3 versions | Full |
+| Safari Desktop | Last 3 versions | Full |
 
-### Input Select Entity
+All modern browsers support ES5 and modern CSS.
 
-**HA Entity Domain**: `input_select.*` (future)
+## Add-on Configuration (config.yaml Options)
 
-**Supported Attributes**:
-- `state`: current option
-- `options`: list of available options
+Configuration options exposed in Home Assistant add-on config panel and stored in `options.json`:
 
-**Service Calls**:
-- `input_select/select_option` → `{entity_id, option}`
+| Option | Type | Default | Range | Description |
+|--------|------|---------|-------|-------------|
+| `ha_url` | url | `http://homeassistant:8123` | — | Home Assistant instance URL |
+| `ha_token` | password | `""` | — | Long-lived token (auto-fetched from SUPERVISOR_TOKEN if empty) |
+| `panel_title` | string | `"Home"` | 1–50 chars | Dashboard title in header |
+| `theme` | select | `"dark"` | dark, light, auto | Color theme (auto = system preference) |
+| `kiosk_mode` | boolean | `true` | — | Disable text selection and context menus |
+| `refresh_interval` | integer | `30` | 5–300 | REST fallback poll interval in seconds |
 
-**Tile Rendering** (future):
-- Dropdown or button group showing options
-- Current selection highlighted
+**Notes**:
+- `columns` option was removed in v2.0 — column layout is entirely CSS-based with media queries
+- `ha_token` is optional; if empty, the server fetches the token from `SUPERVISOR_TOKEN` environment variable
+- Theme auto mode uses CSS `prefers-color-scheme` media query
+- Refresh interval is fallback only; WebSocket is preferred when available
 
 ---
 
-**Document Version**: 1.3
-**Last Updated**: 2026-03-24
-**Maintainer**: Retro Panel Team
-
-**Recent Updates (v1.3)**:
-- Added Data Model (v4 Schema) section documenting room sections structure
-- Documented backward compatibility: v3 rooms with `items[]` auto-migrate to v4
-- Added schema v4 example with sections, header_sensors, overview, and scenarios
-- Updated Configuration Schema section to note legacy format is from v1.0-v1.3
-- Clarified version bumping from v3 to v4 with section introduction
+**Last Updated**: 2026-03-27
+**Version**: 2.0

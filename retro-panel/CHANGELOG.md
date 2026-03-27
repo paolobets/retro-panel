@@ -7,6 +7,60 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.0.0] — 2026-03-27
+
+### Breaking Changes
+
+- **Completo refactoring frontend** — tutti i file CSS e JS del frontend sono stati riscritti da zero.
+  L'architettura precedente (griglia CSS auto-adattiva) è stata sostituita con un sistema a dimensioni fisse.
+
+### Added
+
+- **`layout_type` system** — il backend ora calcola `layout_type` per ogni entità (`light`, `switch`,
+  `sensor_temperature`, `sensor_humidity`, `sensor_co2`, `sensor_battery`, `sensor_energy`,
+  `sensor_generic`, `binary_door`, `binary_motion`, `binary_standard`, `alarm`, `camera`, `scenario`).
+  Il frontend è un puro renderer: `COMPONENT_MAP[layout_type]` → zero inferenza nel frontend.
+
+- **`device_class`** salvato in `entities.json` dalla Config UI, disponibile per calcolo `layout_type`
+  senza richiedere lookup live su HA.
+
+- **Triple-lock tile dimensions** — `.tile-light` e `.tile-switch` hanno `height + min-height + max-height = 120px`.
+  Nessun vicino può alterarne le dimensioni. Basato su `mockups/oggetti_definitivi.html`.
+
+- **Flexbox column system** — `.tile-row` + `.tile-col-compact` (33.3%) + `.tile-col-sensor` (50%) +
+  `.tile-col-full` (100%). Nessuna CSS grid per i tile, zero row-height stretching.
+
+- **Design system CSS** (`tokens.css`) — variabili `--c-bg`, `--c-surface`, `--c-accent`, `--c-light-on`,
+  `--radius`, `--sidebar-w`, `--header-h` con override per tema light.
+
+- **Bottom sheet per luci** (`bottom-sheet.css` + `bottom-sheet.js`) — sostituisce `light-sheet.js`.
+  Dimmer, color temperature, hue slider + swatches preset. Si apre con long-press (500ms) su una tile luce.
+
+- **Config UI separata** (`/config`) — accessibile via `webui:` in `config.yaml` → pulsante
+  "Open Web UI" nella pagina info dell'add-on in HA.
+
+- **`webui:` in `config.yaml`** — genera il pulsante "Open Web UI" separato dal pannello sidebar.
+
+### Changed
+
+- **`loader.py`** (`EntityConfig`) — aggiunti campi `device_class: str = ""` e `layout_type: str = ""`;
+  aggiunta funzione `_compute_layout_type()`.
+- **`handlers_config.py`** — `_serialize_item()` include ora `layout_type` e `device_class`.
+- **`handlers_config_save.py`** — `_parse_item()` copia `device_class` da raw.
+- **`app.js`** — `updateEntityState()` usa `tile.dataset.layoutType` + `RP_Renderer.getComponent()`.
+  Rimossa gestione `header_sensors` (non più gestita dalla Config UI).
+- **`renderer.js`** — riscritto con `COMPONENT_MAP[layout_type]` e `COL_CLASS_MAP[layout_type]`.
+  Ogni tile è avvolta in `.tile-col-*` dentro `.tile-row`.
+- **Tutti i componenti JS** — riadattati per usare classi CSS v2.0 (`is-on`/`is-off`/`is-unavail`,
+  `tile-light`, `tile-switch`, `tile-sensor`, `tile-alarm`, `tile-scenario`, `tile-camera`).
+  `ScenarioComponent` espone ora `createTile` (era `createCard`).
+
+### Removed
+
+- File CSS legacy: `base.css`, `themes.css`, `components.css`, `camera.css` (vecchio `config.css` invariato).
+- `light-sheet.js` — sostituito da `bottom-sheet.js`.
+- Configurazione `header_sensors` dalla Config UI.
+
 ## [1.6.6] — 2026-03-26
 
 ### Fixed

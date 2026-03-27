@@ -1,9 +1,13 @@
 /**
- * renderer.js — Section rendering module for Retro Panel
+ * renderer.js — Section rendering module for Retro Panel 2.0
  * IIFE che espone window.RP_Renderer
  *
+ * v2.0: uses layout_type-based COMPONENT_MAP and COL_CLASS_MAP.
+ * Each tile is wrapped in a .tile-col-* div inside a .tile-row div.
+ * The COMPONENT_MAP is resolved lazily in init().
+ *
  * No ES modules. iOS 12+ Safari safe.
- * Niente const/let/arrow functions/import/export.
+ * No const/let/arrow functions/import/export.
  *
  * Depends on: utils/dom.js, utils/format.js,
  *             components/light.js, switch.js, sensor.js, alarm.js,
@@ -12,111 +16,192 @@
 window.RP_Renderer = (function () {
   'use strict';
 
-  // Mappa domain → componente JS, risolta a runtime in init()
-  var COMPONENTS = {
-    light: null,
-    switch: null,
-    sensor: null,
-    binary_sensor: null,
-    alarm_control_panel: null,
-    scene: null,
-    script: null,
+  // ---------------------------------------------------------------------------
+  // COMPONENT_MAP: layout_type → component object (resolved in init())
+  // ---------------------------------------------------------------------------
+  var COMPONENT_MAP = {
+    'light':              null,
+    'switch':             null,
+    'sensor_temperature': null,
+    'sensor_humidity':    null,
+    'sensor_co2':         null,
+    'sensor_battery':     null,
+    'sensor_energy':      null,
+    'sensor_generic':     null,
+    'binary_door':        null,
+    'binary_motion':      null,
+    'binary_standard':    null,
+    'alarm':              null,
+    'camera':             null,
+    'scenario':           null,
+    'energy_flow':        null,
   };
 
-  function _getComponents() {
-    COMPONENTS.light               = window.LightComponent   || null;
-    COMPONENTS.switch              = window.SwitchComponent  || null;
-    COMPONENTS.sensor              = window.SensorComponent  || null;
-    COMPONENTS.binary_sensor       = window.SensorComponent  || null;
-    COMPONENTS.alarm_control_panel = window.AlarmComponent   || null;
-    COMPONENTS.scene               = window.ScenarioComponent || null;
-    COMPONENTS.script              = window.ScenarioComponent || null;
+  // Column class for each layout_type
+  var COL_CLASS_MAP = {
+    'light':              'tile-col-compact',
+    'switch':             'tile-col-compact',
+    'sensor_temperature': 'tile-col-sensor',
+    'sensor_humidity':    'tile-col-sensor',
+    'sensor_co2':         'tile-col-sensor',
+    'sensor_battery':     'tile-col-sensor',
+    'sensor_energy':      'tile-col-sensor',
+    'sensor_generic':     'tile-col-sensor',
+    'binary_door':        'tile-col-sensor',
+    'binary_motion':      'tile-col-sensor',
+    'binary_standard':    'tile-col-sensor',
+    'alarm':              'tile-col-full',
+    'camera':             'tile-col-full',
+    'scenario':           'tile-col-compact',
+    'energy_flow':        'tile-col-full',
+  };
+
+  function _initComponents() {
+    COMPONENT_MAP['light']              = window.LightComponent    || null;
+    COMPONENT_MAP['switch']             = window.SwitchComponent   || null;
+    COMPONENT_MAP['sensor_temperature'] = window.SensorComponent   || null;
+    COMPONENT_MAP['sensor_humidity']    = window.SensorComponent   || null;
+    COMPONENT_MAP['sensor_co2']         = window.SensorComponent   || null;
+    COMPONENT_MAP['sensor_battery']     = window.SensorComponent   || null;
+    COMPONENT_MAP['sensor_energy']      = window.SensorComponent   || null;
+    COMPONENT_MAP['sensor_generic']     = window.SensorComponent   || null;
+    COMPONENT_MAP['binary_door']        = window.SensorComponent   || null;
+    COMPONENT_MAP['binary_motion']      = window.SensorComponent   || null;
+    COMPONENT_MAP['binary_standard']    = window.SensorComponent   || null;
+    COMPONENT_MAP['alarm']              = window.AlarmComponent    || null;
+    COMPONENT_MAP['camera']             = window.CameraComponent   || null;
+    COMPONENT_MAP['scenario']           = window.ScenarioComponent || null;
+    COMPONENT_MAP['energy_flow']        = window.EnergyFlowComponent || null;
   }
 
   // ---------------------------------------------------------------------------
-  // Component resolver
+  // Render a single item into a column wrapper, append to a tile-row
+  // Returns the inner tile element (stored in tileMap) or null on failure.
   // ---------------------------------------------------------------------------
+  function _renderItem(item, tileRow, appState) {
+    var DOM = window.RP_DOM;
 
-  function resolveComponentForItem(item) {
-    if (!item || !item.entity_id) { return null; }
-    var domain = item.entity_id.split('.')[0];
-    var dm = item.display_mode || 'auto';
+    if (!item || item.hidden) { return null; }
 
-    // display_mode 'row' o 'climate' → sempre SensorComponent
-    if (dm === 'row' || dm === 'climate') {
-      return window.SensorComponent || null;
+    // energy_flow is handled separately (has no entity_id)
+    if (item.type === 'energy_flow') {
+      var efComp = COMPONENT_MAP['energy_flow'];
+      if (!efComp) { return null; }
+      var efTile = efComp.createTile(item);
+      var efCol = DOM.createElement('div', COL_CLASS_MAP['energy_flow'] || 'tile-col-full');
+      efCol.appendChild(efTile);
+      tileRow.appendChild(efCol);
+      appState.energyTiles.push({ tile: efTile, cfg: item });
+      efComp.updateTile(efTile, appState.states);
+      return efTile;
     }
 
-    return COMPONENTS[domain] || _resolveDefaultComponent(domain);
+    if (item.type !== 'entity' || !item.entity_id) { return null; }
+
+    var layoutType = item.layout_type || 'sensor_generic';
+    var component = COMPONENT_MAP[layoutType];
+    if (!component) {
+      console.warn('[renderer] No component for layout_type:', layoutType, item.entity_id);
+      component = _makeGenericComponent();
+    }
+
+    var colClass = COL_CLASS_MAP[layoutType] || 'tile-col-sensor';
+    var col = DOM.createElement('div', colClass);
+
+    var tile;
+    try {
+      tile = component.createTile(item);
+    } catch (err) {
+      console.error('[renderer] createTile failed:', item.entity_id, err);
+      return null;
+    }
+
+    col.appendChild(tile);
+    tileRow.appendChild(col);
+
+    appState.tileMap[item.entity_id] = tile;
+
+    var stateObj = appState.states[item.entity_id];
+    if (stateObj) {
+      try { component.updateTile(tile, stateObj); }
+      catch (ue) { console.error('[renderer] updateTile failed:', item.entity_id, ue); }
+    }
+
+    return tile;
   }
 
-  function _resolveDefaultComponent(domain) {
-    // Tile generico per domini sconosciuti
+  // ---------------------------------------------------------------------------
+  // Fallback component for unknown layout_types
+  // ---------------------------------------------------------------------------
+  function _makeGenericComponent() {
     return {
       createTile: function (cfg) {
         var DOM = window.RP_DOM;
-        var tile = DOM.createElement('div', 'tile entity-generic state-off');
+        var tile = DOM.createElement('div', 'tile tile-sensor');
         tile.dataset.entityId = cfg.entity_id;
+        tile.dataset.layoutType = cfg.layout_type || '';
 
-        var top = DOM.createElement('div', 'tile-top');
-        var iconEl = DOM.createElement('span', 'tile-icon');
-        if (window.RP_FMT && window.RP_FMT.getIcon) {
-          iconEl.innerHTML = window.RP_FMT.getIcon(cfg.icon, 28, cfg.entity_id);
-        } else if (window.RP_MDI) {
-          iconEl.innerHTML = window.RP_MDI(domain, 28) || '';
+        var bubble = DOM.createElement('div', 'sensor-icon-bubble sri-ok');
+        if (window.RP_FMT) {
+          bubble.innerHTML = window.RP_FMT.getIcon(cfg.icon, 20, cfg.entity_id);
         }
-        top.appendChild(iconEl);
 
-        var bottom = DOM.createElement('div', 'tile-bottom');
-        var valueEl = DOM.createElement('span', 'tile-value');
-        valueEl.textContent = '\u2014';
-        var labelEl = DOM.createElement('span', 'tile-label');
-        labelEl.textContent = cfg.label || cfg.entity_id;
-        bottom.appendChild(valueEl);
-        bottom.appendChild(labelEl);
+        var text = DOM.createElement('div', 'sensor-text');
+        var name = DOM.createElement('span', 'sensor-name');
+        name.textContent = cfg.label || cfg.entity_id;
+        var val = DOM.createElement('span', 'sensor-value');
+        val.textContent = '\u2014';
+        text.appendChild(name);
+        text.appendChild(val);
 
-        tile.appendChild(top);
-        tile.appendChild(bottom);
+        tile.appendChild(bubble);
+        tile.appendChild(text);
         return tile;
       },
       updateTile: function (tile, stateObj) {
         var state = stateObj ? stateObj.state : 'unavailable';
-        tile.classList.remove('state-on', 'state-off', 'state-unavailable');
+        tile.classList.remove('is-on', 'is-off', 'is-unavail');
         if (state === 'unavailable' || state === 'unknown') {
-          tile.classList.add('state-unavailable');
-        } else if (state === 'on') {
-          tile.classList.add('state-on');
+          tile.classList.add('is-unavail');
         } else {
-          tile.classList.add('state-off');
+          tile.classList.add('is-on');
         }
-        var valueEl = tile.querySelector('.tile-value');
-        if (valueEl) { valueEl.textContent = state; }
+        var valEl = tile.querySelector('.sensor-value');
+        if (valEl) { valEl.textContent = state; }
       },
     };
   }
 
   // ---------------------------------------------------------------------------
-  // Lazy render a blocchi via requestAnimationFrame
+  // Render a list of items into container using tile-row/tile-col layout
   // ---------------------------------------------------------------------------
+  function renderItems(container, items, appState) {
+    var DOM = window.RP_DOM;
 
-  function appendTilesInChunks(grid, tiles, idx) {
-    var CHUNK = 10;
-    var end = idx + CHUNK;
-    if (end > tiles.length) { end = tiles.length; }
-    for (var i = idx; i < end; i++) {
-      grid.appendChild(tiles[i]);
+    if (!items || items.length === 0) {
+      var empty = DOM.createElement('div', 'empty-state');
+      empty.innerHTML = '<span class="empty-state-icon">\u2699</span>'
+        + '<p class="empty-state-title">No items configured</p>'
+        + '<p class="empty-state-hint">Open Config to add entities to this section.</p>';
+      container.appendChild(empty);
+      return;
     }
-    if (end < tiles.length) {
-      requestAnimationFrame(function () {
-        appendTilesInChunks(grid, tiles, end);
-      });
+
+    var row = DOM.createElement('div', 'tile-row');
+    container.appendChild(row);
+
+    for (var i = 0; i < items.length; i++) {
+      try {
+        _renderItem(items[i], row, appState);
+      } catch (err) {
+        console.error('[renderer] _renderItem failed:', items[i] && items[i].entity_id, err);
+      }
     }
   }
 
   // ---------------------------------------------------------------------------
-  // Render functions
+  // Render active section
   // ---------------------------------------------------------------------------
-
   function renderActiveSection(appState) {
     var contentArea = document.getElementById('content-area');
     if (!contentArea) { return; }
@@ -129,20 +214,23 @@ window.RP_Renderer = (function () {
     if (!config) { return; }
 
     if (sectionId === 'overview') {
-      var ovItems = [];
-      if (config.overview_items) {
-        ovItems = config.overview_items;
-      } else if (config.overview && config.overview.items) {
-        ovItems = config.overview.items;
-      }
+      var ovItems = config.overview_items
+        || (config.overview && config.overview.items)
+        || [];
       var ovTitle = (config.overview && config.overview.title) || null;
-      renderItemsGrid(contentArea, ovItems, ovTitle, appState);
+      if (ovTitle) {
+        var h = document.createElement('h2');
+        h.className = 'section-heading';
+        h.textContent = ovTitle;
+        contentArea.appendChild(h);
+      }
+      renderItems(contentArea, ovItems, appState);
 
     } else if (sectionId === 'scenarios') {
-      renderScenariosGrid(contentArea, config.scenarios || []);
+      _renderScenariosSection(contentArea, config.scenarios || []);
 
     } else if (sectionId === 'cameras') {
-      renderCamerasGrid(contentArea, config.cameras || []);
+      _renderCamerasSection(contentArea, config.cameras || []);
 
     } else if (sectionId.indexOf('room:') === 0) {
       var roomId = sectionId.slice(5);
@@ -151,83 +239,18 @@ window.RP_Renderer = (function () {
       for (var i = 0; i < rooms.length; i++) {
         if (rooms[i].id === roomId) { room = rooms[i]; break; }
       }
-      if (room) {
-        renderRoomSections(contentArea, room, appState);
-      }
+      if (room) { _renderRoomSections(contentArea, room, appState); }
     }
   }
 
-  function renderItemsGrid(container, items, heading, appState) {
-    var DOM = window.RP_DOM;
-
-    if (heading) {
-      var h = DOM.createElement('h2', 'section-heading');
-      h.textContent = heading;
-      container.appendChild(h);
-    }
-
-    var grid = DOM.createElement('div', 'tile-grid');
-    container.appendChild(grid);
-
-    if (!items || items.length === 0) {
-      var empty = DOM.createElement('div', 'empty-state');
-      empty.innerHTML = '<span class="empty-state-icon">\u2699</span>'
-        + '<p class="empty-state-title">No items configured</p>'
-        + '<p class="empty-state-hint">Open Settings to add entities to this section.</p>';
-      grid.appendChild(empty);
-      return;
-    }
-
-    var tiles = [];
-
-    for (var i = 0; i < items.length; i++) {
-      try {
-        var item = items[i];
-        if (item.hidden) { continue; }
-
-        if (item.type === 'entity') {
-          var domain = item.entity_id.split('.')[0];
-          var component = resolveComponentForItem(item);
-          if (!component) {
-            console.warn('[renderer] No component for domain:', domain, item.entity_id);
-            continue;
-          }
-          var tile = component.createTile(item);
-          if (item.visual_type) {
-            tile.dataset.visualType = item.visual_type;
-          }
-          if (item.display_mode && item.display_mode !== 'auto') {
-            tile.dataset.displayMode = item.display_mode;
-          }
-          if (domain === 'alarm_control_panel') { tile.classList.add('alarm-tile'); }
-
-          // CRITICO: appendChild PRIMA di updateTile
-          grid.appendChild(tile);
-          appState.tileMap[item.entity_id] = tile;
-          var stateObj = appState.states[item.entity_id];
-          if (stateObj) {
-            try { component.updateTile(tile, stateObj); }
-            catch (ue) { console.error('[renderer] updateTile failed:', item.entity_id, ue); }
-          }
-          tiles.push(tile);
-
-        } else if (item.type === 'energy_flow') {
-          var efTile = window.EnergyFlowComponent.createTile(item);
-          appState.energyTiles.push({ tile: efTile, cfg: item });
-          grid.appendChild(efTile);
-          window.EnergyFlowComponent.updateTile(efTile, appState.states);
-        }
-      } catch (err) {
-        console.error('[renderer] renderItemsGrid item failed:', items[i] && items[i].entity_id, err);
-      }
-    }
-  }
-
-  function renderRoomSections(container, room, appState) {
+  // ---------------------------------------------------------------------------
+  // Room sections
+  // ---------------------------------------------------------------------------
+  function _renderRoomSections(container, room, appState) {
     var DOM = window.RP_DOM;
     var sections = room.sections || [];
 
-    // Migration fallback: se no sections ma legacy items[]
+    // Legacy: room.items[] without sections
     if (sections.length === 0 && room.items && room.items.length > 0) {
       sections = [{ id: 'sec_default', title: '', items: room.items }];
     }
@@ -236,17 +259,15 @@ window.RP_Renderer = (function () {
       var empty = DOM.createElement('div', 'empty-state');
       empty.innerHTML = '<span class="empty-state-icon">\u2699</span>'
         + '<p class="empty-state-title">No sections configured</p>'
-        + '<p class="empty-state-hint">Open Settings to add sections and entities to this room.</p>';
+        + '<p class="empty-state-hint">Open Config to add sections to this room.</p>';
       container.appendChild(empty);
       return;
     }
 
     for (var s = 0; s < sections.length; s++) {
       var section = sections[s];
-      var items = section.items || [];
-
-      // Filtra hidden
       var visibleItems = [];
+      var items = section.items || [];
       for (var vi = 0; vi < items.length; vi++) {
         if (!items[vi].hidden) { visibleItems.push(items[vi]); }
       }
@@ -274,52 +295,15 @@ window.RP_Renderer = (function () {
         continue;
       }
 
-      var grid = DOM.createElement('div', 'tile-grid-auto');
-      sectionEl.appendChild(grid);
       container.appendChild(sectionEl);
-
-      for (var j = 0; j < visibleItems.length; j++) {
-        var item = visibleItems[j];
-        try {
-          if (item.type === 'entity') {
-            var domain = item.entity_id.split('.')[0];
-            var component = resolveComponentForItem(item);
-            if (!component) {
-              console.warn('[renderer] No component for domain:', domain, item.entity_id);
-              continue;
-            }
-            var tile = component.createTile(item);
-            if (item.visual_type) {
-              tile.dataset.visualType = item.visual_type;
-            }
-            if (item.display_mode && item.display_mode !== 'auto') {
-              tile.dataset.displayMode = item.display_mode;
-            }
-            if (domain === 'alarm_control_panel') { tile.classList.add('alarm-tile'); }
-
-            // CRITICO: appendChild PRIMA di updateTile
-            grid.appendChild(tile);
-            appState.tileMap[item.entity_id] = tile;
-            var stateObj = appState.states[item.entity_id];
-            if (stateObj) {
-              try { component.updateTile(tile, stateObj); }
-              catch (ue) { console.error('[renderer] updateTile failed:', item.entity_id, ue); }
-            }
-
-          } else if (item.type === 'energy_flow') {
-            var efTile = window.EnergyFlowComponent.createTile(item);
-            appState.energyTiles.push({ tile: efTile, cfg: item });
-            grid.appendChild(efTile);
-            window.EnergyFlowComponent.updateTile(efTile, appState.states);
-          }
-        } catch (err) {
-          console.error('[renderer] Failed to render tile:', (item && item.entity_id) || item, err);
-        }
-      }
+      renderItems(sectionEl, visibleItems, appState);
     }
   }
 
-  function renderScenariosGrid(container, scenarios) {
+  // ---------------------------------------------------------------------------
+  // Scenarios section (flat grid)
+  // ---------------------------------------------------------------------------
+  function _renderScenariosSection(container, scenarios) {
     var DOM = window.RP_DOM;
     var h = DOM.createElement('h2', 'section-heading');
     h.textContent = 'Scenari';
@@ -327,27 +311,35 @@ window.RP_Renderer = (function () {
 
     if (!scenarios || scenarios.length === 0) {
       var empty = DOM.createElement('div', 'empty-state');
-      empty.innerHTML = '<span class="empty-state-icon">'
-        + (window.RP_MDI ? window.RP_MDI('palette', 36) : '\uD83C\uDFAD')
-        + '</span>'
+      empty.innerHTML = '<span class="empty-state-icon">\uD83C\uDFAD</span>'
         + '<p class="empty-state-title">No scenarios configured</p>'
-        + '<p class="empty-state-hint">Open Settings to add scenes and scripts.</p>';
+        + '<p class="empty-state-hint">Open Config to add scenes and scripts.</p>';
       container.appendChild(empty);
       return;
     }
 
     var grid = DOM.createElement('div', 'scenarios-grid');
     for (var i = 0; i < scenarios.length; i++) {
+      if (scenarios[i].hidden) { continue; }
       try {
-        grid.appendChild(window.ScenarioComponent.createCard(scenarios[i]));
+        var tile;
+        if (window.ScenarioComponent.createTile) {
+          tile = window.ScenarioComponent.createTile(scenarios[i]);
+        } else {
+          tile = window.ScenarioComponent.createCard(scenarios[i]);
+        }
+        grid.appendChild(tile);
       } catch (err) {
-        console.error('[renderer] scenario card failed:', err);
+        console.error('[renderer] scenario tile failed:', err);
       }
     }
     container.appendChild(grid);
   }
 
-  function renderCamerasGrid(container, cameras) {
+  // ---------------------------------------------------------------------------
+  // Cameras section (full-width tiles)
+  // ---------------------------------------------------------------------------
+  function _renderCamerasSection(container, cameras) {
     var DOM = window.RP_DOM;
     var h = DOM.createElement('h2', 'section-heading');
     h.textContent = 'Telecamere';
@@ -355,22 +347,18 @@ window.RP_Renderer = (function () {
 
     if (!cameras || cameras.length === 0) {
       var empty = DOM.createElement('div', 'empty-state');
-      empty.innerHTML = '<span class="empty-state-icon">'
-        + (window.RP_MDI ? window.RP_MDI('cctv', 36) : '\uD83D\uDCF9')
-        + '</span>'
+      empty.innerHTML = '<span class="empty-state-icon">\uD83D\uDCF9</span>'
         + '<p class="empty-state-title">No cameras configured</p>'
-        + '<p class="empty-state-hint">Open Settings to add camera entities.</p>';
+        + '<p class="empty-state-hint">Open Config to add camera entities.</p>';
       container.appendChild(empty);
       return;
     }
 
-    var grid = DOM.createElement('div', 'cameras-grid');
-    container.appendChild(grid);
-
     for (var i = 0; i < cameras.length; i++) {
+      if (cameras[i].hidden) { continue; }
       try {
         var tile = window.CameraComponent.createTile(cameras[i]);
-        grid.appendChild(tile);
+        container.appendChild(tile);
       } catch (err) {
         console.error('[renderer] camera tile failed:', cameras[i] && cameras[i].entity_id, err);
       }
@@ -380,14 +368,12 @@ window.RP_Renderer = (function () {
   // ---------------------------------------------------------------------------
   // Public API
   // ---------------------------------------------------------------------------
-
   return {
-    init: function () { _getComponents(); },
+    init: function () { _initComponents(); },
     renderActiveSection: renderActiveSection,
-    renderItemsGrid: renderItemsGrid,
-    renderRoomSections: renderRoomSections,
-    renderScenariosGrid: renderScenariosGrid,
-    renderCamerasGrid: renderCamerasGrid,
-    resolveComponentForItem: resolveComponentForItem,
+    renderItems: renderItems,
+    getComponent: function (layoutType) {
+      return COMPONENT_MAP[layoutType] || null;
+    },
   };
 }());

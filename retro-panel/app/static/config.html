@@ -6,8 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Retro Panel — Settings</title>
-  <link rel="stylesheet" href="static/css/base.css">
-  <link rel="stylesheet" href="static/css/themes.css">
+  <link rel="stylesheet" href="static/css/tokens.css">
   <link rel="stylesheet" href="static/css/config.css">
 </head>
 <body class="theme-dark">
@@ -24,7 +23,6 @@
     <button class="cfg-tab active" type="button" data-tab="overview">Overview</button>
     <button class="cfg-tab" type="button" data-tab="rooms">Rooms</button>
     <button class="cfg-tab" type="button" data-tab="scenarios">Scenarios</button>
-    <button class="cfg-tab" type="button" data-tab="header">Header</button>
     <button class="cfg-tab" type="button" data-tab="cameras">Telecamere</button>
   </div>
 
@@ -171,26 +169,6 @@
 
       <div class="items-actions">
         <button id="add-scenario-btn" type="button" class="action-btn">+ Add Scenario</button>
-      </div>
-
-    </section>
-
-    <!-- ══════════════════════════════════════════════
-         TAB: HEADER SENSORS
-         ══════════════════════════════════════════════ -->
-    <section id="tab-header" class="cfg-section hidden">
-
-      <div class="section-header">
-        <h2 class="section-title">Header Sensors</h2>
-        <p class="cfg-hint">Up to 4 mini sensor chips shown in the top bar (e.g. garbage collection, temperature).</p>
-      </div>
-
-      <div id="header-sensors-list">
-        <p class="cfg-placeholder">No header sensors configured.</p>
-      </div>
-
-      <div class="items-actions" id="header-add-wrap">
-        <button id="add-header-sensor-btn" type="button" class="action-btn">+ Add Sensor</button>
       </div>
 
     </section>

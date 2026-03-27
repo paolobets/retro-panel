@@ -23,6 +23,10 @@ def _serialize_item(item) -> dict:
             d["visual_type"] = ec.visual_type
         if ec.display_mode:
             d["display_mode"] = ec.display_mode
+        if ec.layout_type:
+            d["layout_type"] = ec.layout_type
+        if ec.device_class:
+            d["device_class"] = ec.device_class
         return d
     elif item.type == "energy_flow" and item.energy_flow is not None:
         ef = item.energy_flow

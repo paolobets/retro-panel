@@ -14,9 +14,9 @@ Welcome to the Retro Panel documentation. This is the **SINGLE SOURCE OF TRUTH**
    - Data flow diagrams (page load, service calls, WebSocket, reconnection)
    - Security model and threat mitigation
    - HA integration details
-   - Browser compatibility matrix (legacy mobile Safari, Chrome, Firefox, etc.)
+   - Browser compatibility matrix (iOS 12+, Chrome, Firefox, etc.)
    - Configuration schema documentation
-   - Entity type reference (Light, Switch, Sensor, Binary Sensor, Cover, Input Boolean, Input Select)
+   - Entity type reference (15 layout_type variants)
 
 2. **[PROJECT.md](PROJECT.md)** - Project management and decisions
    - Project goals and success criteria
@@ -27,9 +27,8 @@ Welcome to the Retro Panel documentation. This is the **SINGLE SOURCE OF TRUTH**
    - Release planning and timeline
 
 3. **[ROADMAP.md](ROADMAP.md)** - Feature roadmap and versioning
-   - v1.0 Foundation (current release)
-   - v1.5 Extension (planned features)
-   - v2.0 Advanced (future features)
+   - v2.0 Released (2026-03-27) — complete refactor
+   - v2.1 Planned (future features)
    - Performance targets
    - Breaking changes policy
    - Release schedule
@@ -39,8 +38,8 @@ Welcome to the Retro Panel documentation. This is the **SINGLE SOURCE OF TRUTH**
 4. **[DEVELOPMENT.md](DEVELOPMENT.md)** - Developer guide
    - Quick start: local development without HA
    - Testing on real Home Assistant instance
-   - Browser compatibility rules (CRITICAL - legacy mobile Safari)
-   - Step-by-step guide to adding new entity types
+   - Browser compatibility rules (CRITICAL - iOS 12+, no const/let/=>)
+   - Step-by-step guide to adding new entity types (layout_type system)
    - Configuration schema change procedure
    - WebSocket debugging and common issues
    - Logging best practices
@@ -48,8 +47,8 @@ Welcome to the Retro Panel documentation. This is the **SINGLE SOURCE OF TRUTH**
 5. **[API.md](API.md)** - Internal API reference
    - Backend REST endpoints (GET /, /static/*, /api/*)
    - WebSocket message protocol (server→client and client→server)
-   - Frontend module APIs (api.js, ws.js, state.js)
-   - Component interface and lifecycle
+   - Frontend module APIs (api.js, ws.js, app.js)
+   - Component interface and lifecycle (layout_type system)
    - Error handling and response schemas
    - Code examples for each API
 
@@ -67,7 +66,7 @@ Welcome to the Retro Panel documentation. This is the **SINGLE SOURCE OF TRUTH**
 → Follow [DEVELOPMENT.md](DEVELOPMENT.md) "Local Development (No HA Required)"
 
 **Add a new feature**
-→ Use [DEVELOPMENT.md](DEVELOPMENT.md) "Adding a New Entity Type" as template
+→ Use [DEVELOPMENT.md](DEVELOPMENT.md) "Adding a New Entity Type (layout_type)" as template
 
 **Understand the API**
 → Read [API.md](API.md) with examples
@@ -82,7 +81,7 @@ Welcome to the Retro Panel documentation. This is the **SINGLE SOURCE OF TRUTH**
 → Go to [DEVELOPMENT.md](DEVELOPMENT.md) "Debugging WebSocket Issues"
 
 **Extend Retro Panel safely**
-→ Follow browser compatibility rules in [DEVELOPMENT.md](DEVELOPMENT.md)
+→ Follow browser compatibility rules in [DEVELOPMENT.md](DEVELOPMENT.md) (iOS 12+, var/const, no const/let/=>)
 
 ---
 
@@ -90,31 +89,36 @@ Welcome to the Retro Panel documentation. This is the **SINGLE SOURCE OF TRUTH**
 
 **What is Retro Panel?**
 Retro Panel is a lightweight Home Assistant control panel optimized for:
-- legacy mobile Safari (WebKit) (oldest 5+ year old devices)
+- iOS 12+ WKWebView (iPad on wall mount)
 - Slower networks (3G/4G connections)
 - Resource-constrained devices (Raspberry Pi 3B+)
 - Simple, fast, distraction-free interface
+- Legacy devices no longer receiving OS updates
 
 **Technology Stack**:
 - Backend: Python 3.11 + aiohttp (async web server)
-- Frontend: Vanilla JavaScript ES2017 (no frameworks, bundlers, or transpilers)
-- Styling: Plain CSS (no preprocessors)
+- Frontend: Vanilla JavaScript ES2017 (no frameworks, no const/let/arrow functions — var only)
+- Styling: Plain CSS with triple-lock tile dimensions
 - Integration: Home Assistant Ingress proxy for authentication
 - Communication: REST API for service calls, WebSocket for real-time updates
 
 **Key Design Decisions**:
 1. Python + aiohttp: Lightweight, HA ecosystem, minimal deps
-2. Vanilla JS ES2017: 15 KB vs React 35 KB, legacy mobile Safari native
-3. Plain CSS: No build overhead
+2. Vanilla JS ES2017 with var-only: 15 KB vs React 35 KB, iOS 12 compatible
+3. Plain CSS with fixed tile heights: No build overhead, immutable sizing
 4. HA Ingress: Token isolation, security, network flexibility
 5. WebSocket bridge: Server-side token storage, scalable
+6. layout_type system: Backend-computed entity type, frontend-rendered component
 
-**v1.0 Features**:
-- Light, Switch, Sensor, Binary Sensor entity types
-- Responsive grid layout with configurable tiles
-- Real-time state updates via WebSocket
-- Service call API with security whitelist
-- legacy mobile Safari (WebKit) full support
+**v2.0 Features** (Released 2026-03-27):
+- Light, Switch, Sensor (9 variants), Binary Sensor (3 variants), Alarm, Camera, Scenario, Energy Flow
+- Two-URL architecture: `/` (dashboard) and `/config` (admin)
+- Bottom sheet for light controls (brightness/color temperature)
+- Room-based organization with sections
+- 4 configuration tabs: Overview, Rooms, Scenarios, Cameras
+- layout_type system for dynamic entity rendering
+- Triple-lock tile dimensions (immutable heights)
+- iOS 12+ compatible CSS (no gap/inset/100dvh)
 
 **Success Metrics**:
 - Page load < 2 seconds on 4G
@@ -128,8 +132,8 @@ Retro Panel is a lightweight Home Assistant control panel optimized for:
 
 1. **Usability Over Features**: Simple, usable interface > feature-rich complexity
 2. **Robustness Over Elegance**: Reliable code > elegant but fragile code
-3. **Compatibility Over Modernity**: Works on legacy mobile Safari > uses ES2025 features
-4. **No Over-Engineering**: Build for v1.0 needs only, refactor when pattern is clear
+3. **Compatibility Over Modernity**: Works on iOS 12+ > uses ES2025 features
+4. **No Over-Engineering**: Build for v2.0 needs only, refactor when pattern is clear
 
 ---
 
@@ -137,9 +141,20 @@ Retro Panel is a lightweight Home Assistant control panel optimized for:
 
 ### Legacy Browser Compatibility (Hard Constraint)
 - ES2017 maximum (no transpilation)
+- **var keyword only (no const/let)**
+- **No arrow functions (no =>)**
+- **No optional chaining (?.)**
+- **No nullish coalescing (??)**
 - All vendor prefixes included (-webkit-)
-- No async generators, Proxy, BigInt, eval()
+- iOS 12+ minimum target
 - Test regularly on real iOS devices
+
+### CSS Constraints (Hard Constraint - v2.0)
+- **No gap: on display:flex** (use margin instead)
+- **No inset: shorthand** (use top/bottom/left/right)
+- **No 100dvh** (use 100vh)
+- Triple-lock tile heights (no height: auto)
+- Media queries for responsive columns
 
 ### Memory Usage (Hard Constraint)
 - Add-on: < 100 MB RSS (must run on Pi 3B+)
@@ -180,19 +195,19 @@ README.md (this file)
 
 ## File Locations
 
-All documentation files are in: **`C:\Users\Betse\.local\bin\retro-panel\docs\`**
+All documentation files are in: **`C:\Work\Sviluppo\retro-panel\retro-panel\docs\`**
 
 ```
 retro-panel/docs/
 ├── README.md (this file)
-├── ARCHITECTURE.md (11,000+ words)
-├── PROJECT.md (5,000+ words)
-├── ROADMAP.md (6,000+ words)
-├── DEVELOPMENT.md (8,000+ words)
-└── API.md (7,000+ words)
+├── ARCHITECTURE.md (13,000+ words)
+├── PROJECT.md (7,000+ words)
+├── ROADMAP.md (8,000+ words)
+├── DEVELOPMENT.md (10,000+ words)
+└── API.md (9,000+ words)
 ```
 
-**Total Documentation**: 40,000+ words covering all aspects of the project
+**Total Documentation**: 50,000+ words covering all aspects of the project
 
 ---
 
@@ -201,7 +216,7 @@ retro-panel/docs/
 1. **First Time?** Read PROJECT.md "Project Goals" (5 min read)
 2. **Technical Overview?** Read ARCHITECTURE.md "Component Architecture" (15 min read)
 3. **Want to Code?** Follow DEVELOPMENT.md "Quick Start" (10 min setup)
-4. **Adding Features?** Use DEVELOPMENT.md "Adding a New Entity Type" (30 min reference)
+4. **Adding Features?** Use DEVELOPMENT.md "Adding a New Entity Type (layout_type)" (30 min reference)
 5. **Debugging?** Go to DEVELOPMENT.md "Debugging WebSocket Issues" (reference as needed)
 
 ---
@@ -231,10 +246,10 @@ This documentation is the single source of truth for Retro Panel development. It
 
 If something is unclear or missing, it should be documented here.
 
-**Document Version**: 1.0
-**Last Updated**: 2026-03-22
-**Total Words**: 40,000+
-**Coverage**: 100% of v1.0 features and architecture
+**Document Version**: 2.0
+**Last Updated**: 2026-03-27
+**Total Words**: 50,000+
+**Coverage**: 100% of v2.0 features and architecture
 
 ---
 
@@ -247,21 +262,20 @@ If something is unclear or missing, it should be documented here.
 | Tech stack | ARCHITECTURE.md | Technology Stack |
 | Directory structure | ARCHITECTURE.md | Directory Structure |
 | Data flow | ARCHITECTURE.md | Data Flow Diagrams |
-| Entity types | ARCHITECTURE.md | Entity Types |
+| Entity types | ARCHITECTURE.md | Entity Types (15 layout_types) |
 | Browser support | ARCHITECTURE.md | Browser Compatibility Matrix |
 | Local dev setup | DEVELOPMENT.md | Local Development |
 | Real HA testing | DEVELOPMENT.md | Testing on Real HA |
-| legacy mobile Safari rules | DEVELOPMENT.md | Browser Compatibility Rules |
-| Add entity type | DEVELOPMENT.md | Adding a New Entity Type |
+| iOS 12 rules | DEVELOPMENT.md | Browser Compatibility Rules |
+| Add entity type | DEVELOPMENT.md | Adding a New Entity Type (layout_type) |
 | Change config | DEVELOPMENT.md | Configuration Schema Changes |
 | Debug WebSocket | DEVELOPMENT.md | Debugging WebSocket Issues |
-| v1.0 features | ROADMAP.md | v1.0 - Foundation |
-| v1.5 roadmap | ROADMAP.md | v1.5 - Extension |
-| v2.0 roadmap | ROADMAP.md | v2.0 - Advanced |
+| v2.0 features | ROADMAP.md | v2.0 - Released |
+| v2.1 roadmap | ROADMAP.md | v2.1 - Planned |
 | REST endpoints | API.md | Backend REST Endpoints |
 | WebSocket protocol | API.md | WebSocket Message Protocol |
 | api.js functions | API.md | api.js Module |
 | ws.js functions | API.md | ws.js Module |
 | Component interface | API.md | Component Interface |
+| layout_type system | ARCHITECTURE.md | Entity Type Reference |
 | ADRs | PROJECT.md | Architectural Decisions |
-

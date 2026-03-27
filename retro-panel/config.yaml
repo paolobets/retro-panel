@@ -1,5 +1,5 @@
 name: "Retro Panel"
-version: "1.6.6"
+version: "2.0.0"
 slug: "retro_panel"
 description: >-
   Touch-optimized kiosk dashboard for Home Assistant.
@@ -13,6 +13,7 @@ arch:
   - amd64
 ingress: true
 ingress_port: 7654
+webui: "http://[HOST]:[PORT]/config"
 panel_icon: mdi:tablet-dashboard
 panel_title: Retro Panel
 startup: services

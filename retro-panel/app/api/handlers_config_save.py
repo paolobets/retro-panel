@@ -52,6 +52,8 @@ def _parse_item(raw: dict, idx: int, context: str) -> dict:
             item["visual_type"] = str(raw["visual_type"])[:32]
         if raw.get("display_mode"):
             item["display_mode"] = str(raw["display_mode"])[:32]
+        if raw.get("device_class"):
+            item["device_class"] = str(raw["device_class"])[:64]
         return item
     elif item_type == "energy_flow":
         item = {"type": "energy_flow"}

@@ -1,20 +1,21 @@
 /**
- * light.js — Light entity tile component
- * Style C: fixed 120px tile, dynamic color from state attributes,
- * long-press opens global bottom sheet.
- * No ES modules — loaded as regular script. iOS 12 safe.
+ * light.js — Light entity tile component v2.0
+ * Fixed 120px tile, dynamic color from state attributes,
+ * long-press opens global bottom sheet (RP_BottomSheet).
+ * No ES modules — loaded as regular script. iOS 12+ safe.
+ * NO const/let/=>/?./?? — only var, IIFE pattern.
  *
  * Exposes globally: window.LightComponent = { createTile, updateTile }
  */
 window.LightComponent = (function () {
   'use strict';
 
-  var LONG_PRESS_MS = 500;
+  var LONG_PRESS_MS  = 500;
+  var COLOR_DEFAULT  = '#FFB700';
 
-  /* Default color when light is ON without color info */
-  var COLOR_DEFAULT = '#FFB700';
-
-  /* Map color_temp mired → hex for tile coloring */
+  /* ------------------------------------------------------------------ */
+  /* Color helpers                                                        */
+  /* ------------------------------------------------------------------ */
   function miredToColor(mired) {
     if (!mired) { return COLOR_DEFAULT; }
     if (mired <= 170) { return '#89c4f4'; }
@@ -25,14 +26,12 @@ window.LightComponent = (function () {
     return '#FF8C00';
   }
 
-  /* Convert rgb_color [r,g,b] array → hex string */
   function rgbToHex(rgb) {
     if (!rgb || rgb.length < 3) { return COLOR_DEFAULT; }
     function h(v) { return ('0' + Math.max(0, Math.min(255, v)).toString(16)).slice(-2); }
     return '#' + h(rgb[0]) + h(rgb[1]) + h(rgb[2]);
   }
 
-  /* Derive display color from HA state attributes */
   function colorFromAttributes(attrs) {
     if (!attrs) { return COLOR_DEFAULT; }
     if (attrs.rgb_color && attrs.rgb_color.length >= 3) {
@@ -44,47 +43,48 @@ window.LightComponent = (function () {
     return COLOR_DEFAULT;
   }
 
-  /* Apply ON visual state to tile using color */
+  /* ------------------------------------------------------------------ */
+  /* Visual state helpers                                                 */
+  /* ------------------------------------------------------------------ */
   function applyOnState(tile, color, brightnessValue) {
-    var toggle   = tile.querySelector('.tile-toggle');
-    var thumb    = tile.querySelector('.tile-toggle-thumb');
-    var iconEl   = tile.querySelector('.tile-icon');
-    var valEl    = tile.querySelector('.tile-value');
-    var tintEl   = tile.querySelector('.light-tint');
+    var toggle = tile.querySelector('.tile-toggle');
+    var thumb  = tile.querySelector('.tile-toggle-thumb');
+    var iconEl = tile.querySelector('.tile-icon');
+    var valEl  = tile.querySelector('.tile-value');
+    var tintEl = tile.querySelector('.tile-tint');
 
-    tile.style.borderColor = color;
     if (toggle) { toggle.style.background = color; }
     if (thumb)  { thumb.style.transform = 'translateX(18px)'; }
     if (iconEl) { iconEl.style.color = color; }
-
     if (valEl) {
       valEl.style.color = color;
-      valEl.textContent = brightnessValue !== null && brightnessValue !== undefined
-        ? brightnessValue
-        : '';
+      valEl.textContent = (brightnessValue !== null && brightnessValue !== undefined) ? brightnessValue : '';
     }
     if (tintEl) {
-      var r = parseInt(color.slice(1,3), 16) || 255;
-      var g = parseInt(color.slice(3,5), 16) || 183;
-      var b = parseInt(color.slice(5,7), 16) || 0;
+      var r = parseInt(color.slice(1, 3), 16) || 255;
+      var g = parseInt(color.slice(3, 5), 16) || 183;
+      var b = parseInt(color.slice(5, 7), 16) || 0;
       tintEl.style.background = 'rgba(' + r + ',' + g + ',' + b + ',0.14)';
     }
   }
 
-  /* Apply OFF visual state */
   function applyOffState(tile) {
-    var toggle   = tile.querySelector('.tile-toggle');
-    var thumb    = tile.querySelector('.tile-toggle-thumb');
-    var iconEl   = tile.querySelector('.tile-icon');
-    var valEl    = tile.querySelector('.tile-value');
+    var toggle = tile.querySelector('.tile-toggle');
+    var thumb  = tile.querySelector('.tile-toggle-thumb');
+    var iconEl = tile.querySelector('.tile-icon');
+    var valEl  = tile.querySelector('.tile-value');
+    var tintEl = tile.querySelector('.tile-tint');
 
-    tile.style.borderColor = 'transparent';
     if (toggle) { toggle.style.background = ''; }
     if (thumb)  { thumb.style.transform = ''; }
     if (iconEl) { iconEl.style.color = ''; }
     if (valEl)  { valEl.textContent = ''; valEl.style.color = ''; }
+    if (tintEl) { tintEl.style.background = ''; }
   }
 
+  /* ------------------------------------------------------------------ */
+  /* createTile                                                           */
+  /* ------------------------------------------------------------------ */
   function createTile(entityConfig) {
     var entity_id = entityConfig.entity_id;
     var label     = entityConfig.label;
@@ -93,14 +93,16 @@ window.LightComponent = (function () {
     var DOM = window.RP_DOM;
     var FMT = window.RP_FMT;
 
-    var tile = DOM.createElement('div', 'tile entity-light state-off');
-    tile.dataset.entityId = entity_id;
+    /* root tile */
+    var tile = DOM.createElement('div', 'tile tile-light');
+    tile.dataset.entityId   = entity_id;
+    tile.dataset.layoutType = 'light';
 
-    /* Tint overlay (color set via inline style) */
-    var tint = DOM.createElement('div', 'light-tint');
+    /* tint overlay */
+    var tint = DOM.createElement('div', 'tile-tint');
     tile.appendChild(tint);
 
-    /* Top row: icon + toggle */
+    /* top row: icon + toggle */
     var top    = DOM.createElement('div', 'tile-top');
     var iconEl = DOM.createElement('span', 'tile-icon');
     iconEl.innerHTML = FMT.getIcon(icon, 28, entity_id);
@@ -109,7 +111,7 @@ window.LightComponent = (function () {
     top.appendChild(iconEl);
     top.appendChild(toggle);
 
-    /* Bottom row: brightness value + label */
+    /* bottom row: brightness value + label */
     var bottom  = DOM.createElement('div', 'tile-bottom');
     var valueEl = DOM.createElement('span', 'tile-value', '');
     var labelEl = DOM.createElement('span', 'tile-label', label);
@@ -119,8 +121,8 @@ window.LightComponent = (function () {
     tile.appendChild(top);
     tile.appendChild(bottom);
 
-    /* ---- Interaction: long-press engine ---- */
-    var _lpTimer = null;
+    /* ---- Long-press interaction ---- */
+    var _lpTimer  = null;
     var _hasMoved = false;
 
     function _clearLP() {
@@ -129,9 +131,9 @@ window.LightComponent = (function () {
 
     function _handleTap() {
       var currentState = tile.dataset.state || 'off';
-      var service  = currentState === 'on' ? 'turn_off' : 'turn_on';
-      var next     = service === 'turn_on' ? 'on' : 'off';
-      /* optimistic */
+      var service = currentState === 'on' ? 'turn_off' : 'turn_on';
+      var next    = service === 'turn_on' ? 'on' : 'off';
+      /* optimistic update */
       updateTile(tile, { state: next, attributes: tile._lastAttrs || {} });
       window.callService('light', service, { entity_id: entity_id })
         .catch(function (err) {
@@ -143,14 +145,15 @@ window.LightComponent = (function () {
     function _handleLongPress() {
       _lpTimer = null;
       var attrs = tile._lastAttrs || {};
-      if (window.RP_LightSheet) {
-        window.RP_LightSheet.open(entity_id, label, attrs);
+      if (window.RP_BottomSheet) {
+        window.RP_BottomSheet.open(entity_id, label, attrs);
       }
     }
 
+    /* touch events */
     tile.addEventListener('touchstart', function () {
       _hasMoved = false;
-      _lpTimer = setTimeout(_handleLongPress, LONG_PRESS_MS);
+      _lpTimer  = setTimeout(_handleLongPress, LONG_PRESS_MS);
     }, { passive: true });
 
     tile.addEventListener('touchmove', function () {
@@ -167,7 +170,7 @@ window.LightComponent = (function () {
 
     tile.addEventListener('touchcancel', _clearLP);
 
-    /* Mouse fallback for desktop testing */
+    /* mouse fallback for desktop testing */
     tile.addEventListener('mousedown', function () {
       if ('ontouchstart' in window) { return; }
       _lpTimer = setTimeout(_handleLongPress, LONG_PRESS_MS);
@@ -184,48 +187,32 @@ window.LightComponent = (function () {
     return tile;
   }
 
+  /* ------------------------------------------------------------------ */
+  /* updateTile                                                           */
+  /* ------------------------------------------------------------------ */
   function updateTile(tile, stateObj) {
-    var state      = stateObj.state;
-    var attrs      = stateObj.attributes || {};
-    var visualType = tile.dataset.visualType || 'light_standard';
-    tile.dataset.state = state;
-    tile._lastAttrs = attrs;
+    var state = stateObj.state;
+    var attrs = stateObj.attributes || {};
 
-    tile.classList.remove('state-on', 'state-off', 'state-unavailable');
+    tile.dataset.state = state;
+    tile._lastAttrs    = attrs;
+
+    tile.classList.remove('is-on', 'is-off', 'is-unavail');
 
     if (state === 'on') {
-      tile.classList.add('state-on');
+      tile.classList.add('is-on');
       var color = colorFromAttributes(attrs);
-
-      // light_dimmer: mostra sempre brightness % (anche se 0)
-      var bri = null;
-      if (visualType === 'light_dimmer') {
-        if (attrs.brightness !== undefined && attrs.brightness !== null) {
-          bri = Math.round((parseInt(attrs.brightness, 10) / 255) * 100) + '%';
-        }
-      } else {
-        bri = (attrs.brightness !== undefined && attrs.brightness !== null)
-          ? (Math.round(attrs.brightness / 255 * 100) + '%')
-          : null;
-      }
-
+      var bri = (attrs.brightness !== undefined && attrs.brightness !== null)
+        ? (Math.round(attrs.brightness / 255 * 100) + '%')
+        : null;
       applyOnState(tile, color, bri);
 
-      // light_rgb: colora l'icona con il colore derivato dagli attributi
-      if (visualType === 'light_rgb') {
-        var iconEl = tile.querySelector('.tile-icon');
-        var hexColor = colorFromAttributes(attrs);
-        if (hexColor && iconEl) {
-          iconEl.style.color = hexColor;
-        }
-      }
-
     } else if (state === 'unavailable') {
-      tile.classList.add('state-unavailable');
+      tile.classList.add('is-unavail');
       applyOffState(tile);
 
     } else {
-      tile.classList.add('state-off');
+      tile.classList.add('is-off');
       applyOffState(tile);
     }
   }

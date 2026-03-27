@@ -1,4 +1,4 @@
-# Retro Panel — Test Guide
+# Retro Panel v2.0 — Test Guide
 
 ## Overview
 
@@ -17,17 +17,9 @@ This guide covers manual and automated testing procedures for the Retro Panel Ho
   "ha_url": "http://homeassistant.local:8123",
   "ha_token": "YOUR_LONG_LIVED_TOKEN",
   "panel_title": "Test Panel",
-  "columns": 3,
   "theme": "dark",
   "kiosk_mode": false,
-  "refresh_interval": 30,
-  "entities": [
-    { "entity_id": "light.living_room", "label": "Living Room" },
-    { "entity_id": "switch.fan", "label": "Fan" },
-    { "entity_id": "sensor.temperature", "label": "Temperature" },
-    { "entity_id": "binary_sensor.front_door", "label": "Front Door" },
-    { "entity_id": "alarm_control_panel.home_alarm", "label": "Alarm" }
-  ]
+  "refresh_interval": 30
 }
 ```
 
@@ -58,270 +50,341 @@ Follow `docs/INSTALLATION.md` to install via the HA Add-on Store.
 
 ### Backend — Python
 
-Run from the `app/` directory:
+Run from the project root:
 
 ```bash
-pytest tests/ -v
+python -m pytest tests/ -v
 ```
 
-Key test modules (create under `app/tests/` if not present):
+**Current status**: 22 tests all passing
+
+Key test modules:
 
 | Module | What it tests |
 |--------|--------------|
-| `test_loader.py` | Config parsing, missing fields, invalid entity_id |
-| `test_handlers_service.py` | Service allowlist, entity_id validation, dict type check |
-| `test_handlers_state.py` | Entity format validation, entity whitelist |
+| `test_config_loader.py` | Config parsing, v2 format, missing fields |
+| `test_handlers_service.py` | Service whitelist, entity validation |
+| `test_handlers_api.py` | Panel config endpoint, state endpoints |
 | `test_ha_client.py` | State sanitization, token isolation |
-| `test_rate_limiter.py` | Rate limiting enforcement, IP eviction at 5000 entries |
+| `test_layout_type.py` | layout_type computation for all 15 types |
 
 ### Frontend — JavaScript
 
-No bundler is used. Manual inspection is the primary approach. For automated browser tests, use Playwright or Cypress against a running local server.
+No bundler is used. Manual inspection and browser testing is the primary approach.
 
 ---
 
 ## 3. Manual Functional Tests
 
-### 3.1 Boot sequence
+### 3.1 Boot sequence (Dashboard at /)
 
 | # | Step | Expected |
 |---|------|----------|
-| 1 | Open the panel URL | Loading spinner shown |
-| 2 | Wait ~1s on LAN | Spinner fades out, tile grid appears |
+| 1 | Open `http://localhost:7654` | Page loads, spinner shows |
+| 2 | Wait ~2s on 4G | Spinner fades, tile grid appears |
 | 3 | Check browser console | No errors logged |
-| 4 | Check panel title | Matches `panel_title` from config |
+| 4 | Check header title | Matches `panel_title` from config |
 
-### 3.2 Light entity tile
-
-| # | Step | Expected |
-|---|------|----------|
-| 1 | Tap a light tile (state: Off) | Tile turns green, value shows "On" |
-| 2 | Tap the same tile again | Tile returns to off state, value shows "Off" |
-| 3 | Long-press (hold 0.6s) a light tile | Brightness slider appears |
-| 4 | Drag slider to 50% | Value label updates to ~50% |
-| 5 | Release slider | Brightness service call sent (verify in HA logbook) |
-| 6 | Long-press again | Slider hides |
-| 7 | Tap while slider visible | Toggle fires (slider stays visible) |
-| 8 | Simulate HA service failure (disconnect) | Tile reverts to previous state |
-
-### 3.3 Switch entity tile
+### 3.2 Two-URL Architecture
 
 | # | Step | Expected |
 |---|------|----------|
-| 1 | Tap a switch tile (state: Off) | Tile turns green, value shows "On" |
-| 2 | Tap again | Returns to off |
-| 3 | Simulate failure | Reverts to previous state |
+| 1 | Navigate to `/` | Dashboard displayed (read-only) |
+| 2 | Navigate to `/config` | Config UI displayed (admin) |
+| 3 | Close browser devtools | No console errors in either view |
 
-### 3.4 Sensor / Binary sensor tile
-
-| # | Step | Expected |
-|---|------|----------|
-| 1 | View a sensor tile | Value shows formatted reading with unit (e.g. "21.5 °C") |
-| 2 | View binary_sensor (door, state: on) | Shows "Open" |
-| 3 | View binary_sensor (door, state: off) | Shows "Closed" |
-| 4 | View binary_sensor (motion, state: on) | Shows "Motion" |
-| 5 | Sensor tile | Not interactive (tap does nothing) |
-
-### 3.5 Alarm control panel tile
+### 3.3 Light entity tile (layout_type: light)
 
 | # | Step | Expected |
 |---|------|----------|
-| 1 | View alarm tile (state: disarmed) | "Arm Home" and "Arm Away" shown, "Disarm" hidden |
-| 2 | Enter PIN digits | PIN display shows dots (one per digit) |
-| 3 | Tap ⌫ | Last dot removed |
-| 4 | Tap "Arm Home" | HA receives `alarm_arm_home` with code |
-| 5 | Alarm state → armed_away | Only "Disarm" shown |
-| 6 | Alarm state → triggered | "Disarm" shown with red/danger style |
-| 7 | Tap "Disarm" with correct PIN | Alarm disarmed |
-| 8 | Tap "Disarm" with wrong PIN | Error message shown |
-| 9 | Alarm tile spans full grid row | Tile full-width regardless of columns setting |
+| 1 | Tap a light tile (state: Off) | Tile toggles on, brightness updates |
+| 2 | Tap same tile again | Tile toggles off |
+| 3 | Long-press light tile (0.5s+) | Bottom sheet slides up |
+| 4 | Adjust brightness slider | Brightness changes, tile updates live |
+| 5 | Adjust color temp slider | Color temperature changes |
+| 6 | Close sheet (tap X or outside) | Sheet slides down, dismissed |
 
-### 3.6 WebSocket real-time updates
+### 3.4 Switch entity tile (layout_type: switch)
 
 | # | Step | Expected |
 |---|------|----------|
-| 1 | Change a light in HA (via HA UI) | Panel tile updates within ~1s without refresh |
-| 2 | Disconnect network briefly | Disconnect banner shown, status dot turns red |
-| 3 | Reconnect network | WS reconnects, banner hides, dot turns green |
-| 4 | Disconnect for > refresh_interval seconds | REST poll fires, states updated |
+| 1 | Tap switch tile (state: Off) | Tile toggles on (green) |
+| 2 | Tap same tile again | Tile toggles off |
+| 3 | Multiple rapid taps | No race conditions, single final state |
 
-### 3.7 Themes
-
-| # | Step | Expected |
-|---|------|----------|
-| 1 | Set `theme: dark` | Dark background, light text |
-| 2 | Set `theme: light` | Light background, dark text |
-| 3 | Set `theme: auto`, OS dark | Dark theme applied |
-| 4 | Set `theme: auto`, OS light | Light theme applied |
-
-### 3.8 Kiosk mode
+### 3.5 Sensor entity tiles (9 variants)
 
 | # | Step | Expected |
 |---|------|----------|
-| 1 | Set `kiosk_mode: true` | Text selection disabled on long-press |
-| 2 | Attempt to select text | Cursor shows prohibited style, no selection |
+| 1 | `sensor_temperature` | Shows numeric value + "°C" |
+| 2 | `sensor_humidity` | Shows percentage value |
+| 3 | `sensor_co2` | Shows ppm value |
+| 4 | `sensor_battery` | Shows percentage |
+| 5 | `sensor_energy` | Shows power (W) or energy (kWh) |
+| 6 | `sensor_generic` | Shows value + unit of measurement |
+| 7 | All sensors | Tile updates when state changes via WS |
 
-### 3.9 Grid layout
+### 3.6 Binary sensor tiles (3 variants)
 
 | # | Step | Expected |
 |---|------|----------|
-| 1 | Set `columns: 2` | Grid shows 2 columns |
-| 2 | Set `columns: 3` | Grid shows 3 columns |
-| 3 | Set `columns: 4` | Grid shows 4 columns |
-| 4 | Entity with `row`/`col` set | Tile placed at specified grid position |
+| 1 | `binary_door` | Shows "Open" or "Closed" |
+| 2 | `binary_motion` | Shows "Motion" or "Clear" |
+| 3 | `binary_standard` | Shows "On" or "Off" |
+
+### 3.7 Alarm entity (layout_type: alarm)
+
+| # | Step | Expected |
+|---|------|----------|
+| 1 | Tap alarm tile | PIN keypad appears |
+| 2 | Enter PIN (1-2-3-4) | Numbers appear as dots |
+| 3 | Clear PIN (press X) | PIN cleared |
+| 4 | Enter PIN and tap "Arm Home" | Service call sent, visual feedback (1s) |
+| 5 | Verify in HA logbook | Service call recorded |
+
+### 3.8 Camera entity (layout_type: camera)
+
+| # | Step | Expected |
+|---|------|----------|
+| 1 | Camera tile visible | MJPEG stream displays |
+| 2 | Tap refresh icon | Stream refreshes |
+| 3 | Leave open for 30s | Stream continues without stalling |
+
+### 3.9 Scenario entity (layout_type: scenario)
+
+| # | Step | Expected |
+|---|------|----------|
+| 1 | Tap scenario tile | Service call sent, visual feedback (1s) |
+| 2 | Verify in HA logbook | Service called (scene.turn_on, script.turn_on, or automation.trigger) |
+
+### 3.10 Energy Flow Card (layout_type: energy_flow)
+
+| # | Step | Expected |
+|---|------|----------|
+| 1 | Energy flow tile visible | Shows Solar → Battery → Home + Grid |
+| 2 | Change power values in HA | Arrows animate, flow direction changes |
+| 3 | Disable one branch | Branch greys out |
+
+### 3.11 Sidebar Navigation
+
+| # | Step | Expected |
+|---|------|----------|
+| 1 | Click ☰ (collapse) | Sidebar collapses to icons only |
+| 2 | Click ☰ again | Sidebar expands to show labels |
+| 3 | Click room name | Room section renders in content area |
+| 4 | Click "Overview" | Overview section renders |
+| 5 | Click "Scenarios" | Scenarios list renders |
+| 6 | Click "Cameras" | Cameras list renders |
+
+### 3.12 Config UI at /config (4 tabs)
+
+| # | Step | Expected |
+|---|------|----------|
+| 1 | Navigate to `/config` | Config page loads |
+| 2 | Click "Overview" tab | Shows entities on home screen |
+| 3 | Click "+ Add Entities" | Entity picker opens, loads entities from HA |
+| 4 | Select an entity | Added to overview |
+| 5 | Click "Rooms" tab | Shows rooms list |
+| 6 | Click "Scenarios" tab | Shows auto-populated scenario list |
+| 7 | Click "Cameras" tab | Shows auto-populated camera list |
+
+### 3.13 WebSocket Connection
+
+| # | Step | Expected |
+|---|------|----------|
+| 1 | Open browser DevTools | Network tab shows WebSocket at `/ws` |
+| 2 | Status shows "101 Switching Protocols" | Connection successful |
+| 3 | Change entity in HA | Browser receives `state_changed` message within 100ms |
+| 4 | Close WebSocket in DevTools | Connection indicator turns grey |
+| 5 | Wait 30s | Connection auto-reconnects (exponential backoff) |
+| 6 | Change entity again | Panel updates via REST polling (fallback) |
+
+### 3.14 REST Polling Fallback
+
+| # | Step | Expected |
+|---|------|----------|
+| 1 | Simulate network issue (block WebSocket) | Connection indicator turns grey |
+| 2 | Change entity in HA | Panel updates every `refresh_interval` seconds |
+| 3 | DevTools Network tab | See periodic GET /api/states/all requests |
+
+### 3.15 iOS 12 Compatibility Checklist
+
+| # | Step | Expected |
+|---|------|----------|
+| 1 | Page loads | No white screen hang (< 5 seconds) |
+| 2 | All tiles render | No layout broken, text visible |
+| 3 | Tap light tile | Toggles instantly, bottom sheet slides up |
+| 4 | Long-press light | Brightness slider visible |
+| 5 | Adjust slider | Smooth (60 FPS), no lag or jank |
+| 6 | Network issues | Reconnects without user action |
+| 7 | Console check (F12) | No errors or warnings |
+
+### 3.16 CSS Constraints Verification
+
+| # | Step | Expected |
+|---|------|----------|
+| 1 | Inspect tile heights | Light/Switch = 120px (triple-lock) |
+| 2 | Inspect sensor tiles | Min 72px (triple-lock) |
+| 3 | Inspect alarm tile | Min 240px (triple-lock) |
+| 4 | Inspect camera tile | Min 160px (triple-lock) |
+| 5 | Layout CSS | No `gap:` on flex, no `inset:`, no `100dvh` |
+| 6 | Test responsive | Mobile (<599px) and landscape (≥1024px) |
 
 ---
 
-## 4. Touch / Mobile Tests
+## 4. Performance Testing
 
-These tests **must** be performed on a real iOS device (or Safari simulator).
+### Page Load Time (4G simulation)
 
-| # | Test | Expected |
-|---|------|----------|
-| 1 | Tap tile | No 300ms delay |
-| 2 | Tap tile | No blue tap highlight |
-| 3 | Scroll page (if taller than viewport) | Tiles not accidentally activated |
-| 4 | Long-press tile | Slider appears without triggering toggle |
-| 5 | Drag brightness slider | Does not scroll page |
-| 6 | All tap targets | ≥ 56px height |
-| 7 | Alarm keypad keys | ≥ 48px, no accidental double-tap |
-| 8 | Text readability | No overflow, no truncation |
+1. Open DevTools → Network tab
+2. Set throttling to "Slow 4G" (1 Mbps)
+3. Hard refresh page (Ctrl+Shift+R)
+4. **Expected**: < 2 seconds (DOMContentLoaded)
+
+### Service Call Latency
+
+1. Open DevTools → Network tab
+2. Tap a light tile
+3. **Expected**: POST /api/service/light/turn_on completes in < 500 ms
+
+### Memory Usage
+
+1. Open DevTools → Memory tab
+2. Record heap snapshot
+3. Interact with tiles for 30s (expand sidebar, navigate rooms, open config)
+4. Record another heap snapshot
+5. **Expected**: < 50 MB heap increase
+
+### CSS & JS Bundle Sizes
+
+```bash
+# Check sizes
+wc -c app/static/js/*.js
+wc -c app/static/css/*.css
+```
+
+**Expected**:
+- Total JS: < 20 KB (uncompressed)
+- Total CSS: < 25 KB (uncompressed)
 
 ---
 
-## 5. Security Tests
+## 5. Platform-Specific Testing
 
-### 5.1 CORS
+### iOS Safari (iPad)
 
-```bash
-# Should NOT return CORS header (wrong origin)
-curl -H "Origin: https://evil.com" http://localhost:7654/api/states -v 2>&1 | grep -i access-control
+1. Connect iPad to Mac via USB
+2. Safari → Develop → [Device Name] → [Website]
+3. Run manual functional tests (section 3)
+4. Check console for errors
 
-# Should return CORS header (correct HA origin)
-curl -H "Origin: http://homeassistant.local:8123" http://localhost:7654/api/states -v 2>&1 | grep -i access-control
-```
+### Android Chrome
 
-### 5.2 Security headers
+1. Connect Android device via USB
+2. `chrome://inspect`
+3. Select device and inspect
+4. Run manual functional tests
 
-```bash
-curl -I http://localhost:7654/
-# Expected headers:
-# X-Frame-Options: DENY
-# X-Content-Type-Options: nosniff
-# Referrer-Policy: no-referrer
-# Content-Security-Policy: default-src 'self'; ...
-```
+### Desktop Browsers
 
-### 5.3 Service allowlist
+Test on:
+- Chrome (latest)
+- Firefox (latest)
+- Safari (latest)
 
-```bash
-# Should return 400
-curl -X POST http://localhost:7654/api/service/light/alarm_trigger \
-  -H "Content-Type: application/json" -d '{"entity_id":"light.test"}'
+---
 
-# Should return 403 (entity not in config)
-curl -X POST http://localhost:7654/api/service/light/turn_on \
-  -H "Content-Type: application/json" -d '{"entity_id":"light.not_configured"}'
-```
+## 6. layout_type Visual Checklist
 
-### 5.4 Entity ID validation
+All 15 layout_types should render without errors:
 
-```bash
-# Should return 400 (path traversal attempt)
-curl http://localhost:7654/api/state/light/../../../etc/passwd
+- [ ] `light` — Toggle + bottom sheet controls
+- [ ] `switch` — Toggle on/off
+- [ ] `sensor_temperature` — Temperature display
+- [ ] `sensor_humidity` — Humidity display
+- [ ] `sensor_co2` — CO₂ display
+- [ ] `sensor_battery` — Battery percentage
+- [ ] `sensor_energy` — Power/energy display
+- [ ] `sensor_generic` — Generic sensor
+- [ ] `binary_door` — Door/window status
+- [ ] `binary_motion` — Motion detector
+- [ ] `binary_standard` — Binary sensor (generic)
+- [ ] `alarm` — PIN keypad + arm/disarm
+- [ ] `camera` — MJPEG stream
+- [ ] `scenario` — Tap-to-activate
+- [ ] `energy_flow` — Power flow visualization
 
-# Should return 400 (invalid format)
-curl http://localhost:7654/api/state/LIGHT.ROOM
-```
+---
 
-### 5.5 Rate limiting
+## 7. Test Data (Sample config.json)
 
-```bash
-# Send 12 rapid requests — 11th and 12th should return 429
-for i in $(seq 1 12); do
-  curl -s -o /dev/null -w "%{http_code}\n" \
-    -X POST http://localhost:7654/api/service/light/turn_on \
-    -H "Content-Type: application/json" -d '{"entity_id":"light.living_room"}'
-done
-```
+For manual testing, use this sample configuration:
 
-### 5.6 HA token isolation
-
-```bash
-# Verify token is NOT in any API response
-curl http://localhost:7654/api/config | grep -i token
-# Expected: no match
-```
-
-### 5.7 Error detail isolation
-
-```bash
-# Trigger a 502 by pointing ha_url at an unreachable host
-curl http://localhost:7654/api/states
-# Response body must NOT contain stack traces or Python exception text
+```json
+{
+  "version": 2,
+  "overview": {
+    "title": "Home",
+    "items": [
+      {
+        "type": "entity",
+        "entity_id": "light.living_room",
+        "label": "Living Room",
+        "layout_type": "light"
+      },
+      {
+        "type": "entity",
+        "entity_id": "switch.fan",
+        "label": "Fan",
+        "layout_type": "switch"
+      },
+      {
+        "type": "entity",
+        "entity_id": "sensor.temperature",
+        "label": "Temperature",
+        "layout_type": "sensor_temperature"
+      }
+    ]
+  },
+  "rooms": [
+    {
+      "id": "room_bedroom",
+      "title": "Bedroom",
+      "icon": "bedroom",
+      "sections": [
+        {
+          "id": "sec_lights",
+          "title": "Lights",
+          "items": [
+            {
+              "type": "entity",
+              "entity_id": "light.bedroom_light",
+              "label": "Ceiling",
+              "layout_type": "light"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "scenarios": [
+    {
+      "type": "entity",
+      "entity_id": "scene.bedtime",
+      "label": "Bedtime"
+    }
+  ],
+  "cameras": [
+    {
+      "entity_id": "camera.bedroom",
+      "label": "Bedroom Camera"
+    }
+  ]
+}
 ```
 
 ---
 
-## 6. Performance Tests
-
-| Metric | Target | How to measure |
-|--------|--------|---------------|
-| First tile render | < 2s on LAN | Chrome DevTools Network → DOMContentLoaded |
-| WebSocket connect | < 1s after page load | WS frame in DevTools Network tab |
-| State update latency | < 500ms | Change entity in HA, watch tile update |
-| Memory (browser) | < 50 MB after 1 hour | Chrome Task Manager |
-| Memory (server) | < 100 MB RSS | `docker stats` |
-
----
-
-## 7. Configuration Edge Cases
-
-| Case | Expected behavior |
-|------|------------------|
-| Empty `entities: []` | Empty grid, no errors |
-| Unknown domain (e.g. `media_player.tv`) | Warning logged, tile skipped |
-| Entity not found in HA | Tile shows "N/A" (unavailable) |
-| Missing `ha_url` in options.json | Server refuses to start with clear error |
-| `columns` not in (2, 3, 4) | Defaults to 3 |
-| `refresh_interval: 0` or null | Defaults to 30 |
-| Very long entity label | Label truncates with ellipsis, no layout break |
-
----
-
-## 8. Regression Tests (Post-Fix Verification)
-
-These tests verify the two critical bugs found during code review are fixed.
-
-### BUG-001: Panel never displays (app.js)
-
-1. Open the panel URL
-2. Verify the tile grid appears after loading
-3. Verify no `display: none` on `#panel` after boot (check via DevTools Elements)
-
-Previously: `removeAttribute('hidden')` + `style.display = 'flex'` — overridden by `.hidden { display: none !important }`.
-
-### BUG-002: Long-press always triggers toggle (light.js)
-
-1. Long-press a light tile for > 500ms
-2. Verify the brightness slider appears
-3. Verify the light state does NOT toggle (HA logbook should show no service call)
-4. Tap the tile normally
-5. Verify the light toggles correctly
-
-Previously: expired `longPressTimer` ID remained truthy, causing `touchend` to call `handleTap()` after every long-press.
-
----
-
-## 9. Acceptance Criteria
-
-All of the following must pass before a release is tagged:
-
-- [ ] All manual functional tests pass on desktop (Chrome, Firefox, Safari)
-- [ ] All touch tests pass on iOS 12+ Safari (real device or simulator)
-- [ ] All security tests pass
-- [ ] Panel loads in < 2s on LAN
-- [ ] No console errors on load or interaction
-- [ ] BUG-001 and BUG-002 regression tests pass
-- [ ] Docker image builds successfully for aarch64, amd64, armhf, armv7
-- [ ] Add-on installs and starts in Home Assistant without errors
+**Document Version**: 2.0
+**Last Updated**: 2026-03-27
+**Maintainer**: Retro Panel Team

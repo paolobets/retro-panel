@@ -2,11 +2,11 @@
 
 ## Overview
 
-This document describes the internal APIs of Retro Panel, including:
+This document describes the internal APIs of Retro Panel v2.0, including:
 - Backend REST endpoints
 - WebSocket message protocol
 - Frontend module APIs
-- Component interface
+- Component interface (layout_type system)
 
 **Note**: This is for developers modifying Retro Panel itself, not for users configuring it.
 
@@ -18,7 +18,7 @@ All endpoints listen on `localhost:7654` (local development) or via HA Ingress i
 
 ### GET /
 
-**Description**: Serve main application HTML
+**Description**: Serve main application HTML (dashboard at /)
 
 **Request**:
 ```
@@ -40,7 +40,7 @@ Content-Length: 5234
   </head>
   <body>
     <div id="app"></div>
-    <script src="/js/app.js"></script>
+    <script src="/static/js/app.js"></script>
   </body>
 </html>
 ```
@@ -52,7 +52,19 @@ Content-Length: 5234
 
 **Error Handling**: No errors possible (static file)
 
-**Caching**: Disabled (development requires fresh content)
+---
+
+### GET /config
+
+**Description**: Serve configuration UI HTML (admin interface)
+
+**Request**:
+```
+GET /config HTTP/1.1
+Host: localhost:7654
+```
+
+**Response**: HTML with config editor interface (same HTML as /, router handles client-side)
 
 ---
 
@@ -95,13 +107,11 @@ Content-Type: text/plain
 File not found: static/nonexistent.js
 ```
 
-**Caching**: No caching in v1.0 (all requests fetch fresh)
-
 ---
 
 ### GET /api/panel-config
 
-**Description**: Fetch panel configuration (layout, entity list, etc.)
+**Description**: Fetch panel configuration (v2.0 format with overview, rooms, scenarios, cameras)
 
 **Request**:
 ```
@@ -110,19 +120,33 @@ Host: localhost:7654
 Accept: application/json
 ```
 
-**Response** (v1.4+ with sections):
+**Response** (v2.0):
 ```
 HTTP/1.1 200 OK
 Content-Type: application/json
-Content-Length: 3156
 
 {
-  "version": 4,
+  "version": 2,
+  "overview": {
+    "title": "Home",
+    "items": [
+      {
+        "type": "entity",
+        "entity_id": "light.living_room",
+        "label": "Living Room",
+        "icon": "",
+        "hidden": false,
+        "visual_type": "",
+        "device_class": "light",
+        "layout_type": "light"
+      }
+    ]
+  },
   "rooms": [
     {
-      "id": "living_room",
-      "title": "Living Room",
-      "icon": "mdi:sofa",
+      "id": "room_soggiorno",
+      "title": "Soggiorno",
+      "icon": "living",
       "hidden": false,
       "sections": [
         {
@@ -130,78 +154,78 @@ Content-Length: 3156
           "title": "Lights",
           "items": [
             {
+              "type": "entity",
               "entity_id": "light.ceiling",
-              "size": "medium",
-              "name": "Ceiling Light",
-              "show_state": true,
-              "icon": "mdi:ceiling-light",
-              "hidden": false
+              "label": "Ceiling Light",
+              "icon": "",
+              "hidden": false,
+              "device_class": "light",
+              "layout_type": "light"
             }
           ]
         }
       ]
     }
   ],
-  "layout_config": {
-    "tile_size_px": 80,
-    "grid_gap_px": 8,
-    "show_state_labels": true,
-    "state_label_position": "bottom"
-  }
-}
-```
-
-**Response Schema** (v1.4+):
-```typescript
-{
-  version: 4;                      // Schema version
-  rooms: Array<{
-    id: string;                    // Room unique identifier
-    title: string;                 // Room display name
-    icon?: string;                 // MDI icon code
-    hidden?: boolean;              // Hide entire room
-    sections: Array<{
-      id: string;                  // Section unique identifier
-      title: string;               // Section title (may be empty)
-      items: Array<{
-        entity_id: string;         // HA entity ID (required)
-        size?: "small" | "medium" | "large";  // Tile size
-        name?: string;             // Override display name
-        show_state?: boolean;      // Show state label
-        icon?: string;             // Override entity icon
-        hidden?: boolean;          // Hide this item
-        // Entity-type-specific options:
-        show_brightness?: boolean; // Light only
-        confirm_before_toggle?: boolean;  // Switch only
-        show_history?: boolean;    // Sensor only (future)
-      }>;
-    }>;
-  }>;
-  layout_config: {
-    tile_size_px: number;         // Tile size in pixels
-    grid_gap_px: number;          // Gap between tiles
-    show_state_labels: boolean;   // Global toggle for state labels
-    state_label_position: "bottom" | "overlay";  // Where to show state
-  };
-}
-```
-
-**Backward Compatibility**:
-- v3 configurations (with `items[]` instead of `sections[]`) are automatically migrated to v4 on first load
-- Returned response always uses v4 format with sections
-- Old client code expecting legacy format will need update
-
-**Legacy Response** (v1.0-v1.3, deprecated):
-```
-{
-  "panels": [
+  "scenarios": [
     {
-      "name": "Living Room",
-      "icon": "mdi:sofa",
-      "rows": [...]
+      "type": "entity",
+      "entity_id": "scene.evening",
+      "label": "Evening",
+      "hidden": false
     }
   ],
-  "layout_config": {...}
+  "cameras": [
+    {
+      "entity_id": "camera.front_door",
+      "label": "Front Door",
+      "hidden": false,
+      "refresh_interval": 10
+    }
+  ]
+}
+```
+
+**Response Schema** (v2.0):
+```typescript
+{
+  version: 2;                       // Schema version (v2.0)
+  overview: {
+    title: string;                  // "Home" or custom
+    items: Array<Entity>;           // Entities on home screen
+  };
+  rooms: Array<{
+    id: string;                     // Room unique identifier
+    title: string;                  // Room display name
+    icon: string;                   // Icon identifier (e.g., "living")
+    hidden: boolean;                // Hide entire room
+    sections: Array<{
+      id: string;                   // Section unique identifier
+      title: string;                // Section title
+      items: Array<Entity>;         // Entities in section
+    }>;
+  }>;
+  scenarios: Array<Entity>;         // Scene/script/automation entities
+  cameras: Array<{
+    entity_id: string;              // Camera entity ID
+    label: string;                  // Display name
+    hidden: boolean;                // Hide this camera
+    refresh_interval: number;       // Refresh rate in seconds
+  }>;
+}
+```
+
+**Entity Item Schema**:
+```typescript
+{
+  type: "entity";                   // Always "entity" in v2.0
+  entity_id: string;                // HA entity ID
+  label: string;                    // Display name override
+  icon: string;                     // Icon override (empty = use HA icon)
+  hidden: boolean;                  // Hide this item
+  visual_type: string;              // Visual override (empty = computed)
+  device_class: string;             // HA device_class from entity
+  layout_type: string;              // Computed by backend: light|switch|sensor_temperature|sensor_humidity|... (15 types)
 }
 ```
 
@@ -212,86 +236,13 @@ Content-Type: application/json
 
 {
   "error": "Config validation failed",
-  "details": "Missing required field: id in rooms[0].sections[0]"
+  "details": "Missing required field: id in rooms[0]"
 }
 ```
 
 **Caching**: No caching (config might change)
 
 **Frequency**: Called once on page load
-
----
-
-### GET /api/state/{entity_id}
-
-**Description**: Fetch current state of a single entity
-
-**Request**:
-```
-GET /api/state/light.bedroom HTTP/1.1
-Host: localhost:7654
-Accept: application/json
-```
-
-**Response**:
-```
-HTTP/1.1 200 OK
-Content-Type: application/json
-
-{
-  "entity_id": "light.bedroom",
-  "state": "on",
-  "last_updated": "2026-03-22T15:30:45.123Z",
-  "attributes": {
-    "brightness": 200,
-    "color_temp": 380,
-    "friendly_name": "Bedroom Light",
-    "supported_color_modes": ["color_temp", "hs"],
-    "min_color_mireds": 153,
-    "max_color_mireds": 500
-  }
-}
-```
-
-**Response Schema**:
-```typescript
-{
-  entity_id: string;        // HA entity ID
-  state: string;            // Current state ("on", "off", numeric, etc.)
-  last_updated: string;     // ISO 8601 timestamp
-  attributes: {
-    [key: string]: any;     // Entity-specific attributes
-    friendly_name?: string;
-    icon?: string;
-    unit_of_measurement?: string;
-    // Light-specific:
-    brightness?: number;    // 0-255
-    color_temp?: number;    // Mireds
-    rgb_color?: [number, number, number];
-    hs_color?: [number, number];
-    xy_color?: [number, number];
-    // Binary sensor-specific:
-    device_class?: string;  // "motion", "window", "door", etc.
-  };
-}
-```
-
-**Error Handling**:
-```
-GET /api/state/nonexistent.entity HTTP/1.1
-
-HTTP/1.1 404 Not Found
-Content-Type: application/json
-
-{
-  "error": "Entity not found",
-  "entity_id": "nonexistent.entity"
-}
-```
-
-**Caching**: No caching (state changes frequently)
-
-**Frequency**: Rarely called (use WebSocket for real-time updates)
 
 ---
 
@@ -315,17 +266,15 @@ Content-Type: application/json
   "light.bedroom": {
     "entity_id": "light.bedroom",
     "state": "on",
-    "last_updated": "2026-03-22T15:30:45.123Z",
-    "attributes": {...}
+    "last_updated": "2026-03-27T15:30:45.123Z",
+    "attributes": {
+      "brightness": 200,
+      "color_temp": 380,
+      "friendly_name": "Bedroom Light",
+      "supported_color_modes": ["color_temp", "hs"],
+      "device_class": "light"
+    }
   },
-  "light.living_room": {
-    "entity_id": "light.living_room",
-    "state": "off",
-    "last_updated": "2026-03-22T15:29:12.456Z",
-    "attributes": {...}
-  },
-  "switch.fan": {...},
-  "sensor.temperature": {...},
   ...
 }
 ```
@@ -371,7 +320,7 @@ Accept: application/json
 ```
 
 **Optional query parameter**:
-- `?domain=<domain>` — restrict to a single allowed domain (e.g. `sensor`). Returns 400 if the domain is not in the allowed set (`light`, `switch`, `sensor`, `binary_sensor`, `alarm_control_panel`).
+- `?domain=<domain>` — restrict to a single allowed domain. Returns 400 if not in allowed set.
 
 **Response**:
 ```
@@ -391,16 +340,8 @@ Content-Type: application/json
 
 **Filtering applied server-side**:
 1. Only entities in the allowed domains are included.
-2. Entities with `hidden_by` or `disabled_by` set in the HA entity registry are excluded (cross-referenced via `GET /api/config/entity_registry`). If the registry call fails, the filter is skipped and a warning is logged (graceful fallback).
+2. Entities with `hidden_by` or `disabled_by` set in the HA entity registry are excluded.
 3. Results are sorted alphabetically by `entity_id`.
-
-**Error responses**:
-
-| Status | Condition |
-|--------|-----------|
-| 400 | `?domain=` value is not in the allowed set |
-| 502 | HA template API call failed or returned invalid JSON |
-| 503 | HA client not available |
 
 **Frequency**: Called on config-page load and when the entity picker is opened.
 
@@ -408,7 +349,7 @@ Content-Type: application/json
 
 ### POST /api/config
 
-**Description**: Update panel configuration with new rooms and sections structure (v1.4+)
+**Description**: Update panel configuration (v2.0 format)
 
 **Request**:
 ```
@@ -417,57 +358,14 @@ Host: localhost:7654
 Content-Type: application/json
 
 {
-  "version": 4,
-  "rooms": [
-    {
-      "id": "living_room",
-      "title": "Living Room",
-      "icon": "mdi:sofa",
-      "sections": [
-        {
-          "id": "sec_lights",
-          "title": "Lights",
-          "items": [
-            {
-              "entity_id": "light.ceiling",
-              "name": "Ceiling Light",
-              "icon": "mdi:bulb"
-            }
-          ]
-        }
-      ]
-    }
-  ],
-  "layout_config": {
-    "tile_size_px": 80,
-    "grid_gap_px": 8,
-    "show_state_labels": true
-  }
-}
-```
-
-**Request Schema**:
-```typescript
-{
-  version: 4;                      // Must be 4 for v1.4+
-  rooms: Array<{
-    id: string;                    // Unique room identifier
-    title: string;                 // Room display name
-    icon?: string;                 // MDI icon code
-    hidden?: boolean;              // Hide room
-    sections: Array<{
-      id: string;                  // Unique section identifier
-      title: string;               // Section title (can be empty)
-      items: Array<{
-        entity_id: string;         // HA entity ID (required)
-        name?: string;             // Display name override
-        icon?: string;             // Icon override
-        size?: string;             // Tile size
-        hidden?: boolean;          // Hide item
-      }>;
-    }>;
-  }>;
-  layout_config: object;           // Layout settings
+  "version": 2,
+  "overview": {
+    "title": "Home",
+    "items": [...]
+  },
+  "rooms": [...],
+  "scenarios": [...],
+  "cameras": [...]
 }
 ```
 
@@ -479,7 +377,7 @@ Content-Type: application/json
 {
   "success": true,
   "message": "Configuration updated",
-  "version": 4
+  "version": 2
 }
 ```
 
@@ -490,7 +388,7 @@ Content-Type: application/json
 
 {
   "error": "Config validation failed",
-  "details": "Missing required field: id in rooms[0].sections[0]"
+  "details": "Missing required field: title in overview"
 }
 ```
 
@@ -539,16 +437,6 @@ Content-Type: application/json
 }
 ```
 
-**Response Schema** (success):
-```typescript
-{
-  success: true;
-  service: string;      // "{domain}/{service}"
-  entity_id: string;    // Target entity
-  service_data: object; // Data sent to HA
-}
-```
-
 **Error Handling - Not in Whitelist**:
 ```
 HTTP/1.1 403 Forbidden
@@ -561,36 +449,6 @@ Content-Type: application/json
 }
 ```
 
-**Error Handling - Invalid Service Data**:
-```
-HTTP/1.1 400 Bad Request
-Content-Type: application/json
-
-{
-  "error": "Invalid service data",
-  "service": "light/turn_on",
-  "reason": "brightness must be 0-255, got 999"
-}
-```
-
-**Error Handling - HA Error**:
-```
-HTTP/1.1 500 Internal Server Error
-Content-Type: application/json
-
-{
-  "error": "Service call failed",
-  "service": "light/turn_on",
-  "ha_error": "Entity does not exist"
-}
-```
-
-**Service Whitelist Validation**:
-- Backend checks if `{domain, service}` exists in `service_whitelist`
-- Returns 403 if not found
-- Service data validated against schema (if provided)
-- Returns 400 if validation fails
-
 **Common Services**:
 
 | Service | Parameters | Example |
@@ -601,9 +459,10 @@ Content-Type: application/json
 | `switch/turn_on` | `entity_id` | `{entity_id}` |
 | `switch/turn_off` | `entity_id` | `{entity_id}` |
 | `switch/toggle` | `entity_id` | `{entity_id}` |
-| `cover/open_cover` | `entity_id` | `{entity_id}` |
-| `cover/close_cover` | `entity_id` | `{entity_id}` |
-| `cover/set_cover_position` | `entity_id`, `position` | `{entity_id, position: 50}` |
+| `scene/turn_on` | `entity_id` | `{entity_id}` |
+| `script/turn_on` | `entity_id` | `{entity_id}` |
+| `automation/trigger` | `entity_id` | `{entity_id}` |
+| `alarm_control_panel/alarm_arm_home` | `entity_id`, `code?` | `{entity_id, code: "1234"}` |
 
 **Frequency**: Called whenever user interacts with a control
 
@@ -631,10 +490,6 @@ Connection: Upgrade
 Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
 ```
 
-**Connection Established**: WebSocket is now open and can receive messages
-
-**Message Format**: All messages are JSON
-
 ---
 
 ## WebSocket Message Protocol
@@ -652,7 +507,8 @@ Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
   "attributes": {
     "brightness": 200,
     "color_temp": 380,
-    "friendly_name": "Bedroom Light"
+    "friendly_name": "Bedroom Light",
+    "device_class": "light"
   }
 }
 ```
@@ -671,16 +527,7 @@ Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
 
 **Frequency**: Sent whenever any entity state changes in Home Assistant
 
-**Example Sequence**:
-```
-1. Browser: GET /ws (upgrade to WebSocket)
-2. Backend: Accept connection, register browser as subscriber
-3. Home Assistant: Sends state_changed event (light turned on)
-4. Backend: Receives event, broadcasts to all connected browsers
-5. Browser: Receives {type: "state_changed", entity_id: "light.bedroom", state: "on", ...}
-6. JavaScript: Calls updateEntityState("light.bedroom", "on", {...})
-7. Browser: Updates tile visual appearance
-```
+---
 
 #### Connection Status
 
@@ -689,7 +536,7 @@ Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
 {
   "type": "connection_status",
   "status": "ok",
-  "timestamp": "2026-03-22T15:30:45.123Z"
+  "timestamp": "2026-03-27T15:30:45.123Z"
 }
 ```
 
@@ -705,628 +552,329 @@ Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
 
 **Frequency**: Sent after initial connection, then periodically (every 30 seconds) to confirm connection is alive
 
-**Use Cases**:
-- Initial confirmation: `status: "ok"` sent right after connection
-- Heartbeat: Periodic `status: "ok"` to detect stale connections
-- Error notification: `status: "error"` if HA connection lost
+---
 
 ### Client → Server Messages
 
-**Current Implementation**: None (v1.0 is server-push only)
-
-**Future** (v2.0+): Could support client sending messages for actions like:
-```json
-{
-  "type": "subscribe_entity",
-  "entity_id": "light.bedroom"
-}
-```
+**Current Implementation**: None (v2.0 is server-push only)
 
 ---
 
 ## Frontend Module APIs
 
-### api.js Module
+### app.js Module
 
-Handles all HTTP REST API communication.
+Main application entry point, handles routing and component rendering.
 
-#### fetchPanelConfig()
+#### window.AppState
 
-**Signature**:
-```javascript
-async function fetchPanelConfig() → Promise<PanelConfig>
-```
+Central state container.
 
-**Description**: Fetch panel layout and configuration
-
-**Returns**:
+**Shape**:
 ```javascript
 {
-  panels: [
-    {
-      name: "Living Room",
-      icon: "mdi:sofa",
-      rows: [...]
-    }
-  ],
-  layout_config: {...}
-}
-```
-
-**Throws**:
-- `Error` if network error (no response)
-- `APIError` if server returns 4xx/5xx
-
-**Example**:
-```javascript
-try {
-  const config = await api.fetchPanelConfig();
-  console.log(`Loaded ${config.panels.length} panels`);
-} catch (err) {
-  console.error('Failed to load config:', err.message);
-}
-```
-
-#### fetchAllStates()
-
-**Signature**:
-```javascript
-async function fetchAllStates() → Promise<EntityStates>
-```
-
-**Description**: Fetch current state of all entities
-
-**Returns**:
-```javascript
-{
-  "light.bedroom": {
-    entity_id: "light.bedroom",
-    state: "on",
-    attributes: {...}
-  },
-  "switch.fan": {...},
-  ...
-}
-```
-
-**Throws**:
-- `Error` if network error
-- `APIError` if server returns 4xx/5xx
-
-**Example**:
-```javascript
-const states = await api.fetchAllStates();
-states.forEach((entityId, state) => {
-  console.log(`${entityId}: ${state.state}`);
-});
-```
-
-#### callService(domain, service, serviceData)
-
-**Signature**:
-```javascript
-async function callService(
-  domain: string,
-  service: string,
-  serviceData: object
-) → Promise<ServiceResponse>
-```
-
-**Description**: Call a Home Assistant service
-
-**Parameters**:
-- `domain` (string): Service domain (e.g., "light", "switch")
-- `service` (string): Service name (e.g., "turn_on", "turn_off")
-- `serviceData` (object): Service parameters (must include `entity_id`)
-
-**Returns**:
-```javascript
-{
-  success: true,
-  service: "light/turn_on",
-  entity_id: "light.bedroom",
-  service_data: {...}
-}
-```
-
-**Throws**:
-- `Error` if network error
-- `ValidationError` if `serviceData` invalid
-- `APIError` if service not in whitelist or HA returns error
-
-**Example**:
-```javascript
-try {
-  const result = await api.callService('light', 'turn_on', {
-    entity_id: 'light.bedroom',
-    brightness: 200
-  });
-  console.log('Service called successfully');
-} catch (err) {
-  if (err instanceof ValidationError) {
-    console.error('Invalid service data:', err.message);
-  } else if (err instanceof APIError) {
-    console.error('API error:', err.message);
-  } else {
-    console.error('Network error:', err.message);
-  }
-}
-```
-
-#### getAbsoluteUrl(path)
-
-**Signature**:
-```javascript
-function getAbsoluteUrl(path: string) → string
-```
-
-**Description**: Convert relative path to absolute URL (handles Ingress prefix)
-
-**Parameters**:
-- `path` (string): Relative path (e.g., "/api/panel-config")
-
-**Returns**: Absolute URL (e.g., "http://localhost:7654/api/panel-config")
-
-**Notes**:
-- In local dev: `http://localhost:7654/api/panel-config`
-- In HA Ingress: `http://homeassistant.local:8123/api/hassio_ingress/{slug}/api/panel-config`
-- Automatically handles both cases
-
-**Example**:
-```javascript
-const url = getAbsoluteUrl('/api/states/all');
-// Returns correct URL depending on deployment context
-```
-
----
-
-### ws.js Module
-
-Manages WebSocket connection to backend.
-
-#### connectWS()
-
-**Signature**:
-```javascript
-async function connectWS() → Promise<WebSocket>
-```
-
-**Description**: Establish WebSocket connection to server
-
-**Returns**: Native WebSocket object
-
-**Throws**:
-- `Error` if connection fails
-
-**Behavior**:
-1. Creates WebSocket connection to `/ws` endpoint
-2. Waits for `open` event
-3. Registers message handlers
-4. Returns WebSocket object
-
-**Example**:
-```javascript
-try {
-  const ws = await connectWS();
-  console.log('WebSocket connected');
-} catch (err) {
-  console.error('Failed to connect:', err.message);
-}
-```
-
-#### onStateChanged(handler)
-
-**Signature**:
-```javascript
-function onStateChanged(
-  handler: (entityId: string, state: string, attributes: object) => void
-) → void
-```
-
-**Description**: Register callback for state change events
-
-**Parameters**:
-- `handler` (function): Called when any entity state changes
-  - `entityId` (string): Which entity changed (e.g., "light.bedroom")
-  - `state` (string): New state value (e.g., "on")
-  - `attributes` (object): Full entity attributes
-
-**Example**:
-```javascript
-ws.onStateChanged((entityId, state, attributes) => {
-  console.log(`${entityId} changed to ${state}`);
-  updateEntityUI(entityId, state, attributes);
-});
-```
-
-#### reconnectWithBackoff()
-
-**Signature**:
-```javascript
-async function reconnectWithBackoff() → Promise<WebSocket>
-```
-
-**Description**: Reconnect with exponential backoff
-
-**Behavior**:
-1. Initial delay: 1 second
-2. If fails, wait 2 seconds, retry
-3. Double delay each attempt: 1s, 2s, 4s, 8s, 30s (capped)
-4. Max 30 second delay between retries
-5. Continue retrying indefinitely
-
-**Returns**: Connected WebSocket object
-
-**Example**:
-```javascript
-const ws = await reconnectWithBackoff();
-console.log('Reconnected successfully');
-```
-
-#### disconnect()
-
-**Signature**:
-```javascript
-function disconnect() → void
-```
-
-**Description**: Clean WebSocket closure
-
-**Behavior**:
-1. Close WebSocket connection gracefully
-2. Remove all event listeners
-3. Clean up resources
-
-**Example**:
-```javascript
-ws.disconnect();
-```
-
----
-
-### state.js Module (AppState)
-
-Central state container for application.
-
-#### State Shape
-
-```javascript
-{
-  entities: {
-    [entityId]: {
-      state: string,           // Current state
-      attributes: object,      // HA attributes
-      lastUpdated: timestamp,  // Unix milliseconds
-      config: entityConfig     // Panel config for this entity
-    }
+  states: {
+    [entityId]: { state: string, attributes: object }
   },
   connectionStatus: "connected" | "reconnecting" | "disconnected",
-  lastSyncTime: timestamp,
-  panelConfig: {
-    title: string,
-    rows: Array,
-    ...
+  tileMap: { [entityId]: HTMLElement }  // DOM elements by entity
+}
+```
+
+#### window.AppState.updateEntityState(entityId, newState)
+
+**Signature**:
+```javascript
+function updateEntityState(entityId, newState) {
+  AppState.states[entityId] = newState;
+  var tile = AppState.tileMap[entityId];
+  if (tile) {
+    var layoutType = tile.dataset.layoutType || 'sensor_generic';
+    var component = window.RP_Renderer.getComponent(layoutType);
+    if (component) {
+      component.updateTile(tile, newState);
+    }
   }
 }
-```
-
-#### updateEntityState(entityId, newState, newAttributes)
-
-**Signature**:
-```javascript
-function updateEntityState(
-  entityId: string,
-  newState: string,
-  newAttributes: object
-) → void
-```
-
-**Description**: Update entity state in AppState
-
-**Side Effects**:
-- Updates AppState object
-- Calls all registered subscribers
-- Updates `lastUpdated` timestamp
-
-**Example**:
-```javascript
-state.updateEntityState('light.bedroom', 'on', {
-  brightness: 200,
-  color_temp: 380
-});
-```
-
-#### getEntity(entityId)
-
-**Signature**:
-```javascript
-function getEntity(entityId: string) → Entity | null
-```
-
-**Description**: Retrieve entity object from state
-
-**Returns**: Entity object or null if not found
-
-**Example**:
-```javascript
-const entity = state.getEntity('light.bedroom');
-if (entity) {
-  console.log(entity.state);  // "on" or "off"
-}
-```
-
-#### getPanel()
-
-**Signature**:
-```javascript
-function getPanel() → PanelConfig
-```
-
-**Description**: Get panel configuration
-
-**Example**:
-```javascript
-const panelConfig = state.getPanel();
-console.log(panelConfig.rows);
-```
-
-#### setConnectionStatus(status)
-
-**Signature**:
-```javascript
-function setConnectionStatus(
-  status: "connected" | "reconnecting" | "disconnected"
-) → void
-```
-
-**Description**: Update connection status indicator
-
-**Side Effects**:
-- Updates AppState.connectionStatus
-- Calls all registered subscribers
-- UI updates to show connection indicator
-
-**Example**:
-```javascript
-state.setConnectionStatus('reconnecting');
-```
-
-#### subscribe(callback)
-
-**Signature**:
-```javascript
-function subscribe(
-  callback: (updatedState: AppState) => void
-) → () => void  // Returns unsubscribe function
-```
-
-**Description**: Register listener for state changes
-
-**Returns**: Unsubscribe function (call to remove listener)
-
-**Example**:
-```javascript
-const unsubscribe = state.subscribe((appState) => {
-  console.log('State updated:', appState);
-  renderUI(appState);
-});
-
-// Later, remove listener:
-unsubscribe();
 ```
 
 ---
 
-## Component Interface
+### renderer.js Module
 
-Each entity type has a component module defining how to render and interact with that entity.
+Handles component selection and rendering based on layout_type.
 
-### Component Module Exports
+#### window.RP_Renderer.init()
 
-#### createTile(config, state)
+**Description**: Initialize renderer and resolve all components
 
 **Signature**:
 ```javascript
-export function createTile(
-  config: EntityConfig,
-  state: EntityState
-) → HTMLElement
+window.RP_Renderer.init();
 ```
 
-**Description**: Create DOM element for this entity type
+---
 
-**Parameters**:
-- `config` (object): Entity configuration from panel config
-  ```javascript
-  {
-    entity_id: "light.bedroom",
-    size: "medium",
-    name: "Bedroom Light",
-    show_state: true,
-    icon: "mdi:ceiling-light"
-    // Entity-type-specific options
-  }
-  ```
+#### window.RP_Renderer.renderActiveSection(appState)
 
-- `state` (object): Current entity state from HA
-  ```javascript
-  {
-    state: "on",
-    attributes: {
-      brightness: 200,
-      color_temp: 380,
-      friendly_name: "Bedroom Light"
-    }
-  }
-  ```
+**Description**: Render current section/room to #content-area
 
-**Returns**: HTMLElement (should be a single root element, e.g., `<div class="tile">`)
-
-**Requirements**:
-- Must set `element.dataset.entityId = config.entity_id`
-- Must apply appropriate CSS classes (e.g., `tile`, `tile-light`)
-- Should use `config.icon` if provided, else entity's icon
-- Should use `config.name` if provided, else `state.attributes.friendly_name`
-- Visual appearance should match `state.state` value
-
-**Example**:
+**Signature**:
 ```javascript
-export function createTile(config, state) {
-  const tile = document.createElement('div');
+window.RP_Renderer.renderActiveSection(appState);
+```
+
+---
+
+#### window.RP_Renderer.getComponent(layoutType)
+
+**Description**: Get component module for a layout_type
+
+**Signature**:
+```javascript
+var component = window.RP_Renderer.getComponent('light');
+// Returns { createTile, updateTile } or null
+```
+
+**Layout Types** (15 total in v2.0):
+```
+light                  // light.*
+switch                 // switch.*, input_boolean.*
+sensor_temperature     // sensor.* with device_class: temperature
+sensor_humidity        // sensor.* with device_class: humidity
+sensor_co2             // sensor.* with device_class: co2/carbon_dioxide
+sensor_battery         // sensor.* with device_class: battery
+sensor_energy          // sensor.* with device_class: power/energy
+sensor_generic         // sensor.* (other)
+binary_door            // binary_sensor.* with device_class: door/window
+binary_motion          // binary_sensor.* with device_class: motion/occupancy
+binary_standard        // binary_sensor.* (other)
+alarm                  // alarm_control_panel.*
+camera                 // camera.*
+scenario               // scene.*, script.*, automation.*
+energy_flow            // (energy card widget)
+```
+
+---
+
+### Component Interface (all components)
+
+Each component exports the same interface for consistency.
+
+#### createTile(entityConfig)
+
+**Signature**:
+```javascript
+function createTile(entityConfig) {
+  // entityConfig has:
+  // - entity_id (required)
+  // - label (display name)
+  // - icon (override icon)
+  // - layout_type (light, switch, sensor_temperature, etc.)
+  // - device_class (HA device class)
+  // - visual_type (override)
+
+  var tile = document.createElement('div');
   tile.className = 'tile tile-light';
-  tile.dataset.entityId = config.entity_id;
+  tile.dataset.layoutType = entityConfig.layout_type;
+  tile.dataset.entityId = entityConfig.entity_id;
 
-  tile.innerHTML = `
-    <div class="tile-name">${config.name}</div>
-    <div class="tile-state">${state.state}</div>
-  `;
-
-  // Add event listeners for interactions
-  tile.addEventListener('click', () => {
-    handleInteraction(config.entity_id, { type: 'toggle' });
-  });
-
+  // Create DOM...
   return tile;
 }
 ```
 
-#### updateTile(element, state)
+**Requirements**:
+- Must set `tile.dataset.layoutType` for app.js to locate component
+- Must set `tile.dataset.entityId`
+- Must apply `tile-{layout_type}` CSS class
+- Must use `entityConfig.label` as display name
+- Must return single root element
+
+---
+
+#### updateTile(tile, stateObj)
 
 **Signature**:
 ```javascript
-export function updateTile(
-  element: HTMLElement,
-  state: EntityState
-) → void
+function updateTile(tile, stateObj) {
+  // stateObj has: { state, attributes }
+  tile.dataset.state = stateObj.state;
+
+  // Update DOM based on new state
+  var stateDiv = tile.querySelector('.tile-state');
+  stateDiv.textContent = stateObj.state;
+
+  // Update CSS state classes
+  tile.classList.toggle('is-on', stateObj.state === 'on');
+  tile.classList.toggle('is-off', stateObj.state === 'off');
+  tile.classList.toggle('is-unavail', stateObj.state === 'unavailable');
+}
 ```
-
-**Description**: Update tile DOM based on new state
-
-**Parameters**:
-- `element` (HTMLElement): Element returned from `createTile()`
-- `state` (object): New entity state
 
 **Requirements**:
 - Must update appearance to reflect new state
-- Should update `element.dataset.state = state.state`
+- Should set `tile.dataset.state`
+- Should update CSS state classes (`is-on`, `is-off`, `is-unavail`)
 - Should be fast (< 50ms)
 - Should not recreate DOM, only mutate
 
-**Example**:
-```javascript
-export function updateTile(element, state) {
-  element.dataset.state = state.state;
-  const stateDiv = element.querySelector('.tile-state');
-  stateDiv.textContent = state.state;
+---
 
-  // Update styling
-  element.classList.toggle('is-on', state.state === 'on');
-  element.classList.toggle('is-off', state.state === 'off');
-}
-```
+### bottom-sheet.js Module
 
-#### handleInteraction(entityId, action)
+Floating sheet UI for light controls (brightness, color temp, hue).
+
+#### window.RP_BottomSheet.open(entityId, label, attributes)
 
 **Signature**:
 ```javascript
-export function handleInteraction(
-  entityId: string,
-  action: InteractionAction
-) → Promise<void>
+window.RP_BottomSheet.open(
+  entityId,      // "light.bedroom"
+  label,         // "Bedroom Light"
+  attributes     // { brightness, color_temp, ... }
+);
 ```
 
-**Description**: Handle user interaction with tile
-
-**Parameters**:
-- `entityId` (string): Which entity was interacted with
-- `action` (object): What action the user initiated
-  ```javascript
-  {
-    type: "toggle",  // or "set_brightness", "set_color", etc.
-    value?: number,  // Optional value (e.g., brightness level)
-  }
-  ```
-
-**Returns**: Promise that resolves when service call completes
-
-**Requirements**:
-- Must call `api.callService()` to execute action in HA
-- Should not update UI directly (wait for WebSocket confirmation)
-- Should handle and log errors
-- Should not throw (catch errors internally)
+**Behavior**:
+- Opens sheet from bottom with animation
+- Displays brightness slider (if brightness attribute exists)
+- Displays color temperature slider (if color_temp attribute exists)
+- Displays hue/saturation picker (if hs_color attribute exists)
+- On slider change: calls `api.callService('light', 'turn_on', {...})`
+- On close: animated slide-down and removal from DOM
 
 **Example**:
 ```javascript
-export function handleInteraction(entityId, action) {
-  if (action.type === 'toggle') {
-    return api.callService('light', 'toggle', {
-      entity_id: entityId
-    }).catch(err => {
-      console.error('Service call failed:', err);
-    });
+window.RP_BottomSheet.open(
+  'light.bedroom',
+  'Bedroom Light',
+  {
+    brightness: 200,
+    color_temp: 380,
+    supported_color_modes: ['color_temp', 'hs']
   }
-  return Promise.reject(new Error(`Unknown action: ${action.type}`));
-}
-```
-
-### Component Registration
-
-In `frontend/js/app.js`:
-
-```javascript
-import * as lightComponent from './components/light.js';
-import * as switchComponent from './components/switch.js';
-import * as sensorComponent from './components/sensor.js';
-
-const COMPONENTS = {
-  'light': lightComponent,
-  'switch': switchComponent,
-  'sensor': sensorComponent,
-  'binary_sensor': binarySensorComponent,
-  // Add new entity types here
-};
-
-function getComponent(entityId) {
-  const domain = entityId.split('.')[0];
-  return COMPONENTS[domain] || COMPONENTS['custom'];
-}
-```
-
-### Component Lifecycle
-
-```
-1. Config loaded via fetchPanelConfig()
-2. States loaded via fetchAllStates()
-3. For each entity in config:
-   a. Get component via getComponent(entity_id)
-   b. Call component.createTile(config, state)
-   c. Append to DOM
-4. WebSocket connects
-5. When state changes:
-   a. AppState.updateEntityState() called
-   b. Find DOM element for entity
-   c. Call component.updateTile(element, newState)
-6. When user taps tile:
-   a. Click/touch event fires
-   b. Call component.handleInteraction(entityId, action)
-   c. Action calls api.callService()
-   d. Service response received
-   e. WebSocket sends state_changed
-   f. updateTile() called again
+);
 ```
 
 ---
 
-**Document Version**: 1.2
-**Last Updated**: 2026-03-24
-**Maintainer**: Retro Panel Team
+#### window.RP_BottomSheet.close()
 
-**Recent Updates (v1.2)**:
-- Updated GET /api/panel-config to document v1.4 response with version: 4 and rooms.sections structure
-- Added backward compatibility note: v3 configs auto-migrate to v4
-- Documented legacy response format (v1.0-v1.3) as deprecated
-- Added new POST /api/config endpoint for saving configuration with v4 schema
-- Updated response schema documentation to show rooms with id, title, sections array
-- Updated error handling examples to reference v4 schema fields
-- Documented section ID requirement and section title (may be empty)
-- Clarified auto-migration behavior on first load
+**Signature**:
+```javascript
+window.RP_BottomSheet.close();
+```
+
+**Behavior**: Closes sheet with animation
+
+---
+
+### nav.js Module
+
+Sidebar navigation management.
+
+#### window.RP_Nav.selectSection(sectionId)
+
+**Signature**:
+```javascript
+window.RP_Nav.selectSection('room_living', 'sec_lights');
+```
+
+**Behavior**: Updates sidebar highlight, renders section content
+
+---
+
+### api.js Module
+
+Handles all HTTP REST API communication.
+
+#### window.callService(domain, service, serviceData)
+
+**Signature**:
+```javascript
+async function callService(domain, service, serviceData) {
+  // Returns Promise
+}
+```
+
+**Example**:
+```javascript
+await window.callService('light', 'turn_on', {
+  entity_id: 'light.bedroom',
+  brightness: 200
+});
+```
+
+---
+
+#### window.getAllStates()
+
+**Signature**:
+```javascript
+async function getAllStates() {
+  // Returns { [entityId]: { state, attributes } }
+}
+```
+
+---
+
+#### window.getPanelConfig()
+
+**Signature**:
+```javascript
+async function getPanelConfig() {
+  // Returns { version, overview, rooms, scenarios, cameras }
+}
+```
+
+---
+
+## CSS Design System (v2.0)
+
+### CSS Files
+
+```
+app/static/css/
+├── tokens.css       — CSS variables: --c-bg, --c-surface, --c-accent, etc.
+├── layout.css       — sidebar 200px, header 56px, content-area, .hidden class
+├── tiles.css        — triple-lock tile dimensions, .tile-row/.tile-col-* flexbox
+└── bottom-sheet.css — overlay + sheet transform animation
+```
+
+### Tile Dimensions (Triple-Lock - Immutable)
+
+```css
+.tile-light  { height: 120px; min-height: 120px; max-height: 120px; }
+.tile-switch { height: 120px; min-height: 120px; max-height: 120px; }
+.tile-sensor { min-height: 72px; }
+.tile-alarm  { min-height: 240px; }
+.tile-camera { min-height: 160px; }
+.tile-scenario { min-height: 110px; }
+```
+
+### Column System
+
+```css
+.tile-row { display: flex; flex-wrap: wrap; }
+.tile-col-compact { width: 33.333%; }  /* light, switch, scenario */
+.tile-col-sensor  { width: 50%; }      /* all sensor variants, binary */
+.tile-col-full    { width: 100%; }     /* alarm, camera, energy_flow */
+
+/* @media (max-width: 599px): compact→50%, sensor→100% */
+/* @media landscape ≥1024px: compact→25%, sensor→33.333% */
+```
+
+### State Classes
+
+```css
+.is-on       { /* entity is on/active */ }
+.is-off      { /* entity is off */ }
+.is-unavail  { /* entity is unavailable/unknown */ }
+```
+
+---
+
+**Document Version**: 2.0
+**Last Updated**: 2026-03-27
+**Maintainer**: Retro Panel Team

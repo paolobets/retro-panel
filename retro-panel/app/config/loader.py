@@ -99,6 +99,8 @@ class EntityConfig:
     hidden: bool = False
     visual_type: str = ""
     display_mode: str = ""
+    device_class: str = ""
+    layout_type: str = ""
     row: Optional[int] = None
     col: Optional[int] = None
 
@@ -238,6 +240,47 @@ def _resolve_config_path() -> Path:
     return supervisor_path
 
 
+def _compute_layout_type(entity_id: str, device_class: str, visual_type: str) -> str:
+    """Compute the frontend layout_type for an entity.
+
+    visual_type (user override) always wins.
+    Falls back to domain + device_class inference.
+    """
+    if visual_type:
+        return visual_type
+    domain = entity_id.split(".")[0] if "." in entity_id else ""
+    if domain == "light":
+        return "light"
+    if domain in ("switch", "input_boolean"):
+        return "switch"
+    if domain == "alarm_control_panel":
+        return "alarm"
+    if domain == "camera":
+        return "camera"
+    if domain in ("scene", "script", "automation"):
+        return "scenario"
+    if domain == "sensor":
+        dc = (device_class or "").lower()
+        _map = {
+            "temperature": "sensor_temperature",
+            "humidity": "sensor_humidity",
+            "co2": "sensor_co2",
+            "carbon_dioxide": "sensor_co2",
+            "battery": "sensor_battery",
+            "power": "sensor_energy",
+            "energy": "sensor_energy",
+        }
+        return _map.get(dc, "sensor_generic")
+    if domain == "binary_sensor":
+        dc = (device_class or "").lower()
+        if dc in ("door", "window"):
+            return "binary_door"
+        if dc in ("motion", "occupancy"):
+            return "binary_motion"
+        return "binary_standard"
+    return "sensor_generic"
+
+
 def _parse_entity(raw: dict) -> EntityConfig:
     entity_id: str = raw.get("entity_id", "").strip()
     if not entity_id:
@@ -251,8 +294,11 @@ def _parse_entity(raw: dict) -> EntityConfig:
     hidden: bool = bool(raw.get("hidden", False))
     visual_type: str = str(raw.get("visual_type") or "").strip()
     display_mode: str = str(raw.get("display_mode") or "").strip()
+    device_class: str = str(raw.get("device_class") or "").strip()
+    layout_type: str = _compute_layout_type(entity_id, device_class, visual_type)
     return EntityConfig(entity_id=entity_id, label=label, icon=icon, hidden=hidden,
-                        visual_type=visual_type, display_mode=display_mode)
+                        visual_type=visual_type, display_mode=display_mode,
+                        device_class=device_class, layout_type=layout_type)
 
 
 def _parse_energy_flow(raw: dict) -> EnergyFlowConfig:

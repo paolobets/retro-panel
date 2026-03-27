@@ -5,7 +5,7 @@
  * - AppState
  * - boot() sequence
  * - updateEntityState() (WebSocket + polling)
- * - buildHeaderSensors() / updateHeaderSensorChip()
+ * - Connection/status management
  * - applyConfig() (theme, columns, title)
  * - startClock()
  * - showPanel() / hideLoadingScreen()
@@ -38,31 +38,6 @@
   };
 
   // ---------------------------------------------------------------------------
-  // Helper: raccoglie tutti gli item dalla config (overview + rooms)
-  // ---------------------------------------------------------------------------
-  function _getAllItems(config) {
-    var items = [];
-    if (!config) { return items; }
-
-    // overview_items (nuovo formato) o overview.items (vecchio formato)
-    var ov = config.overview_items || (config.overview && config.overview.items) || [];
-    for (var i = 0; i < ov.length; i++) { items.push(ov[i]); }
-
-    var rooms = config.rooms || [];
-    for (var r = 0; r < rooms.length; r++) {
-      var sections = rooms[r].sections || [];
-      for (var s = 0; s < sections.length; s++) {
-        var sitems = sections[s].items || [];
-        for (var k = 0; k < sitems.length; k++) { items.push(sitems[k]); }
-      }
-      // legacy: room.items diretti
-      var legacyItems = rooms[r].items || [];
-      for (var li = 0; li < legacyItems.length; li++) { items.push(legacyItems[li]); }
-    }
-    return items;
-  }
-
-  // ---------------------------------------------------------------------------
   // applyConfig — tema, colonne, titolo
   // ---------------------------------------------------------------------------
   function applyConfig(config) {
@@ -73,70 +48,10 @@
 
     var titleEl = DOM.qs('#panel-title');
     if (titleEl) {
-      titleEl.innerHTML = 'Retro <span style="color:var(--color-accent)">PANEL</span>';
+      titleEl.innerHTML = 'Retro <span style="color:var(--c-accent)">PANEL</span>';
     }
     document.title = config.title || 'Retro Panel';
     // Colonne: gestite interamente dai media query CSS su --tile-cols
-  }
-
-  // ---------------------------------------------------------------------------
-  // buildHeaderSensors / updateHeaderSensorChip
-  // ---------------------------------------------------------------------------
-  function buildHeaderSensors(headerSensors) {
-    var container = DOM.qs('#header-sensors');
-    if (!container) { return; }
-    container.innerHTML = '';
-
-    for (var i = 0; i < headerSensors.length; i++) {
-      (function (hs) {
-        var chip = DOM.createElement('div', 'header-sensor-chip');
-        chip.setAttribute('data-entity', hs.entity_id);
-
-        if (hs.icon) {
-          var iconEl = DOM.createElement('span', 'header-sensor-icon');
-          iconEl.textContent = hs.icon;
-          chip.appendChild(iconEl);
-        }
-
-        var valEl = DOM.createElement('span', 'header-sensor-value');
-        valEl.textContent = '\u2014';
-        chip.appendChild(valEl);
-        container.appendChild(chip);
-
-        // Valore iniziale dagli stati già caricati
-        var st = AppState.states[hs.entity_id];
-        if (st) { valEl.textContent = _formatSensorChipValue(st, hs); }
-      })(headerSensors[i]);
-    }
-  }
-
-  function _formatSensorChipValue(stateObj, hs) {
-    var val = stateObj.state || '\u2014';
-    var attrs = stateObj.attributes || {};
-    var unit = attrs.unit_of_measurement || '';
-    if (hs && hs.label) { return hs.label + ': ' + val + (unit ? ' ' + unit : ''); }
-    return val + (unit ? ' ' + unit : '');
-  }
-
-  function updateHeaderSensorChip(entityId, newState) {
-    var container = DOM.qs('#header-sensors');
-    if (!container) { return; }
-    var chip = container.querySelector('[data-entity="' + entityId + '"]');
-    if (!chip) { return; }
-    var valEl = chip.querySelector('.header-sensor-value');
-    if (!valEl) { return; }
-
-    var hs = null;
-    var config = AppState.config;
-    if (config && config.header_sensors) {
-      for (var i = 0; i < config.header_sensors.length; i++) {
-        if (config.header_sensors[i].entity_id === entityId) {
-          hs = config.header_sensors[i];
-          break;
-        }
-      }
-    }
-    valEl.textContent = _formatSensorChipValue(newState, hs || { entity_id: entityId });
   }
 
   // ---------------------------------------------------------------------------
@@ -147,31 +62,9 @@
 
     var tile = AppState.tileMap[entityId];
     if (tile) {
-      // Cerca item config per display_mode
-      var allItems = _getAllItems(AppState.config);
-      var item = null;
-      for (var i = 0; i < allItems.length; i++) {
-        if (allItems[i].entity_id === entityId) { item = allItems[i]; break; }
-      }
-
-      var component = item
-        ? window.RP_Renderer.resolveComponentForItem(item)
-        : null;
-
-      // Fallback: prova col domain diretto
-      if (!component) {
-        var domain = entityId.split('.')[0];
-        var domainMap = {
-          light: window.LightComponent,
-          switch: window.SwitchComponent,
-          sensor: window.SensorComponent,
-          binary_sensor: window.SensorComponent,
-          alarm_control_panel: window.AlarmComponent,
-          scene: window.ScenarioComponent,
-          script: window.ScenarioComponent,
-        };
-        component = domainMap[domain] || null;
-      }
+      // v2.0: ogni tile porta data-layout-type; il renderer risolve il componente
+      var layoutType = tile.dataset.layoutType || 'sensor_generic';
+      var component = window.RP_Renderer.getComponent(layoutType);
 
       if (component) {
         try { component.updateTile(tile, newState); }
@@ -191,8 +84,6 @@
       }
     }
 
-    // Header sensor chips
-    updateHeaderSensorChip(entityId, newState);
   }
 
   // ---------------------------------------------------------------------------
@@ -332,8 +223,6 @@
           if (!('ontouchstart' in window)) { window.RP_Nav.toggleSidebar(); }
         });
       }
-
-      buildHeaderSensors(config.header_sensors || []);
 
       // Render sezione iniziale
       window.RP_Renderer.renderActiveSection(AppState);
