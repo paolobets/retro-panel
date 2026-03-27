@@ -507,8 +507,9 @@ def load_config() -> PanelConfig:
     if not ha_token:
         ha_token = os.environ.get("SUPERVISOR_TOKEN", "")
         if ha_token:
-            ha_url = "http://homeassistant:8123"
-            logger.info("ha_token not set — using SUPERVISOR_TOKEN with direct HA access (%s)", ha_url)
+            if not ha_url:
+                ha_url = "http://homeassistant:8123"
+            logger.info("ha_token not set — using SUPERVISOR_TOKEN (ha_url=%s)", ha_url)
         else:
             raise ValueError(
                 "'ha_token' is not configured and SUPERVISOR_TOKEN is not available."
