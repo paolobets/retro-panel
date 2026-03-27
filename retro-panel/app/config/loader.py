@@ -445,6 +445,48 @@ def _parse_camera_section(raw: dict, idx: int) -> CameraSection:
     return CameraSection(id=sec_id, title=title, items=cam_items)
 
 
+def _migrate_v4_to_v5(raw: dict) -> tuple[
+    list[RoomSection],       # overview_sections
+    list[RoomConfig],        # rooms
+    list[ScenarioSection],   # scenario_sections
+    list[CameraSection],     # camera_sections
+]:
+    """Migrate a v3/v4 entities dict to v5 section lists.
+
+    Flat overview.items -> single RoomSection.
+    Flat scenarios list -> single ScenarioSection.
+    Flat cameras list   -> single CameraSection.
+    Room items[]        -> handled by _parse_room (v3 migration logic).
+    """
+    _ov = raw.get("overview") or {}
+
+    # overview: wrap flat items in single RoomSection
+    overview_items_flat = _parse_items(_ov.get("items") or [], "overview")
+    overview_sections = [RoomSection(id="sec_default", title="", items=overview_items_flat)] if overview_items_flat else []
+
+    rooms: list[RoomConfig] = []
+    for idx, room_raw in enumerate(raw.get("rooms") or []):
+        if isinstance(room_raw, dict):
+            rooms.append(_parse_room(room_raw, idx))
+
+    # scenarios: parse flat list and wrap in single ScenarioSection
+    sc_flat = [s for s in [_parse_scenario(x) for x in (raw.get("scenarios") or []) if isinstance(x, dict)] if s]
+    scenario_sections = [ScenarioSection(id="sec_default", title="", items=sc_flat)] if sc_flat else []
+
+    # cameras: parse flat list and wrap in single CameraSection
+    cam_flat: list[CameraConfig] = []
+    for c in (raw.get("cameras") or []):
+        if isinstance(c, dict) and c.get("entity_id"):
+            cam_flat.append(CameraConfig(
+                entity_id=str(c["entity_id"]).strip(),
+                title=str(c.get("title") or "").strip(),
+                refresh_interval=int(c.get("refresh_interval") or 10),
+            ))
+    camera_sections = [CameraSection(id="sec_default", title="", items=cam_flat)] if cam_flat else []
+
+    return overview_sections, rooms, scenario_sections, camera_sections
+
+
 def _migrate_v1_flat(raw_entities: list) -> list[SectionItem]:
     """Migrate v1 flat entity list to overview items."""
     items: list[SectionItem] = []
@@ -534,18 +576,7 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
             overview_title = str(_ov.get("title") or "Overview").strip() or "Overview"
             overview_icon = "home"
 
-            # overview: wrap flat items in single RoomSection
-            overview_items_flat = _parse_items(_ov.get("items") or [], "overview")
-            overview_sections = [RoomSection(id="sec_default", title="", items=overview_items_flat)] if overview_items_flat else []
-
-            rooms = []
-            for idx, room_raw in enumerate(raw.get("rooms") or []):
-                if isinstance(room_raw, dict):
-                    rooms.append(_parse_room(room_raw, idx))
-
-            # scenarios: parse flat list and wrap in single ScenarioSection
-            sc_flat = [s for s in [_parse_scenario(x) for x in (raw.get("scenarios") or []) if isinstance(x, dict)] if s]
-            scenario_sections = [ScenarioSection(id="sec_default", title="", items=sc_flat)] if sc_flat else []
+            overview_sections, rooms, scenario_sections, camera_sections = _migrate_v4_to_v5(raw)
 
             header_sensors = []
             for hs_raw in raw.get("header_sensors") or []:
@@ -553,17 +584,6 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
                     hs = _parse_header_sensor(hs_raw)
                     if hs is not None:
                         header_sensors.append(hs)
-
-            # cameras: parse flat list and wrap in single CameraSection
-            cam_flat: list[CameraConfig] = []
-            for c in (raw.get("cameras") or []):
-                if isinstance(c, dict) and c.get("entity_id"):
-                    cam_flat.append(CameraConfig(
-                        entity_id=str(c["entity_id"]).strip(),
-                        title=str(c.get("title") or "").strip(),
-                        refresh_interval=int(c.get("refresh_interval") or 10),
-                    ))
-            camera_sections = [CameraSection(id="sec_default", title="", items=cam_flat)] if cam_flat else []
 
             sc_sec = raw.get("scenarios_section") or {}
             cam_sec = raw.get("cameras_section") or {}
