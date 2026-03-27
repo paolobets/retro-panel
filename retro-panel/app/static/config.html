@@ -40,21 +40,38 @@
       </div>
       <p class="cfg-hint">Items shown on the home section. Add your most important devices here.</p>
 
-      <div class="field-group" style="margin-bottom:12px;">
-        <div class="field-row">
-          <label class="field-label" for="overview-title-input">Section name</label>
-          <input id="overview-title-input" type="text" class="field-input"
-            maxlength="32" autocomplete="off" autocorrect="off"
-            autocapitalize="words" spellcheck="false" placeholder="Overview">
-        </div>
-      </div>
+      <div id="overview-body">
 
-      <div id="overview-items-list">
-        <p class="cfg-placeholder">No items yet.</p>
-      </div>
-      <div class="items-actions">
-        <button id="ov-add-entity-btn" type="button" class="action-btn">+ Add Entities</button>
-        <button id="ov-add-energy-btn" type="button" class="action-btn">+ Add Power Flow Card</button>
+        <!-- Left: entity list -->
+        <div id="overview-left">
+          <div class="field-group" style="margin-bottom:12px;">
+            <div class="field-row">
+              <label class="field-label" for="overview-title-input">Section name</label>
+              <input id="overview-title-input" type="text" class="field-input"
+                maxlength="32" autocomplete="off" autocorrect="off"
+                autocapitalize="words" spellcheck="false" placeholder="Overview">
+            </div>
+          </div>
+          <div id="overview-items-list">
+            <p class="cfg-placeholder">No items yet.</p>
+          </div>
+          <div class="items-actions">
+            <button id="ov-add-entity-btn" type="button" class="action-btn">+ Add Entities</button>
+            <button id="ov-add-energy-btn" type="button" class="action-btn">+ Add Power Flow Card</button>
+          </div>
+        </div>
+
+        <!-- Right: live preview -->
+        <div id="overview-right">
+          <div class="cfg-preview-section">
+            <div class="cfg-preview-header">
+              <span class="cfg-preview-label">Overview Preview</span>
+              <span class="live-badge">&#9679; LIVE</span>
+            </div>
+            <div class="cfg-preview-box" id="overview-live-preview"></div>
+          </div>
+        </div>
+
       </div>
 
     </section>
@@ -64,18 +81,21 @@
          ══════════════════════════════════════════════ -->
     <section id="tab-rooms" class="cfg-section hidden">
 
-      <div class="section-header">
-        <h2 class="section-title">Rooms</h2>
-        <button id="add-room-btn" type="button" class="action-btn">+ Add Room</button>
-      </div>
-      <p class="cfg-hint">Each room appears as a navigation item in the sidebar. Toggle visibility or edit entities.</p>
+      <!-- Narrow list view (hidden when room editor is open) -->
+      <div id="rooms-list-view">
+        <div class="section-header">
+          <h2 class="section-title">Rooms</h2>
+          <button id="add-room-btn" type="button" class="action-btn">+ Add Room</button>
+        </div>
+        <p class="cfg-hint">Each room appears as a navigation item in the sidebar. Toggle visibility or edit entities.</p>
 
-      <div id="rooms-list">
-        <p class="cfg-placeholder">No rooms configured. Add a room or import from HA areas.</p>
-      </div>
+        <div id="rooms-list">
+          <p class="cfg-placeholder">No rooms configured. Add a room or import from HA areas.</p>
+        </div>
 
-      <div class="items-actions">
-        <button id="import-areas-btn" type="button" class="action-btn-outline">&#8635; Import from HA Areas</button>
+        <div class="items-actions">
+          <button id="import-areas-btn" type="button" class="action-btn-outline">&#8635; Import from HA Areas</button>
+        </div>
       </div>
 
       <!-- Room editor (shown when editing a room) -->

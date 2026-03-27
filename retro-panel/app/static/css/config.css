@@ -85,6 +85,36 @@ html, body {
   padding: 16px 24px;
 }
 
+/* Rooms: narrow list view, full-width editor */
+#rooms-list-view {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* Overview: 50/50 body (mirrors room editor layout) */
+#overview-body {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  margin-top: 4px;
+}
+
+#overview-left {
+  flex: 1 1 50%;
+  min-width: 0;
+}
+
+#overview-right {
+  flex: 1 1 50%;
+  min-width: 0;
+  position: sticky;
+  top: 70px;
+}
+
+#overview-right .cfg-preview-section {
+  margin-top: 0;
+}
+
 /* ---- Search ---- */
 #search-wrap {
   margin-bottom: 10px;
@@ -1455,15 +1485,19 @@ html, body {
 }
 
 @media (max-width: 900px) {
-  #room-editor-body {
+  #room-editor-body,
+  #overview-body {
     flex-direction: column;
   }
   #room-editor-left,
-  #room-editor-right {
+  #room-editor-right,
+  #overview-left,
+  #overview-right {
     flex: none;
     width: 100%;
   }
-  #room-editor-right {
+  #room-editor-right,
+  #overview-right {
     position: static;
   }
 }

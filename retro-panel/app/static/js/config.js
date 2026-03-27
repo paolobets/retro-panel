@@ -214,10 +214,31 @@
 
   // ── Overview items ─────────────────────────────────────────────────────────
 
+  function renderOverviewPreview() {
+    const box = qs('overview-live-preview');
+    if (!box) { return; }
+    const items = (state.overview.items || []).filter(it => !it.hidden);
+    if (!items.length) {
+      box.innerHTML = '<p class="preview-empty-section">No items yet.</p>';
+      return;
+    }
+    box.innerHTML = `<div class="preview-tiles-row">${
+      items.map(it => {
+        if (it.type === 'energy_flow') {
+          return `<div class="preview-tile-chip"><span class="chip-domain">⚡</span>Power Flow</div>`;
+        }
+        const domain = it.entity_id ? it.entity_id.split('.')[0] : '';
+        const label = it.label || it.entity_id || '';
+        return `<div class="preview-tile-chip"><span class="chip-domain">${esc(domain)}</span>${esc(label)}</div>`;
+      }).join('')
+    }</div>`;
+  }
+
   function renderOverviewItems() {
     var container = qs('overview-items-list');
     if (!container) { return; }
     renderItemsList(container, state.overview.items, 'overview');
+    renderOverviewPreview();
   }
 
   // ── Generic items list renderer ────────────────────────────────────────────
@@ -646,14 +667,10 @@
     var room = activeRoomObj();
     if (!room) { return; }
 
-    var roomsListEl = qs('rooms-list');
-    var addWrap = qs('import-areas-btn') && qs('import-areas-btn').parentElement;
-    var addRoomBtn = qs('add-room-btn');
+    var listView = qs('rooms-list-view');
     var editor = qs('room-editor');
 
-    if (roomsListEl) { roomsListEl.classList.add('hidden'); }
-    if (addWrap) { addWrap.classList.add('hidden'); }
-    if (addRoomBtn) { addRoomBtn.classList.add('hidden'); }
+    if (listView) { listView.classList.add('hidden'); }
     if (editor) { editor.classList.remove('hidden'); }
 
     // Populate fields
@@ -680,15 +697,10 @@
   function closeRoomEditor() {
     editingRoomId = null;
     editingSectionId = null;
-    var roomsListEl = qs('rooms-list');
-    var importBtn = qs('import-areas-btn');
-    var addRoomBtn = qs('add-room-btn');
+    var listView = qs('rooms-list-view');
     var editor = qs('room-editor');
-    var addWrap = importBtn && importBtn.parentElement;
 
-    if (roomsListEl) { roomsListEl.classList.remove('hidden'); }
-    if (addWrap) { addWrap.classList.remove('hidden'); }
-    if (addRoomBtn) { addRoomBtn.classList.remove('hidden'); }
+    if (listView) { listView.classList.remove('hidden'); }
     if (editor) { editor.classList.add('hidden'); }
     renderRoomsList();
   }
