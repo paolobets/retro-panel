@@ -32,14 +32,9 @@ def validate_config(config: "PanelConfig") -> tuple[bool, str]:
     if not isinstance(config.entities, list):
         return False, "'entities' must be a list"
 
-    seen_ids: set[str] = set()
     for idx, ent in enumerate(config.entities):
         if not ent.entity_id:
             return False, f"Entity at index {idx} has an empty 'entity_id'"
-        if ent.entity_id in seen_ids:
-            return False, f"Duplicate entity_id '{ent.entity_id}' at index {idx}"
-        seen_ids.add(ent.entity_id)
-
         if ent.row is not None and (not isinstance(ent.row, int) or ent.row < 0):
             return False, f"Entity '{ent.entity_id}': 'row' must be a non-negative integer"
         if ent.col is not None and (not isinstance(ent.col, int) or ent.col < 0):
