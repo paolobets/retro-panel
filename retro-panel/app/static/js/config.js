@@ -15,14 +15,14 @@
 
   // ── State ──────────────────────────────────────────────────────────────────
 
-  // v4 data model
+  // v5 data model
   var state = {
-    overview:          { title: 'Overview', icon: 'home', items: [] },
+    overview:          { title: 'Overview', icon: 'home', sections: [] },
     rooms:             [],  // [{id, title, icon, hidden, sections:[{id, title, items:[]}]}]
-    scenarios:         [],  // [{entity_id, title, icon}]
+    scenarios:         [],  // list of sections: [{id, title, items:[]}]
     scenarios_section: { title: 'Scenarios', icon: 'palette' },
     header_sensors:    [],  // [{entity_id, icon, label}]
-    cameras:           [],  // [{entity_id, title, refresh_interval}]
+    cameras:           [],  // list of sections: [{id, title, items:[]}]
     cameras_section:   { title: 'Telecamere', icon: 'cctv' },
   };
 
@@ -41,7 +41,12 @@
 
   // Room editor state
   var editingRoomId = null;
-  var editingSectionId = null;  // id of the section currently shown in the right panel
+  var editingSectionId = null;   // id of the section currently shown in the right panel
+
+  // Section editor state for overview / scenarios / cameras
+  var editingOvSectionId  = null;   // active section in overview editor
+  var editingScSectionId  = null;   // active section in scenarios editor
+  var editingCamSectionId = null;   // active section in cameras editor
 
   // Energy wizard state
   var energyContext = null;   // 'overview' | 'room'
@@ -165,6 +170,13 @@
 
   function genSecId() { return 'sec_' + Math.random().toString(36).slice(2, 9); }
 
+  function cloneItem(it) {
+    var copy = {};
+    for (var k in it) { if (Object.prototype.hasOwnProperty.call(it, k)) { copy[k] = it[k]; } }
+    copy.hidden = !!it.hidden;
+    return copy;
+  }
+
   function activeRoomItems() {
     var room = activeRoomObj();
     if (!room) { return []; }
@@ -186,8 +198,8 @@
   }
 
   function contextItems() {
-    if (pickerContext === 'overview') { return state.overview.items; }
-    if (pickerContext === 'section')  { return activeRoomItems(); }
+    if (pickerContext === 'ov-section')  { return activeOvItems(); }
+    if (pickerContext === 'section')     { return activeRoomItems(); }
     return [];
   }
 
@@ -207,8 +219,10 @@
       if (el) { el.classList.toggle('hidden', sections[j] !== tabId); }
     }
 
-    // Refresh cameras list when switching to that tab
-    if (tabId === 'cameras') { renderCamerasList(); }
+    // Refresh relevant section lists when switching tabs
+    if (tabId === 'overview')   { renderOvSectionsList();  renderOvSectionDetail(); }
+    if (tabId === 'scenarios')  { renderScSectionsList();  renderScSectionDetail(); }
+    if (tabId === 'cameras')    { renderCamSectionsList(); renderCamSectionDetail(); }
 
     // Close room editor when leaving rooms tab
     if (tabId !== 'rooms') { closeRoomEditor(); }
@@ -217,29 +231,104 @@
   // ── Overview items ─────────────────────────────────────────────────────────
 
   function renderOverviewPreview() {
-    const box = qs('overview-live-preview');
+    var box = qs('overview-live-preview');
     if (!box) { return; }
-    const items = (state.overview.items || []).filter(it => !it.hidden);
-    if (!items.length) {
-      box.innerHTML = '<p class="preview-empty-section">No items yet.</p>';
+    var sections = activeOvSections();
+    if (!sections.length) {
+      box.innerHTML = '<p class="preview-empty-section">No sections yet.</p>';
       return;
     }
-    box.innerHTML = `<div class="preview-tiles-row">${
-      items.map(it => {
-        if (it.type === 'energy_flow') {
-          return `<div class="preview-tile-chip"><span class="chip-domain">⚡</span>Power Flow</div>`;
-        }
-        const domain = it.entity_id ? it.entity_id.split('.')[0] : '';
-        const label = it.label || it.entity_id || '';
-        return `<div class="preview-tile-chip"><span class="chip-domain">${esc(domain)}</span>${esc(label)}</div>`;
-      }).join('')
-    }</div>`;
+    box.innerHTML = sections.map(function(sec) {
+      var visItems = (sec.items || []).filter(function(it) { return !it.hidden; });
+      var headerHtml = sec.title
+        ? '<div class="preview-section-title">' + esc(sec.title) + '</div>'
+        : '';
+      var chipsHtml = visItems.length === 0
+        ? '<p class="preview-empty-section">No entities</p>'
+        : '<div class="preview-tiles-row">' + visItems.map(function(it) {
+            if (it.type === 'energy_flow') {
+              return '<div class="preview-tile-chip"><span class="chip-domain">\u26a1</span>Power Flow</div>';
+            }
+            var domain = it.entity_id ? it.entity_id.split('.')[0] : '';
+            return '<div class="preview-tile-chip"><span class="chip-domain">' + esc(domain) + '</span>' + esc(it.label || it.entity_id || '') + '</div>';
+          }).join('') + '</div>';
+      return '<div class="preview-room-section">' + headerHtml + chipsHtml + '</div>';
+    }).join('');
   }
 
-  function renderOverviewItems() {
-    var container = qs('overview-items-list');
+  function renderOvSectionsList() {
+    var container = qs('ov-sections-list');
     if (!container) { return; }
-    renderItemsList(container, state.overview.items, 'overview');
+    var sections = activeOvSections();
+    if (sections.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">No sections. Click &ldquo;+ Add&rdquo;.</p>';
+      return;
+    }
+    container.innerHTML = sections.map(function(sec) {
+      var isActive = sec.id === editingOvSectionId;
+      var count = (sec.items || []).filter(function(it) { return it.type === 'entity'; }).length;
+      return '<div class="section-row' + (isActive ? ' section-row--active' : '') + '" data-id="' + esc(sec.id) + '">'
+        + '<span class="section-row-drag">&#9776;</span>'
+        + '<div class="section-row-info">'
+        + '<span class="section-row-title">' + esc(sec.title || 'Unnamed') + '</span>'
+        + '<span class="section-row-count">' + count + ' entit' + (count === 1 ? 'y' : 'ies') + '</span>'
+        + '</div>'
+        + '<div class="section-row-actions">'
+        + '<button class="remove-btn ov-sec-del-btn" type="button" data-id="' + esc(sec.id) + '">\u2715</button>'
+        + '</div></div>';
+    }).join('');
+
+    initGenericSectionDragDrop(container, activeOvSections, renderOvSectionsList);
+
+    container.querySelectorAll('.section-row').forEach(function(row) {
+      row.addEventListener('click', function(e) {
+        if (e.target.tagName === 'BUTTON') { return; }
+        selectOvSection(row.getAttribute('data-id'));
+      });
+    });
+    container.querySelectorAll('.ov-sec-del-btn').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var id = btn.getAttribute('data-id');
+        var secs = activeOvSections();
+        for (var i = 0; i < secs.length; i++) { if (secs[i].id === id) { secs.splice(i, 1); break; } }
+        if (editingOvSectionId === id) { editingOvSectionId = null; }
+        renderOvSectionsList();
+        renderOvSectionDetail();
+        renderOverviewPreview();
+      });
+    });
+    renderOverviewPreview();
+  }
+
+  function renderOvSectionDetail() {
+    var placeholder = qs('ov-section-detail-placeholder');
+    var content = qs('ov-section-detail-content');
+    if (!editingOvSectionId) {
+      if (placeholder) { placeholder.classList.remove('hidden'); }
+      if (content) { content.classList.add('hidden'); }
+      return;
+    }
+    var sec = activeOvSectionObj();
+    if (!sec) {
+      if (placeholder) { placeholder.classList.remove('hidden'); }
+      if (content) { content.classList.add('hidden'); }
+      return;
+    }
+    if (placeholder) { placeholder.classList.add('hidden'); }
+    if (content) { content.classList.remove('hidden'); }
+    var titleInput = qs('ov-section-title-input');
+    if (titleInput) { titleInput.value = sec.title; }
+    renderOvSectionItemsList();
+  }
+
+  function renderOvSectionItemsList() {
+    var container = qs('ov-section-items-list');
+    var countEl   = qs('ov-section-items-count');
+    if (!container) { return; }
+    var items = activeOvItems();
+    if (countEl) { countEl.textContent = String(items.length); }
+    renderItemsList(container, items, 'ov-section');
     renderOverviewPreview();
   }
 
@@ -429,8 +518,10 @@
   }
 
   function getItemsForContext(ctx) {
-    if (ctx === 'overview') { return state.overview.items; }
-    if (ctx === 'section')  { return activeRoomItems(); }
+    if (ctx === 'ov-section')  { return activeOvItems(); }
+    if (ctx === 'section')     { return activeRoomItems(); }
+    if (ctx === 'sc-section')  { return activeScItems(); }
+    if (ctx === 'cam-section') { return activeCamItems(); }
     return [];
   }
 
@@ -450,8 +541,10 @@
   }
 
   function refreshItemsList(ctx) {
-    if (ctx === 'overview') { renderOverviewItems(); }
+    if (ctx === 'ov-section')  { renderOvSectionItemsList(); }
     else if (ctx === 'section') { renderSectionItemsList(); }
+    else if (ctx === 'sc-section')  { renderScSectionItemsList(); }
+    else if (ctx === 'cam-section') { renderCamSectionItemsList(); }
   }
 
   // ── Rooms ──────────────────────────────────────────────────────────────────
@@ -733,6 +826,66 @@
     return room.sections;
   }
 
+  // ── Overview section accessors ─────────────────────────────────────────────
+
+  function activeOvSections() { return state.overview.sections || []; }
+  function activeOvSectionObj() {
+    var secs = activeOvSections();
+    for (var i = 0; i < secs.length; i++) {
+      if (secs[i].id === editingOvSectionId) { return secs[i]; }
+    }
+    return null;
+  }
+  function activeOvItems() {
+    var sec = activeOvSectionObj();
+    return sec ? (sec.items || []) : [];
+  }
+  function selectOvSection(id) {
+    editingOvSectionId = id;
+    renderOvSectionsList();
+    renderOvSectionDetail();
+  }
+
+  // ── Scenarios section accessors ────────────────────────────────────────────
+
+  function activeScSections() { return state.scenarios || []; }
+  function activeScSectionObj() {
+    var secs = activeScSections();
+    for (var i = 0; i < secs.length; i++) {
+      if (secs[i].id === editingScSectionId) { return secs[i]; }
+    }
+    return null;
+  }
+  function activeScItems() {
+    var sec = activeScSectionObj();
+    return sec ? (sec.items || []) : [];
+  }
+  function selectScSection(id) {
+    editingScSectionId = id;
+    renderScSectionsList();
+    renderScSectionDetail();
+  }
+
+  // ── Cameras section accessors ──────────────────────────────────────────────
+
+  function activeCamSections() { return state.cameras || []; }
+  function activeCamSectionObj() {
+    var secs = activeCamSections();
+    for (var i = 0; i < secs.length; i++) {
+      if (secs[i].id === editingCamSectionId) { return secs[i]; }
+    }
+    return null;
+  }
+  function activeCamItems() {
+    var sec = activeCamSectionObj();
+    return sec ? (sec.items || []) : [];
+  }
+  function selectCamSection(id) {
+    editingCamSectionId = id;
+    renderCamSectionsList();
+    renderCamSectionDetail();
+  }
+
   function addSection() {
     var sections = activeRoomSections();
     var n = sections.length + 1;
@@ -820,7 +973,7 @@
     renderRoomPreview();
   }
 
-  function initSectionDragDrop(container) {
+  function initGenericSectionDragDrop(container, getSections, onReorder) {
     let dragIdx = -1;
     let ghostEl = null;
     let startY = 0;
@@ -871,10 +1024,10 @@
       const fromIdx = dragIdx;
       dragIdx = -1;
       if (targetIdx !== fromIdx) {
-        const sections = activeRoomSections();
+        const sections = getSections();
         const [moved] = sections.splice(fromIdx, 1);
         sections.splice(targetIdx, 0, moved);
-        renderSectionsList();
+        onReorder();
       }
     };
 
@@ -887,6 +1040,10 @@
         document.addEventListener('mouseup', onUp);
       });
     });
+  }
+
+  function initSectionDragDrop(container) {
+    initGenericSectionDragDrop(container, activeRoomSections, renderSectionsList);
   }
 
   function renderRoomPreview() {
@@ -1106,65 +1263,122 @@
   function renderScenariosPreview() {
     var box = qs('scenarios-live-preview');
     if (!box) { return; }
-    if (!state.scenarios.length) {
-      box.innerHTML = '<p class="preview-empty-section">No scenarios yet.</p>';
+    var sections = activeScSections();
+    if (!sections.length) {
+      box.innerHTML = '<p class="preview-empty-section">No sections yet.</p>';
       return;
     }
-    var html = '<div class="preview-tiles-row">';
-    for (var i = 0; i < state.scenarios.length; i++) {
-      var sc = state.scenarios[i];
-      html += '<div class="preview-tile-chip"><span class="chip-domain">' + esc(sc.icon || '▶') + '</span>' + esc(sc.title) + '</div>';
-    }
-    html += '</div>';
-    box.innerHTML = html;
+    box.innerHTML = sections.map(function(sec) {
+      var headerHtml = sec.title
+        ? '<div class="preview-section-title">' + esc(sec.title) + '</div>'
+        : '';
+      var chipsHtml = (sec.items || []).length === 0
+        ? '<p class="preview-empty-section">No scenarios</p>'
+        : '<div class="preview-tiles-row">' + (sec.items || []).map(function(sc) {
+            return '<div class="preview-tile-chip"><span class="chip-domain">' + esc(sc.icon || '\u25b6') + '</span>' + esc(sc.title) + '</div>';
+          }).join('') + '</div>';
+      return '<div class="preview-room-section">' + headerHtml + chipsHtml + '</div>';
+    }).join('');
   }
 
-  function renderScenariosList() {
-    var container = qs('scenarios-list');
+  function renderScSectionsList() {
+    var container = qs('sc-sections-list');
     if (!container) { return; }
+    var sections = activeScSections();
+    if (sections.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">No sections. Click &ldquo;+ Add&rdquo;.</p>';
+      return;
+    }
+    container.innerHTML = sections.map(function(sec) {
+      var isActive = sec.id === editingScSectionId;
+      var count = (sec.items || []).length;
+      return '<div class="section-row' + (isActive ? ' section-row--active' : '') + '" data-id="' + esc(sec.id) + '">'
+        + '<span class="section-row-drag">&#9776;</span>'
+        + '<div class="section-row-info">'
+        + '<span class="section-row-title">' + esc(sec.title || 'Unnamed') + '</span>'
+        + '<span class="section-row-count">' + count + ' scenario' + (count === 1 ? '' : 's') + '</span>'
+        + '</div>'
+        + '<div class="section-row-actions">'
+        + '<button class="remove-btn sc-sec-del-btn" type="button" data-id="' + esc(sec.id) + '">\u2715</button>'
+        + '</div></div>';
+    }).join('');
 
-    if (state.scenarios.length === 0) {
-      container.innerHTML = '<p class="cfg-placeholder">No scenarios. Click "+ Add Scenario" to choose scenes or scripts from HA.</p>';
+    initGenericSectionDragDrop(container, activeScSections, renderScSectionsList);
+
+    container.querySelectorAll('.section-row').forEach(function(row) {
+      row.addEventListener('click', function(e) {
+        if (e.target.tagName === 'BUTTON') { return; }
+        selectScSection(row.getAttribute('data-id'));
+      });
+    });
+    container.querySelectorAll('.sc-sec-del-btn').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var id = btn.getAttribute('data-id');
+        var secs = activeScSections();
+        for (var i = 0; i < secs.length; i++) { if (secs[i].id === id) { secs.splice(i, 1); break; } }
+        if (editingScSectionId === id) { editingScSectionId = null; }
+        renderScSectionsList();
+        renderScSectionDetail();
+        renderScenariosPreview();
+      });
+    });
+    renderScenariosPreview();
+  }
+
+  function renderScSectionDetail() {
+    var placeholder = qs('sc-section-detail-placeholder');
+    var content = qs('sc-section-detail-content');
+    if (!editingScSectionId) {
+      if (placeholder) { placeholder.classList.remove('hidden'); }
+      if (content) { content.classList.add('hidden'); }
+      return;
+    }
+    var sec = activeScSectionObj();
+    if (!sec) {
+      if (placeholder) { placeholder.classList.remove('hidden'); }
+      if (content) { content.classList.add('hidden'); }
+      return;
+    }
+    if (placeholder) { placeholder.classList.add('hidden'); }
+    if (content) { content.classList.remove('hidden'); }
+    var titleInput = qs('sc-section-title-input');
+    if (titleInput) { titleInput.value = sec.title; }
+    renderScSectionItemsList();
+  }
+
+  function renderScSectionItemsList() {
+    var container = qs('sc-section-items-list');
+    var countEl   = qs('sc-section-items-count');
+    if (!container) { return; }
+    var items = activeScItems();
+    if (countEl) { countEl.textContent = String(items.length); }
+
+    if (items.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">No scenarios. Click &ldquo;+ Add Scenario&rdquo;.</p>';
+      renderScenariosPreview();
       return;
     }
 
-    var html = '';
-    for (var i = 0; i < state.scenarios.length; i++) {
-      var sc = state.scenarios[i];
-      html += '<div class="selected-row">';
-      html += '<span class="scenario-row-icon">' + esc(sc.icon) + '</span>';
-      html += '<div class="scenario-row-info">';
-      html += '<span class="scenario-row-title">' + esc(sc.title) + '</span>';
-      html += '<span class="scenario-row-id">' + esc(sc.entity_id) + '</span>';
-      html += '</div>';
-      html += '<div class="selected-actions">';
-      if (i > 0) {
-        html += '<button class="reorder-btn" type="button" data-action="up" data-idx="' + i + '">\u2191</button>';
-      }
-      if (i < state.scenarios.length - 1) {
-        html += '<button class="reorder-btn" type="button" data-action="down" data-idx="' + i + '">\u2193</button>';
-      }
-      html += '<button class="remove-btn sc-remove-btn" type="button" data-idx="' + i + '">\u2715</button>';
-      html += '</div>';
-      html += '</div>';
-    }
-    container.innerHTML = html;
+    container.innerHTML = items.map(function(sc, i) {
+      return '<div class="selected-row" data-idx="' + i + '">'
+        + '<span class="item-drag-handle">&#9776;</span>'
+        + '<span class="scenario-row-icon">' + esc(sc.icon || '') + '</span>'
+        + '<div class="scenario-row-info">'
+        + '<span class="scenario-row-title">' + esc(sc.title) + '</span>'
+        + '<span class="scenario-row-id">' + esc(sc.entity_id) + '</span>'
+        + '</div>'
+        + '<div class="selected-actions">'
+        + '<button class="remove-btn sc-item-remove-btn" type="button" data-idx="' + i + '">\u2715</button>'
+        + '</div></div>';
+    }).join('');
 
-    container.querySelectorAll('.reorder-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var idx = parseInt(this.getAttribute('data-idx'), 10);
-        var delta = this.getAttribute('data-action') === 'up' ? -1 : 1;
-        var newIdx = idx + delta;
-        if (newIdx < 0 || newIdx >= state.scenarios.length) { return; }
-        var tmp = state.scenarios[idx]; state.scenarios[idx] = state.scenarios[newIdx]; state.scenarios[newIdx] = tmp;
-        renderScenariosList();
-      });
-    });
+    initItemDragDrop(container, 'sc-section', items);
 
-    container.querySelectorAll('.sc-remove-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        state.scenarios.splice(parseInt(this.getAttribute('data-idx'), 10), 1);
-        renderScenariosList();
+    container.querySelectorAll('.sc-item-remove-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        activeScItems().splice(parseInt(btn.getAttribute('data-idx'), 10), 1);
+        renderScSectionItemsList();
       });
     });
 
@@ -1204,8 +1418,9 @@
     for (var i = 0; i < filtered.length; i++) {
       var e = filtered[i];
       var already = false;
-      for (var j = 0; j < state.scenarios.length; j++) {
-        if (state.scenarios[j].entity_id === e.entity_id) { already = true; break; }
+      var _scItems = activeScItems();
+      for (var j = 0; j < _scItems.length; j++) {
+        if (_scItems[j].entity_id === e.entity_id) { already = true; break; }
       }
       html += '<div class="entity-row' + (already ? ' entity-row--selected' : '') + '">';
       html += '<span class="entity-domain">' + esc(e.domain) + '</span>';
@@ -1228,13 +1443,12 @@
       btn.addEventListener('click', function () {
         var eid = this.getAttribute('data-id');
         var name = this.getAttribute('data-name');
-        state.scenarios.push({
-          entity_id: eid,
-          title: name || eid.split('.')[1] || eid,
-          icon: eid.startsWith('scene.') ? '\uD83C\uDF1F' : '\uD83C\uDFAD',
-        });
+        var title = name || eid.split('.')[1] || eid;
+        var icon = eid.startsWith('scene.') ? '\uD83C\uDF1F' : '\uD83C\uDFAD';
+        var sec = activeScSectionObj();
+        if (sec) { sec.items.push({ entity_id: eid, title: title, icon: icon }); }
         renderScenarioPickerList();
-        renderScenariosList();
+        renderScSectionItemsList();
       });
     });
   }
@@ -1319,97 +1533,152 @@
   var allCameras = [];        // entity list from /api/entities?domain=camera
   var cameraSearchText = '';  // filter text in the camera picker
 
-  function renderCamerasList() {
-    var container = qs('cameras-list');
-    if (!container) { return; }
+  function renderCamerasPreview() {
+    var box = qs('cameras-live-preview');
+    if (!box) { return; }
+    var sections = activeCamSections();
+    if (!sections.length) {
+      box.innerHTML = '<p class="preview-empty-section">No cameras yet.</p>';
+      return;
+    }
+    box.innerHTML = sections.map(function(sec) {
+      var headerHtml = sec.title
+        ? '<div class="preview-section-title">' + esc(sec.title) + '</div>'
+        : '';
+      var chipsHtml = (sec.items || []).length === 0
+        ? '<p class="preview-empty-section">No cameras</p>'
+        : '<div class="preview-tiles-row">' + (sec.items || []).map(function(c) {
+            return '<div class="preview-tile-chip"><span class="chip-domain">cam</span>' + esc(c.title || c.entity_id) + '</div>';
+          }).join('') + '</div>';
+      return '<div class="preview-room-section">' + headerHtml + chipsHtml + '</div>';
+    }).join('');
+  }
 
-    if (state.cameras.length === 0) {
-      container.innerHTML = '<p class="cfg-placeholder">Nessuna telecamera configurata.</p>';
+  function renderCamSectionsList() {
+    var container = qs('cam-sections-list');
+    if (!container) { return; }
+    var sections = activeCamSections();
+    if (sections.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">No sections. Click &ldquo;+ Add&rdquo;.</p>';
+      return;
+    }
+    container.innerHTML = sections.map(function(sec) {
+      var isActive = sec.id === editingCamSectionId;
+      var count = (sec.items || []).length;
+      return '<div class="section-row' + (isActive ? ' section-row--active' : '') + '" data-id="' + esc(sec.id) + '">'
+        + '<span class="section-row-drag">&#9776;</span>'
+        + '<div class="section-row-info">'
+        + '<span class="section-row-title">' + esc(sec.title || 'Unnamed') + '</span>'
+        + '<span class="section-row-count">' + count + ' camera' + (count === 1 ? '' : 's') + '</span>'
+        + '</div>'
+        + '<div class="section-row-actions">'
+        + '<button class="remove-btn cam-sec-del-btn" type="button" data-id="' + esc(sec.id) + '">\u2715</button>'
+        + '</div></div>';
+    }).join('');
+
+    initGenericSectionDragDrop(container, activeCamSections, renderCamSectionsList);
+
+    container.querySelectorAll('.section-row').forEach(function(row) {
+      row.addEventListener('click', function(e) {
+        if (e.target.tagName === 'BUTTON') { return; }
+        selectCamSection(row.getAttribute('data-id'));
+      });
+    });
+    container.querySelectorAll('.cam-sec-del-btn').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var id = btn.getAttribute('data-id');
+        var secs = activeCamSections();
+        for (var i = 0; i < secs.length; i++) { if (secs[i].id === id) { secs.splice(i, 1); break; } }
+        if (editingCamSectionId === id) { editingCamSectionId = null; }
+        renderCamSectionsList();
+        renderCamSectionDetail();
+        renderCamerasPreview();
+      });
+    });
+    renderCamerasPreview();
+  }
+
+  function renderCamSectionDetail() {
+    var placeholder = qs('cam-section-detail-placeholder');
+    var content = qs('cam-section-detail-content');
+    if (!editingCamSectionId) {
+      if (placeholder) { placeholder.classList.remove('hidden'); }
+      if (content) { content.classList.add('hidden'); }
+      return;
+    }
+    var sec = activeCamSectionObj();
+    if (!sec) {
+      if (placeholder) { placeholder.classList.remove('hidden'); }
+      if (content) { content.classList.add('hidden'); }
+      return;
+    }
+    if (placeholder) { placeholder.classList.add('hidden'); }
+    if (content) { content.classList.remove('hidden'); }
+    var titleInput = qs('cam-section-title-input');
+    if (titleInput) { titleInput.value = sec.title; }
+    renderCamSectionItemsList();
+  }
+
+  function renderCamSectionItemsList() {
+    var container = qs('cam-section-items-list');
+    var countEl   = qs('cam-section-items-count');
+    if (!container) { return; }
+    var items = activeCamItems();
+    if (countEl) { countEl.textContent = String(items.length); }
+
+    if (items.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">Nessuna telecamera. Clicca &ldquo;+ Aggiungi&rdquo;.</p>';
+      renderCamerasPreview();
       return;
     }
 
-    var html = '';
-    for (var i = 0; i < state.cameras.length; i++) {
-      var c = state.cameras[i];
-      var isFirst = (i === 0);
-      var isLast  = (i === state.cameras.length - 1);
-      html += '<div class="selected-row">';
-      html += '<div class="selected-entity-info">';
-      html += '<span class="selected-id">' + esc(c.entity_id) + '</span>';
-      html += '<input type="text" class="camera-title-input item-label-input" placeholder="Nome display\u2026" maxlength="64"'
-        + ' value="' + esc(c.title || '') + '" data-idx="' + i + '">';
-      html += '<div class="camera-refresh-row">';
-      html += '<label class="camera-refresh-label">Refresh (sec):</label>';
-      html += '<input type="number" class="camera-refresh-input" min="3" max="60"'
-        + ' value="' + (c.refresh_interval || 10) + '" data-idx="' + i + '">';
-      html += '</div>';
-      html += '</div>';
-      html += '<div class="selected-actions">';
-      if (!isFirst) {
-        html += '<button class="reorder-btn" type="button" data-action="cam-up" data-idx="' + i + '">\u2191</button>';
-      }
-      if (!isLast) {
-        html += '<button class="reorder-btn" type="button" data-action="cam-down" data-idx="' + i + '">\u2193</button>';
-      }
-      html += '<button class="remove-btn cam-remove-btn" type="button" data-cam-idx="' + i + '">\u2715</button>';
-      html += '</div>';
-      html += '</div>';
-    }
+    var html = items.map(function(c, i) {
+      return '<div class="selected-row" data-idx="' + i + '">'
+        + '<span class="item-drag-handle">&#9776;</span>'
+        + '<div class="selected-entity-info">'
+        + '<span class="selected-id">' + esc(c.entity_id) + '</span>'
+        + '<input type="text" class="camera-title-input item-label-input" placeholder="Nome display\u2026" maxlength="64"'
+        + ' value="' + esc(c.title || '') + '" data-idx="' + i + '">'
+        + '<div class="camera-refresh-row">'
+        + '<label class="camera-refresh-label">Refresh (sec):</label>'
+        + '<input type="number" class="camera-refresh-input" min="3" max="60"'
+        + ' value="' + (c.refresh_interval || 10) + '" data-idx="' + i + '">'
+        + '</div></div>'
+        + '<div class="selected-actions">'
+        + '<button class="remove-btn cam-item-remove-btn" type="button" data-idx="' + i + '">\u2715</button>'
+        + '</div></div>';
+    }).join('');
     container.innerHTML = html;
 
-    container.querySelectorAll('.camera-title-input').forEach(function (inp) {
-      inp.addEventListener('change', function () {
+    initItemDragDrop(container, 'cam-section', items);
+
+    container.querySelectorAll('.camera-title-input').forEach(function(inp) {
+      inp.addEventListener('change', function() {
         var idx = parseInt(this.getAttribute('data-idx'), 10);
-        if (state.cameras[idx]) { state.cameras[idx].title = this.value.trim(); }
+        var its = activeCamItems();
+        if (its[idx]) { its[idx].title = this.value.trim(); }
       });
     });
-
-    container.querySelectorAll('.camera-refresh-input').forEach(function (inp) {
-      inp.addEventListener('change', function () {
+    container.querySelectorAll('.camera-refresh-input').forEach(function(inp) {
+      inp.addEventListener('change', function() {
         var idx = parseInt(this.getAttribute('data-idx'), 10);
         var val = parseInt(this.value, 10);
-        if (isNaN(val) || val < 3)  { val = 3; }
-        if (val > 60)               { val = 60; }
+        if (isNaN(val) || val < 3) { val = 3; }
+        if (val > 60) { val = 60; }
         this.value = val;
-        if (state.cameras[idx]) { state.cameras[idx].refresh_interval = val; }
+        var its = activeCamItems();
+        if (its[idx]) { its[idx].refresh_interval = val; }
       });
     });
-
-    container.querySelectorAll('.reorder-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var idx   = parseInt(this.getAttribute('data-idx'), 10);
-        var delta = this.getAttribute('data-action') === 'cam-up' ? -1 : 1;
-        var newIdx = idx + delta;
-        if (newIdx < 0 || newIdx >= state.cameras.length) { return; }
-        var tmp = state.cameras[idx]; state.cameras[idx] = state.cameras[newIdx]; state.cameras[newIdx] = tmp;
-        renderCamerasList();
-      });
-    });
-
-    container.querySelectorAll('.cam-remove-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        state.cameras.splice(parseInt(this.getAttribute('data-cam-idx'), 10), 1);
-        renderCamerasList();
+    container.querySelectorAll('.cam-item-remove-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        activeCamItems().splice(parseInt(btn.getAttribute('data-idx'), 10), 1);
+        renderCamSectionItemsList();
       });
     });
 
     renderCamerasPreview();
-  }
-
-  function renderCamerasPreview() {
-    var box = qs('cameras-live-preview');
-    if (!box) { return; }
-    if (!state.cameras.length) {
-      box.innerHTML = '<p class="preview-empty-section">No cameras yet.</p>';
-      return;
-    }
-    var html = '<div class="preview-tiles-row">';
-    for (var i = 0; i < state.cameras.length; i++) {
-      var c = state.cameras[i];
-      html += '<div class="preview-tile-chip"><span class="chip-domain">cam</span>' + esc(c.title || c.entity_id) + '</div>';
-    }
-    html += '</div>';
-    box.innerHTML = html;
   }
 
   function openCameraPicker() {
@@ -1461,8 +1730,9 @@
     for (var i = 0; i < filtered.length; i++) {
       var e = filtered[i];
       var already = false;
-      for (var j = 0; j < state.cameras.length; j++) {
-        if (state.cameras[j].entity_id === e.entity_id) { already = true; break; }
+      var _camItems = activeCamItems();
+      for (var j = 0; j < _camItems.length; j++) {
+        if (_camItems[j].entity_id === e.entity_id) { already = true; break; }
       }
       html += '<div class="entity-row' + (already ? ' entity-row--selected' : '') + '">';
       html += '<span class="entity-domain">camera</span>';
@@ -1484,14 +1754,10 @@
     container.querySelectorAll('.cam-pick-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var eid  = this.getAttribute('data-id');
-        var name = this.getAttribute('data-name');
-        state.cameras.push({
-          entity_id:        eid,
-          title:            name || eid.split('.')[1] || eid,
-          refresh_interval: 10,
-        });
+        var sec = activeCamSectionObj();
+        if (sec) { sec.items.push({ entity_id: eid, title: '', refresh_interval: 10 }); }
         renderCameraPickerList();
-        renderCamerasList();
+        renderCamSectionItemsList();
       });
     });
   }
@@ -1528,7 +1794,7 @@
       if (allEntities[i].entity_id === entityId) { dc = allEntities[i].device_class || ''; break; }
     }
     items.push({ type: 'entity', entity_id: entityId, label: friendlyName || '', icon: '', hidden: false, visual_type: '', device_class: dc });
-    refreshItemsList(pickerContext === 'overview' ? 'overview' : 'section');
+    refreshItemsList(pickerContext === 'ov-section' ? 'ov-section' : 'section');
     renderEntityList();
   }
 
@@ -1839,7 +2105,7 @@
     }
 
     hideOverlay();
-    refreshItemsList(energyContext === 'overview' ? 'overview' : 'section');
+    refreshItemsList(energyContext === 'ov-section' ? 'ov-section' : 'section');
   }
 
   // ── Overlay management ─────────────────────────────────────────────────────
@@ -1928,7 +2194,9 @@
         state.overview = {
           title: ovRaw.title || 'Overview',
           icon:  ovRaw.icon  || 'home',
-          items: ovRaw.items || [],
+          sections: (ovRaw.sections || []).map(function(s) {
+            return { id: s.id || genSecId(), title: s.title || '', items: (s.items || []).map(cloneItem) };
+          }),
         };
         var scRaw = cfg.scenarios_section || {};
         state.scenarios_section = {
@@ -1947,24 +2215,14 @@
               return {
                 id:    sec.id    || genSecId(),
                 title: sec.title || '',
-                items: (sec.items || []).map(function (it) {
-                  var copy = {};
-                  for (var k in it) { if (Object.prototype.hasOwnProperty.call(it, k)) { copy[k] = it[k]; } }
-                  copy.hidden = !!it.hidden;
-                  return copy;
-                }),
+                items: (sec.items || []).map(cloneItem),
               };
             });
           } else if (r.items && r.items.length > 0) {
             sections = [{
               id: genSecId(),
               title: '',
-              items: (r.items || []).map(function (it) {
-                var copy = {};
-                for (var k in it) { if (Object.prototype.hasOwnProperty.call(it, k)) { copy[k] = it[k]; } }
-                copy.hidden = !!it.hidden;
-                return copy;
-              }),
+              items: (r.items || []).map(cloneItem),
             }];
           } else {
             sections = [];
@@ -1977,9 +2235,30 @@
             sections: sections,
           };
         });
-        state.scenarios      = cfg.scenarios      || [];
+
+        // scenarios: list of sections
+        state.scenarios = (cfg.scenarios || []).map(function(sec) {
+          return {
+            id:    sec.id    || genSecId(),
+            title: sec.title || '',
+            items: (sec.items || []).map(function(sc) {
+              return { entity_id: sc.entity_id, title: sc.title || '', icon: sc.icon || '\uD83C\uDFAD' };
+            }),
+          };
+        });
+
+        // cameras: list of sections
+        state.cameras = (cfg.cameras || []).map(function(sec) {
+          return {
+            id:    sec.id    || genSecId(),
+            title: sec.title || '',
+            items: (sec.items || []).map(function(c) {
+              return { entity_id: c.entity_id, title: c.title || '', refresh_interval: c.refresh_interval || 10 };
+            }),
+          };
+        });
+
         state.header_sensors = cfg.header_sensors || [];
-        state.cameras        = cfg.cameras        || [];
 
         // Render UI immediately with saved data
         var ovTitleInput = qs('overview-title-input');
@@ -1994,11 +2273,14 @@
         if (camTitleInput) { camTitleInput.value = state.cameras_section.title; }
         updateSectionIconPreview('cameras', state.cameras_section.icon);
 
-        renderOverviewItems();
+        renderOvSectionsList();
+        renderOvSectionDetail();
         renderRoomsList();
-        renderScenariosList();
+        renderScSectionsList();
+        renderScSectionDetail();
         renderHeaderSensorsList();
-        renderCamerasList();
+        renderCamSectionsList();
+        renderCamSectionDetail();
 
         // Load live entities from HA separately — non-fatal if HA is offline
         cfgFetchEntities()
@@ -2051,14 +2333,87 @@
       });
     }
 
-    // ── Overview buttons ───────────────────────────────────────────────────
+    // ── Overview sections buttons ──────────────────────────────────────────
+    var ovAddSectionBtn = qs('ov-add-section-btn');
+    if (ovAddSectionBtn) {
+      ovAddSectionBtn.addEventListener('click', function() {
+        var newSec = { id: genSecId(), title: '', items: [] };
+        activeOvSections().push(newSec);
+        selectOvSection(newSec.id);
+      });
+    }
+
+    var ovSectionTitleInput = qs('ov-section-title-input');
+    if (ovSectionTitleInput) {
+      ovSectionTitleInput.addEventListener('input', function() {
+        var sec = activeOvSectionObj();
+        if (sec) { sec.title = this.value.trim(); renderOvSectionsList(); }
+      });
+    }
+
     var ovAddEntityBtn = qs('ov-add-entity-btn');
-    if (ovAddEntityBtn) { ovAddEntityBtn.addEventListener('click', function () { openEntityPicker('overview'); }); }
+    if (ovAddEntityBtn) {
+      ovAddEntityBtn.addEventListener('click', function() { openEntityPicker('ov-section'); });
+    }
 
     var ovAddEnergyBtn = qs('ov-add-energy-btn');
-    if (ovAddEnergyBtn) { ovAddEnergyBtn.addEventListener('click', function () { openEnergyEditor('overview', null); }); }
+    if (ovAddEnergyBtn) {
+      ovAddEnergyBtn.addEventListener('click', function() { openEnergyEditor('ov-section', null); });
+    }
 
-    // ── Scenarios title & icon ─────────────────────────────────────────────
+    // ── Scenarios sections ─────────────────────────────────────────────────
+    var scAddSectionBtn = qs('sc-add-section-btn');
+    if (scAddSectionBtn) {
+      scAddSectionBtn.addEventListener('click', function() {
+        var newSec = { id: genSecId(), title: '', items: [] };
+        activeScSections().push(newSec);
+        selectScSection(newSec.id);
+      });
+    }
+
+    var scSectionTitleInput = qs('sc-section-title-input');
+    if (scSectionTitleInput) {
+      scSectionTitleInput.addEventListener('input', function() {
+        var sec = activeScSectionObj();
+        if (sec) { sec.title = this.value.trim(); renderScSectionsList(); }
+      });
+    }
+
+    var scAddScenarioBtn = qs('sc-add-scenario-btn');
+    if (scAddScenarioBtn) {
+      scAddScenarioBtn.addEventListener('click', function() {
+        if (!activeScSectionObj()) { return; }
+        openScenarioPicker();
+      });
+    }
+
+    // ── Cameras sections ───────────────────────────────────────────────────
+    var camAddSectionBtn = qs('cam-add-section-btn');
+    if (camAddSectionBtn) {
+      camAddSectionBtn.addEventListener('click', function() {
+        var newSec = { id: genSecId(), title: '', items: [] };
+        activeCamSections().push(newSec);
+        selectCamSection(newSec.id);
+      });
+    }
+
+    var camSectionTitleInput = qs('cam-section-title-input');
+    if (camSectionTitleInput) {
+      camSectionTitleInput.addEventListener('input', function() {
+        var sec = activeCamSectionObj();
+        if (sec) { sec.title = this.value.trim(); renderCamSectionsList(); }
+      });
+    }
+
+    var camAddCameraBtn = qs('cam-add-camera-btn');
+    if (camAddCameraBtn) {
+      camAddCameraBtn.addEventListener('click', function() {
+        if (!activeCamSectionObj()) { return; }
+        openCameraPicker();
+      });
+    }
+
+    // ── Scenarios section title & icon (tab header) ────────────────────────
     var scTitleInput2 = qs('scenarios-title-input');
     if (scTitleInput2) {
       scTitleInput2.addEventListener('input', function () {
@@ -2076,7 +2431,7 @@
       });
     }
 
-    // ── Cameras title & icon ───────────────────────────────────────────────
+    // ── Cameras section title & icon (tab header) ──────────────────────────
     var camTitleInput2 = qs('cameras-title-input');
     if (camTitleInput2) {
       camTitleInput2.addEventListener('input', function () {
@@ -2165,18 +2520,11 @@
       });
     }
 
-    // ── Scenarios buttons ──────────────────────────────────────────────────
-    var addScenarioBtn = qs('add-scenario-btn');
-    if (addScenarioBtn) { addScenarioBtn.addEventListener('click', openScenarioPicker); }
-
     // ── Header sensor buttons ──────────────────────────────────────────────
     var addHeaderBtn = qs('add-header-sensor-btn');
     if (addHeaderBtn) { addHeaderBtn.addEventListener('click', openHeaderSensorPicker); }
 
-    // ── Camera buttons ─────────────────────────────────────────────────────
-    var addCameraBtn = qs('add-camera-btn');
-    if (addCameraBtn) { addCameraBtn.addEventListener('click', openCameraPicker); }
-
+    // ── Camera picker controls ─────────────────────────────────────────────
     var camPickerCancelBtn = qs('camera-picker-cancel-btn');
     if (camPickerCancelBtn) { camPickerCancelBtn.addEventListener('click', hideOverlay); }
 
