@@ -736,7 +736,9 @@
   function commitRoomTitle() {
     var room = activeRoomObj();
     if (!room) { return; }
-    var v = (qs('room-title-input').value || '').trim();
+    var titleInput = qs('room-title-input');
+    if (!titleInput) { return; }
+    var v = (titleInput.value || '').trim();
     if (v) {
       room.title = v.slice(0, 64);
       var editorTitle = qs('room-editor-title');
@@ -1608,6 +1610,7 @@
     if (editingRoomId) { commitRoomTitle(); commitRoomIcon(); }
 
     var btn = qs('save-btn');
+    if (!btn) { return; }
     btn.disabled = true;
     btn.textContent = 'Saving\u2026';
 
@@ -1627,9 +1630,13 @@
     var fb = qs('save-feedback');
     if (!fb) { return; }
     fb.textContent = isError ? 'Error: ' + msg : msg;
-    fb.style.backgroundColor = isError ? '' : 'var(--color-on)';
-    fb.className = '';
-    setTimeout(function () { fb.className = 'hidden'; fb.style.backgroundColor = ''; }, 4000);
+    fb.style.backgroundColor = isError ? '#f44336' : '#4caf50';
+    fb.classList.remove('hidden');
+    clearTimeout(fb._hideTimer);
+    fb._hideTimer = setTimeout(function () {
+      fb.classList.add('hidden');
+      fb.style.backgroundColor = '';
+    }, 4000);
   }
 
   // ── Init ───────────────────────────────────────────────────────────────────
@@ -1716,8 +1723,9 @@
         renderCamerasList();
       })
       .catch(function (err) {
-        var el = qs('entity-list');
-        if (el) { el.innerHTML = '<p class="cfg-error">Failed to load: ' + esc(err.message) + '</p>'; }
+        showFeedback('Failed to load config: ' + (err.message || 'Network error'), true);
+        var body = qs('cfg-body');
+        if (body) { body.innerHTML = '<p class="cfg-placeholder" style="padding:40px;text-align:center;">Could not load configuration. Check that Home Assistant is reachable.<br><br><small>' + esc(err.message || '') + '</small></p>'; }
       });
 
     // ── Tab buttons — inject MDI icons and wire clicks ────────────────────
