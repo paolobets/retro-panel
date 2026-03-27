@@ -1318,17 +1318,39 @@ html, body {
   font-family: inherit;
 }
 
+#room-editor-body {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  margin-top: 16px;
+}
+
+#room-editor-left {
+  flex: 1 1 50%;
+  min-width: 0;
+}
+
+#room-editor-right {
+  flex: 1 1 50%;
+  min-width: 0;
+  position: sticky;
+  top: 70px;
+}
+
+#room-editor-right .cfg-preview-section {
+  margin-top: 0;
+}
+
 #sections-editor {
   display: flex;
-  margin-top: 16px;
   min-height: 300px;
 }
 
 #sections-editor > * + * { margin-left: 16px; }
 
 #sections-col-left {
-  width: 220px;
-  min-width: 180px;
+  width: 200px;
+  min-width: 160px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -1432,6 +1454,20 @@ html, body {
   font-size: 13px;
   text-align: center;
   padding: 20px;
+}
+
+@media (max-width: 900px) {
+  #room-editor-body {
+    flex-direction: column;
+  }
+  #room-editor-left,
+  #room-editor-right {
+    flex: none;
+    width: 100%;
+  }
+  #room-editor-right {
+    position: static;
+  }
 }
 
 @media (max-width: 600px) {

@@ -107,57 +107,66 @@
           </div>
         </div>
 
-        <!-- Two-column section editor -->
-        <div id="sections-editor">
+        <!-- Editor + Preview side by side -->
+        <div id="room-editor-body">
 
-          <!-- Left: sections list -->
-          <div id="sections-col-left">
-            <div class="sections-col-header">
-              <span class="sections-col-label">Sections</span>
-              <button id="add-section-btn" type="button" class="action-btn-sm">+ Add</button>
-            </div>
-            <div id="room-sections-list">
-              <p class="cfg-placeholder">No sections.</p>
-            </div>
-          </div>
+          <!-- Left 50%: sections + entity editor -->
+          <div id="room-editor-left">
+            <div id="sections-editor">
 
-          <!-- Right: section detail -->
-          <div id="sections-col-right">
-            <div id="section-detail-placeholder" class="section-detail-placeholder">
-              <p>Select a section to edit its entities.</p>
-            </div>
-            <div id="section-detail-content" class="hidden">
-              <div class="field-group" style="margin-bottom:12px;">
-                <div class="field-row">
-                  <label class="field-label" for="section-title-input">Section name</label>
-                  <input id="section-title-input" type="text" class="field-input"
-                    maxlength="64" autocomplete="off" autocorrect="off"
-                    autocapitalize="words" spellcheck="false" placeholder="e.g. Lights, Sensors…">
+              <!-- Col left: sections list -->
+              <div id="sections-col-left">
+                <div class="sections-col-header">
+                  <span class="sections-col-label">Sections</span>
+                  <button id="add-section-btn" type="button" class="action-btn-sm">+ Add</button>
+                </div>
+                <div id="room-sections-list">
+                  <p class="cfg-placeholder">No sections.</p>
                 </div>
               </div>
-              <div class="section-entities-header">
-                <span class="sections-col-label">Entities <span id="section-items-count">0</span></span>
+
+              <!-- Col right: section detail -->
+              <div id="sections-col-right">
+                <div id="section-detail-placeholder" class="section-detail-placeholder">
+                  <p>Select a section to edit its entities.</p>
+                </div>
+                <div id="section-detail-content" class="hidden">
+                  <div class="field-group" style="margin-bottom:12px;">
+                    <div class="field-row">
+                      <label class="field-label" for="section-title-input">Section name</label>
+                      <input id="section-title-input" type="text" class="field-input"
+                        maxlength="64" autocomplete="off" autocorrect="off"
+                        autocapitalize="words" spellcheck="false" placeholder="e.g. Lights, Sensors…">
+                    </div>
+                  </div>
+                  <div class="section-entities-header">
+                    <span class="sections-col-label">Entities <span id="section-items-count">0</span></span>
+                  </div>
+                  <div id="section-items-list">
+                    <p class="cfg-placeholder">No entities in this section.</p>
+                  </div>
+                  <div class="items-actions">
+                    <button id="room-add-entity-btn" type="button" class="action-btn">+ Add Entities</button>
+                    <button id="room-import-devices-btn" type="button" class="action-btn-outline">&#8635; Import from area</button>
+                  </div>
+                </div>
               </div>
-              <div id="section-items-list">
-                <p class="cfg-placeholder">No entities in this section.</p>
+
+            </div><!-- /sections-editor -->
+          </div><!-- /room-editor-left -->
+
+          <!-- Right 50%: live preview -->
+          <div id="room-editor-right">
+            <div class="cfg-preview-section">
+              <div class="cfg-preview-header">
+                <span class="cfg-preview-label">Room Preview</span>
+                <span class="live-badge">&#9679; LIVE</span>
               </div>
-              <div class="items-actions">
-                <button id="room-add-entity-btn" type="button" class="action-btn">+ Add Entities</button>
-                <button id="room-import-devices-btn" type="button" class="action-btn-outline">&#8635; Import from area</button>
-              </div>
+              <div class="cfg-preview-box" id="room-live-preview"></div>
             </div>
-          </div>
+          </div><!-- /room-editor-right -->
 
-        </div><!-- /sections-editor -->
-
-        <!-- Live Preview -->
-        <div class="cfg-preview-section">
-          <div class="cfg-preview-header">
-            <span class="cfg-preview-label">Room Preview</span>
-            <span class="live-badge">&#9679; LIVE</span>
-          </div>
-          <div class="cfg-preview-box" id="room-live-preview"></div>
-        </div>
+        </div><!-- /room-editor-body -->
 
       </div><!-- /room-editor -->
 
