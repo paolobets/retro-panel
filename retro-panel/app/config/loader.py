@@ -279,7 +279,7 @@ def _compute_layout_type(entity_id: str, device_class: str, visual_type: str) ->
         return visual_type
     domain = entity_id.split(".")[0] if "." in entity_id else ""
     if domain == "light":
-        return "light"
+        return "light_standard"
     if domain in ("switch", "input_boolean"):
         return "switch"
     if domain == "alarm_control_panel":
