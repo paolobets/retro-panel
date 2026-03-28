@@ -23,7 +23,7 @@
     scenarios_section: { title: 'Scenarios', icon: 'palette' },
     header_sensors:    [],  // [{entity_id, icon, label}]
     cameras:           [],  // list of sections: [{id, title, items:[]}]
-    cameras_section:   { title: 'Telecamere', icon: 'cctv' },
+    cameras_section:   { title: 'Cameras', icon: 'cctv' },
   };
 
   var allEntities  = [];   // from /api/entities
@@ -56,6 +56,22 @@
 
   // Active config tab
   var activeTab = 'overview';
+
+  // Dirty flag — tracks unsaved changes
+  var _dirty = false;
+
+  function markDirty() {
+    if (_dirty) { return; }
+    _dirty = true;
+    var btn = qs('save-btn');
+    if (btn) { btn.classList.add('save-btn--dirty'); }
+  }
+
+  function clearDirty() {
+    _dirty = false;
+    var btn = qs('save-btn');
+    if (btn) { btn.classList.remove('save-btn--dirty'); }
+  }
 
   // ── Visual type data ───────────────────────────────────────────────────────
 
@@ -288,16 +304,9 @@
         selectOvSection(row.getAttribute('data-id'));
       });
     });
-    container.querySelectorAll('.ov-sec-del-btn').forEach(function(btn) {
-      btn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        var id = btn.getAttribute('data-id');
-        var secs = activeOvSections();
-        for (var i = 0; i < secs.length; i++) { if (secs[i].id === id) { secs.splice(i, 1); break; } }
-        if (editingOvSectionId === id) { editingOvSectionId = null; }
-        renderOvSectionsList();
-        renderOvSectionDetail();
-        renderOverviewPreview();
+    container.querySelectorAll('.ov-sec-del-btn').forEach(function (btn) {
+      initConfirmableBtn(btn, function () {
+        deleteOvSection(btn.getAttribute('data-id'));
       });
     });
     renderOverviewPreview();
@@ -767,6 +776,7 @@
     var room = activeRoomObj();
     var currentIcon = (room && room.icon) || 'home';
     openIconPickerModal(currentIcon, function (iconName) {
+      markDirty();
       var r = activeRoomObj();
       if (r) { r.icon = iconName; }
       var iconValue = qs('room-icon-value');
@@ -777,6 +787,7 @@
   }
 
   function addRoom() {
+    markDirty();
     var newRoom = { id: genId(), title: 'New Room', icon: 'home', hidden: false, sections: [] };
     state.rooms.push(newRoom);
     renderRoomsList();
@@ -897,6 +908,7 @@
   }
 
   function addSection() {
+    markDirty();
     var sections = activeRoomSections();
     var n = sections.length + 1;
     var sec = { id: genSecId(), title: 'Section ' + n, items: [] };
@@ -905,7 +917,31 @@
     selectSection(sec.id);
   }
 
+  function initConfirmableBtn(btn, onConfirm) {
+    var timer = null;
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (btn.getAttribute('data-confirm') === '1') {
+        clearTimeout(timer);
+        btn.removeAttribute('data-confirm');
+        btn.textContent = '\u2715';
+        btn.classList.remove('sec-del-btn--confirm');
+        onConfirm();
+      } else {
+        btn.setAttribute('data-confirm', '1');
+        btn.textContent = 'Sure?';
+        btn.classList.add('sec-del-btn--confirm');
+        timer = setTimeout(function () {
+          btn.removeAttribute('data-confirm');
+          btn.textContent = '\u2715';
+          btn.classList.remove('sec-del-btn--confirm');
+        }, 2000);
+      }
+    });
+  }
+
   function deleteSection(secId) {
+    markDirty();
     var room = activeRoomObj();
     if (!room) { return; }
     room.sections = (room.sections || []).filter(function (s) { return s.id !== secId; });
@@ -916,7 +952,38 @@
     renderSectionDetail();
   }
 
+  function deleteOvSection(id) {
+    markDirty();
+    var secs = activeOvSections();
+    for (var i = 0; i < secs.length; i++) { if (secs[i].id === id) { secs.splice(i, 1); break; } }
+    if (editingOvSectionId === id) { editingOvSectionId = null; }
+    renderOvSectionsList();
+    renderOvSectionDetail();
+    renderOverviewPreview();
+  }
+
+  function deleteScSection(id) {
+    markDirty();
+    var secs = activeScSections();
+    for (var i = 0; i < secs.length; i++) { if (secs[i].id === id) { secs.splice(i, 1); break; } }
+    if (editingScSectionId === id) { editingScSectionId = null; }
+    renderScSectionsList();
+    renderScSectionDetail();
+    renderScenariosPreview();
+  }
+
+  function deleteCamSection(id) {
+    markDirty();
+    var secs = activeCamSections();
+    for (var i = 0; i < secs.length; i++) { if (secs[i].id === id) { secs.splice(i, 1); break; } }
+    if (editingCamSectionId === id) { editingCamSectionId = null; }
+    renderCamSectionsList();
+    renderCamSectionDetail();
+    renderCamerasPreview();
+  }
+
   function reorderSection(secId, delta) {
+    markDirty();
     const sections = activeRoomSections();
     const idx = sections.findIndex(s => s.id === secId);
     if (idx < 0) { return; }
@@ -933,6 +1000,7 @@
   }
 
   function commitSectionTitle(secId, newTitle) {
+    markDirty();
     const sec = activeRoomSections().find(s => s.id === secId);
     if (sec) { sec.title = (newTitle || '').trim().slice(0, 64); }
     renderSectionsList();
@@ -974,9 +1042,8 @@
       });
     });
 
-    container.querySelectorAll('.sec-del-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
+    container.querySelectorAll('.sec-del-btn').forEach(function (btn) {
+      initConfirmableBtn(btn, function () {
         deleteSection(btn.getAttribute('data-id'));
       });
     });
@@ -1146,6 +1213,7 @@
   }
 
   function deleteRoom() {
+    markDirty();
     if (!editingRoomId) { return; }
     state.rooms = state.rooms.filter(function (r) { return r.id !== editingRoomId; });
     closeRoomEditor();
@@ -1328,16 +1396,9 @@
         selectScSection(row.getAttribute('data-id'));
       });
     });
-    container.querySelectorAll('.sc-sec-del-btn').forEach(function(btn) {
-      btn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        var id = btn.getAttribute('data-id');
-        var secs = activeScSections();
-        for (var i = 0; i < secs.length; i++) { if (secs[i].id === id) { secs.splice(i, 1); break; } }
-        if (editingScSectionId === id) { editingScSectionId = null; }
-        renderScSectionsList();
-        renderScSectionDetail();
-        renderScenariosPreview();
+    container.querySelectorAll('.sc-sec-del-btn').forEach(function (btn) {
+      initConfirmableBtn(btn, function () {
+        deleteScSection(btn.getAttribute('data-id'));
       });
     });
     renderScenariosPreview();
@@ -1603,16 +1664,9 @@
         selectCamSection(row.getAttribute('data-id'));
       });
     });
-    container.querySelectorAll('.cam-sec-del-btn').forEach(function(btn) {
-      btn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        var id = btn.getAttribute('data-id');
-        var secs = activeCamSections();
-        for (var i = 0; i < secs.length; i++) { if (secs[i].id === id) { secs.splice(i, 1); break; } }
-        if (editingCamSectionId === id) { editingCamSectionId = null; }
-        renderCamSectionsList();
-        renderCamSectionDetail();
-        renderCamerasPreview();
+    container.querySelectorAll('.cam-sec-del-btn').forEach(function (btn) {
+      initConfirmableBtn(btn, function () {
+        deleteCamSection(btn.getAttribute('data-id'));
       });
     });
     renderCamerasPreview();
@@ -1710,7 +1764,7 @@
       renderCameraPickerList();
     } else {
       var listEl = qs('camera-list');
-      if (listEl) { listEl.innerHTML = '<p class="cfg-placeholder">Caricamento telecamere\u2026</p>'; }
+      if (listEl) { listEl.innerHTML = '<p class="cfg-placeholder">Loading cameras\u2026</p>'; }
       cfgFetchCameras()
         .then(function (cameras) {
           allCameras = cameras || [];
@@ -2158,6 +2212,7 @@
 
     cfgSaveV3(state)
       .then(function () {
+        clearDirty();
         btn.textContent = 'Saved!';
         setTimeout(function () { window.location.href = './'; }, 800);
       })
@@ -2229,7 +2284,7 @@
         };
         var camRaw = cfg.cameras_section || {};
         state.cameras_section = {
-          title: camRaw.title || 'Telecamere',
+          title: camRaw.title || 'Cameras',
           icon:  camRaw.icon  || 'cctv',
         };
         state.rooms = (cfg.rooms || []).map(function (r) {
@@ -2343,6 +2398,7 @@
     var ovTitleInput = qs('overview-title-input');
     if (ovTitleInput) {
       ovTitleInput.addEventListener('input', function () {
+        markDirty();
         state.overview.title = this.value.trim() || 'Overview';
       });
     }
@@ -2351,6 +2407,7 @@
     if (ovIconBtn) {
       ovIconBtn.addEventListener('click', function () {
         openIconPickerModal(state.overview.icon, function (name) {
+          markDirty();
           state.overview.icon = name;
           updateSectionIconPreview('overview', name);
         });
@@ -2361,6 +2418,7 @@
     var ovAddSectionBtn = qs('ov-add-section-btn');
     if (ovAddSectionBtn) {
       ovAddSectionBtn.addEventListener('click', function() {
+        markDirty();
         var newSec = { id: genSecId(), title: '', items: [] };
         activeOvSections().push(newSec);
         selectOvSection(newSec.id);
@@ -2370,6 +2428,7 @@
     var ovSectionTitleInput = qs('ov-section-title-input');
     if (ovSectionTitleInput) {
       ovSectionTitleInput.addEventListener('input', function() {
+        markDirty();
         var sec = activeOvSectionObj();
         if (sec) { sec.title = this.value.trim(); renderOvSectionsList(); }
       });
@@ -2389,6 +2448,7 @@
     var scAddSectionBtn = qs('sc-add-section-btn');
     if (scAddSectionBtn) {
       scAddSectionBtn.addEventListener('click', function() {
+        markDirty();
         var newSec = { id: genSecId(), title: '', items: [] };
         activeScSections().push(newSec);
         selectScSection(newSec.id);
@@ -2398,6 +2458,7 @@
     var scSectionTitleInput = qs('sc-section-title-input');
     if (scSectionTitleInput) {
       scSectionTitleInput.addEventListener('input', function() {
+        markDirty();
         var sec = activeScSectionObj();
         if (sec) { sec.title = this.value.trim(); renderScSectionsList(); }
       });
@@ -2415,6 +2476,7 @@
     var camAddSectionBtn = qs('cam-add-section-btn');
     if (camAddSectionBtn) {
       camAddSectionBtn.addEventListener('click', function() {
+        markDirty();
         var newSec = { id: genSecId(), title: '', items: [] };
         activeCamSections().push(newSec);
         selectCamSection(newSec.id);
@@ -2424,6 +2486,7 @@
     var camSectionTitleInput = qs('cam-section-title-input');
     if (camSectionTitleInput) {
       camSectionTitleInput.addEventListener('input', function() {
+        markDirty();
         var sec = activeCamSectionObj();
         if (sec) { sec.title = this.value.trim(); renderCamSectionsList(); }
       });
@@ -2441,6 +2504,7 @@
     var scTitleInput2 = qs('scenarios-title-input');
     if (scTitleInput2) {
       scTitleInput2.addEventListener('input', function () {
+        markDirty();
         state.scenarios_section.title = this.value.trim() || 'Scenarios';
       });
     }
@@ -2449,6 +2513,7 @@
     if (scIconBtn) {
       scIconBtn.addEventListener('click', function () {
         openIconPickerModal(state.scenarios_section.icon, function (name) {
+          markDirty();
           state.scenarios_section.icon = name;
           updateSectionIconPreview('scenarios', name);
         });
@@ -2459,7 +2524,8 @@
     var camTitleInput2 = qs('cameras-title-input');
     if (camTitleInput2) {
       camTitleInput2.addEventListener('input', function () {
-        state.cameras_section.title = this.value.trim() || 'Telecamere';
+        markDirty();
+        state.cameras_section.title = this.value.trim() || 'Cameras';
       });
     }
 
@@ -2467,6 +2533,7 @@
     if (camIconBtn) {
       camIconBtn.addEventListener('click', function () {
         openIconPickerModal(state.cameras_section.icon, function (name) {
+          markDirty();
           state.cameras_section.icon = name;
           updateSectionIconPreview('cameras', name);
         });
@@ -2487,6 +2554,7 @@
 
     var roomTitleInput = qs('room-title-input');
     if (roomTitleInput) {
+      roomTitleInput.addEventListener('input', function () { markDirty(); });
       roomTitleInput.addEventListener('blur', commitRoomTitle);
       roomTitleInput.addEventListener('keydown', function (e) { if (e.keyCode === 13) { this.blur(); } });
     }
@@ -2514,6 +2582,9 @@
 
     var sectionTitleInput = qs('section-title-input');
     if (sectionTitleInput) {
+      sectionTitleInput.addEventListener('input', function () {
+        if (editingSectionId) { commitSectionTitle(editingSectionId, this.value); }
+      });
       sectionTitleInput.addEventListener('blur', function () {
         if (editingSectionId) { commitSectionTitle(editingSectionId, this.value); }
       });
@@ -2644,6 +2715,14 @@
     // ── Visual type picker controls ────────────────────────────────────────
     var vtCancel = qs('visual-type-cancel');
     if (vtCancel) { vtCancel.addEventListener('click', _closeVisualTypePicker); }
+
+    // ── Beforeunload warning ───────────────────────────────────────────────
+    window.addEventListener('beforeunload', function (e) {
+      if (_dirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    });
 
     // ── Save ───────────────────────────────────────────────────────────────
     var saveBtn = qs('save-btn');

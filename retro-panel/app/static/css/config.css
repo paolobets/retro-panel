@@ -79,6 +79,13 @@ html, body {
   -webkit-tap-highlight-color: transparent;
 }
 #save-btn:disabled { opacity: 0.5; cursor: default; }
+#save-btn.save-btn--dirty {
+  animation: dirty-pulse 1.5s ease-in-out infinite;
+}
+@keyframes dirty-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.75; }
+}
 
 /* ---- Body ---- */
 #cfg-body {
@@ -1624,6 +1631,13 @@ html, body {
   opacity: 0.4;
   flex-shrink: 0;
   margin-left: 4px;
+}
+
+.sec-del-btn--confirm {
+  background-color: var(--color-danger) !important;
+  color: #fff !important;
+  min-width: 52px;
+  font-size: 11px;
 }
 
 .section-detail-placeholder {
