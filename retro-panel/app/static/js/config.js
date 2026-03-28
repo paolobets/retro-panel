@@ -2663,18 +2663,6 @@
     var roomIconBtn = qs('room-icon-btn');
     if (roomIconBtn) { roomIconBtn.addEventListener('click', function (e) { e.stopPropagation(); openIconPicker(); }); }
 
-    // Close icon dropdown when clicking outside the picker wrap
-    document.addEventListener('click', function (e) {
-      var dropdown = qs('icon-dropdown');
-      var chevron  = qs('room-icon-chevron');
-      if (!dropdown || dropdown.classList.contains('hidden')) { return; }
-      var wrap = dropdown.parentElement;
-      if (wrap && !wrap.contains(e.target)) {
-        dropdown.classList.add('hidden');
-        if (chevron) { chevron.classList.remove('icon-picker-chevron--open'); }
-      }
-    });
-
     var roomAddEntityBtn = qs('room-add-entity-btn');
     if (roomAddEntityBtn) { roomAddEntityBtn.addEventListener('click', function () { openEntityPicker('section'); }); }
 
