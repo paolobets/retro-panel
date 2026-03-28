@@ -213,10 +213,19 @@ html, body {
 #icon-picker-modal-grid {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 12px 24px;
+  position: relative;
+}
+#icon-picker-modal-grid::-webkit-scrollbar { width: 6px; }
+#icon-picker-modal-grid::-webkit-scrollbar-thumb {
+  background: var(--color-surface-3);
+  border-radius: 3px;
+}
+
+.icon-grid-inner {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
   gap: 4px;
+  padding: 8px 12px 24px;
 }
 
 .icon-grid-item {
@@ -258,6 +267,67 @@ html, body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ── Icon picker recently-used ────────────────────────────────────────────── */
+
+#icon-picker-recent-section {
+  padding: 8px 12px 0;
+  flex-shrink: 0;
+}
+#icon-picker-recent-section.hidden { display: none; }
+
+.icon-picker-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-secondary);
+  margin-bottom: 6px;
+}
+
+#icon-picker-recent-row {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+#icon-picker-recent-row::-webkit-scrollbar { height: 0; }
+
+.icon-recent-item {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  border: 1px solid transparent;
+  color: var(--color-text-secondary);
+  transition: background 0.12s, border-color 0.12s;
+}
+.icon-recent-item:hover { background: var(--color-surface); }
+.icon-recent-item--selected {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* ── Icon picker count + empty ────────────────────────────────────────────── */
+
+#icon-picker-count {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  padding: 6px 12px 2px;
+  flex-shrink: 0;
+  min-height: 20px;
+}
+
+.icon-picker-empty-msg {
+  text-align: center;
+  padding: 48px 20px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
 }
 
 /* ---- Search ---- */
