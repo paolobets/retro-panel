@@ -279,7 +279,7 @@ async def save_config(request: web.Request) -> web.Response:
     # --- cameras_section (container metadata) ---
     cam_sec_raw = body.get("cameras_section") or {}
     cameras_section = {
-        "title": str(cam_sec_raw.get("title") or "Telecamere").strip()[:_MAX_TITLE] or "Telecamere",
+        "title": str(cam_sec_raw.get("title") or "Cameras").strip()[:_MAX_TITLE] or "Cameras",
         "icon": str(cam_sec_raw.get("icon") or "cctv").strip()[:_MAX_ICON] or "cctv",
     }
 
