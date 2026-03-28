@@ -21,6 +21,9 @@ window.RP_Renderer = (function () {
   // ---------------------------------------------------------------------------
   var COMPONENT_MAP = {
     'light':              null,
+    'light_standard':     null,
+    'light_dimmer':       null,
+    'light_rgb':          null,
     'switch':             null,
     'sensor_temperature': null,
     'sensor_humidity':    null,
@@ -40,6 +43,9 @@ window.RP_Renderer = (function () {
   // Column class for each layout_type
   var COL_CLASS_MAP = {
     'light':              'tile-col-compact',
+    'light_standard':     'tile-col-compact',
+    'light_dimmer':       'tile-col-compact',
+    'light_rgb':          'tile-col-compact',
     'switch':             'tile-col-compact',
     'sensor_temperature': 'tile-col-sensor',
     'sensor_humidity':    'tile-col-sensor',
@@ -58,6 +64,9 @@ window.RP_Renderer = (function () {
 
   function _initComponents() {
     COMPONENT_MAP['light']              = window.LightComponent    || null;
+    COMPONENT_MAP['light_standard']     = window.LightComponent    || null;
+    COMPONENT_MAP['light_dimmer']       = window.LightComponent    || null;
+    COMPONENT_MAP['light_rgb']          = window.LightComponent    || null;
     COMPONENT_MAP['switch']             = window.SwitchComponent   || null;
     COMPONENT_MAP['sensor_temperature'] = window.SensorComponent   || null;
     COMPONENT_MAP['sensor_humidity']    = window.SensorComponent   || null;
