@@ -204,15 +204,16 @@ async def save_config(request: web.Request) -> web.Response:
         for sc in (sec_raw.get("items") or []):
             if not isinstance(sc, dict):
                 continue
-            eid = str(sc.get("entity_id") or "").strip()
-            if not eid:
-                continue
-            if not _ENTITY_ID_RE.match(eid):
-                continue
+            try:
+                eid = _validate_entity_id(sc.get("entity_id") or "")
+            except ValueError as exc:
+                return web.json_response(
+                    {"error": f"scenario section [{sec_id}]: {exc}"}, status=400
+                )
             items.append({
                 "entity_id": eid,
                 "title": str(sc.get("title") or "").strip()[:_MAX_TITLE],
-                "icon": str(sc.get("icon") or "🎭").strip()[:_MAX_ICON],
+                "icon": str(sc.get("icon") or "\U0001F3AD").strip()[:_MAX_ICON],
             })
         scenario_sections.append({"id": sec_id, "title": sec_title, "items": items})
 
