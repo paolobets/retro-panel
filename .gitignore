@@ -20,3 +20,7 @@ Thumbs.db
 *.swp
 *.swo
 .claude/worktrees/
+
+# Scripts build artifacts
+scripts/node_modules/
+scripts/package-lock.json
