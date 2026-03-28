@@ -24,7 +24,7 @@
     <button class="cfg-tab active" type="button" data-tab="overview">Overview</button>
     <button class="cfg-tab" type="button" data-tab="rooms">Rooms</button>
     <button class="cfg-tab" type="button" data-tab="scenarios">Scenarios</button>
-    <button class="cfg-tab" type="button" data-tab="cameras">Telecamere</button>
+    <button class="cfg-tab" type="button" data-tab="cameras">Cameras</button>
   </div>
 
   <div id="cfg-body">
@@ -328,16 +328,16 @@
     <section id="tab-cameras" class="cfg-section hidden">
 
   <div class="section-header">
-    <h2 class="section-title">Telecamere</h2>
+    <h2 class="section-title">Cameras</h2>
   </div>
-  <p class="cfg-hint">Raggruppa le telecamere in sezioni nominate. Ogni sezione appare con un'intestazione nel pannello.</p>
+  <p class="cfg-hint">Group camera feeds into named sections. Each section appears with a heading in the panel.</p>
 
   <div class="field-group" style="margin-bottom:12px;">
     <div class="field-row">
       <label class="field-label" for="cameras-title-input">Section name</label>
       <input id="cameras-title-input" type="text" class="field-input"
         maxlength="32" autocomplete="off" autocorrect="off"
-        autocapitalize="words" spellcheck="false" placeholder="Telecamere">
+        autocapitalize="words" spellcheck="false" placeholder="Cameras">
     </div>
     <div class="field-row">
       <label class="field-label">Icon</label>
@@ -367,7 +367,7 @@
 
         <div id="cam-sections-col-right" class="sections-col-right">
           <div id="cam-section-detail-placeholder" class="section-detail-placeholder">
-            <p>Seleziona una sezione per modificarne le telecamere.</p>
+            <p>Select a section to edit its cameras.</p>
           </div>
           <div id="cam-section-detail-content" class="hidden">
             <div class="field-group" style="margin-bottom:12px;">
@@ -379,7 +379,7 @@
               </div>
             </div>
             <div class="section-entities-header">
-              <span class="sections-col-label">Telecamere <span id="cam-section-items-count">0</span></span>
+              <span class="sections-col-label">Cameras <span id="cam-section-items-count">0</span></span>
             </div>
             <div id="cam-section-items-list">
               <p class="cfg-placeholder">Nessuna telecamera in questa sezione.</p>
@@ -486,12 +486,12 @@
     </div>
     <div id="camera-search-wrap">
       <input id="camera-search-input" type="text"
-        placeholder="Cerca telecamere…"
+        placeholder="Search cameras…"
         autocomplete="off" autocorrect="off"
         autocapitalize="off" spellcheck="false">
     </div>
     <div id="camera-list">
-      <p class="cfg-placeholder">Caricamento telecamere…</p>
+      <p class="cfg-placeholder">Loading cameras…</p>
     </div>
   </section>
 

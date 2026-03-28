@@ -275,7 +275,9 @@
         + '</div>'
         + '<div class="section-row-actions">'
         + '<button class="remove-btn ov-sec-del-btn" type="button" data-id="' + esc(sec.id) + '">\u2715</button>'
-        + '</div></div>';
+        + '</div>'
+        + '<span class="section-row-chevron">&#8250;</span>'
+        + '</div>';
     }).join('');
 
     initGenericSectionDragDrop(container, activeOvSections, renderOvSectionsList);
@@ -959,6 +961,7 @@
           <div class="section-row-actions">
             <button class="remove-btn sec-del-btn" type="button" data-id="${esc(sec.id)}">&#10005;</button>
           </div>
+          <span class="section-row-chevron">&#8250;</span>
         </div>`.trim();
     }).join('');
 
@@ -1312,7 +1315,9 @@
         + '</div>'
         + '<div class="section-row-actions">'
         + '<button class="remove-btn sc-sec-del-btn" type="button" data-id="' + esc(sec.id) + '">\u2715</button>'
-        + '</div></div>';
+        + '</div>'
+        + '<span class="section-row-chevron">&#8250;</span>'
+        + '</div>';
     }).join('');
 
     initGenericSectionDragDrop(container, activeScSections, renderScSectionsList);
@@ -1585,7 +1590,9 @@
         + '</div>'
         + '<div class="section-row-actions">'
         + '<button class="remove-btn cam-sec-del-btn" type="button" data-id="' + esc(sec.id) + '">\u2715</button>'
-        + '</div></div>';
+        + '</div>'
+        + '<span class="section-row-chevron">&#8250;</span>'
+        + '</div>';
     }).join('');
 
     initGenericSectionDragDrop(container, activeCamSections, renderCamSectionsList);
