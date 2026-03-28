@@ -722,43 +722,143 @@
 
   // ── Shared icon picker modal ────────────────────────────────────────────
 
-  var _iconPickerCallback = null;
+  var _iconPickerCallback    = null;
   var _iconPickerCurrentIcon = 'home';
+  var _iconPickerFiltered    = [];
 
-  function openIconPickerModal(currentIcon, callback) {
-    _iconPickerCurrentIcon = currentIcon || 'home';
-    _iconPickerCallback = callback;
-    var searchEl = qs('icon-picker-modal-search');
-    if (searchEl) { searchEl.value = ''; }
-    renderIconPickerGrid('');
-    showOverlay('icon-picker-modal');
-    if (searchEl) { setTimeout(function () { searchEl.focus(); }, 150); }
+  // Recently used ──────────────────────────────────────────────────────────
+  var _RP_RECENT_KEY  = 'rp_icon_picker_recent';
+  var _recentIcons    = [];
+
+  function _loadRecent() {
+    try {
+      var s = localStorage.getItem(_RP_RECENT_KEY);
+      _recentIcons = s ? JSON.parse(s) : [];
+      if (!Array.isArray(_recentIcons)) { _recentIcons = []; }
+    } catch (e) { _recentIcons = []; }
   }
 
-  function renderIconPickerGrid(query) {
-    var grid = qs('icon-picker-modal-grid');
-    if (!grid) { return; }
-    var names = window.RP_MDI_NAMES || Object.keys(window.RP_MDI_PATHS || {});
-    var q = query.toLowerCase().trim();
-    var filtered = q ? names.filter(function (n) { return n.indexOf(q) !== -1; }) : names;
-    var html = '';
-    for (var i = 0; i < filtered.length; i++) {
-      var name = filtered[i];
+  function _saveRecent() {
+    try { localStorage.setItem(_RP_RECENT_KEY, JSON.stringify(_recentIcons)); } catch (e) {}
+  }
+
+  function _addRecent(name) {
+    _recentIcons = _recentIcons.filter(function (n) { return n !== name; });
+    _recentIcons.unshift(name);
+    if (_recentIcons.length > 20) { _recentIcons = _recentIcons.slice(0, 20); }
+    _saveRecent();
+  }
+
+  function _renderRecentRow() {
+    var section = qs('icon-picker-recent-section');
+    var row     = qs('icon-picker-recent-row');
+    if (!section || !row) { return; }
+    if (_recentIcons.length === 0) { section.classList.add('hidden'); return; }
+    section.classList.remove('hidden');
+    row.innerHTML = _recentIcons.map(function (name) {
       var isSel = name === _iconPickerCurrentIcon;
-      html += '<div class="icon-grid-item' + (isSel ? ' icon-grid-item--selected' : '') + '" data-name="' + name + '">';
-      html += '<span class="icon-grid-icon">' + (window.RP_MDI ? window.RP_MDI(name, 28) : '') + '</span>';
-      html += '<span class="icon-grid-label">' + name + '</span>';
-      html += '</div>';
-    }
-    grid.innerHTML = html;
-    grid.querySelectorAll('.icon-grid-item').forEach(function (item) {
+      return '<div class="icon-recent-item' + (isSel ? ' icon-recent-item--selected' : '')
+        + '" data-name="' + name + '">'
+        + (window.RP_MDI ? window.RP_MDI(name, 22) : '')
+        + '</div>';
+    }).join('');
+    row.querySelectorAll('.icon-recent-item').forEach(function (item) {
       item.addEventListener('click', function () {
         var name = this.getAttribute('data-name');
+        _addRecent(name);
         if (_iconPickerCallback) { _iconPickerCallback(name); }
         hideOverlay();
         _iconPickerCallback = null;
       });
     });
+  }
+
+  // Virtual grid ───────────────────────────────────────────────────────────
+  var _VIRT_ROW_H  = 82;  // px — icon(26) + label(12) + padding(16) + gap(4) + border/spare(24)
+  var _VIRT_BUF    = 2;   // extra rows above/below visible viewport
+  var _VIRT_ITEM_W = 84;  // px per slot — CSS minmax(80px,1fr) + gap(4px); matches .icon-grid-inner
+
+  function _renderVisibleRows(grid) {
+    var cw    = grid.clientWidth || 320;
+    var ipp   = Math.max(1, Math.floor((cw + 4) / _VIRT_ITEM_W));   // items per row
+    var total = Math.ceil(_iconPickerFiltered.length / ipp);         // total rows
+    var st    = grid.scrollTop;
+    var vh    = grid.clientHeight || 400;
+
+    var first = Math.max(0, Math.floor(st / _VIRT_ROW_H) - _VIRT_BUF);
+    var last  = Math.min(total - 1, Math.ceil((st + vh) / _VIRT_ROW_H) + _VIRT_BUF);
+    var topH  = first * _VIRT_ROW_H;
+    var botH  = Math.max(0, (total - last - 1) * _VIRT_ROW_H);
+
+    var html = '<div style="height:' + topH + 'px" aria-hidden="true"></div>'
+      + '<div class="icon-grid-inner">';
+    for (var row = first; row <= last; row++) {
+      for (var col = 0; col < ipp; col++) {
+        var idx = row * ipp + col;
+        if (idx >= _iconPickerFiltered.length) { break; }
+        var name  = _iconPickerFiltered[idx];
+        var isSel = name === _iconPickerCurrentIcon;
+        html += '<div class="icon-grid-item' + (isSel ? ' icon-grid-item--selected' : '')
+          + '" data-name="' + name + '">'
+          + '<span class="icon-grid-icon">' + (window.RP_MDI ? window.RP_MDI(name, 26) : '') + '</span>'
+          + '<span class="icon-grid-label">' + name + '</span>'
+          + '</div>';
+      }
+    }
+    html += '</div><div style="height:' + botH + 'px" aria-hidden="true"></div>';
+
+    grid.innerHTML = html;
+    grid.querySelectorAll('.icon-grid-item').forEach(function (item) {
+      item.addEventListener('click', function () {
+        var name = this.getAttribute('data-name');
+        _addRecent(name);
+        if (_iconPickerCallback) { _iconPickerCallback(name); }
+        hideOverlay();
+        _iconPickerCallback = null;
+      });
+    });
+  }
+
+  function renderIconPickerGrid(query) {
+    var grid      = qs('icon-picker-modal-grid');
+    var countEl   = qs('icon-picker-count');
+    var recentSec = qs('icon-picker-recent-section');
+    if (!grid) { return; }
+    var names = window.RP_MDI_NAMES || Object.keys(window.RP_MDI_PATHS || {});
+    var q     = query.toLowerCase().trim();
+    _iconPickerFiltered = q
+      ? names.filter(function (n) { return n.indexOf(q) !== -1; })
+      : names;
+
+    // Per spec §2.1: hide recently-used row when a search query is active
+    if (recentSec) {
+      recentSec.classList.toggle('hidden', q.length > 0 || _recentIcons.length === 0);
+    }
+
+    if (_iconPickerFiltered.length === 0) {
+      grid.innerHTML = '<p class="icon-picker-empty-msg">No icons match your search.</p>';
+      if (countEl) { countEl.textContent = ''; }
+      return;
+    }
+    if (countEl) {
+      countEl.textContent = q
+        ? (_iconPickerFiltered.length + ' result' + (_iconPickerFiltered.length === 1 ? '' : 's'))
+        : (names.length.toLocaleString() + ' icons');
+    }
+    grid.scrollTop = 0;
+    _renderVisibleRows(grid);
+  }
+
+  function openIconPickerModal(currentIcon, callback) {
+    _iconPickerCurrentIcon = currentIcon || 'home';
+    _iconPickerCallback    = callback;
+    var searchEl = qs('icon-picker-modal-search');
+    if (searchEl) { searchEl.value = ''; }
+    _loadRecent();
+    showOverlay('icon-picker-modal');
+    _renderRecentRow();
+    renderIconPickerGrid('');
+    if (searchEl) { setTimeout(function () { searchEl.focus(); }, 150); }
   }
 
   // ── Section icon previews (overview / scenarios / cameras) ────────────────
@@ -2610,9 +2710,17 @@
 
     var iconPickerSearch = qs('icon-picker-modal-search');
     if (iconPickerSearch) {
+      var _ipSearchTimer = null;
       iconPickerSearch.addEventListener('input', function () {
-        renderIconPickerGrid(this.value);
+        clearTimeout(_ipSearchTimer);
+        var val = this.value;
+        _ipSearchTimer = setTimeout(function () { renderIconPickerGrid(val); }, 80);
       });
+    }
+
+    var iconPickerGrid = qs('icon-picker-modal-grid');
+    if (iconPickerGrid) {
+      iconPickerGrid.addEventListener('scroll', function () { _renderVisibleRows(this); });
     }
 
     // ── Header sensor buttons ──────────────────────────────────────────────
