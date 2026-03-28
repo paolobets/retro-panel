@@ -221,6 +221,27 @@ html, body {
 }
 #disconnect-banner.hidden { display: none; }
 
+.banner-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--c-danger);
+  margin-right: 6px;
+  vertical-align: middle;
+  -webkit-animation: blink 1s step-start infinite;
+  animation: blink 1s step-start infinite;
+}
+
+@-webkit-keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
 /* Content area */
 #content-area {
   -webkit-flex: 1;
@@ -232,7 +253,7 @@ html, body {
 
 /* Section heading */
 .section-heading {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
