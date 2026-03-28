@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Config.js Unit Tests</title>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #1a1a2e; color: #eee; }
+    .pass { color: #4caf50; }
+    .fail { color: #f44336; }
+    h1 { color: #90caf9; }
+    #summary { margin-top: 20px; font-size: 1.2em; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Config.js Unit Tests</h1>
+  <div id="results"></div>
+  <div id="summary"></div>
+
+  <!-- Minimal DOM stubs required by config.js -->
+  <div id="cfg-tabs" style="display:none"></div>
+  <div id="save-btn" style="display:none"></div>
+  <!-- Add other required elements if config.js throws on missing IDs -->
+
+  <script>window.__TEST_MODE__ = true;</script>
+  <script src="../../app/static/js/config.js"></script>
+  <script>
+    var results = [];
+    function assert(name, condition, detail) {
+      results.push({ name: name, pass: !!condition, detail: detail || '' });
+    }
+
+    // Run tests after config.js has initialised
+    window.addEventListener('load', function() {
+      var t = window.__test__;
+      var out = document.getElementById('results');
+      var sumEl = document.getElementById('summary');
+
+      if (!t) {
+        out.innerHTML = '<p class="fail">ERROR: window.__test__ not exposed. Check __TEST_MODE__ hook in config.js.</p>';
+        return;
+      }
+
+      // Test 1: esc() escapes HTML special characters
+      assert('esc() escapes <', t.esc('<') === '&lt;');
+      assert('esc() escapes >', t.esc('>') === '&gt;');
+      assert('esc() escapes &', t.esc('&') === '&amp;');
+      assert('esc() escapes "', t.esc('"') === '&quot;');
+      assert('esc() leaves safe strings unchanged', t.esc('hello') === 'hello');
+
+      // Test 2: genSecId() returns string starting with 'sec_'
+      var secId = t.genSecId();
+      assert('genSecId() returns string', typeof secId === 'string');
+      assert('genSecId() starts with sec_', secId.indexOf('sec_') === 0);
+
+      // Test 3: genId() returns string starting with expected prefix
+      var roomId = t.genId();
+      assert('genId() returns string', typeof roomId === 'string');
+      assert('genId() has non-empty result', roomId.length > 0);
+
+      // Test 4: activeOvSections() returns array (even when empty)
+      var sections = t.activeOvSections();
+      assert('activeOvSections() returns array', Array.isArray(sections));
+
+      // Test 5: state.overview.sections is an array
+      assert('state.overview.sections is array', Array.isArray(t.state.overview.sections));
+
+      // Test 6: state.scenarios is array
+      assert('state.scenarios is array', Array.isArray(t.state.scenarios));
+
+      // Render results
+      var passed = 0;
+      var html = '';
+      results.forEach(function(r) {
+        if (r.pass) passed++;
+        html += '<p class="' + (r.pass ? 'pass' : 'fail') + '">';
+        html += (r.pass ? '✓' : '✗') + ' ' + r.name;
+        if (!r.pass && r.detail) html += ' — ' + r.detail;
+        html += '</p>';
+      });
+      out.innerHTML = html;
+      sumEl.innerHTML = '<span class="' + (passed === results.length ? 'pass' : 'fail') + '">' +
+        passed + '/' + results.length + ' tests passed</span>';
+    });
+  </script>
+</body>
+</html>

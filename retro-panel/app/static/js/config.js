@@ -2644,4 +2644,15 @@
   }
 
   document.addEventListener('DOMContentLoaded', init);
+
+  // ── Test hooks ─────────────────────────────────────────────────────────────
+  if (typeof window !== 'undefined' && window.__TEST_MODE__) {
+    window.__test__ = {
+      esc: esc,
+      genSecId: genSecId,
+      genId: genId,
+      activeOvSections: activeOvSections,
+      state: state,
+    };
+  }
 }());
