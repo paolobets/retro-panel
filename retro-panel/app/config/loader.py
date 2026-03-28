@@ -437,10 +437,14 @@ def _parse_camera_section(raw: dict, idx: int) -> CameraSection:
     cam_items: list[CameraConfig] = []
     for c in (raw.get("items") or []):
         if isinstance(c, dict) and c.get("entity_id"):
+            try:
+                refresh_interval = int(c.get("refresh_interval") or 10)
+            except (ValueError, TypeError):
+                refresh_interval = 10
             cam_items.append(CameraConfig(
                 entity_id=str(c["entity_id"]).strip(),
                 title=str(c.get("title") or "").strip(),
-                refresh_interval=int(c.get("refresh_interval") or 10),
+                refresh_interval=refresh_interval,
             ))
     return CameraSection(id=sec_id, title=title, items=cam_items)
 
@@ -526,8 +530,14 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
             logger.warning("Failed to read %s: %s — using empty layout", entities_file, exc)
             return empty
 
+        version = raw.get("version") if isinstance(raw, dict) else None
+        try:
+            version = int(version)
+        except (ValueError, TypeError):
+            version = 0
+
         # v5 format (native sections)
-        if isinstance(raw, dict) and raw.get("version") == 5:
+        if isinstance(raw, dict) and version == 5:
             _ov = raw.get("overview") or {}
             overview_sections = [
                 _parse_overview_section(s, i)
@@ -566,7 +576,7 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
             )
 
         # v3/v4 format — migrate to v5 shape (also handles v3 rooms via _parse_room migration logic)
-        if isinstance(raw, dict) and raw.get("version") in (3, 4):
+        if isinstance(raw, dict) and version in (3, 4):
             _ov = raw.get("overview") or {}
             overview_title = str(_ov.get("title") or "Overview").strip() or "Overview"
             overview_icon = "home"
@@ -595,7 +605,7 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
             )
 
         # v2 format: migrate first page to overview
-        if isinstance(raw, dict) and raw.get("version") == 2:
+        if isinstance(raw, dict) and version == 2:
             logger.info("Migrating v2 pages format to v5")
             ov_items = _migrate_v2_pages(raw.get("pages") or [])
             ov_secs = [RoomSection(id="sec_default", title="", items=ov_items)] if ov_items else []
@@ -638,7 +648,10 @@ def load_config() -> PanelConfig:
             "with the required fields: ha_url, ha_token."
         ) from None
 
-    raw: dict = json.loads(raw_text)
+    try:
+        raw: dict = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"options.json contains invalid JSON: {exc}") from exc
 
     ha_url: str = (raw.get("ha_url") or "").strip().rstrip("/")
     ha_token: str = (raw.get("ha_token") or "").strip()

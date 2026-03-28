@@ -11,7 +11,7 @@ from aiohttp import web
 
 logger = logging.getLogger(__name__)
 
-_ENTITY_ID_RE = re.compile(r"^[a-z_]+\.[a-z0-9_]+$")
+_ENTITY_ID_RE = re.compile(r"^[a-z][a-z0-9_]*\.[a-z0-9_]+$")
 _ENTITIES_FILE = Path("/data/entities.json")
 
 _MAX_LABEL = 64
@@ -189,8 +189,11 @@ async def save_config(request: web.Request) -> web.Response:
             })
 
     # --- scenarios ---
+    scenarios_raw = body.get("scenarios") or []
+    if len(scenarios_raw) > _MAX_SECTIONS:
+        return web.json_response({"error": f"Too many scenario sections (max {_MAX_SECTIONS})"}, status=400)
     scenario_sections = []
-    for sec_raw in (body.get("scenarios") or []):
+    for sec_raw in scenarios_raw:
         if not isinstance(sec_raw, dict):
             continue
         sec_id = str(sec_raw.get("id") or "").strip()[:_MAX_ID]
@@ -239,8 +242,11 @@ async def save_config(request: web.Request) -> web.Response:
         })
 
     # --- cameras ---
+    cameras_raw = body.get("cameras") or []
+    if len(cameras_raw) > _MAX_SECTIONS:
+        return web.json_response({"error": f"Too many camera sections (max {_MAX_SECTIONS})"}, status=400)
     camera_sections = []
-    for sec_raw in (body.get("cameras") or []):
+    for sec_raw in cameras_raw:
         if not isinstance(sec_raw, dict):
             continue
         sec_id = str(sec_raw.get("id") or "").strip()[:_MAX_ID]
@@ -256,7 +262,10 @@ async def save_config(request: web.Request) -> web.Response:
                 continue
             if not _CAMERA_ENTITY_RE.match(eid):
                 continue
-            ri = int(c.get("refresh_interval") or 10)
+            try:
+                ri = int(c.get("refresh_interval") or 10)
+            except (ValueError, TypeError):
+                ri = 10
             if ri < 3: ri = 3
             if ri > 60: ri = 60
             items.append({
@@ -289,9 +298,9 @@ async def save_config(request: web.Request) -> web.Response:
     }
 
     try:
-        _ENTITIES_FILE.write_text(
-            json.dumps(v5_data, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
+        tmp = _ENTITIES_FILE.with_suffix(".tmp")
+        tmp.write_text(json.dumps(v5_data, ensure_ascii=False, indent=2), encoding="utf-8")
+        tmp.replace(_ENTITIES_FILE)
     except Exception as exc:
         logger.error("Failed to write %s: %s", _ENTITIES_FILE, exc)
         return web.json_response({"error": "Failed to save configuration"}, status=500)
