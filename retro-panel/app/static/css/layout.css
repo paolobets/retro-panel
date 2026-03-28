@@ -178,6 +178,7 @@ html, body {
   font-size: 17px;
   font-weight: 700;
   letter-spacing: -0.02em;
+  font-feature-settings: "tnum";
   font-variant-numeric: tabular-nums;
   margin-right: 8px;
 }
@@ -207,16 +208,16 @@ html, body {
 /* Spacer */
 .header-spacer { -webkit-flex: 1; flex: 1; }
 
-/* Disconnect banner */
+/* Disconnect banner — full-width strip above #panel */
 #disconnect-banner {
+  display: block;
+  width: 100%;
   background: var(--c-danger);
   color: #fff;
   text-align: center;
   font-size: 12px;
   font-weight: 600;
   padding: 6px 16px;
-  -webkit-flex-shrink: 0;
-  flex-shrink: 0;
 }
 #disconnect-banner.hidden { display: none; }
 
@@ -297,8 +298,8 @@ html, body {
   align-items: center;
   -webkit-justify-content: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 8px;
   background: transparent;
   border: none;

@@ -7,6 +7,28 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.1.1] — 2026-03-28
+
+### Fixed
+- Atomic write for `entities.json`: config is no longer corrupted if the container restarts during a save operation
+- `refresh_interval` with a non-numeric value in camera config no longer crashes loader or save handler (falls back to 10 seconds)
+- Entity ID validation regex now accepts digits in the domain part (e.g. `modbus.sensor1`, `input_number.x`)
+- Section count limits (`_MAX_SECTIONS = 20`) now enforced for scenario and camera sections on save (returns HTTP 400 if exceeded)
+- v4 `overview.items[]` correctly migrated to a default section when config page is opened (prevented silent data loss when upgrading from v4)
+- Optional chaining (`?.`) and nullish coalescing (`??`) replaced with ES2017-compatible equivalents in config.js
+- Orphaned `mousemove`/`mouseup` drag event listeners are now cleaned up when a drag is interrupted by a list re-render
+- `#disconnect-banner` moved outside `#panel` flex container (correct full-width display on iOS Safari)
+- Touch targets for `.bs-close` (bottom sheet close) and `#sidebar-toggle` increased to 44×44 px (Apple HIG minimum)
+- Added `font-feature-settings: "tnum"` fallback for `font-variant-numeric: tabular-nums` (iOS 12 compatibility for tabular number display)
+- `options.json` JSON parse error now raises a descriptive `ValueError` instead of an unhandled `JSONDecodeError`
+- Version field in `entities.json` is now normalised to int before comparison (string `"5"` no longer silently falls to wrong migration path)
+
+### Tests
+- Added 3 edge-case tests to `test_loader_v5.py` (invalid refresh_interval, version as string, missing cameras key in v4)
+- Added `test_save_validation.py` with 7 tests covering section count limits and entity ID regex
+- Added `retro-panel/tests/js/run_es5_check.sh` — automated ES5 compliance check for `renderer.js` and ES2017 compliance for `config.js`
+- Added `retro-panel/tests/js/test_config_state.html` — browser-runnable unit tests for config.js pure functions
+
 ## [2.0.0] — 2026-03-27
 
 ### Breaking Changes

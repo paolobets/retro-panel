@@ -415,6 +415,8 @@
     let rowEls = [];
     let rowRects = [];
     let crossSecTarget = null;
+    let onMove = null;
+    let onUp = null;
 
     const sectionsCol = ctx === 'section' ? qs('room-sections-list') : null;
     const getSectionRows = () => sectionsCol ? [...sectionsCol.querySelectorAll('.section-row')] : [];
@@ -451,11 +453,13 @@
       }
       // Within-list indicator
       const tIdx = calcTargetIdx(e.clientY - startY);
-      if (tIdx < dragIdx) { rowEls[tIdx]?.classList.add('selected-row--insert-before'); }
-      else if (tIdx > dragIdx) { rowEls[tIdx]?.classList.add('selected-row--insert-after'); }
+      if (tIdx < dragIdx) { if (rowEls[tIdx]) { rowEls[tIdx].classList.add('selected-row--insert-before'); } }
+      else if (tIdx > dragIdx) { if (rowEls[tIdx]) { rowEls[tIdx].classList.add('selected-row--insert-after'); } }
     };
 
     const onDragStart = (e, handle) => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
       const row = handle.parentNode;
       rowEls = [...container.querySelectorAll('.selected-row')];
       dragIdx = rowEls.indexOf(row);
@@ -479,12 +483,12 @@
 
     const onDragEnd = (e) => {
       if (dragIdx < 0) { return; }
-      const targetSecId = crossSecTarget?.getAttribute('data-id') ?? null;
+      const targetSecId = (crossSecTarget && crossSecTarget.getAttribute('data-id') !== null && crossSecTarget.getAttribute('data-id') !== undefined ? crossSecTarget.getAttribute('data-id') : null);
       const targetIdx = calcTargetIdx(e.clientY - startY);
 
       rowEls.forEach(r => r.classList.remove('selected-row--dragging', 'selected-row--insert-before', 'selected-row--insert-after'));
       getSectionRows().forEach(r => r.classList.remove('section-row--drop-target'));
-      ghostEl?.remove();
+      if (ghostEl) { ghostEl.remove(); }
       ghostEl = null;
       const fromIdx = dragIdx;
       dragIdx = -1;
@@ -508,9 +512,9 @@
 
     container.querySelectorAll('.item-drag-handle').forEach(handle => {
       handle.addEventListener('mousedown', (e) => {
+        onMove = (e) => onDragMove(e);
+        onUp   = (e) => { onDragEnd(e); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
         onDragStart(e, handle);
-        const onMove = (e) => onDragMove(e);
-        const onUp   = (e) => { onDragEnd(e); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', onUp);
       });
@@ -604,6 +608,8 @@
     let startY = 0;
     let rowEls = [];
     let rowRects = [];
+    let onMove = null;
+    let onUp = null;
 
     const calcTargetIdx = (dy) => {
       const ghostCenter = rowRects[dragIdx].top + dy + rowRects[dragIdx].height / 2;
@@ -618,6 +624,8 @@
     };
 
     const onDragStart = (e, handle) => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
       const row = handle.parentNode;
       rowEls = [...container.querySelectorAll('.room-row')];
       dragIdx = rowEls.indexOf(row);
@@ -645,7 +653,7 @@
       if (dragIdx < 0) { return; }
       const targetIdx = calcTargetIdx(e.clientY - startY);
       rowEls.forEach(r => r.classList.remove('room-row--dragging', 'room-row--insert-before', 'room-row--insert-after'));
-      ghostEl?.remove();
+      if (ghostEl) { ghostEl.remove(); }
       ghostEl = null;
       const fromIdx = dragIdx;
       dragIdx = -1;
@@ -658,9 +666,9 @@
 
     container.querySelectorAll('.room-drag-handle').forEach(handle => {
       handle.addEventListener('mousedown', (e) => {
+        onMove = (e) => onDragMove(e);
+        onUp = (e) => { onDragEnd(e); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
         onDragStart(e, handle);
-        const onMove = (e) => onDragMove(e);
-        const onUp = (e) => { onDragEnd(e); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', onUp);
       });
@@ -979,6 +987,8 @@
     let startY = 0;
     let rowEls = [];
     let rowRects = [];
+    let onMove = null;
+    let onUp = null;
 
     const calcTargetIdx = (dy) => {
       const ghostCenter = rowRects[dragIdx].top + dy + rowRects[dragIdx].height / 2;
@@ -993,6 +1003,8 @@
     };
 
     const onDragStart = (e, handle) => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
       const row = handle.parentNode;
       rowEls = [...container.querySelectorAll('.section-row')];
       dragIdx = rowEls.indexOf(row);
@@ -1019,7 +1031,7 @@
       if (dragIdx < 0) { return; }
       const targetIdx = calcTargetIdx(e.clientY - startY);
       rowEls.forEach(r => r.classList.remove('section-row--dragging', 'section-row--insert-before', 'section-row--insert-after'));
-      ghostEl?.remove();
+      if (ghostEl) { ghostEl.remove(); }
       ghostEl = null;
       const fromIdx = dragIdx;
       dragIdx = -1;
@@ -1033,9 +1045,9 @@
 
     container.querySelectorAll('.section-row-drag').forEach(handle => {
       handle.addEventListener('mousedown', (e) => {
+        onMove = (e) => onDragMove(e);
+        onUp = (e) => { onDragEnd(e); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
         onDragStart(e, handle);
-        const onMove = (e) => onDragMove(e);
-        const onUp = (e) => { onDragEnd(e); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', onUp);
       });
@@ -2191,10 +2203,15 @@
 
         // Populate state from saved config
         var ovRaw = cfg.overview || {};
+        var ovSections = Array.isArray(ovRaw.sections) ? ovRaw.sections : [];
+        // v4 fallback: if no sections but flat items exist, wrap in a default section
+        if (ovSections.length === 0 && Array.isArray(ovRaw.items) && ovRaw.items.length > 0) {
+          ovSections = [{ id: 'sec_default', title: '', items: ovRaw.items }];
+        }
         state.overview = {
           title: ovRaw.title || 'Overview',
           icon:  ovRaw.icon  || 'home',
-          sections: (ovRaw.sections || []).map(function(s) {
+          sections: ovSections.map(function(s) {
             return { id: s.id || genSecId(), title: s.title || '', items: (s.items || []).map(cloneItem) };
           }),
         };
@@ -2627,4 +2644,15 @@
   }
 
   document.addEventListener('DOMContentLoaded', init);
+
+  // ── Test hooks ─────────────────────────────────────────────────────────────
+  if (typeof window !== 'undefined' && window.__TEST_MODE__) {
+    window.__test__ = {
+      esc: esc,
+      genSecId: genSecId,
+      genId: genId,
+      activeOvSections: activeOvSections,
+      state: state,
+    };
+  }
 }());

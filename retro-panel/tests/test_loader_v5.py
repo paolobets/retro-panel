@@ -131,3 +131,57 @@ def test_v5_camera_sections_parsed(tmp_path):
     assert len(cam_sections) == 1
     assert cam_sections[0].title == "Esterne"
     assert cam_sections[0].items[0].refresh_interval == 8
+
+
+# ── edge case tests ──────────────────────────────────────────────────────────
+
+def test_invalid_refresh_interval_falls_back_to_default(tmp_path):
+    """_parse_camera_section does not crash when refresh_interval is a non-numeric string."""
+    f = _write_entities(tmp_path, {
+        "version": 5,
+        "overview": {"title": "Home", "icon": "home", "sections": []},
+        "rooms": [], "scenarios": [],
+        "cameras": [
+            {"id": "sec_f", "title": "Fast", "items": [
+                {"entity_id": "camera.front", "title": "Front", "refresh_interval": "fast"}
+            ]}
+        ],
+    })
+    result = _load_layout(f, [])
+    cam_sections = result[6]
+    assert len(cam_sections) == 1
+    assert cam_sections[0].items[0].refresh_interval == 10
+
+
+def test_version_as_string_5_parsed_as_v5(tmp_path):
+    """version='5' (string) is correctly treated as v5 schema."""
+    f = _write_entities(tmp_path, {
+        "version": "5",
+        "overview": {
+            "title": "Home", "icon": "home",
+            "sections": [
+                {"id": "sec_a", "title": "Lights", "items": [
+                    {"type": "entity", "entity_id": "light.hall", "label": "Hall"}
+                ]},
+            ]
+        },
+        "rooms": [], "scenarios": [], "cameras": [],
+    })
+    result = _load_layout(f, [])
+    ov_sections = result[0]
+    assert len(ov_sections) == 1
+    assert ov_sections[0].id == "sec_a"
+
+
+def test_v4_missing_cameras_key(tmp_path):
+    """v4 file with no cameras key produces empty camera_sections, no crash."""
+    f = _write_entities(tmp_path, {
+        "version": 4,
+        "overview": {"title": "Home", "items": []},
+        "rooms": [],
+        "scenarios": [],
+        # no "cameras" key at all
+    })
+    result = _load_layout(f, [])
+    cam_sections = result[6]
+    assert cam_sections == []
