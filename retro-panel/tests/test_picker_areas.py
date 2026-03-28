@@ -59,8 +59,8 @@ def _body(response) -> list:
 
 
 def _area(area_id: str, name: str) -> dict:
-    """Area registry entry."""
-    return {"id": area_id, "name": name}
+    """Area registry entry (matches real HA config/area_registry/list response)."""
+    return {"area_id": area_id, "name": name}
 
 
 def _entity(entity_id: str, area_id=None, device_id=None,
