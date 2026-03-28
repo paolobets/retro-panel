@@ -93,15 +93,18 @@
     AppState.wsConnected = connected;
     var dot = DOM.qs('#connection-status');
     var banner = DOM.qs('#disconnect-banner');
+    var contentArea = DOM.qs('#content-area');
     if (!dot) { return; }
     if (connected) {
       dot.className = 'status-dot status-connected';
       dot.title = 'Connected';
       if (banner) { banner.classList.add('hidden'); }
+      if (contentArea) { contentArea.classList.remove('content-stale'); }
     } else {
       dot.className = 'status-dot status-disconnected';
       dot.title = 'Disconnected';
       if (banner) { banner.classList.remove('hidden'); }
+      if (contentArea) { contentArea.classList.add('content-stale'); }
     }
   }
 

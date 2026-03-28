@@ -79,6 +79,13 @@ html, body {
   -webkit-tap-highlight-color: transparent;
 }
 #save-btn:disabled { opacity: 0.5; cursor: default; }
+#save-btn.save-btn--dirty {
+  animation: dirty-pulse 1.5s ease-in-out infinite;
+}
+@keyframes dirty-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.75; }
+}
 
 /* ---- Body ---- */
 #cfg-body {
@@ -901,7 +908,7 @@ html, body {
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: var(--color-danger);
+  background-color: var(--c-surface);
   color: #fff;
   padding: 10px 20px;
   border-radius: var(--radius-sm);
@@ -1569,6 +1576,7 @@ html, body {
 .section-row > * + * { margin-left: 8px; }
 
 .section-row:active { background-color: var(--color-surface-2); }
+.section-row:hover { background-color: var(--color-surface-2); }
 
 .section-row--active {
   border-color: var(--color-accent);
@@ -1616,6 +1624,21 @@ html, body {
   flex-shrink: 0;
 }
 .section-row-actions > * + * { margin-left: 4px; }
+
+.section-row-chevron {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  opacity: 0.4;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+
+.sec-del-btn--confirm {
+  background-color: var(--color-danger) !important;
+  color: #fff !important;
+  min-width: 52px;
+  font-size: 11px;
+}
 
 .section-detail-placeholder {
   display: flex;

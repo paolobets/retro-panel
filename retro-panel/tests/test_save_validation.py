@@ -131,3 +131,50 @@ def test_entity_id_empty_object_part_rejected():
 def test_entity_id_uppercase_rejected():
     """An entity_id with uppercase letters must be rejected."""
     assert _ENTITY_ID_RE.match("Light.Kitchen") is None
+
+
+def test_scenario_invalid_entity_id_rejected():
+    """Scenario items with invalid entity_id format must return HTTP 400."""
+    body = {
+        "overview": {"title": "Overview", "icon": "home", "sections": []},
+        "rooms": [],
+        "scenarios": [{"id": "sec1", "title": "Test", "items": [
+            {"entity_id": "INVALID_UPPERCASE", "icon": "🎭", "title": "Bad"}
+        ]}],
+        "header_sensors": [],
+        "cameras": [],
+        "scenarios_section": {"title": "Scenarios", "icon": "palette"},
+        "cameras_section": {"title": "Cameras", "icon": "cctv"},
+    }
+    req = _make_request(body)
+
+    with patch("api.panel_config_save._ENTITIES_FILE") as mock_path:
+        mock_path.with_suffix.return_value.write_text = MagicMock()
+        mock_path.with_suffix.return_value.replace = MagicMock()
+        resp = _run(save_config(req))
+
+    assert resp.status == 400
+    assert "entity_id" in json.loads(resp.text).get("error", "").lower()
+
+
+def test_scenario_valid_entity_id_accepted():
+    """Scenario items with valid entity_id pass validation."""
+    body = {
+        "overview": {"title": "Overview", "icon": "home", "sections": []},
+        "rooms": [],
+        "scenarios": [{"id": "sec1", "title": "Test", "items": [
+            {"entity_id": "scene.morning", "icon": "🎭", "title": "Morning"}
+        ]}],
+        "header_sensors": [],
+        "cameras": [],
+        "scenarios_section": {"title": "Scenarios", "icon": "palette"},
+        "cameras_section": {"title": "Cameras", "icon": "cctv"},
+    }
+    req = _make_request(body)
+
+    with patch("api.panel_config_save._ENTITIES_FILE") as mock_path:
+        mock_path.with_suffix.return_value.write_text = MagicMock()
+        mock_path.with_suffix.return_value.replace = MagicMock()
+        resp = _run(save_config(req))
+
+    assert resp.status == 200

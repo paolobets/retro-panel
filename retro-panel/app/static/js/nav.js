@@ -160,7 +160,7 @@ window.RP_Nav = (function () {
     // Telecamere
     if (config.cameras && config.cameras.length > 0) {
       var camSec = config.cameras_section || {};
-      addNavItem(nav, 'cameras', _mdi(camSec.icon || 'cctv', 22), camSec.title || 'Telecamere');
+      addNavItem(nav, 'cameras', _mdi(camSec.icon || 'cctv', 22), camSec.title || 'Cameras');
     }
   }
 

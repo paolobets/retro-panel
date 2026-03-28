@@ -355,48 +355,6 @@ window.RP_Renderer = (function () {
   }
 
   // ---------------------------------------------------------------------------
-  // Scenarios section (flat grid) — legacy wrapper
-  // ---------------------------------------------------------------------------
-  function _renderScenariosSection(container, scenarios) {
-    var DOM = window.RP_DOM;
-    var h = DOM.createElement('h2', 'section-heading');
-    h.textContent = 'Scenari';
-    container.appendChild(h);
-
-    if (!scenarios || scenarios.length === 0) {
-      var empty = DOM.createElement('div', 'empty-state');
-      empty.innerHTML = '<span class="empty-state-icon">\uD83C\uDFAD</span>'
-        + '<p class="empty-state-title">No scenarios configured</p>'
-        + '<p class="empty-state-hint">Open Config to add scenes and scripts.</p>';
-      container.appendChild(empty);
-      return;
-    }
-
-    _renderScenarioItems(container, scenarios);
-  }
-
-  // ---------------------------------------------------------------------------
-  // Cameras section (full-width tiles) — legacy wrapper
-  // ---------------------------------------------------------------------------
-  function _renderCamerasSection(container, cameras) {
-    var DOM = window.RP_DOM;
-    var h = DOM.createElement('h2', 'section-heading');
-    h.textContent = 'Telecamere';
-    container.appendChild(h);
-
-    if (!cameras || cameras.length === 0) {
-      var empty = DOM.createElement('div', 'empty-state');
-      empty.innerHTML = '<span class="empty-state-icon">\uD83D\uDCF9</span>'
-        + '<p class="empty-state-title">No cameras configured</p>'
-        + '<p class="empty-state-hint">Open Config to add camera entities.</p>';
-      container.appendChild(empty);
-      return;
-    }
-
-    _renderCameraItems(container, cameras);
-  }
-
-  // ---------------------------------------------------------------------------
   // Generic sections helper — renders an array of {title, items[]} sections
   // ---------------------------------------------------------------------------
   function _renderGenericSections(container, sections, renderItemsFn, appState, emptyIcon, emptyMsg) {
