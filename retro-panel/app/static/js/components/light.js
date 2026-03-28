@@ -32,11 +32,21 @@ window.LightComponent = (function () {
     return '#' + h(rgb[0]) + h(rgb[1]) + h(rgb[2]);
   }
 
-  function colorFromAttributes(attrs) {
+  function colorFromAttributes(attrs, mode) {
     if (!attrs) { return COLOR_DEFAULT; }
-    if (attrs.rgb_color && attrs.rgb_color.length >= 3) {
-      return rgbToHex(attrs.rgb_color);
+    if (mode === 'light_standard') { return COLOR_DEFAULT; }
+    if (mode === 'light_rgb') {
+      if (attrs.rgb_color && attrs.rgb_color.length >= 3) { return rgbToHex(attrs.rgb_color); }
+      return COLOR_DEFAULT;
     }
+    if (mode === 'light_dimmer') {
+      if (attrs.color_temp !== undefined && attrs.color_temp !== null) {
+        return miredToColor(attrs.color_temp);
+      }
+      return COLOR_DEFAULT;
+    }
+    /* legacy 'light': rgb wins over color_temp */
+    if (attrs.rgb_color && attrs.rgb_color.length >= 3) { return rgbToHex(attrs.rgb_color); }
     if (attrs.color_temp !== undefined && attrs.color_temp !== null) {
       return miredToColor(attrs.color_temp);
     }
@@ -47,6 +57,7 @@ window.LightComponent = (function () {
   /* Visual state helpers                                                 */
   /* ------------------------------------------------------------------ */
   function applyOnState(tile, color, brightnessValue) {
+    tile.style.borderColor = color;
     var toggle = tile.querySelector('.tile-toggle');
     var thumb  = tile.querySelector('.tile-toggle-thumb');
     var iconEl = tile.querySelector('.tile-icon');
@@ -69,6 +80,7 @@ window.LightComponent = (function () {
   }
 
   function applyOffState(tile) {
+    tile.style.borderColor = 'transparent';
     var toggle = tile.querySelector('.tile-toggle');
     var thumb  = tile.querySelector('.tile-toggle-thumb');
     var iconEl = tile.querySelector('.tile-icon');
@@ -96,7 +108,9 @@ window.LightComponent = (function () {
     /* root tile */
     var tile = DOM.createElement('div', 'tile tile-light');
     tile.dataset.entityId   = entity_id;
-    tile.dataset.layoutType = 'light';
+    var layoutType          = entityConfig.layout_type || 'light_standard';
+    tile.dataset.lightMode  = layoutType;
+    tile.dataset.layoutType = layoutType;
 
     /* tint overlay */
     var tint = DOM.createElement('div', 'tile-tint');
@@ -144,9 +158,14 @@ window.LightComponent = (function () {
 
     function _handleLongPress() {
       _lpTimer = null;
-      var attrs = tile._lastAttrs || {};
+      var mode = tile.dataset.lightMode;
+      if (mode === 'light_standard') { return; }
+      var attrs  = tile._lastAttrs || {};
+      var bsMode = (mode === 'light_dimmer') ? 'dimmer'
+                 : (mode === 'light_rgb')    ? 'rgb'
+                 : null;
       if (window.RP_BottomSheet) {
-        window.RP_BottomSheet.open(entity_id, label, attrs);
+        window.RP_BottomSheet.open(entity_id, label, attrs, bsMode);
       }
     }
 
@@ -193,6 +212,7 @@ window.LightComponent = (function () {
   function updateTile(tile, stateObj) {
     var state = stateObj.state;
     var attrs = stateObj.attributes || {};
+    var mode  = tile.dataset.lightMode || 'light_standard';
 
     tile.dataset.state = state;
     tile._lastAttrs    = attrs;
@@ -201,8 +221,9 @@ window.LightComponent = (function () {
 
     if (state === 'on') {
       tile.classList.add('is-on');
-      var color = colorFromAttributes(attrs);
-      var bri = (attrs.brightness !== undefined && attrs.brightness !== null)
+      var color = colorFromAttributes(attrs, mode);
+      var bri   = (mode !== 'light_standard' &&
+                   attrs.brightness !== undefined && attrs.brightness !== null)
         ? (Math.round(attrs.brightness / 255 * 100) + '%')
         : null;
       applyOnState(tile, color, bri);

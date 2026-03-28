@@ -185,3 +185,23 @@ def test_v4_missing_cameras_key(tmp_path):
     result = _load_layout(f, [])
     cam_sections = result[6]
     assert cam_sections == []
+
+
+from config.loader import _compute_layout_type
+
+
+def test_light_domain_defaults_to_light_standard():
+    """light.* without visual_type defaults to light_standard (not legacy 'light')."""
+    result = _compute_layout_type("light.kitchen", "", "")
+    assert result == "light_standard"
+
+
+def test_light_domain_with_visual_type_override():
+    """visual_type always wins for light domain."""
+    assert _compute_layout_type("light.kitchen", "", "light_dimmer") == "light_dimmer"
+    assert _compute_layout_type("light.kitchen", "", "light_rgb")    == "light_rgb"
+
+
+def test_light_legacy_value_still_accepted():
+    """An entity that had visual_type='light' explicitly keeps that value."""
+    assert _compute_layout_type("light.kitchen", "", "light") == "light"

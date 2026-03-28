@@ -4,7 +4,7 @@
  * No ES modules — loaded as regular script. iOS 12+ safe.
  * NO const/let/=>/?./?? — only var, IIFE pattern.
  *
- * Exposes globally: window.RP_BottomSheet = { open(entityId, label, attrs), close() }
+ * Exposes globally: window.RP_BottomSheet = { open(entityId, label, attrs, mode), close() }
  */
 window.RP_BottomSheet = (function () {
   'use strict';
@@ -184,42 +184,70 @@ window.RP_BottomSheet = (function () {
   /* ------------------------------------------------------------------ */
   /* Public API                                                           */
   /* ------------------------------------------------------------------ */
-  function open(entityId, label, attributes) {
+  function open(entityId, label, attributes, mode) {
     if (!_sheet) { _build(); }
 
     _entityId = entityId;
     if (_titleEl) { _titleEl.textContent = label || entityId; }
 
-    var sf = (attributes && attributes.supported_features) ? attributes.supported_features : 0;
-    var hasBri   = (sf & FEAT_BRIGHTNESS) !== 0;
-    var hasTemp  = (sf & FEAT_COLOR_TEMP) !== 0;
-    var hasColor = (sf & FEAT_COLOR) !== 0;
-
-    /* show/hide sections */
-    _briSection.style.display   = hasBri   ? '' : 'none';
-    _tempSection.style.display  = hasTemp  ? '' : 'none';
-    _colorSection.style.display = hasColor ? '' : 'none';
-
-    /* fallback: if no features detected show brightness */
-    if (!hasBri && !hasTemp && !hasColor) {
-      _briSection.style.display = '';
-    }
-
-    /* sync slider values from current attributes */
-    if (hasBri && attributes && attributes.brightness !== undefined && attributes.brightness !== null) {
-      _briSlider.value = String(attributes.brightness);
-      var pct = Math.round(attributes.brightness / 255 * 100);
-      if (_briVal) { _briVal.textContent = pct + '%'; }
-    }
-    if (hasTemp && attributes && attributes.color_temp !== undefined && attributes.color_temp !== null) {
-      _tempSlider.value = String(attributes.color_temp);
-      var kelvin = Math.round(1000000 / attributes.color_temp);
-      if (_tempVal) { _tempVal.textContent = kelvin + 'K'; }
-    }
-    if (hasColor && attributes && attributes.hs_color) {
-      var hue = Math.round(attributes.hs_color[0]);
-      _hueSlider.value = String(hue);
-      if (_hueDot) { _hueDot.style.background = 'hsl(' + hue + ',80%,55%)'; }
+    if (mode === 'dimmer') {
+      /* sections: brightness + temperature only */
+      _briSection.style.display   = '';
+      _tempSection.style.display  = '';
+      _colorSection.style.display = 'none';
+      /* slider sync */
+      if (_briSlider && attributes && attributes.brightness !== undefined && attributes.brightness !== null) {
+        _briSlider.value = String(attributes.brightness);
+        var pctD = Math.round(attributes.brightness / 255 * 100);
+        if (_briVal) { _briVal.textContent = pctD + '%'; }
+      }
+      if (_tempSlider && attributes && attributes.color_temp !== undefined && attributes.color_temp !== null) {
+        _tempSlider.value = String(attributes.color_temp);
+        var kelvinD = Math.round(1000000 / attributes.color_temp);
+        if (_tempVal) { _tempVal.textContent = kelvinD + 'K'; }
+      }
+    } else if (mode === 'rgb') {
+      /* sections: brightness + color only */
+      _briSection.style.display   = '';
+      _tempSection.style.display  = 'none';
+      _colorSection.style.display = '';
+      /* slider sync */
+      if (_briSlider && attributes && attributes.brightness !== undefined && attributes.brightness !== null) {
+        _briSlider.value = String(attributes.brightness);
+        var pctR = Math.round(attributes.brightness / 255 * 100);
+        if (_briVal) { _briVal.textContent = pctR + '%'; }
+      }
+      if (_hueSlider && attributes && attributes.hs_color) {
+        var hueR = Math.round(attributes.hs_color[0]);
+        _hueSlider.value = String(hueR);
+        if (_hueDot) { _hueDot.style.background = 'hsl(' + hueR + ',80%,55%)'; }
+      }
+    } else {
+      /* legacy 'light': existing supported_features logic */
+      var sf     = (attributes && attributes.supported_features) ? attributes.supported_features : 0;
+      var hasBri   = (sf & FEAT_BRIGHTNESS) !== 0;
+      var hasTemp  = (sf & FEAT_COLOR_TEMP) !== 0;
+      var hasColor = (sf & FEAT_COLOR) !== 0;
+      _briSection.style.display   = hasBri   ? '' : 'none';
+      _tempSection.style.display  = hasTemp  ? '' : 'none';
+      _colorSection.style.display = hasColor ? '' : 'none';
+      if (!hasBri && !hasTemp && !hasColor) { _briSection.style.display = ''; }
+      /* slider sync */
+      if (hasBri && attributes && attributes.brightness !== undefined && attributes.brightness !== null) {
+        _briSlider.value = String(attributes.brightness);
+        var pct = Math.round(attributes.brightness / 255 * 100);
+        if (_briVal) { _briVal.textContent = pct + '%'; }
+      }
+      if (hasTemp && attributes && attributes.color_temp !== undefined && attributes.color_temp !== null) {
+        _tempSlider.value = String(attributes.color_temp);
+        var kelvin = Math.round(1000000 / attributes.color_temp);
+        if (_tempVal) { _tempVal.textContent = kelvin + 'K'; }
+      }
+      if (hasColor && attributes && attributes.hs_color) {
+        var hue = Math.round(attributes.hs_color[0]);
+        _hueSlider.value = String(hue);
+        if (_hueDot) { _hueDot.style.background = 'hsl(' + hue + ',80%,55%)'; }
+      }
     }
 
     /* open via is-open class (CSS uses display:block / translateY(0)) */
