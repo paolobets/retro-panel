@@ -7,6 +7,17 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.3.0] — 2026-03-28
+
+### Added
+- Full MDI icon set (~7 000 icons) replaces the previous 124-icon subset
+- Icon picker: recently-used row (localStorage, max 20, most-recent first)
+- Icon picker: virtual scrolling — only visible rows rendered for smooth performance
+- Icon picker: result count label and debounced search (80 ms)
+- `scripts/generate-mdi-icons.js` — Node.js script to regenerate icons from @mdi/js
+
+---
+
 ## [2.2.0] — 2026-03-28
 
 ### Fixed
