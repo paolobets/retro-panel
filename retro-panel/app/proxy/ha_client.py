@@ -206,6 +206,28 @@ class HAClient:
             if not ws.closed:
                 await ws.close()
 
+    async def get_device_registry(self) -> list[dict]:
+        """Fetch device registry via HA WebSocket API (config/device_registry/list).
+
+        Opens a short-lived WebSocket connection, authenticates, sends the command,
+        reads the result, and closes the connection.
+        """
+        ws = await self.ws_connect()
+        cmd_id = 97  # area=98, entity=99, WSProxy=1
+        try:
+            await ws.send_json({"id": cmd_id, "type": "config/device_registry/list"})
+            msg = await asyncio.wait_for(ws.receive_json(), timeout=15)
+            if not msg.get("success"):
+                raise ValueError(
+                    f"HA device registry list command failed: {msg.get('error')}"
+                )
+            return msg.get("result") or []
+        except asyncio.TimeoutError as exc:
+            raise TimeoutError("Device registry WebSocket request timed out") from exc
+        finally:
+            if not ws.closed:
+                await ws.close()
+
     async def ws_connect(self) -> aiohttp.ClientWebSocketResponse:
         """Open a WebSocket connection to the HA WebSocket API with auth handshake."""
         ws_url = self._ha_url.replace("http://", "ws://").replace("https://", "wss://")
