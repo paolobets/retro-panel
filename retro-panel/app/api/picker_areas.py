@@ -1,6 +1,7 @@
 """GET /api/picker/areas — HA area registry with entity lists for the config picker.
 
-Uses WebSocket config/area_registry/list + config/entity_registry/list.
+Uses WebSocket config/area_registry/list + config/entity_registry/list +
+config/device_registry/list (for device-level area fallback).
 No dependency on the Jinja2 template API.
 """
 from __future__ import annotations
@@ -35,6 +36,13 @@ async def get_picker_areas(request: web.Request) -> web.Response:
     except Exception as exc:
         logger.warning("Could not fetch entity registry: %s — area entities may include hidden ones", exc)
 
+    # Fetch device registry for device-level area fallback (non-fatal)
+    device_registry: list[dict] = []
+    try:
+        device_registry = await ha_client.get_device_registry()
+    except Exception as exc:
+        logger.warning("Could not fetch device registry: %s — device-level area assignments ignored", exc)
+
     # Build area name lookup: area_id → name
     area_names: dict[str, str] = {}
     for area in area_list:
@@ -45,13 +53,25 @@ async def get_picker_areas(request: web.Request) -> web.Response:
         if aid:
             area_names[aid] = name
 
-    # Build entity-to-area map, excluding hidden/disabled and excluded domains
+    # Build device_id → area_id map for fallback
+    device_area_map: dict[str, str] = {}
+    for dev in device_registry:
+        if not isinstance(dev, dict):
+            continue
+        did = dev.get("id") or ""
+        aid = dev.get("area_id") or ""
+        if did and aid:
+            device_area_map[did] = aid
+
+    # Build entity-to-area map, excluding hidden/disabled and excluded domains.
+    # Entity-level area_id takes precedence; falls back to device-level area_id.
     area_entities: dict[str, list[str]] = {aid: [] for aid in area_names}
     for entry in entity_registry:
         if not isinstance(entry, dict):
             continue
         eid = entry.get("entity_id") or ""
-        area_id = entry.get("area_id") or ""
+        entity_area = entry.get("area_id")
+        area_id = entity_area if entity_area is not None else device_area_map.get(entry.get("device_id") or "", "")
         if not eid or not area_id or area_id not in area_names:
             continue
         if entry.get("hidden_by") or entry.get("disabled_by"):
