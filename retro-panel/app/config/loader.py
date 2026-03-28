@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 _ICON_MAP: list[tuple[str, str]] = [
     ("light.", "bulb"),
-    ("switch.", "toggle"),
+    ("switch.", "power"),
     ("alarm_control_panel.", "shield"),
     ("cover.", "blinds"),
     ("fan.", "fan"),
