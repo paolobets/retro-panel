@@ -779,8 +779,9 @@
   var _VIRT_ITEM_W = 84;  // px per slot — CSS minmax(80px,1fr) + gap(4px); matches .icon-grid-inner
 
   function _renderVisibleRows(grid) {
+    if (_iconPickerFiltered.length === 0) { return; }
     var cw    = grid.clientWidth || 320;
-    var ipp   = Math.max(1, Math.floor((cw + 4) / _VIRT_ITEM_W));   // items per row
+    var ipp   = Math.max(1, Math.floor((cw - 24 + 4) / _VIRT_ITEM_W));   // items per row (subtract 24px inner padding)
     var total = Math.ceil(_iconPickerFiltered.length / ipp);         // total rows
     var st    = grid.scrollTop;
     var vh    = grid.clientHeight || 400;
@@ -2720,7 +2721,16 @@
 
     var iconPickerGrid = qs('icon-picker-modal-grid');
     if (iconPickerGrid) {
-      iconPickerGrid.addEventListener('scroll', function () { _renderVisibleRows(this); });
+      var _ipScrollPending = false;
+      iconPickerGrid.addEventListener('scroll', function () {
+        if (_ipScrollPending) { return; }
+        _ipScrollPending = true;
+        var self = this;
+        requestAnimationFrame(function () {
+          _ipScrollPending = false;
+          _renderVisibleRows(self);
+        });
+      });
     }
 
     // ── Header sensor buttons ──────────────────────────────────────────────
