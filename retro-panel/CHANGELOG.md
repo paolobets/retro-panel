@@ -7,6 +7,27 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.2.0] — 2026-03-28
+
+### Fixed
+- C1: Config — dirty flag on unsaved changes; `beforeunload` warning prevents accidental navigation
+- C2: Config — two-step confirm (first click → "Sure?", 2 s auto-reset) before section deletion
+- C3: Config — all Italian strings translated to English ("Telecamere" → "Cameras", placeholders, hints)
+- C4: Config — `.section-row:hover` background highlight + right chevron for clarity
+- C5: Config — room section title input fires real-time list update on every keystroke
+- C6: Config — `#save-feedback` base CSS color changed from danger red to neutral
+- D1: Kiosk — tiles show grayscale filter (`content-stale` class) when WebSocket is disconnected
+- D2: Kiosk — section heading font-size increased from 11 px to 12 px for legibility
+- D3: Kiosk — `.banner-dot` CSS defined (blinking red indicator on disconnect banner)
+- D4: Kiosk — scenario tile shows press-effect animation + accent border on activation tap
+- E3: Backend — invalid scenario entity IDs now return HTTP 400 (consistent with rooms)
+- E5: Renderer — removed dead functions `_renderScenariosSection` and `_renderCamerasSection`
+
+### Tests
+- Added `test_scenario_invalid_entity_id_rejected` and `test_scenario_valid_entity_id_accepted`
+
+---
+
 ## [2.1.1] — 2026-03-28
 
 ### Fixed
