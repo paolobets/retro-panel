@@ -350,10 +350,14 @@ def _compute_layout_type(entity_id: str, device_class: str, visual_type: str) ->
         return _map.get(dc, "sensor_generic")
     if domain == "binary_sensor":
         dc = (device_class or "").lower()
-        if dc in ("door", "window"):
-            return "binary_door"
-        if dc in ("motion", "occupancy"):
-            return "binary_motion"
+        if dc == "door":                              return "binary_door"
+        if dc == "window":                            return "binary_window"
+        if dc == "motion":                            return "binary_motion"
+        if dc in ("occupancy", "presence"):           return "binary_presence"
+        if dc in ("smoke", "gas", "carbon_monoxide"): return "binary_smoke"
+        if dc in ("moisture", "wet"):                 return "binary_moisture"
+        if dc == "lock":                              return "binary_lock"
+        if dc in ("vibration", "tamper"):             return "binary_vibration"
         return "binary_standard"
     return "sensor_generic"
 
