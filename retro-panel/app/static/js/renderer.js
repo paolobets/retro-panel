@@ -31,6 +31,9 @@ window.RP_Renderer = (function () {
     'sensor_battery':     null,
     'sensor_energy':      null,
     'sensor_generic':     null,
+    'sensor_illuminance': null,
+    'sensor_pressure':    null,
+    'sensor_air_quality': null,
     'binary_door':        null,
     'binary_motion':      null,
     'binary_standard':    null,
@@ -54,6 +57,9 @@ window.RP_Renderer = (function () {
     'sensor_battery':     'tile-col-sensor',
     'sensor_energy':      'tile-col-sensor',
     'sensor_generic':     'tile-col-sensor',
+    'sensor_illuminance': 'tile-col-sensor',
+    'sensor_pressure':    'tile-col-sensor',
+    'sensor_air_quality': 'tile-col-sensor',
     'binary_door':        'tile-col-sensor',
     'binary_motion':      'tile-col-sensor',
     'binary_standard':    'tile-col-sensor',
@@ -76,6 +82,9 @@ window.RP_Renderer = (function () {
     COMPONENT_MAP['sensor_battery']     = window.SensorComponent   || null;
     COMPONENT_MAP['sensor_energy']      = window.SensorComponent   || null;
     COMPONENT_MAP['sensor_generic']     = window.SensorComponent   || null;
+    COMPONENT_MAP['sensor_illuminance'] = window.SensorComponent   || null;
+    COMPONENT_MAP['sensor_pressure']    = window.SensorComponent   || null;
+    COMPONENT_MAP['sensor_air_quality'] = window.SensorComponent   || null;
     COMPONENT_MAP['binary_door']        = window.SensorComponent   || null;
     COMPONENT_MAP['binary_motion']      = window.SensorComponent   || null;
     COMPONENT_MAP['binary_standard']    = window.SensorComponent   || null;
