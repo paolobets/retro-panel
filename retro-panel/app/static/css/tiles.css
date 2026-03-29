@@ -317,7 +317,7 @@
 .sri-aq-good   { background: rgba(52,211,153,0.18);  color: #34d399; }
 .sri-aq-mod    { background: rgba(251,191,36,0.18);  color: #fbbf24; }
 .sri-aq-bad    { background: rgba(248,113,113,0.18); color: #f87171; }
-.sri-aq-hazard { background: rgba(196,181,253,0.18); color: #c4b5fd; }
+.sri-aq-hazard { background: rgba(248,113,113,0.18); color: #f87171; }
 
 .sensor-text {
   display: -webkit-flex;
