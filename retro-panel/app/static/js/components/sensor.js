@@ -24,6 +24,11 @@ window.SensorComponent = (function () {
     binary_motion:      'sri-ok',
     binary_standard:    'sri-ok',
     binary_presence:    'sri-ok',
+    binary_window:      'sri-ok',
+    binary_smoke:       'sri-ok',
+    binary_moisture:    'sri-ok',
+    binary_lock:        'sri-ok',
+    binary_vibration:   'sri-ok',
     sensor_electrical:  'sri-electrical',
     sensor_signal:      'sri-sig-strong',
     sensor_gas:         'sri-gas-safe',
@@ -140,27 +145,26 @@ window.SensorComponent = (function () {
     // Binary sensors
     // -----------------------------------------------------------------
     if (layoutType.indexOf('binary_') === 0) {
-      var deviceClass = attrs.device_class || '';
 
       if (valueEl) {
-        valueEl.textContent = window.RP_FMT.getBinarySensorLabel(state, deviceClass);
+        valueEl.textContent = window.RP_FMT.getBinarySensorLabel(state, attrs.device_class || '');
       }
 
       clearBinaryTileStateClasses(tile);
       if (bubble) { clearBubbleClasses(bubble); }
 
       if (state === 'on') {
-        if (layoutType === 'binary_door' || layoutType === 'binary_motion') {
-          tile.classList.add('srt-alert');
-          if (bubble) { bubble.classList.add('sri-alert'); }
-        } else if (deviceClass === 'smoke' || deviceClass === 'gas' || deviceClass === 'carbon_monoxide') {
+        if (layoutType === 'binary_smoke') {
           tile.classList.add('srt-critical');
           if (bubble) { bubble.classList.add('sri-critical'); }
-        } else if (deviceClass === 'occupancy' || deviceClass === 'presence') {
+        } else if (layoutType === 'binary_presence') {
           tile.classList.add('srt-presence');
           if (bubble) { bubble.classList.add('sri-presence'); }
         } else {
-          if (bubble) { bubble.classList.add('sri-ok'); }
+          // binary_door, binary_window, binary_motion,
+          // binary_moisture, binary_lock, binary_vibration, binary_standard
+          tile.classList.add('srt-alert');
+          if (bubble) { bubble.classList.add('sri-alert'); }
         }
         tile.classList.add('is-on');
       } else {
