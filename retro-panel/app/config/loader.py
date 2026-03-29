@@ -689,13 +689,18 @@ def load_config() -> PanelConfig:
         if it.type == "entity"
     )
 
+    try:
+        refresh_interval = int(raw.get("refresh_interval", 30) or 30)
+    except (ValueError, TypeError):
+        refresh_interval = 30
+
     config = PanelConfig(
         ha_url=ha_url,
         ha_token=ha_token,
         title=raw.get("panel_title", raw.get("title", "Retro Panel")),
         theme=raw.get("theme", "dark"),
         kiosk_mode=bool(raw.get("kiosk_mode", False)),
-        refresh_interval=int(raw.get("refresh_interval", 30) or 30),
+        refresh_interval=refresh_interval,
         header_sensors=header_sensors,
         overview_sections=overview_sections,
         rooms=rooms,

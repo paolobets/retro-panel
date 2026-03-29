@@ -239,8 +239,8 @@
   margin-bottom: 3px;
   color: var(--c-text-pri);
   min-height: 16px;
-  font-feature-settings: "tnum";
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }
 .tile-label {
   font-size: 12px;

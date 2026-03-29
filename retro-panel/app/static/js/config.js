@@ -493,6 +493,8 @@
     };
 
     const onDragEnd = (e) => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
       if (dragIdx < 0) { return; }
       const targetSecId = (crossSecTarget && crossSecTarget.getAttribute('data-id') !== null && crossSecTarget.getAttribute('data-id') !== undefined ? crossSecTarget.getAttribute('data-id') : null);
       const targetIdx = calcTargetIdx(e.clientY - startY);
@@ -524,7 +526,7 @@
     container.querySelectorAll('.item-drag-handle').forEach(handle => {
       handle.addEventListener('mousedown', (e) => {
         onMove = (e) => onDragMove(e);
-        onUp   = (e) => { onDragEnd(e); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+        onUp   = (e) => onDragEnd(e);
         onDragStart(e, handle);
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', onUp);
@@ -661,6 +663,8 @@
     };
 
     const onDragEnd = (e) => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
       if (dragIdx < 0) { return; }
       const targetIdx = calcTargetIdx(e.clientY - startY);
       rowEls.forEach(r => r.classList.remove('room-row--dragging', 'room-row--insert-before', 'room-row--insert-after'));
@@ -678,7 +682,7 @@
     container.querySelectorAll('.room-drag-handle').forEach(handle => {
       handle.addEventListener('mousedown', (e) => {
         onMove = (e) => onDragMove(e);
-        onUp = (e) => { onDragEnd(e); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+        onUp = (e) => onDragEnd(e);
         onDragStart(e, handle);
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', onUp);
@@ -1199,6 +1203,8 @@
     };
 
     const onDragEnd = (e) => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
       if (dragIdx < 0) { return; }
       const targetIdx = calcTargetIdx(e.clientY - startY);
       rowEls.forEach(r => r.classList.remove('section-row--dragging', 'section-row--insert-before', 'section-row--insert-after'));
@@ -1217,7 +1223,7 @@
     container.querySelectorAll('.section-row-drag').forEach(handle => {
       handle.addEventListener('mousedown', (e) => {
         onMove = (e) => onDragMove(e);
-        onUp = (e) => { onDragEnd(e); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+        onUp = (e) => onDragEnd(e);
         onDragStart(e, handle);
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', onUp);

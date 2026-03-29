@@ -178,8 +178,8 @@ html, body {
   font-size: 17px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  font-feature-settings: "tnum";
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
   margin-right: 8px;
 }
 #panel-date {
@@ -208,10 +208,14 @@ html, body {
 /* Spacer */
 .header-spacer { -webkit-flex: 1; flex: 1; }
 
-/* Disconnect banner — full-width strip above #panel */
+/* Disconnect banner — fixed full-width strip at top of viewport */
 #disconnect-banner {
-  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   width: 100%;
+  z-index: 600;
   background: var(--c-danger);
   color: #fff;
   text-align: center;
