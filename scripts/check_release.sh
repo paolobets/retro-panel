@@ -87,6 +87,54 @@ for ASSET in "${ASSETS[@]}"; do
     fi
 done
 
+# ── 2b. Check static assets in index.html ───────────────────────────────────
+
+INDEX_HTML="$ROOT/retro-panel/app/static/index.html"
+
+if [ ! -f "$INDEX_HTML" ]; then
+    echo "ERROR: index.html not found at $INDEX_HTML"
+    exit 1
+fi
+
+INDEX_ASSETS=(
+    "static/css/tokens.css"
+    "static/css/layout.css"
+    "static/css/tiles.css"
+    "static/css/bottom-sheet.css"
+    "static/js/mdi-icons.js"
+    "static/js/utils/dom.js"
+    "static/js/utils/format.js"
+    "static/js/api.js"
+    "static/js/ws.js"
+    "static/js/components/bottom-sheet.js"
+    "static/js/components/light.js"
+    "static/js/components/switch.js"
+    "static/js/components/sensor.js"
+    "static/js/components/alarm.js"
+    "static/js/components/energy.js"
+    "static/js/components/scenario.js"
+    "static/js/components/camera.js"
+    "static/js/nav.js"
+    "static/js/renderer.js"
+    "static/js/app.js"
+)
+
+for ASSET in "${INDEX_ASSETS[@]}"; do
+    EXPECTED="${ASSET}?v=${CACHE_VER}"
+
+    if grep -qF "$EXPECTED" "$INDEX_HTML"; then
+        [ "$VERBOSE" -eq 1 ] && echo "  ✓  [index] $EXPECTED"
+    else
+        if grep -qF "${ASSET}?v=" "$INDEX_HTML"; then
+            FOUND=$(grep -oE "${ASSET//./[.]}\\?v=[0-9]+" "$INDEX_HTML" | head -1 || echo "?")
+            echo "  ✗  [index] $ASSET — found '$FOUND', expected '?v=$CACHE_VER'"
+        else
+            echo "  ✗  [index] $ASSET — missing cache-buster, expected '?v=$CACHE_VER'"
+        fi
+        ERRORS=$((ERRORS + 1))
+    fi
+done
+
 # ── 3. Result ────────────────────────────────────────────────────────────────
 
 echo ""
@@ -101,6 +149,6 @@ else
     echo "    B) Revert config.yaml to match the current cache-buster in config.html"
     echo ""
     echo "  Quick fix command:"
-    echo "    sed -i 's/?v=[0-9][0-9]*/?v=${CACHE_VER}/g' retro-panel/app/static/config.html"
+    echo "    sed -i 's/?v=[0-9][0-9]*/?v=${CACHE_VER}/g' retro-panel/app/static/config.html retro-panel/app/static/index.html"
     exit 1
 fi
