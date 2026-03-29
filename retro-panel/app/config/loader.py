@@ -291,13 +291,23 @@ def _compute_layout_type(entity_id: str, device_class: str, visual_type: str) ->
     if domain == "sensor":
         dc = (device_class or "").lower()
         _map = {
-            "temperature": "sensor_temperature",
-            "humidity": "sensor_humidity",
-            "co2": "sensor_co2",
-            "carbon_dioxide": "sensor_co2",
-            "battery": "sensor_battery",
-            "power": "sensor_energy",
-            "energy": "sensor_energy",
+            "temperature":                    "sensor_temperature",
+            "humidity":                       "sensor_humidity",
+            "co2":                            "sensor_co2",
+            "carbon_dioxide":                 "sensor_co2",
+            "battery":                        "sensor_battery",
+            "power":                          "sensor_energy",
+            "energy":                         "sensor_energy",
+            "illuminance":                    "sensor_illuminance",
+            "pressure":                       "sensor_pressure",
+            "atmospheric_pressure":           "sensor_pressure",
+            "pm25":                           "sensor_air_quality",
+            "pm10":                           "sensor_air_quality",
+            "aqi":                            "sensor_air_quality",
+            "volatile_organic_compounds":     "sensor_air_quality",
+            "volatile_organic_compounds_parts": "sensor_air_quality",
+            "nitrogen_dioxide":               "sensor_air_quality",
+            "ozone":                          "sensor_air_quality",
         }
         return _map.get(dc, "sensor_generic")
     if domain == "binary_sensor":
