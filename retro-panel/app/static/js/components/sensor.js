@@ -1,5 +1,5 @@
 /**
- * sensor.js — Sensor and binary_sensor read-only tile component (v2.0)
+ * sensor.js — Sensor and binary_sensor read-only tile component (v2.6.0)
  * All sensors share a single tile structure: div.tile.tile-sensor.
  * Layout behaviour is driven by backend-computed layout_type on entityConfig.
  * No ES modules — loaded as regular script. iOS 12+ Safari safe.

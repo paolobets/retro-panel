@@ -42,9 +42,14 @@ window.RP_Renderer = (function () {
     'sensor_ph':         null,
     'sensor_physical':   null,
     'binary_door':        null,
+    'binary_window':      null,
     'binary_motion':      null,
     'binary_standard':    null,
     'binary_presence':    null,
+    'binary_smoke':       null,
+    'binary_moisture':    null,
+    'binary_lock':        null,
+    'binary_vibration':   null,
     'alarm':              null,
     'camera':             null,
     'scenario':           null,
@@ -75,9 +80,14 @@ window.RP_Renderer = (function () {
     'sensor_ph':         'tile-col-sensor',
     'sensor_physical':   'tile-col-sensor',
     'binary_door':        'tile-col-sensor',
+    'binary_window':      'tile-col-sensor',
     'binary_motion':      'tile-col-sensor',
     'binary_standard':    'tile-col-sensor',
     'binary_presence':    'tile-col-sensor',
+    'binary_smoke':       'tile-col-sensor',
+    'binary_moisture':    'tile-col-sensor',
+    'binary_lock':        'tile-col-sensor',
+    'binary_vibration':   'tile-col-sensor',
     'alarm':              'tile-col-full',
     'camera':             'tile-col-full',
     'scenario':           'tile-col-compact',
@@ -107,9 +117,14 @@ window.RP_Renderer = (function () {
     COMPONENT_MAP['sensor_ph']         = window.SensorComponent || null;
     COMPONENT_MAP['sensor_physical']   = window.SensorComponent || null;
     COMPONENT_MAP['binary_door']        = window.SensorComponent   || null;
+    COMPONENT_MAP['binary_window']      = window.SensorComponent   || null;
     COMPONENT_MAP['binary_motion']      = window.SensorComponent   || null;
     COMPONENT_MAP['binary_standard']    = window.SensorComponent   || null;
     COMPONENT_MAP['binary_presence']    = window.SensorComponent   || null;
+    COMPONENT_MAP['binary_smoke']       = window.SensorComponent   || null;
+    COMPONENT_MAP['binary_moisture']    = window.SensorComponent   || null;
+    COMPONENT_MAP['binary_lock']        = window.SensorComponent   || null;
+    COMPONENT_MAP['binary_vibration']   = window.SensorComponent   || null;
     COMPONENT_MAP['alarm']              = window.AlarmComponent    || null;
     COMPONENT_MAP['camera']             = window.CameraComponent   || null;
     COMPONENT_MAP['scenario']           = window.ScenarioComponent || null;
