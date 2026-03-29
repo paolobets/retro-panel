@@ -9,33 +9,35 @@
 window.SensorComponent = (function () {
   'use strict';
 
-  // Initial icon-bubble class keyed by layout_type (before state is known)
+  // Initial icon-bubble class keyed by layout_type (shown before first state update)
   var INITIAL_BUBBLE_CLASS = {
-    sensor_temperature: 'sri-temp-warm',
-    sensor_humidity:    'sri-humidity',
-    sensor_co2:        'sri-co2',
-    sensor_battery:    'sri-battery-ok',
-    sensor_energy:     'sri-energy',
-    sensor_generic:    'sri-ok',
-    binary_door:       'sri-ok',
-    binary_motion:     'sri-ok',
-    binary_standard:   'sri-ok',
+    sensor_temperature: 'sri-temp-comfort',
+    sensor_humidity:    'sri-hum-ideal',
+    sensor_co2:         'sri-co2-good',
+    sensor_battery:     'sri-bat-full',
+    sensor_energy:      'sri-energy',
+    sensor_illuminance: 'sri-lux-normal',
+    sensor_pressure:    'sri-pressure',
+    sensor_air_quality: 'sri-aq-good',
+    sensor_generic:     'sri-ok',
+    binary_door:        'sri-ok',
+    binary_motion:      'sri-ok',
+    binary_standard:    'sri-ok',
+    binary_presence:    'sri-ok',
   };
 
-  // All sri-* classes that must be cleared before applying a new one
+  // All sri-* classes — cleared before applying a new one
   var ALL_BUBBLE_CLASSES = [
-    'sri-ok',
-    'sri-temp-warm',
-    'sri-temp-cool',
-    'sri-humidity',
-    'sri-co2',
-    'sri-battery-ok',
-    'sri-battery-low',
+    'sri-ok', 'sri-alert', 'sri-presence', 'sri-critical',
+    'sri-temp-freeze', 'sri-temp-cold', 'sri-temp-cool',
+    'sri-temp-comfort', 'sri-temp-warm', 'sri-temp-hot',
+    'sri-hum-dry', 'sri-hum-low', 'sri-hum-ideal', 'sri-hum-high', 'sri-hum-wet',
+    'sri-co2-good', 'sri-co2-mod', 'sri-co2-bad', 'sri-co2-critical',
+    'sri-bat-full', 'sri-bat-mid', 'sri-bat-low', 'sri-bat-crit',
     'sri-energy',
-    'sri-alert',
-    'sri-presence',
-    'sri-critical',
-    'sri-on',
+    'sri-lux-dark', 'sri-lux-dim', 'sri-lux-normal', 'sri-lux-bright',
+    'sri-pressure',
+    'sri-aq-good', 'sri-aq-mod', 'sri-aq-bad', 'sri-aq-hazard',
   ];
 
   // Tile state classes for binary sensors
@@ -163,25 +165,62 @@ window.SensorComponent = (function () {
     }
 
     if (bubble) {
-      clearBubbleClasses(bubble);
-
-      var numVal    = parseFloat(state);
-      var sriClass  = 'sri-ok';
+      var numVal     = parseFloat(state);
+      var sriClass   = 'sri-ok';
+      var batIcon    = null;
+      var entityId   = tile.dataset.entityId || '';
 
       if (layoutType === 'sensor_temperature') {
-        sriClass = (!isNaN(numVal) && numVal < 18) ? 'sri-temp-cool' : 'sri-temp-warm';
+        if      (!isNaN(numVal) && numVal < 5)  { sriClass = 'sri-temp-freeze'; }
+        else if (!isNaN(numVal) && numVal < 15) { sriClass = 'sri-temp-cold'; }
+        else if (!isNaN(numVal) && numVal < 19) { sriClass = 'sri-temp-cool'; }
+        else if (!isNaN(numVal) && numVal < 24) { sriClass = 'sri-temp-comfort'; }
+        else if (!isNaN(numVal) && numVal < 28) { sriClass = 'sri-temp-warm'; }
+        else if (!isNaN(numVal))                { sriClass = 'sri-temp-hot'; }
+
       } else if (layoutType === 'sensor_humidity') {
-        sriClass = 'sri-humidity';
+        if      (!isNaN(numVal) && numVal < 30) { sriClass = 'sri-hum-dry'; }
+        else if (!isNaN(numVal) && numVal < 40) { sriClass = 'sri-hum-low'; }
+        else if (!isNaN(numVal) && numVal < 60) { sriClass = 'sri-hum-ideal'; }
+        else if (!isNaN(numVal) && numVal < 70) { sriClass = 'sri-hum-high'; }
+        else if (!isNaN(numVal))                { sriClass = 'sri-hum-wet'; }
+
       } else if (layoutType === 'sensor_co2') {
-        sriClass = 'sri-co2';
+        if      (!isNaN(numVal) && numVal < 800)  { sriClass = 'sri-co2-good'; }
+        else if (!isNaN(numVal) && numVal < 1200) { sriClass = 'sri-co2-mod'; }
+        else if (!isNaN(numVal) && numVal < 2000) { sriClass = 'sri-co2-bad'; }
+        else if (!isNaN(numVal))                  { sriClass = 'sri-co2-critical'; }
+
       } else if (layoutType === 'sensor_battery') {
-        sriClass = (!isNaN(numVal) && numVal < 20) ? 'sri-battery-low' : 'sri-battery-ok';
+        if      (!isNaN(numVal) && numVal > 60) { sriClass = 'sri-bat-full'; batIcon = 'battery'; }
+        else if (!isNaN(numVal) && numVal > 30) { sriClass = 'sri-bat-mid';  batIcon = 'battery-low'; }
+        else if (!isNaN(numVal) && numVal > 15) { sriClass = 'sri-bat-low';  batIcon = 'battery-low'; }
+        else if (!isNaN(numVal))                { sriClass = 'sri-bat-crit'; batIcon = 'battery-alert'; }
+        else                                    { sriClass = 'sri-bat-full'; }
+
       } else if (layoutType === 'sensor_energy') {
         sriClass = 'sri-energy';
-      } else {
-        sriClass = 'sri-ok';
+
+      } else if (layoutType === 'sensor_illuminance') {
+        if      (!isNaN(numVal) && numVal < 50)   { sriClass = 'sri-lux-dark'; }
+        else if (!isNaN(numVal) && numVal < 300)  { sriClass = 'sri-lux-dim'; }
+        else if (!isNaN(numVal) && numVal < 1000) { sriClass = 'sri-lux-normal'; }
+        else if (!isNaN(numVal))                  { sriClass = 'sri-lux-bright'; }
+
+      } else if (layoutType === 'sensor_pressure') {
+        sriClass = 'sri-pressure';
+
+      } else if (layoutType === 'sensor_air_quality') {
+        if      (!isNaN(numVal) && numVal < 50)  { sriClass = 'sri-aq-good'; }
+        else if (!isNaN(numVal) && numVal < 100) { sriClass = 'sri-aq-mod'; }
+        else if (!isNaN(numVal) && numVal < 200) { sriClass = 'sri-aq-bad'; }
+        else if (!isNaN(numVal))                 { sriClass = 'sri-aq-hazard'; }
       }
 
+      clearBubbleClasses(bubble);
+      if (batIcon && window.RP_FMT) {
+        bubble.innerHTML = window.RP_FMT.getIcon(batIcon, 20, entityId);
+      }
       bubble.classList.add(sriClass);
     }
   }
