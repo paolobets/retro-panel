@@ -7,6 +7,16 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.3.3] — 2026-03-29
+
+### Fixed
+- Cache-buster `?v=233` aggiunto a tutti i 20 asset statici di `index.html` (CSS + JS) — browser e Cloudflare ora invalidano correttamente la cache ad ogni release
+- `binary_presence` registrato nel `COMPONENT_MAP` e `COL_CLASS_MAP` di `renderer.js` (mappato su `SensorComponent`) — tile presenza non erano visibili
+- Migrazione automatica icona `toggle` → `power` per entità `switch.*` e `input_boolean.*` esistenti in `entities.json`
+- Esteso `check_release.sh` per verificare i cache-buster anche in `index.html` (pre-push hook ora copre entrambe le pagine)
+
+---
+
 ## [2.3.2] — 2026-03-29
 
 ### Fixed
