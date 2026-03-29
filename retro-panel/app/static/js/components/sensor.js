@@ -24,6 +24,13 @@ window.SensorComponent = (function () {
     binary_motion:      'sri-ok',
     binary_standard:    'sri-ok',
     binary_presence:    'sri-ok',
+    sensor_electrical:  'sri-electrical',
+    sensor_signal:      'sri-sig-strong',
+    sensor_gas:         'sri-gas-safe',
+    sensor_speed:       'sri-spd-calm',
+    sensor_water:       'sri-water',
+    sensor_ph:          'sri-ph-neutral',
+    sensor_physical:    'sri-physical',
   };
 
   // All sri-* classes — cleared before applying a new one
@@ -38,6 +45,13 @@ window.SensorComponent = (function () {
     'sri-lux-dark', 'sri-lux-dim', 'sri-lux-normal', 'sri-lux-bright',
     'sri-pressure',
     'sri-aq-good', 'sri-aq-mod', 'sri-aq-bad', 'sri-aq-hazard',
+    'sri-electrical',
+    'sri-sig-strong', 'sri-sig-good', 'sri-sig-fair', 'sri-sig-weak',
+    'sri-gas-safe', 'sri-gas-mod', 'sri-gas-bad', 'sri-gas-critical',
+    'sri-spd-calm', 'sri-spd-breezy', 'sri-spd-windy', 'sri-spd-storm',
+    'sri-water',
+    'sri-ph-acid', 'sri-ph-neutral', 'sri-ph-alkaline',
+    'sri-physical',
   ];
 
   // Tile state classes for binary sensors
@@ -215,6 +229,38 @@ window.SensorComponent = (function () {
         else if (!isNaN(numVal) && numVal < 100) { sriClass = 'sri-aq-mod'; }
         else if (!isNaN(numVal) && numVal < 200) { sriClass = 'sri-aq-bad'; }
         else if (!isNaN(numVal))                 { sriClass = 'sri-aq-hazard'; }
+
+      } else if (layoutType === 'sensor_electrical') {
+        sriClass = 'sri-electrical';
+
+      } else if (layoutType === 'sensor_signal') {
+        if      (!isNaN(numVal) && numVal > -67) { sriClass = 'sri-sig-strong'; }
+        else if (!isNaN(numVal) && numVal > -80) { sriClass = 'sri-sig-good'; }
+        else if (!isNaN(numVal) && numVal > -90) { sriClass = 'sri-sig-fair'; }
+        else if (!isNaN(numVal))                 { sriClass = 'sri-sig-weak'; }
+
+      } else if (layoutType === 'sensor_gas') {
+        if      (!isNaN(numVal) && numVal < 10)  { sriClass = 'sri-gas-safe'; }
+        else if (!isNaN(numVal) && numVal < 35)  { sriClass = 'sri-gas-mod'; }
+        else if (!isNaN(numVal) && numVal < 100) { sriClass = 'sri-gas-bad'; }
+        else if (!isNaN(numVal))                 { sriClass = 'sri-gas-critical'; }
+
+      } else if (layoutType === 'sensor_speed') {
+        if      (!isNaN(numVal) && numVal < 15) { sriClass = 'sri-spd-calm'; }
+        else if (!isNaN(numVal) && numVal < 30) { sriClass = 'sri-spd-breezy'; }
+        else if (!isNaN(numVal) && numVal < 60) { sriClass = 'sri-spd-windy'; }
+        else if (!isNaN(numVal))                { sriClass = 'sri-spd-storm'; }
+
+      } else if (layoutType === 'sensor_water') {
+        sriClass = 'sri-water';
+
+      } else if (layoutType === 'sensor_ph') {
+        if      (!isNaN(numVal) && numVal < 6.5) { sriClass = 'sri-ph-acid'; }
+        else if (!isNaN(numVal) && numVal < 7.5) { sriClass = 'sri-ph-neutral'; }
+        else if (!isNaN(numVal))                 { sriClass = 'sri-ph-alkaline'; }
+
+      } else if (layoutType === 'sensor_physical') {
+        sriClass = 'sri-physical';
       }
 
       clearBubbleClasses(bubble);
