@@ -315,6 +315,11 @@ def _parse_entity(raw: dict) -> EntityConfig:
     if not entity_id:
         raise ValueError(f"Entity entry is missing 'entity_id': {raw!r}")
     provided_icon: str = raw.get("icon", "").strip()
+    # Migrate legacy "toggle" icon for switch/input_boolean to "power"
+    if provided_icon == "toggle" and (
+        entity_id.startswith("switch.") or entity_id.startswith("input_boolean.")
+    ):
+        provided_icon = "power"
     icon = provided_icon if provided_icon else _detect_icon(entity_id)
     label: str = (
         raw.get("label", "").strip()

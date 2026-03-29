@@ -205,3 +205,47 @@ def test_light_domain_with_visual_type_override():
 def test_light_legacy_value_still_accepted():
     """An entity that had visual_type='light' explicitly keeps that value."""
     assert _compute_layout_type("light.kitchen", "", "light") == "light"
+
+
+# ── switch icon migration ───────────────────────────────────────────────────
+
+def test_switch_toggle_icon_migrated_to_power(tmp_path):
+    """Existing switch entity with icon='toggle' gets migrated to 'power'."""
+    f = _write_entities(tmp_path, {
+        "version": 5,
+        "overview": {"title": "Home", "sections": [{"id": "s1", "title": "", "items": [
+            {"type": "entity", "entity_id": "switch.living_room", "label": "Living", "icon": "toggle"}
+        ]}]},
+        "rooms": [], "scenarios": [], "cameras": [],
+    })
+    result = _load_layout(f, [])
+    items = result[0][0].items  # overview_sections[0].items
+    assert items[0].entity_config.icon == "power"
+
+
+def test_input_boolean_toggle_icon_migrated_to_power(tmp_path):
+    """Existing input_boolean entity with icon='toggle' gets migrated to 'power'."""
+    f = _write_entities(tmp_path, {
+        "version": 5,
+        "overview": {"title": "Home", "sections": [{"id": "s1", "title": "", "items": [
+            {"type": "entity", "entity_id": "input_boolean.fan", "label": "Fan", "icon": "toggle"}
+        ]}]},
+        "rooms": [], "scenarios": [], "cameras": [],
+    })
+    result = _load_layout(f, [])
+    items = result[0][0].items
+    assert items[0].entity_config.icon == "power"
+
+
+def test_custom_icon_not_migrated(tmp_path):
+    """Switch entity with a custom non-'toggle' icon is left untouched."""
+    f = _write_entities(tmp_path, {
+        "version": 5,
+        "overview": {"title": "Home", "sections": [{"id": "s1", "title": "", "items": [
+            {"type": "entity", "entity_id": "switch.garden", "label": "Garden", "icon": "sun"}
+        ]}]},
+        "rooms": [], "scenarios": [], "cameras": [],
+    })
+    result = _load_layout(f, [])
+    items = result[0][0].items
+    assert items[0].entity_config.icon == "sun"
