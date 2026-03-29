@@ -34,6 +34,7 @@ window.RP_Renderer = (function () {
     'binary_door':        null,
     'binary_motion':      null,
     'binary_standard':    null,
+    'binary_presence':    null,
     'alarm':              null,
     'camera':             null,
     'scenario':           null,
@@ -56,6 +57,7 @@ window.RP_Renderer = (function () {
     'binary_door':        'tile-col-sensor',
     'binary_motion':      'tile-col-sensor',
     'binary_standard':    'tile-col-sensor',
+    'binary_presence':    'tile-col-sensor',
     'alarm':              'tile-col-full',
     'camera':             'tile-col-full',
     'scenario':           'tile-col-compact',
@@ -77,6 +79,7 @@ window.RP_Renderer = (function () {
     COMPONENT_MAP['binary_door']        = window.SensorComponent   || null;
     COMPONENT_MAP['binary_motion']      = window.SensorComponent   || null;
     COMPONENT_MAP['binary_standard']    = window.SensorComponent   || null;
+    COMPONENT_MAP['binary_presence']    = window.SensorComponent   || null;
     COMPONENT_MAP['alarm']              = window.AlarmComponent    || null;
     COMPONENT_MAP['camera']             = window.CameraComponent   || null;
     COMPONENT_MAP['scenario']           = window.ScenarioComponent || null;
