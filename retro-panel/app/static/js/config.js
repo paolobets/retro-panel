@@ -78,10 +78,13 @@
   var VISUAL_OPTIONS = {
     sensor: [
       { v: 'sensor_temperature', l: 'Temperatura' },
-      { v: 'sensor_humidity',    l: 'Umidità' },
+      { v: 'sensor_humidity',    l: 'Umidit\u00e0' },
       { v: 'sensor_co2',         l: 'CO\u2082' },
       { v: 'sensor_battery',     l: 'Batteria' },
       { v: 'sensor_energy',      l: 'Consumo' },
+      { v: 'sensor_illuminance', l: 'Luminosit\u00e0' },
+      { v: 'sensor_pressure',    l: 'Pressione' },
+      { v: 'sensor_air_quality', l: 'Qualit\u00e0 aria' },
     ],
     binary_sensor: [
       { v: 'binary_door',      l: 'Porta' },
@@ -100,10 +103,14 @@
   function _getVisualTypeLabel(vt, domain) {
     var LABELS = {
       sensor_temperature: 'Temperatura',
-      sensor_humidity:    'Umidità',
+      sensor_humidity:    'Umidit\u00e0',
       sensor_co2:         'CO\u2082',
       sensor_battery:     'Batteria',
       sensor_energy:      'Consumo',
+      sensor_illuminance: 'Luminosit\u00e0',
+      sensor_pressure:    'Pressione',
+      sensor_air_quality: 'Qualit\u00e0 aria',
+      sensor_generic:     'Generico',
       binary_door:        'Porta',
       binary_window:      'Finestra',
       binary_motion:      'Movimento',
