@@ -268,18 +268,56 @@
   color: var(--c-text-sec);
   margin-right: 13px;
 }
-/* Icon bubble semantic colors */
-.sri-temp-warm   { background: rgba(239,108,0,0.18);   color: #ef6c00; }
-.sri-temp-cool   { background: rgba(30,136,229,0.18);  color: #1e88e5; }
-.sri-humidity    { background: rgba(30,136,229,0.18);  color: #29b6f6; }
-.sri-co2         { background: rgba(156,39,176,0.20);  color: #ab47bc; }
-.sri-battery-ok  { background: rgba(76,175,80,0.18);   color: #4caf50; }
-.sri-battery-low { background: rgba(244,67,54,0.18);   color: #ef5350; }
-.sri-energy      { background: rgba(33,150,243,0.18);  color: #2196f3; }
-.sri-ok          { background: rgba(255,255,255,0.07); color: var(--c-text-sec); }
-.sri-alert       { background: rgba(255,107,0,0.20);   color: #FF6B00; }
-.sri-presence    { background: rgba(76,175,80,0.20);   color: #4caf50; }
-.sri-critical    { background: rgba(244,67,54,0.25);   color: #f44336; }
+/* Icon bubble semantic colors — generic + binary states */
+.sri-ok       { background: rgba(255,255,255,0.07); color: var(--c-text-sec); }
+.sri-alert    { background: rgba(255,107,0,0.20);   color: #FF6B00; }
+.sri-presence { background: rgba(76,175,80,0.20);   color: #4caf50; }
+.sri-critical { background: rgba(244,67,54,0.25);   color: #f44336; }
+
+/* Temperature — 6 levels: freeze / cold / cool / comfort / warm / hot */
+.sri-temp-freeze  { background: rgba(96,165,250,0.18);  color: #60a5fa; }
+.sri-temp-cold    { background: rgba(147,197,253,0.18); color: #93c5fd; }
+.sri-temp-cool    { background: rgba(103,232,249,0.18); color: #67e8f9; }
+.sri-temp-comfort { background: rgba(52,211,153,0.18);  color: #34d399; }
+.sri-temp-warm    { background: rgba(251,191,36,0.18);  color: #fbbf24; }
+.sri-temp-hot     { background: rgba(248,113,113,0.18); color: #f87171; }
+
+/* Humidity — 5 levels: dry / low / ideal / high / wet */
+.sri-hum-dry    { background: rgba(248,113,113,0.18); color: #f87171; }
+.sri-hum-low    { background: rgba(251,146,60,0.18);  color: #fb923c; }
+.sri-hum-ideal  { background: rgba(52,211,153,0.18);  color: #34d399; }
+.sri-hum-high   { background: rgba(103,232,249,0.18); color: #67e8f9; }
+.sri-hum-wet    { background: rgba(165,180,252,0.18); color: #a5b4fc; }
+
+/* CO2 — 4 levels: good / moderate / bad / critical */
+.sri-co2-good     { background: rgba(52,211,153,0.18);  color: #34d399; }
+.sri-co2-mod      { background: rgba(251,191,36,0.18);  color: #fbbf24; }
+.sri-co2-bad      { background: rgba(251,146,60,0.18);  color: #fb923c; }
+.sri-co2-critical { background: rgba(248,113,113,0.18); color: #f87171; }
+
+/* Battery — 4 levels: full / mid / low / critical */
+.sri-bat-full { background: rgba(52,211,153,0.18);  color: #34d399; }
+.sri-bat-mid  { background: rgba(251,191,36,0.18);  color: #fbbf24; }
+.sri-bat-low  { background: rgba(251,146,60,0.18);  color: #fb923c; }
+.sri-bat-crit { background: rgba(248,113,113,0.18); color: #f87171; }
+
+/* Energy / Power — fixed purple */
+.sri-energy { background: rgba(196,181,253,0.18); color: #c4b5fd; }
+
+/* Illuminance — 4 levels: dark / dim / normal / bright */
+.sri-lux-dark   { background: rgba(96,165,250,0.18);  color: #60a5fa; }
+.sri-lux-dim    { background: rgba(147,197,253,0.18); color: #93c5fd; }
+.sri-lux-normal { background: rgba(251,191,36,0.18);  color: #fbbf24; }
+.sri-lux-bright { background: rgba(253,230,138,0.18); color: #fde68a; }
+
+/* Pressure — fixed slate */
+.sri-pressure { background: rgba(148,163,184,0.18); color: #94a3b8; }
+
+/* Air quality — 4 levels: good / moderate / bad / hazardous */
+.sri-aq-good   { background: rgba(52,211,153,0.18);  color: #34d399; }
+.sri-aq-mod    { background: rgba(251,191,36,0.18);  color: #fbbf24; }
+.sri-aq-bad    { background: rgba(248,113,113,0.18); color: #f87171; }
+.sri-aq-hazard { background: rgba(196,181,253,0.18); color: #c4b5fd; }
 
 .sensor-text {
   display: -webkit-flex;
