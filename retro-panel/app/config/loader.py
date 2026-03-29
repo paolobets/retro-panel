@@ -84,7 +84,23 @@ _DOMAIN_FALLBACK: dict[str, str] = {
 }
 
 
-def _detect_icon(entity_id: str) -> str:
+_DC_ICON_MAP: dict[str, str] = {
+    "conductivity":            "water-opacity",
+    "precipitation":           "weather-rainy",
+    "precipitation_intensity": "weather-pouring",
+    "moisture":                "water-percent",
+    "volume":                  "water-pump",
+    "volume_flow_rate":        "pipe",
+    "weight":                  "weight-kilogram",
+    "distance":                "ruler",
+    "duration":                "timer-sand",
+    "volume_storage":          "database",
+}
+
+
+def _detect_icon(entity_id: str, device_class: str = "") -> str:
+    if device_class and device_class in _DC_ICON_MAP:
+        return _DC_ICON_MAP[device_class]
     for prefix, icon in _ICON_MAP:
         if entity_id.startswith(prefix):
             return icon
@@ -308,6 +324,28 @@ def _compute_layout_type(entity_id: str, device_class: str, visual_type: str) ->
             "volatile_organic_compounds_parts": "sensor_air_quality",
             "nitrogen_dioxide":               "sensor_air_quality",
             "ozone":                          "sensor_air_quality",
+            "voltage":                 "sensor_electrical",
+            "current":                 "sensor_electrical",
+            "apparent_power":          "sensor_electrical",
+            "reactive_power":          "sensor_electrical",
+            "power_factor":            "sensor_electrical",
+            "frequency":               "sensor_electrical",
+            "signal_strength":         "sensor_signal",
+            "carbon_monoxide":         "sensor_gas",
+            "sulphur_dioxide":         "sensor_gas",
+            "nitrous_oxide":           "sensor_gas",
+            "speed":                   "sensor_speed",
+            "ph":                      "sensor_ph",
+            "conductivity":            "sensor_water",
+            "precipitation":           "sensor_water",
+            "precipitation_intensity": "sensor_water",
+            "moisture":                "sensor_water",
+            "volume":                  "sensor_water",
+            "volume_flow_rate":        "sensor_water",
+            "weight":                  "sensor_physical",
+            "distance":                "sensor_physical",
+            "volume_storage":          "sensor_physical",
+            "duration":                "sensor_physical",
         }
         return _map.get(dc, "sensor_generic")
     if domain == "binary_sensor":
@@ -330,7 +368,8 @@ def _parse_entity(raw: dict) -> EntityConfig:
         entity_id.startswith("switch.") or entity_id.startswith("input_boolean.")
     ):
         provided_icon = "power"
-    icon = provided_icon if provided_icon else _detect_icon(entity_id)
+    device_class: str = str(raw.get("device_class") or "").strip()
+    icon = provided_icon if provided_icon else _detect_icon(entity_id, device_class)
     label: str = (
         raw.get("label", "").strip()
         or entity_id.replace("_", " ").split(".")[-1].title()
@@ -338,7 +377,6 @@ def _parse_entity(raw: dict) -> EntityConfig:
     hidden: bool = bool(raw.get("hidden", False))
     visual_type: str = str(raw.get("visual_type") or "").strip()
     display_mode: str = str(raw.get("display_mode") or "").strip()
-    device_class: str = str(raw.get("device_class") or "").strip()
     layout_type: str = _compute_layout_type(entity_id, device_class, visual_type)
     return EntityConfig(entity_id=entity_id, label=label, icon=icon, hidden=hidden,
                         visual_type=visual_type, display_mode=display_mode,
