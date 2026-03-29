@@ -7,6 +7,34 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.3.2] — 2026-03-29
+
+### Fixed
+- Backend, drag listeners, and CSS layout: applied all critical/high severity bugfixes identified in last audit (commit `ced1721`)
+- Cloudflare tag handling: correct pipeline behaviour for Cloudflare-tagged releases
+- Pre-push pipeline: release version consistency check enforced via `check_release.sh` + `.githooks/pre-push` hook (commit `c54dfb0`)
+
+---
+
+## [2.3.1] — 2026-03-28
+
+### Added
+- Light layout types: `light_standard`, `light_dimmer`, `light_rgb`, `light_legacy` — mode-aware tile rendering and bottom sheet variant per subtype
+- CI: `scripts/check_release.sh` release version consistency check script
+- CI: `.githooks/pre-push` hook that runs `check_release.sh` before every push
+
+### Changed
+- `picker_areas`: area fallback now resolves at device level (reads `area_id` from the device, not the entity) when entity has no direct area assignment
+- Switch default icon changed from `toggle` to `power` (⏻) for clearer semantics
+
+### Fixed
+- Icon picker virtual scroll: guard against empty list on initial render
+- Icon picker virtual scroll: incorrect `padding-bottom` (`ipp`) calculation corrected
+- Icon picker virtual scroll: `requestAnimationFrame` throttle applied to scroll handler to prevent layout thrashing
+- Cache-buster `?v=231` appended to all static assets referenced in `config.html`
+
+---
+
 ## [2.3.0] — 2026-03-28
 
 ### Added

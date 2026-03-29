@@ -104,21 +104,46 @@ Retro Panel follows semantic versioning (MAJOR.MINOR.PATCH):
 
 ---
 
-## v2.1 - Extended Entity Support (Future)
+## v2.3 - Icon System, Light Subtypes & Stability (Released 2026-03-29)
+
+**Status**: RELEASED (current stable: v2.3.2)
+
+**Release Goal**: Complete MDI icon set, light layout subtypes, area-fallback for device-level areas, and CI pipeline hardening. Followed by a focused bugfix pass (v2.3.2).
+
+### Completed Features
+
+- [x] Full MDI icon set (~7 447 icons) via `@mdi/js` — replaces previous 124-icon subset
+- [x] Icon picker rewritten: virtual scroll, recently-used row, debounced search, result count
+- [x] Light layout subtypes: `light_standard`, `light_dimmer`, `light_rgb`, `light_legacy`
+- [x] Mode-aware tile and bottom sheet variant per light subtype
+- [x] `picker_areas`: area resolved at device level when entity has no direct area assignment
+- [x] Switch default icon changed to `power` (⏻)
+- [x] Cache-buster `?v=231` on all static assets in `config.html`
+- [x] CI: `scripts/check_release.sh` + `.githooks/pre-push` hook
+- [x] Bug audit: critical/high severity fixes — backend, drag listeners, CSS layout (v2.3.2)
+- [x] Cloudflare tag handling corrected in release pipeline (v2.3.2)
+
+---
+
+## v2.1 - Extended Entity Support (Released 2026-03-28)
+
+**Status**: RELEASED
 
 **Release Goal**: Add support for additional entity types and advanced features.
 
-**Planned Features**:
-- [ ] Climate entity support (thermostats)
-- [ ] Cover entity support (blinds/doors)
-- [ ] Input select entity support
-- [ ] Input datetime entity support
-- [ ] Extended device class support
-- [ ] Improved error handling and user feedback
-- [ ] Performance optimizations
-- [ ] Additional customization options
+### Completed Features
 
-**Timeline**: TBD (after v2.0 release stabilizes)
+- [x] Atomic write for `entities.json` (no corruption on container restart during save)
+- [x] Camera `refresh_interval` validation — non-numeric value falls back to 10 s
+- [x] Entity ID validation regex accepts digits in domain part
+- [x] Section count limits enforced on save (HTTP 400 if exceeded)
+- [x] v4 `overview.items[]` migration to default section on config page open
+- [x] ES2017-compatible equivalents replace optional chaining / nullish coalescing in `config.js`
+- [x] Orphaned drag event listeners cleaned up on list re-render
+- [x] `#disconnect-banner` moved outside `#panel` flex container (correct full-width on iOS Safari)
+- [x] Touch targets for `.bs-close` and `#sidebar-toggle` increased to 44×44 px (Apple HIG)
+
+**Timeline**: Released 2026-03-28
 
 ---
 
@@ -183,7 +208,11 @@ These targets apply to v2.0 and all future releases:
 | Version | Status | Release Date | Timeline |
 |---------|--------|-------------|----------|
 | v2.0 | Released | 2026-03-27 | Completed |
-| v2.1 | Planned | TBD | After v2.0 stabilizes |
+| v2.1 | Released | 2026-03-28 | Completed |
+| v2.2 | Released | 2026-03-28 | Completed |
+| v2.3.0 | Released | 2026-03-28 | Completed |
+| v2.3.1 | Released | 2026-03-28 | Completed |
+| v2.3.2 | Released | 2026-03-29 | Completed — current stable |
 | v3.0 | Planned | TBD | 2026 H2 (estimated) |
 
 ---
@@ -209,6 +238,6 @@ These targets apply to v2.0 and all future releases:
 
 ---
 
-**Document Version**: 2.0
-**Last Updated**: 2026-03-27
+**Document Version**: 2.3.2
+**Last Updated**: 2026-03-29
 **Maintainer**: Retro Panel Team
