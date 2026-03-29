@@ -1,0 +1,19 @@
+name: Release Check
+
+on:
+  push:
+    branches: ["master", "main"]
+  pull_request:
+    branches: ["master", "main"]
+
+jobs:
+  version-consistency:
+    name: Version & cache-buster consistency
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check version consistency
+        run: bash scripts/check_release.sh --verbose
