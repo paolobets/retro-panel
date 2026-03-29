@@ -34,6 +34,13 @@ window.RP_Renderer = (function () {
     'sensor_illuminance': null,
     'sensor_pressure':    null,
     'sensor_air_quality': null,
+    'sensor_electrical': null,
+    'sensor_signal':     null,
+    'sensor_gas':        null,
+    'sensor_speed':      null,
+    'sensor_water':      null,
+    'sensor_ph':         null,
+    'sensor_physical':   null,
     'binary_door':        null,
     'binary_motion':      null,
     'binary_standard':    null,
@@ -60,6 +67,13 @@ window.RP_Renderer = (function () {
     'sensor_illuminance': 'tile-col-sensor',
     'sensor_pressure':    'tile-col-sensor',
     'sensor_air_quality': 'tile-col-sensor',
+    'sensor_electrical': 'tile-col-sensor',
+    'sensor_signal':     'tile-col-sensor',
+    'sensor_gas':        'tile-col-sensor',
+    'sensor_speed':      'tile-col-sensor',
+    'sensor_water':      'tile-col-sensor',
+    'sensor_ph':         'tile-col-sensor',
+    'sensor_physical':   'tile-col-sensor',
     'binary_door':        'tile-col-sensor',
     'binary_motion':      'tile-col-sensor',
     'binary_standard':    'tile-col-sensor',
@@ -85,6 +99,13 @@ window.RP_Renderer = (function () {
     COMPONENT_MAP['sensor_illuminance'] = window.SensorComponent   || null;
     COMPONENT_MAP['sensor_pressure']    = window.SensorComponent   || null;
     COMPONENT_MAP['sensor_air_quality'] = window.SensorComponent   || null;
+    COMPONENT_MAP['sensor_electrical'] = window.SensorComponent || null;
+    COMPONENT_MAP['sensor_signal']     = window.SensorComponent || null;
+    COMPONENT_MAP['sensor_gas']        = window.SensorComponent || null;
+    COMPONENT_MAP['sensor_speed']      = window.SensorComponent || null;
+    COMPONENT_MAP['sensor_water']      = window.SensorComponent || null;
+    COMPONENT_MAP['sensor_ph']         = window.SensorComponent || null;
+    COMPONENT_MAP['sensor_physical']   = window.SensorComponent || null;
     COMPONENT_MAP['binary_door']        = window.SensorComponent   || null;
     COMPONENT_MAP['binary_motion']      = window.SensorComponent   || null;
     COMPONENT_MAP['binary_standard']    = window.SensorComponent   || null;
