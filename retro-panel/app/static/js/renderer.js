@@ -194,36 +194,34 @@ window.RP_Renderer = (function () {
     return {
       createTile: function (cfg) {
         var DOM = window.RP_DOM;
-        var tile = DOM.createElement('div', 'tile tile-sensor');
-        tile.dataset.entityId = cfg.entity_id;
+        var tile = DOM.createElement('div', 'tile tile-sensor s-generic');
+        tile.dataset.entityId   = cfg.entity_id;
         tile.dataset.layoutType = cfg.layout_type || '';
 
-        var bubble = DOM.createElement('div', 'sensor-icon-bubble sri-ok');
+        var bubble = DOM.createElement('div', 'bubble');
         if (window.RP_FMT) {
           bubble.innerHTML = window.RP_FMT.getIcon(cfg.icon, 20, cfg.entity_id);
         }
 
-        var text = DOM.createElement('div', 'sensor-text');
-        var name = DOM.createElement('span', 'sensor-name');
+        var info = DOM.createElement('div', 'info');
+        var name = DOM.createElement('span', 'name');
         name.textContent = cfg.label || cfg.entity_id;
-        var val = DOM.createElement('span', 'sensor-value');
+        var val = DOM.createElement('span', 'val');
         val.textContent = '\u2014';
-        text.appendChild(name);
-        text.appendChild(val);
+        info.appendChild(name);
+        info.appendChild(val);
 
         tile.appendChild(bubble);
-        tile.appendChild(text);
+        tile.appendChild(info);
         return tile;
       },
       updateTile: function (tile, stateObj) {
         var state = stateObj ? stateObj.state : 'unavailable';
-        tile.classList.remove('is-on', 'is-off', 'is-unavail');
+        tile.classList.remove('is-unavail');
         if (state === 'unavailable' || state === 'unknown') {
           tile.classList.add('is-unavail');
-        } else {
-          tile.classList.add('is-on');
         }
-        var valEl = tile.querySelector('.sensor-value');
+        var valEl = tile.querySelector('.val');
         if (valEl) { valEl.textContent = state; }
       },
     };
