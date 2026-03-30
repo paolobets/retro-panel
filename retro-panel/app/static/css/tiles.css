@@ -105,12 +105,63 @@
   align-items: center;
   -webkit-justify-content: flex-start;
   justify-content: flex-start;
-  min-height: 72px;
-  padding: 12px 14px;
+  min-height: 56px;
+  padding: 10px 12px;
   cursor: default;
-  border: 1px solid rgba(255,255,255,0.07);
+  border: 1.5px solid #374151;
 }
 .tile-sensor:active { transform: none; }
+
+/* Sensor bubble — icon only, no background */
+.tile-sensor .bubble {
+  width: 22px;
+  height: 22px;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+  background: none;
+  margin-right: 10px;
+  -webkit-transition: color 0.3s;
+  transition: color 0.3s;
+}
+.tile-sensor .bubble svg { display: block; }
+
+/* Sensor text block */
+.tile-sensor .info {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  min-width: 0;
+  -webkit-flex: 1;
+  flex: 1;
+}
+.tile-sensor .name {
+  font-size: 10px;
+  color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+  margin-bottom: 2px;
+}
+.tile-sensor .val {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f9fafb;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.tile-sensor .unit {
+  font-size: 10px;
+  color: #9ca3af;
+  margin-left: 2px;
+}
 
 /* ---- ALARM TILE ---- */
 .tile-alarm {
@@ -141,9 +192,10 @@
 .tile-camera:active { transform: none; }
 
 /* ---- State classes ---- */
-.tile.is-on  { border-color: var(--c-on); }
-.tile.is-off { border-color: transparent; }
-.tile.is-unavail { opacity: 0.45; pointer-events: none; }
+.tile.is-on               { border-color: var(--c-on); }
+.tile.is-off              { border-color: #6b7280; }
+.tile.is-off .tile-icon   { color: #6b7280; }
+.tile.is-unavail          { opacity: 0.45; pointer-events: none; }
 
 .tile-scenario.is-on {
   border-color: var(--c-accent);
@@ -251,139 +303,114 @@
   font-weight: 500;
 }
 
-/* ---- Sensor Row internals ---- */
-.sensor-icon-bubble {
-  width: 42px;
-  height: 42px;
-  border-radius: 11px;
-  background: rgba(255,255,255,0.07);
-  display: -webkit-flex;
-  display: flex;
-  -webkit-align-items: center;
-  align-items: center;
-  -webkit-justify-content: center;
-  justify-content: center;
-  -webkit-flex-shrink: 0;
-  flex-shrink: 0;
-  color: var(--c-text-sec);
-  margin-right: 13px;
-}
-/* Icon bubble semantic colors — generic + binary states */
-.sri-ok       { background: rgba(255,255,255,0.07); color: var(--c-text-sec); }
-.sri-alert    { background: rgba(255,107,0,0.20);   color: #FF6B00; }
-.sri-presence { background: rgba(76,175,80,0.20);   color: #4caf50; }
-.sri-critical { background: rgba(244,67,54,0.25);   color: #f44336; }
+/* ---- Sensor state classes (s-*) ---- */
+/* Pattern: same hex on border-color (tile) and color (bubble icon) */
 
-/* Temperature — 6 levels: freeze / cold / cool / comfort / warm / hot */
-.sri-temp-freeze  { background: rgba(96,165,250,0.18);  color: #60a5fa; }
-.sri-temp-cold    { background: rgba(147,197,253,0.18); color: #93c5fd; }
-.sri-temp-cool    { background: rgba(103,232,249,0.18); color: #67e8f9; }
-.sri-temp-comfort { background: rgba(52,211,153,0.18);  color: #34d399; }
-.sri-temp-warm    { background: rgba(251,191,36,0.18);  color: #fbbf24; }
-.sri-temp-hot     { background: rgba(248,113,113,0.18); color: #f87171; }
+/* Temperature — 6 levels */
+.s-temp-freeze  { border-color: #60a5fa; } .s-temp-freeze  .bubble { color: #60a5fa; }
+.s-temp-cold    { border-color: #93c5fd; } .s-temp-cold    .bubble { color: #93c5fd; }
+.s-temp-cool    { border-color: #67e8f9; } .s-temp-cool    .bubble { color: #67e8f9; }
+.s-temp-comfort { border-color: #34d399; } .s-temp-comfort .bubble { color: #34d399; }
+.s-temp-warm    { border-color: #fbbf24; } .s-temp-warm    .bubble { color: #fbbf24; }
+.s-temp-hot     { border-color: #f87171; } .s-temp-hot     .bubble { color: #f87171; }
 
-/* Humidity — 5 levels: dry / low / ideal / high / wet */
-.sri-hum-dry    { background: rgba(248,113,113,0.18); color: #f87171; }
-.sri-hum-low    { background: rgba(251,146,60,0.18);  color: #fb923c; }
-.sri-hum-ideal  { background: rgba(52,211,153,0.18);  color: #34d399; }
-.sri-hum-high   { background: rgba(103,232,249,0.18); color: #67e8f9; }
-.sri-hum-wet    { background: rgba(165,180,252,0.18); color: #a5b4fc; }
+/* Humidity — 5 levels */
+.s-hum-dry   { border-color: #f87171; } .s-hum-dry   .bubble { color: #f87171; }
+.s-hum-low   { border-color: #fb923c; } .s-hum-low   .bubble { color: #fb923c; }
+.s-hum-ideal { border-color: #34d399; } .s-hum-ideal .bubble { color: #34d399; }
+.s-hum-high  { border-color: #67e8f9; } .s-hum-high  .bubble { color: #67e8f9; }
+.s-hum-wet   { border-color: #a5b4fc; } .s-hum-wet   .bubble { color: #a5b4fc; }
 
-/* CO2 — 4 levels: good / moderate / bad / critical */
-.sri-co2-good     { background: rgba(52,211,153,0.18);  color: #34d399; }
-.sri-co2-mod      { background: rgba(251,191,36,0.18);  color: #fbbf24; }
-.sri-co2-bad      { background: rgba(251,146,60,0.18);  color: #fb923c; }
-.sri-co2-critical { background: rgba(248,113,113,0.18); color: #f87171; }
+/* CO2 — 4 levels */
+.s-co2-good     { border-color: #34d399; } .s-co2-good     .bubble { color: #34d399; }
+.s-co2-mod      { border-color: #fbbf24; } .s-co2-mod      .bubble { color: #fbbf24; }
+.s-co2-bad      { border-color: #fb923c; } .s-co2-bad      .bubble { color: #fb923c; }
+.s-co2-critical { border-color: #f87171; } .s-co2-critical .bubble { color: #f87171; }
 
-/* Battery — 4 levels: full / mid / low / critical */
-.sri-bat-full { background: rgba(52,211,153,0.18);  color: #34d399; }
-.sri-bat-mid  { background: rgba(251,191,36,0.18);  color: #fbbf24; }
-.sri-bat-low  { background: rgba(251,146,60,0.18);  color: #fb923c; }
-.sri-bat-crit { background: rgba(248,113,113,0.18); color: #f87171; }
+/* Battery — 4 levels */
+.s-bat-full { border-color: #34d399; } .s-bat-full .bubble { color: #34d399; }
+.s-bat-mid  { border-color: #fbbf24; } .s-bat-mid  .bubble { color: #fbbf24; }
+.s-bat-low  { border-color: #fb923c; } .s-bat-low  .bubble { color: #fb923c; }
+.s-bat-crit { border-color: #f87171; } .s-bat-crit .bubble { color: #f87171; }
 
 /* Energy / Power — fixed purple */
-.sri-energy { background: rgba(196,181,253,0.18); color: #c4b5fd; }
+.s-energy { border-color: #c4b5fd; } .s-energy .bubble { color: #c4b5fd; }
 
-/* Illuminance — 4 levels: dark / dim / normal / bright */
-.sri-lux-dark   { background: rgba(96,165,250,0.18);  color: #60a5fa; }
-.sri-lux-dim    { background: rgba(147,197,253,0.18); color: #93c5fd; }
-.sri-lux-normal { background: rgba(251,191,36,0.18);  color: #fbbf24; }
-.sri-lux-bright { background: rgba(253,230,138,0.18); color: #fde68a; }
+/* Illuminance — 4 levels */
+.s-lux-dark   { border-color: #60a5fa; } .s-lux-dark   .bubble { color: #60a5fa; }
+.s-lux-dim    { border-color: #93c5fd; } .s-lux-dim    .bubble { color: #93c5fd; }
+.s-lux-normal { border-color: #fbbf24; } .s-lux-normal .bubble { color: #fbbf24; }
+.s-lux-bright { border-color: #fde68a; } .s-lux-bright .bubble { color: #fde68a; }
 
 /* Pressure — fixed slate */
-.sri-pressure { background: rgba(148,163,184,0.18); color: #94a3b8; }
+.s-pressure { border-color: #94a3b8; } .s-pressure .bubble { color: #94a3b8; }
 
-/* Air quality — 4 levels: good / moderate / bad / hazardous */
-.sri-aq-good   { background: rgba(52,211,153,0.18);  color: #34d399; }
-.sri-aq-mod    { background: rgba(251,191,36,0.18);  color: #fbbf24; }
-.sri-aq-bad    { background: rgba(248,113,113,0.18); color: #f87171; }
-.sri-aq-hazard { background: rgba(248,113,113,0.18); color: #f87171; }
+/* Air quality — 4 levels */
+.s-aq-good   { border-color: #34d399; } .s-aq-good   .bubble { color: #34d399; }
+.s-aq-mod    { border-color: #fbbf24; } .s-aq-mod    .bubble { color: #fbbf24; }
+.s-aq-bad    { border-color: #f87171; } .s-aq-bad    .bubble { color: #f87171; }
+.s-aq-hazard { border-color: #c4b5fd; } .s-aq-hazard .bubble { color: #c4b5fd; }
 
 /* Electrical — fixed indigo */
-.sri-electrical { background: rgba(129,140,248,0.18); color: #818cf8; }
+.s-electrical { border-color: #818cf8; } .s-electrical .bubble { color: #818cf8; }
 
-/* Signal strength — 4 levels (dBm, higher = better) */
-.sri-sig-strong { background: rgba(52,211,153,0.18);  color: #34d399; }
-.sri-sig-good   { background: rgba(251,191,36,0.18);  color: #fbbf24; }
-.sri-sig-fair   { background: rgba(251,146,60,0.18);  color: #fb923c; }
-.sri-sig-weak   { background: rgba(248,113,113,0.18); color: #f87171; }
+/* Signal strength — 4 levels (dBm) */
+.s-sig-strong { border-color: #34d399; } .s-sig-strong .bubble { color: #34d399; }
+.s-sig-good   { border-color: #fbbf24; } .s-sig-good   .bubble { color: #fbbf24; }
+.s-sig-fair   { border-color: #fb923c; } .s-sig-fair   .bubble { color: #fb923c; }
+.s-sig-weak   { border-color: #f87171; } .s-sig-weak   .bubble { color: #f87171; }
 
 /* Gas concentration — 4 levels (ppm) */
-.sri-gas-safe     { background: rgba(52,211,153,0.18);  color: #34d399; }
-.sri-gas-mod      { background: rgba(251,191,36,0.18);  color: #fbbf24; }
-.sri-gas-bad      { background: rgba(251,146,60,0.18);  color: #fb923c; }
-.sri-gas-critical { background: rgba(248,113,113,0.18); color: #f87171; }
+.s-gas-safe     { border-color: #34d399; } .s-gas-safe     .bubble { color: #34d399; }
+.s-gas-mod      { border-color: #fbbf24; } .s-gas-mod      .bubble { color: #fbbf24; }
+.s-gas-bad      { border-color: #fb923c; } .s-gas-bad      .bubble { color: #fb923c; }
+.s-gas-critical { border-color: #f87171; } .s-gas-critical .bubble { color: #f87171; }
 
-/* Speed — 4 levels (km/h, Beaufort-simplified) */
-.sri-spd-calm   { background: rgba(52,211,153,0.18);  color: #34d399; }
-.sri-spd-breezy { background: rgba(103,232,249,0.18); color: #67e8f9; }
-.sri-spd-windy  { background: rgba(251,191,36,0.18);  color: #fbbf24; }
-.sri-spd-storm  { background: rgba(248,113,113,0.18); color: #f87171; }
+/* Speed / Wind — 4 levels (km/h) */
+.s-spd-calm   { border-color: #34d399; } .s-spd-calm   .bubble { color: #34d399; }
+.s-spd-breezy { border-color: #67e8f9; } .s-spd-breezy .bubble { color: #67e8f9; }
+.s-spd-windy  { border-color: #fbbf24; } .s-spd-windy  .bubble { color: #fbbf24; }
+.s-spd-storm  { border-color: #f87171; } .s-spd-storm  .bubble { color: #f87171; }
 
 /* Water — fixed teal */
-.sri-water { background: rgba(45,212,191,0.18); color: #2dd4bf; }
+.s-water { border-color: #2dd4bf; } .s-water .bubble { color: #2dd4bf; }
 
 /* pH — 3 levels */
-.sri-ph-acid     { background: rgba(248,113,113,0.18); color: #f87171; }
-.sri-ph-neutral  { background: rgba(52,211,153,0.18);  color: #34d399; }
-.sri-ph-alkaline { background: rgba(96,165,250,0.18);  color: #60a5fa; }
+.s-ph-acid     { border-color: #f87171; } .s-ph-acid     .bubble { color: #f87171; }
+.s-ph-neutral  { border-color: #34d399; } .s-ph-neutral  .bubble { color: #34d399; }
+.s-ph-alkaline { border-color: #60a5fa; } .s-ph-alkaline .bubble { color: #60a5fa; }
 
-/* Physical measurements — fixed slate */
-.sri-physical { background: rgba(148,163,184,0.18); color: #94a3b8; }
+/* Physical / Generic — fixed slate */
+.s-physical { border-color: #94a3b8; } .s-physical .bubble { color: #94a3b8; }
+.s-generic  { border-color: #94a3b8; } .s-generic  .bubble { color: #94a3b8; }
 
-.sensor-text {
-  display: -webkit-flex;
-  display: flex;
-  -webkit-flex-direction: column;
-  flex-direction: column;
-  min-width: 0;
-  -webkit-flex: 1;
-  flex: 1;
-}
-.sensor-name {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--c-text-sec);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.2;
-  margin-bottom: 2px;
-}
-.sensor-value {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--c-text-pri);
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
+/* Binary sensors — active states */
+.s-door-open { border-color: #fb923c; } .s-door-open .bubble { color: #fb923c; }
+.s-win-open  { border-color: #fb923c; } .s-win-open  .bubble { color: #fb923c; }
+.s-motion-on { border-color: #fb923c; } .s-motion-on .bubble { color: #fb923c; }
+.s-pres-on   { border-color: #34d399; } .s-pres-on   .bubble { color: #34d399; }
+.s-smoke-on  { border-color: #f87171; } .s-smoke-on  .bubble { color: #f87171; }
+.s-moist-on  { border-color: #60a5fa; } .s-moist-on  .bubble { color: #60a5fa; }
+.s-lock-open { border-color: #fb923c; } .s-lock-open .bubble { color: #fb923c; }
+.s-vib-on    { border-color: #fb923c; } .s-vib-on    .bubble { color: #fb923c; }
+.s-bin-on    { border-color: #fb923c; } .s-bin-on    .bubble { color: #fb923c; }
+
+/* Inactive (binary off) and universal off-state for sensor tiles */
+.tile.s-off         { border-color: #6b7280; }
+.tile.s-off .bubble { color: #6b7280; }
+
+/* Critical pulse — CO2 critical, smoke detected, gas critical */
+.s-co2-critical,
+.s-smoke-on,
+.s-gas-critical {
+  -webkit-animation: critical-pulse 1.4s ease-in-out infinite;
+          animation: critical-pulse 1.4s ease-in-out infinite;
 }
 
-/* Sensor alert states */
-.tile-sensor.srt-alert    { border-color: rgba(255,107,0,0.32); }
-.tile-sensor.srt-presence { border-color: rgba(76,175,80,0.32); }
-.tile-sensor.srt-critical { border-color: rgba(244,67,54,0.50); animation: critical-pulse 1.4s ease-in-out infinite; }
-
+@-webkit-keyframes critical-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
 @keyframes critical-pulse {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.5; }
