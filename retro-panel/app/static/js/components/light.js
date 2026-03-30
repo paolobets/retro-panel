@@ -80,7 +80,7 @@ window.LightComponent = (function () {
   }
 
   function applyOffState(tile) {
-    tile.style.borderColor = 'transparent';
+    tile.style.borderColor = '';
     var toggle = tile.querySelector('.tile-toggle');
     var thumb  = tile.querySelector('.tile-toggle-thumb');
     var iconEl = tile.querySelector('.tile-icon');
