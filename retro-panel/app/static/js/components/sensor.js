@@ -1,8 +1,12 @@
 /**
- * sensor.js — Sensor and binary_sensor read-only tile component (v2.8.0)
+ * sensor.js — Sensor and binary_sensor read-only tile component (v2.8.2)
  * v4 design: 22px icon-only bubble, .s-* state class on tile root, unit span.
  * No ES modules — loaded as regular script. iOS 12+ Safari safe.
  * NO const/let/=>/?./?? — only var, IIFE pattern.
+ *
+ * Layout type and icon are resolved from live HA state (attrs.device_class,
+ * attrs.icon) on every updateTile() call, so existing entities work correctly
+ * even if device_class was not stored at config time.
  *
  * Exposes globally: window.SensorComponent = { createTile, updateTile }
  */
@@ -60,6 +64,94 @@ window.SensorComponent = (function () {
     's-smoke-on', 's-moist-on', 's-lock-open', 's-vib-on', 's-bin-on',
   ];
 
+  // Default MDI icon per layout_type (used when attrs.icon is not provided)
+  var _ICON_FOR_LAYOUT = {
+    sensor_temperature: 'thermometer',
+    sensor_humidity:    'water-percent',
+    sensor_co2:         'molecule-co2',
+    sensor_battery:     'battery',
+    sensor_energy:      'lightning-bolt',
+    sensor_illuminance: 'brightness-5',
+    sensor_pressure:    'gauge',
+    sensor_air_quality: 'air-filter',
+    sensor_electrical:  'power-plug',
+    sensor_signal:      'signal-cellular-3',
+    sensor_gas:         'molecule-co2',
+    sensor_speed:       'speedometer',
+    sensor_water:       'water',
+    sensor_ph:          'flask',
+    sensor_physical:    'ruler',
+    binary_door:        'door-open',
+    binary_window:      'window-open',
+    binary_motion:      'motion-sensor',
+    binary_presence:    'home-account',
+    binary_smoke:       'smoke-detector',
+    binary_moisture:    'water-percent',
+    binary_lock:        'lock',
+    binary_vibration:   'vibrate',
+  };
+
+  // Sensor device_class → layout_type (mirrors loader.py _compute_layout_type)
+  var _DC_SENSOR_MAP = {
+    'temperature':                      'sensor_temperature',
+    'humidity':                         'sensor_humidity',
+    'co2':                              'sensor_co2',
+    'carbon_dioxide':                   'sensor_co2',
+    'battery':                          'sensor_battery',
+    'power':                            'sensor_energy',
+    'energy':                           'sensor_energy',
+    'illuminance':                      'sensor_illuminance',
+    'pressure':                         'sensor_pressure',
+    'atmospheric_pressure':             'sensor_pressure',
+    'pm25':                             'sensor_air_quality',
+    'pm10':                             'sensor_air_quality',
+    'aqi':                              'sensor_air_quality',
+    'volatile_organic_compounds':       'sensor_air_quality',
+    'volatile_organic_compounds_parts': 'sensor_air_quality',
+    'nitrogen_dioxide':                 'sensor_air_quality',
+    'ozone':                            'sensor_air_quality',
+    'voltage':                          'sensor_electrical',
+    'current':                          'sensor_electrical',
+    'apparent_power':                   'sensor_electrical',
+    'reactive_power':                   'sensor_electrical',
+    'power_factor':                     'sensor_electrical',
+    'frequency':                        'sensor_electrical',
+    'signal_strength':                  'sensor_signal',
+    'carbon_monoxide':                  'sensor_gas',
+    'sulphur_dioxide':                  'sensor_gas',
+    'nitrous_oxide':                    'sensor_gas',
+    'speed':                            'sensor_speed',
+    'ph':                               'sensor_ph',
+    'conductivity':                     'sensor_water',
+    'precipitation':                    'sensor_water',
+    'precipitation_intensity':          'sensor_water',
+    'moisture':                         'sensor_water',
+    'volume':                           'sensor_water',
+    'volume_flow_rate':                 'sensor_water',
+    'weight':                           'sensor_physical',
+    'distance':                         'sensor_physical',
+    'volume_storage':                   'sensor_physical',
+    'duration':                         'sensor_physical',
+  };
+
+  // Derive layout_type from live HA device_class — returns '' if unknown
+  function _computeLayoutFromDC(entityId, dc) {
+    if (!dc) { return ''; }
+    dc = dc.toLowerCase();
+    if (entityId && entityId.indexOf('binary_sensor.') === 0) {
+      if (dc === 'door')                                              { return 'binary_door';      }
+      if (dc === 'window')                                            { return 'binary_window';    }
+      if (dc === 'motion')                                            { return 'binary_motion';    }
+      if (dc === 'occupancy' || dc === 'presence')                    { return 'binary_presence';  }
+      if (dc === 'smoke' || dc === 'gas' || dc === 'carbon_monoxide') { return 'binary_smoke';     }
+      if (dc === 'moisture' || dc === 'wet')                          { return 'binary_moisture';  }
+      if (dc === 'lock')                                              { return 'binary_lock';      }
+      if (dc === 'vibration' || dc === 'tamper')                      { return 'binary_vibration'; }
+      return 'binary_standard';
+    }
+    return _DC_SENSOR_MAP[dc] || 'sensor_generic';
+  }
+
   function clearStateClasses(el) {
     for (var i = 0; i < ALL_STATE_CLASSES.length; i++) {
       el.classList.remove(ALL_STATE_CLASSES[i]);
@@ -109,13 +201,22 @@ window.SensorComponent = (function () {
   // updateTile(tile, stateObj)
   // -----------------------------------------------------------------------
   function updateTile(tile, stateObj) {
-    var state      = stateObj.state;
-    var attrs      = stateObj.attributes || {};
-    var layoutType = tile.dataset.layoutType || 'sensor_generic';
-
-    var valEl    = tile.querySelector('.val');
-    var bubble   = tile.querySelector('.bubble');
+    var state    = stateObj.state;
+    var attrs    = stateObj.attributes || {};
     var entityId = tile.dataset.entityId || '';
+
+    var valEl  = tile.querySelector('.val');
+    var bubble = tile.querySelector('.bubble');
+
+    // Resolve layout_type: prefer HA live device_class over stored value
+    var storedLayout = tile.dataset.layoutType || 'sensor_generic';
+    var liveLayout   = _computeLayoutFromDC(entityId, attrs.device_class || '');
+    var layoutType   = liveLayout || storedLayout;
+
+    // Persist if HA gave us a more specific type than what was stored
+    if (liveLayout && liveLayout !== storedLayout) {
+      tile.dataset.layoutType = liveLayout;
+    }
 
     // Handle unavailable / unknown
     if (state === 'unavailable' || state === 'unknown') {
@@ -149,6 +250,8 @@ window.SensorComponent = (function () {
       } else {
         tile.classList.add('s-off');
       }
+      // Update icon from HA or layout default
+      _updateBubbleIcon(bubble, attrs, layoutType, null, entityId);
       return;
     }
 
@@ -251,10 +354,27 @@ window.SensorComponent = (function () {
     }
 
     clearStateClasses(tile);
-    if (batIcon && window.RP_FMT && bubble) {
-      bubble.innerHTML = window.RP_FMT.getIcon(batIcon, 20, entityId);
-    }
     tile.classList.add(sClass);
+    _updateBubbleIcon(bubble, attrs, layoutType, batIcon, entityId);
+  }
+
+  // Update bubble icon: HA attrs.icon > batIcon > layout-type default
+  function _updateBubbleIcon(bubble, attrs, layoutType, batIcon, entityId) {
+    if (!bubble || !window.RP_FMT) { return; }
+    var iconName;
+    if (attrs.icon) {
+      // HA-provided icon (user customization or integration default): strip "mdi:" prefix
+      iconName = String(attrs.icon).replace(/^mdi:/, '');
+    } else if (batIcon) {
+      // Battery level icon (dynamic: battery / battery-low / battery-alert)
+      iconName = batIcon;
+    } else {
+      // Layout-type default icon
+      iconName = _ICON_FOR_LAYOUT[layoutType] || '';
+    }
+    if (iconName) {
+      bubble.innerHTML = window.RP_FMT.getIcon(iconName, 20, entityId);
+    }
   }
 
   return { createTile: createTile, updateTile: updateTile };
