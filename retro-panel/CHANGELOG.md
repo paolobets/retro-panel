@@ -7,6 +7,39 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.8.5] — 2026-03-30
+
+### Added
+- Alarm tile: CSS completo per keypad, PIN display, state badge (disarmed/armed/pending/triggered) e bottoni azione con colori semantici — il tile era HTML senza stili
+- Sidebar collapse: `#sidebar.collapsed` CSS — il toggle button ora collassa/espande correttamente la sidebar a 64px icon-only
+- Toggle icon sidebar cambia da `☰` a `›` al collapse e viceversa
+
+### Fixed
+- Rooms list nella sidebar non prendeva tutta l'altezza disponibile: `sidebar-spacer` (flex:1) competeva con `#sidebar-nav` (flex:1) — ora `flex:0`
+- Alarm `layout_type` sovrascrivibile da stale `visual_type` in entities.json: i tipi domain-locked (`alarm_control_panel`, `camera`, `scenario`) ora vengono risolti prima del check `visual_type`
+- `rooms-menu` button mancava del `data-section` attribute — stato `.active` ora funziona correttamente
+- Navigare a Overview/Scenarios/Cameras dal submenu rooms non tornava al menu principale
+
+### Changed
+- Sidebar restyling: touch target minimo 44px, indicatore blu a sinistra su voce attiva, icone centrate 22px, label con `flex:1`, scrollbar sottile 3px
+- Sensor tile: 4 per riga su iPad landscape (≥1024px: 25%), 5 per riga a 1440px, 6 per riga a 1800px
+- Illuminance sensor usa ora icona `brightness5` (corretta chiave MDI — era `brightness-5` inesistente)
+
+---
+
+## [2.8.2–2.8.4] — 2026-03-30
+
+### Added
+- `sensor.js`: approccio HA-first per icona e `layout_type` — `attrs.icon` (strip `mdi:`), `attrs.device_class` → layout, `_ICON_FOR_LAYOUT` come fallback. Risolve icone sbagliate senza dover configurare manualmente ogni entità
+- `_computeLayoutFromDC()` in sensor.js: mirror JS di `_compute_layout_type` in loader.py, completo di tutti i device_class sensor e binary_sensor
+- Breakpoint desktop ≥1440px e ≥1800px per tile sensori
+
+### Fixed
+- Icone sensori Aqara (umidità, illuminanza, temperatura) mostravano cerchi: risolto con chain HA-first in `updateTile()`
+- `_DC_ICON_MAP` in loader.py ritornava nomi MDI diretti non presenti in `DOMAIN_ICONS` — `format.js` ora usa `DOMAIN_ICONS[key] || key || 'circle'`
+
+---
+
 ## [2.8.0] — 2026-03-30
 
 ### Changed

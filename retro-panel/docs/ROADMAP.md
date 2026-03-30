@@ -118,11 +118,11 @@ Retro Panel follows semantic versioning (MAJOR.MINOR.PATCH):
 
 ---
 
-## v2.8 - Sensor Tile v4 Redesign (Released 2026-03-30)
+## v2.8 - Sensor Tile v4 Redesign + Post-Release Fixes (Released 2026-03-30)
 
-**Status**: RELEASED (current stable: v2.8.0)
+**Status**: RELEASED (current stable: v2.8.5)
 
-**Release Goal**: Complete visual redesign of all sensor and binary sensor tiles to match mockup v4. Unified OFF/unavailable state visual treatment across all device types.
+**Release Goal**: Complete visual redesign of all sensor and binary sensor tiles to match mockup v4. Unified OFF/unavailable state visual treatment across all device types. Post-release stabilization of icons, layout routing, sidebar, and alarm tile.
 
 ### Completed Features
 
@@ -134,6 +134,18 @@ Retro Panel follows semantic versioning (MAJOR.MINOR.PATCH):
 - [x] Critical pulse animation: `s-co2-critical`, `s-smoke-on`, `s-gas-critical`
 - [x] All 17 sensor layout_types + 9 binary sensor layout_types covered
 - [x] Removed ~50 `sri-*`/`srt-*` CSS classes → replaced by ~65 `.s-*` classes
+
+### Post-Release Fixes (v2.8.1–v2.8.5)
+
+- [x] HA-first icon resolution: `sensor.js` legge `attrs.icon` e `attrs.device_class` dalla risposta live HA — elimina la necessità di configurare manualmente ogni entità
+- [x] `_computeLayoutFromDC()` in sensor.js: mirror JS completo di `_compute_layout_type` loader.py
+- [x] Icona illuminance: chiave MDI corretta `brightness5` (era `brightness-5`)
+- [x] Tile sensore su iPad landscape: 4 per riga a ≥1024px
+- [x] Alarm tile CSS completo: keypad, PIN display, state badge, action buttons
+- [x] Alarm `layout_type` non più sovrascrivibile da `visual_type` stale per domain-locked types
+- [x] Sidebar collapse toggle: `#sidebar.collapsed` CSS + icon `☰/›`
+- [x] Fix rooms height: `sidebar-spacer` non compete più con `#sidebar-nav`
+- [x] Nav restyling: touch target 44px, active indicator blu, scrollbar sottile
 
 ---
 
@@ -277,7 +289,8 @@ These targets apply to v2.0 and all future releases:
 | v2.6.0 | Released | 2026-03-30 | Completed |
 | v2.6.1 | Released | 2026-03-30 | Completed |
 | v2.7.0 | Released | 2026-03-30 | Completed |
-| v2.8.0 | Released | 2026-03-30 | Completed — current stable |
+| v2.8.0 | Released | 2026-03-30 | Completed |
+| v2.8.1–2.8.5 | Released | 2026-03-30 | Post-release fixes — current stable |
 | v3.0 | Planned | TBD | 2026 H2 (estimated) |
 
 ---
