@@ -286,6 +286,8 @@
   function initReloadGesture() {
     var titleEl = document.getElementById('panel-title');
     if (!titleEl) { return; }
+    if (titleEl.dataset.reloadGestureInit) { return; }
+    titleEl.dataset.reloadGestureInit = '1';
 
     var holdTimer = null;
     var touchStartX = 0;
@@ -320,6 +322,7 @@
     });
 
     titleEl.addEventListener('touchend', cancelHold);
+    titleEl.addEventListener('touchcancel', cancelHold);
 
     titleEl.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 
