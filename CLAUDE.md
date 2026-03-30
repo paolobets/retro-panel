@@ -14,10 +14,16 @@ Non scrivere codice prima che la spec sia approvata. Non iniziare un task senza 
 
 In ordine:
 
-1. **Aggiorna la documentazione di progetto** — ROADMAP.md, CHANGELOG, PROJECT.md devono riflettere la versione corrente. Se una feature è stata rilasciata, aggiornare lo status in ROADMAP.md (`[ ]` → `[x]`).
-2. **Esegui i test** — `py -m pytest tests/ --ignore=tests/test_handlers_entities.py -q` deve passare senza errori.
-3. **Verifica il pre-push hook** — `scripts/check_release.sh` verificherà automaticamente versione e cache-buster.
-4. **Poi** `git push`.
+1. **Aggiorna `retro-panel/config.yaml`** — `version:` deve corrispondere alla versione che si sta rilasciando.
+2. **Aggiorna la documentazione** (stesso commit o commit immediatamente precedente):
+   - `retro-panel/CHANGELOG.md` — aggiungere entry per ogni versione rilasciata nel push
+   - `docs/ROADMAP.md` — aggiornare sezione versione corrente (feature/fix `[x]`) e tabella versioni
+   - `docs/ARCHITECTURE.md` / `docs/API.md` — solo se sono stati aggiunti layout_type, componenti o endpoint
+3. **Esegui i test** — `py -m pytest tests/ --ignore=tests/test_handlers_entities.py -q` deve passare senza errori.
+4. **Verifica il pre-push hook** — `scripts/check_release.sh` verificherà automaticamente versione e cache-buster.
+5. **Poi** `git push`.
+
+**Questi step possono essere delegati a un agente** (`project-doc-guardian` o `documentation-engineer`) — non è necessario che Claude li esegua direttamente.
 
 Non saltare questi step. Il pre-push hook blocca push con versione/cache-buster inconsistenti — se fallisce, correggi il problema, non aggirarlo.
 
@@ -81,11 +87,13 @@ La policy sul config schema è **solo additive** nelle minor version: nessun cam
 
 ## 10. Aggiornamento documentazione pubblicata su GitHub
 
-Prima di ogni `git push` (incluso tag di release), la documentazione pubblica deve essere aggiornata:
+Prima di ogni `git push` (incluso PATCH), la documentazione pubblica deve essere aggiornata (vedi §2 per la checklist completa):
 
-- `docs/ROADMAP.md` — marcare come `[x]` le feature rilasciate nella versione corrente, aggiornare la versione corrente stabile
-- `docs/ARCHITECTURE.md` — se sono stati aggiunti nuovi layout_type, componenti, o endpoint
-- `docs/API.md` — se sono stati aggiunti o modificati endpoint
-- `retro-panel/CHANGELOG.md` (se esiste) — aggiungere entry per la versione
+- `retro-panel/CHANGELOG.md` — **obbligatorio ad ogni push**, entry per ogni versione
+- `docs/ROADMAP.md` — marcare `[x]` le feature rilasciate, aggiornare versione stabile corrente
+- `docs/ARCHITECTURE.md` — se aggiunti nuovi layout_type, componenti, o endpoint
+- `docs/API.md` — se aggiunti o modificati endpoint
 
-**Non fare push di una release senza che ROADMAP.md rifletta lo stato reale del progetto.**
+**Non fare push senza che CHANGELOG.md e ROADMAP.md riflettano lo stato reale.**
+
+Questo step può essere delegato all'agente `project-doc-guardian`.
