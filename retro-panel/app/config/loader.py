@@ -97,6 +97,34 @@ _DC_ICON_MAP: dict[str, str] = {
     "volume_storage":          "database",
 }
 
+# Fallback icon per layout_type — used when _detect_icon() can't find a match
+# Values are MDI icon names (direct, not internal short names)
+_LAYOUT_TYPE_ICON_MAP: dict[str, str] = {
+    "sensor_temperature": "thermometer",
+    "sensor_humidity":    "water-percent",
+    "sensor_co2":         "molecule-co2",
+    "sensor_battery":     "battery",
+    "sensor_energy":      "lightning-bolt",
+    "sensor_illuminance": "brightness-5",
+    "sensor_pressure":    "gauge",
+    "sensor_air_quality": "air-filter",
+    "sensor_electrical":  "power-plug",
+    "sensor_signal":      "signal-cellular-3",
+    "sensor_gas":         "molecule-co2",
+    "sensor_speed":       "speedometer",
+    "sensor_water":       "water",
+    "sensor_ph":          "flask",
+    "sensor_physical":    "ruler",
+    "binary_door":        "door-open",
+    "binary_window":      "window-open",
+    "binary_motion":      "motion-sensor",
+    "binary_presence":    "home-account",
+    "binary_smoke":       "smoke-detector",
+    "binary_moisture":    "water-percent",
+    "binary_lock":        "lock",
+    "binary_vibration":   "vibrate",
+}
+
 
 def _detect_icon(entity_id: str, device_class: str = "") -> str:
     if device_class and device_class in _DC_ICON_MAP:
@@ -372,15 +400,20 @@ def _parse_entity(raw: dict) -> EntityConfig:
     ):
         provided_icon = "power"
     device_class: str = str(raw.get("device_class") or "").strip()
-    icon = provided_icon if provided_icon else _detect_icon(entity_id, device_class)
+    visual_type: str = str(raw.get("visual_type") or "").strip()
+    display_mode: str = str(raw.get("display_mode") or "").strip()
+    layout_type: str = _compute_layout_type(entity_id, device_class, visual_type)
+    if provided_icon:
+        icon = provided_icon
+    else:
+        icon = _detect_icon(entity_id, device_class)
+        if icon == "circle":
+            icon = _LAYOUT_TYPE_ICON_MAP.get(layout_type, "circle")
     label: str = (
         raw.get("label", "").strip()
         or entity_id.replace("_", " ").split(".")[-1].title()
     )
     hidden: bool = bool(raw.get("hidden", False))
-    visual_type: str = str(raw.get("visual_type") or "").strip()
-    display_mode: str = str(raw.get("display_mode") or "").strip()
-    layout_type: str = _compute_layout_type(entity_id, device_class, visual_type)
     return EntityConfig(entity_id=entity_id, label=label, icon=icon, hidden=hidden,
                         visual_type=visual_type, display_mode=display_mode,
                         device_class=device_class, layout_type=layout_type)

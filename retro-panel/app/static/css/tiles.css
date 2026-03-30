@@ -59,6 +59,20 @@
   .tile-col-scenario { width: 25%; }
 }
 
+/* Wide desktop ≥ 1440px */
+@media (orientation: landscape) and (min-width: 1440px) {
+  .tile-col-compact  { width: 16.666%; }
+  .tile-col-sensor   { width: 25%; }
+  .tile-col-scenario { width: 16.666%; }
+}
+
+/* Ultra-wide ≥ 1800px */
+@media (orientation: landscape) and (min-width: 1800px) {
+  .tile-col-compact  { width: 12.5%; }
+  .tile-col-sensor   { width: 20%; }
+  .tile-col-scenario { width: 12.5%; }
+}
+
 /* ---- Base tile ---- */
 .tile {
   background: var(--c-surface);

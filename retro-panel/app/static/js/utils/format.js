@@ -50,7 +50,7 @@
       var domain = entityId.split('.')[0];
       key = _DOMAIN_FALLBACK[domain] || 'circle';
     }
-    var mdiName = DOMAIN_ICONS[key] || 'circle';
+    var mdiName = DOMAIN_ICONS[key] || key || 'circle';
     if (window.RP_MDI) {
       return window.RP_MDI(mdiName, size || 28);
     }
