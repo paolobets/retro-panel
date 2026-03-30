@@ -120,6 +120,7 @@ window.SensorComponent = (function () {
     // Handle unavailable / unknown
     if (state === 'unavailable' || state === 'unknown') {
       if (valEl) { valEl.textContent = 'N/A'; }
+      clearStateClasses(tile);
       tile.classList.add('is-unavail');
       return;
     }
