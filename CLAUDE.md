@@ -10,6 +10,17 @@ Ogni nuova feature o modifica non banale segue questo flusso:
 
 Non scrivere codice prima che la spec sia approvata. Non iniziare un task senza piano.
 
+**Qualsiasi implementazione (codice, CSS, backend, test, documentazione) deve essere eseguita da agenti specializzati, mai direttamente da Claude nella conversazione principale.** Claude coordina e verifica; gli agenti implementano.
+
+Routing agenti consigliato:
+- Backend Python → `backend-developer` o `python-pro`
+- Frontend JS/CSS → `frontend-developer` o `javascript-pro`
+- Bug analysis → `debugger` (vedi §11)
+- Test e debug → `test-debug-reviewer`
+- Review qualità → `code-quality-guardian` o `superpowers:code-reviewer`
+- Documentazione → `project-doc-guardian`
+- Pubblicazione → `git-workflow-deploy-specialist`
+
 ## 2. Pipeline obbligatoria prima di ogni `git push`
 
 In ordine:
@@ -24,6 +35,10 @@ In ordine:
 5. **Poi** `git push`.
 
 **Questi step possono essere delegati a un agente** (`project-doc-guardian` o `documentation-engineer`) — non è necessario che Claude li esegua direttamente.
+
+**Conferma utente obbligatoria**: prima di eseguire `git push` presentare sempre un riepilogo delle modifiche e attendere il "ok" esplicito dell'utente. Non pubblicare mai autonomamente.
+
+Per push non banali è preferibile delegare a `git-workflow-deploy-specialist` che gestisce push, verifica CI e conferma il completamento.
 
 Non saltare questi step. Il pre-push hook blocca push con versione/cache-buster inconsistenti — se fallisce, correggi il problema, non aggirarlo.
 
@@ -97,3 +112,45 @@ Prima di ogni `git push` (incluso PATCH), la documentazione pubblica deve essere
 **Non fare push senza che CHANGELOG.md e ROADMAP.md riflettano lo stato reale.**
 
 Questo step può essere delegato all'agente `project-doc-guardian`.
+
+## 11. Analisi bug — sempre via agente specializzato
+
+L'analisi di file per individuare bug deve essere eseguita dall'agente `debugger` o dallo specialista appropriato (`python-pro`, `javascript-pro`), non da Claude direttamente nella conversazione principale.
+
+**How to apply:** Quando c'è un bug da investigare, delegare a `debugger`. Claude coordina e interpreta il risultato, ma non analizza il codice da solo.
+
+## 12. Verifica GitHub Actions dopo ogni push
+
+Dopo ogni `git push`, il push non si considera completato finché i workflow GitHub Actions non risultano tutti `completed / success`.
+
+```bash
+gh run list --repo paolobets/retro-panel --limit 5
+```
+
+Verificare che:
+1. Tutti i workflow del commit siano `completed`
+2. Nessun workflow sia `failed` o bloccato in `in_progress`
+
+Se un workflow fallisce, investigare e correggere prima di considerare la release conclusa.
+
+## 13. Mockup obbligatorio prima di modifiche grafiche
+
+Qualsiasi modifica all'interfaccia grafica (layout, componenti, colori, dimensioni tile, nuove schermate) segue tre fasi obbligatorie:
+
+1. **Mockup prima del codice** — creare un mockup visivo e presentarlo all'utente
+2. **Conferma utente del mockup** — nessun codice frontend scritto prima dell'approvazione
+3. **Verifica UI/UX post-implementazione** — l'agente `ux-ui-specialist` esegue una review finale
+
+I mockup approvati vivono in `mockups/` e sono la specifica autoritativa dell'interfaccia. Il codice deve corrispondere al mockup, non viceversa.
+
+**Eccezione**: bug fix puntuali a CSS esistente (es. correzione di una misura sbagliata) non richiedono mockup.
+
+## 14. Coerenza stile — nessuna regressione
+
+Quando si aggiunge un nuovo componente, tile o funzionalità:
+
+1. **Stesso stile visivo** — token CSS `var(--)`, spaziature, pattern touch, breakpoint devono essere coerenti con i componenti esistenti
+2. **Nessuna regressione** — non rompere componenti esistenti, non modificare CSS condivisi in modo da alterare tile già funzionanti
+3. **Rifacimento completo** — se si decide di rifare un componente esistente (non solo fix), si applica la Regola 13 (mockup → conferma → implementazione → verifica)
+
+Prima di scrivere CSS per un nuovo componente, leggere i token esistenti in `tokens.css` e verificare che le nuove regole non alterino il comportamento di componenti già presenti.
