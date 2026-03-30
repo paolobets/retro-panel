@@ -89,6 +89,8 @@ html, body {
   letter-spacing: -0.01em;
   white-space: nowrap;
   overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* Sidebar nav */
