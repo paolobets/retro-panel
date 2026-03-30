@@ -238,14 +238,13 @@ Retro Panel non gestisce la visibilità della barra laterale di HA.
 Per nascondere sidebar e header di HA su un tablet a muro, usa
 [kiosk-mode](https://github.com/NemesisRE/kiosk-mode) (installabile via HACS).
 
-Una volta installato, aggiungi in `configuration.yaml`:
+Una volta installato, apri la dashboard HA in modalità modifica (icona ✏️), poi seleziona
+**⋮ → Modifica dashboard → Modifica configurazione raw**, e aggiungi all'inizio del file YAML:
 
 ```yaml
 kiosk_mode:
-  template_settings:
-    - template: "[[[ return location.href.includes('hassio/ingress'); ]]]"
-      hide_sidebar: true
-      hide_header: true
+  hide_sidebar: '[[[ location.href.includes("hassio/ingress") ]]]'
+  hide_header: '[[[ location.href.includes("hassio/ingress") ]]]'
 ```
 
 Questo nasconde sidebar e header HA **solo quando sei all'interno di una pagina ingress**,
