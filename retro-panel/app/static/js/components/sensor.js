@@ -71,7 +71,7 @@ window.SensorComponent = (function () {
     sensor_co2:         'molecule-co2',
     sensor_battery:     'battery',
     sensor_energy:      'lightning-bolt',
-    sensor_illuminance: 'brightness-5',
+    sensor_illuminance: 'brightness5',
     sensor_pressure:    'gauge',
     sensor_air_quality: 'air-filter',
     sensor_electrical:  'power-plug',
