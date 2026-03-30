@@ -315,22 +315,25 @@ def _resolve_config_path() -> Path:
 def _compute_layout_type(entity_id: str, device_class: str, visual_type: str) -> str:
     """Compute the frontend layout_type for an entity.
 
-    visual_type (user override) always wins.
+    Domain-locked types (alarm, camera, scenario) always win.
+    visual_type user override applies to sensor/binary_sensor/light only.
     Falls back to domain + device_class inference.
     """
-    if visual_type:
-        return visual_type
     domain = entity_id.split(".")[0] if "." in entity_id else ""
-    if domain == "light":
-        return "light_standard"
-    if domain in ("switch", "input_boolean"):
-        return "switch"
+    # Domain-locked layouts — visual_type cannot override these
     if domain == "alarm_control_panel":
         return "alarm"
     if domain == "camera":
         return "camera"
     if domain in ("scene", "script", "automation"):
         return "scenario"
+    # User visual_type override (sensor/binary_sensor/light only)
+    if visual_type:
+        return visual_type
+    if domain == "light":
+        return "light_standard"
+    if domain in ("switch", "input_boolean"):
+        return "switch"
     if domain == "sensor":
         dc = (device_class or "").lower()
         _map = {

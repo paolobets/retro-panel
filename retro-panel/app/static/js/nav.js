@@ -85,6 +85,7 @@ window.RP_Nav = (function () {
     btn.type = 'button';
     btn.className = 'sidebar-nav-item';
     btn.id = id;
+    btn.setAttribute('data-section', id);
 
     var iconEl = DOM.createElement('span', 'sidebar-item-icon');
     iconEl.innerHTML = icon;
@@ -108,9 +109,10 @@ window.RP_Nav = (function () {
   }
 
   function _handleNavClick(sectionId) {
-    // Se la sezione è 'rooms' (cioè si clicca Rooms dal menu principale),
-    // showRoomsSubmenu si occupa di mostrare il submenu invece di navigare
-    // La navigazione avviene solo cliccando una room nel submenu
+    // If in rooms submenu and navigating to a top-level section, revert to main menu
+    if (_sidebarMode === 'rooms' && sectionId.indexOf('room:') !== 0) {
+      showMainMenu(_config);
+    }
     if (_onNavigate) { _onNavigate(sectionId); }
     setActiveSidebarItem(sectionId);
   }
@@ -175,6 +177,7 @@ window.RP_Nav = (function () {
     var backBtn = document.createElement('button');
     backBtn.id = 'sidebar-rooms-back';
     backBtn.type = 'button';
+    backBtn.className = 'sidebar-nav-item sidebar-rooms-back-btn';
 
     var backIcon = DOM.createElement('span', 'sidebar-item-icon');
     backIcon.innerHTML = _mdi('arrow-left', 18) || '\u2190';
@@ -192,6 +195,11 @@ window.RP_Nav = (function () {
     });
 
     nav.appendChild(backBtn);
+
+    // Section header
+    var header = DOM.createElement('div', 'sidebar-rooms-header');
+    header.textContent = 'Rooms';
+    nav.appendChild(header);
 
     // Lista rooms
     var rooms = config.rooms || [];
