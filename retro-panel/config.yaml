@@ -1,5 +1,5 @@
 name: "Retro Panel"
-version: "2.6.1"
+version: "2.7.0"
 slug: "retro_panel"
 description: >-
   Touch-optimized kiosk dashboard for Home Assistant.
@@ -24,12 +24,10 @@ options:
   ha_token: ""  # optional: auto-detected from SUPERVISOR_TOKEN if empty
   panel_title: "Home"
   theme: "dark"
-  kiosk_mode: true
   refresh_interval: 30
 schema:
   ha_url: url?
   ha_token: password?
   panel_title: str
   theme: "list(dark|light|auto)"
-  kiosk_mode: bool
   refresh_interval: "int(5,300)"

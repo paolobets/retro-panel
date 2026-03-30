@@ -208,7 +208,6 @@ class PanelConfig:
     ha_token: str
     title: str
     theme: str
-    kiosk_mode: bool
     refresh_interval: int
     header_sensors: List[HeaderSensor] = field(default_factory=list)
     overview_sections: List[RoomSection] = field(default_factory=list)
@@ -756,7 +755,6 @@ def load_config() -> PanelConfig:
         ha_token=ha_token,
         title=raw.get("panel_title", raw.get("title", "Retro Panel")),
         theme=raw.get("theme", "dark"),
-        kiosk_mode=bool(raw.get("kiosk_mode", False)),
         refresh_interval=refresh_interval,
         header_sensors=header_sensors,
         overview_sections=overview_sections,

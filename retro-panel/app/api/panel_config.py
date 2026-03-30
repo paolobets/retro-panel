@@ -73,7 +73,6 @@ async def get_panel_config(request: web.Request) -> web.Response:
     payload = {
         "title": config.title,
         "theme": config.theme,
-        "kiosk_mode": config.kiosk_mode,
         "refresh_interval": config.refresh_interval,
         "header_sensors": header_sensors_payload,
         "overview": {

@@ -39,3 +39,15 @@ body.theme-light {
   --c-text-pri:  #111111;
   --c-text-sec:  #555555;
 }
+
+/* Auto theme: follow OS/browser preference */
+@media (prefers-color-scheme: light) {
+  body.theme-auto {
+    --c-bg:        #f0f2f5;
+    --c-surface:   #ffffff;
+    --c-surface-2: #e8eaed;
+    --c-surface-3: #dde0e5;
+    --c-text-pri:  #111111;
+    --c-text-sec:  #555555;
+  }
+}

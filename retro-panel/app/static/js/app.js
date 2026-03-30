@@ -44,8 +44,6 @@
     document.body.classList.remove('theme-dark', 'theme-light', 'theme-auto');
     document.body.classList.add('theme-' + (config.theme || 'dark'));
 
-    if (config.kiosk_mode) { document.body.classList.add('kiosk'); }
-
     var titleEl = DOM.qs('#panel-title');
     if (titleEl) {
       titleEl.innerHTML = 'Retro <span style="color:var(--c-accent)">PANEL</span>';
