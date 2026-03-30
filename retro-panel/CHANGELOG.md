@@ -7,6 +7,20 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.8.0] — 2026-03-30
+
+### Changed
+- Sensor e binary sensor tile redesign v4: bubble 22×22px senza background, classe `.s-*` sul tile root controlla simultaneamente bordo e colore icona, span `.unit` separato per l'unità di misura
+- Stato inattivo (binary off) usa ora `.s-off` — bordo e icona grigi `#6b7280` uniformi
+- Luci e switch in stato OFF mostrano ora bordo e icona grigi `#6b7280` (era bordo trasparente)
+- Rimossi ~50 classi CSS `sri-*` / `srt-*` rimpiazzate da ~65 classi `.s-*` con pattern unificato
+
+### Fixed
+- `binary_smoke`, `s-co2-critical`, `s-gas-critical` mantengono l'animazione `critical-pulse`
+- Tile sensore che tornano da `unavailable` ora puliscono correttamente le classi stato precedenti
+
+---
+
 ## [2.7.0] — 2026-03-30
 
 ### Changed
