@@ -7,6 +7,17 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.7.0] — 2026-03-30
+
+### Changed
+- `theme: auto` ora segue correttamente la preferenza del sistema operativo (`prefers-color-scheme: light`) — in precedenza il pannello restava sempre dark
+- Rimossa l'opzione `kiosk_mode` dalla configurazione add-on: non aveva effetti visivi e il kiosk su HA si gestisce esternamente con [kiosk-mode](https://github.com/NemesisRE/kiosk-mode) (HACS)
+
+### Docs
+- Aggiunta guida per nascondere sidebar/header HA con kiosk-mode (HACS) in DOCS.md e INSTALLATION.md
+
+---
+
 ## [2.6.1] — 2026-03-30
 
 ### Added

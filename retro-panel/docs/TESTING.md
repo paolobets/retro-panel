@@ -18,7 +18,6 @@ This guide covers manual and automated testing procedures for the Retro Panel Ho
   "ha_token": "YOUR_LONG_LIVED_TOKEN",
   "panel_title": "Test Panel",
   "theme": "dark",
-  "kiosk_mode": false,
   "refresh_interval": 30
 }
 ```

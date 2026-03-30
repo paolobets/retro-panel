@@ -25,7 +25,6 @@ After installing the add-on, go to the **Configuration** tab and fill in:
 | **HA Token** | Long-lived access token | auto (SUPERVISOR_TOKEN) |
 | **Panel Title** | Title shown in the header | `Home` |
 | **Theme** | `dark`, `light`, or `auto` | `dark` |
-| **Kiosk Mode** | Disables text selection (recommended) | `true` |
 | **Refresh Interval** | REST fallback poll in seconds (5–300) | `30` |
 
 > **Tip:** Leave **HA Token** empty — the add-on automatically uses the
@@ -233,13 +232,24 @@ When you tap a light tile, it toggles on/off instantly. For brightness and color
 
 ---
 
-## Kiosk mode
+## Nascondere la UI di Home Assistant (Kiosk)
 
-When `kiosk_mode: true` (default):
+Retro Panel non gestisce la visibilità della barra laterale di HA.
+Per nascondere sidebar e header di HA su un tablet a muro, usa
+[kiosk-mode](https://github.com/NemesisRE/kiosk-mode) (installabile via HACS).
 
-- Text selection is disabled — prevents accidental highlighting on long-press.
-- Settings are still accessible via the ⚙ icon in the sidebar (only on `/config` URL).
-- iOS "Add to Home Screen" meta tags are active. In Safari, tap **Share → Add to Home Screen** to launch the panel full-screen with no browser UI.
+Una volta installato, aggiungi in `configuration.yaml`:
+
+```yaml
+kiosk_mode:
+  template_settings:
+    - template: "[[[ return location.href.includes('hassio/ingress'); ]]]"
+      hide_sidebar: true
+      hide_header: true
+```
+
+Questo nasconde sidebar e header HA **solo quando sei all'interno di una pagina ingress**,
+lasciando la UI di HA normale su tutte le altre voci del menu.
 
 ---
 

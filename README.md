@@ -99,7 +99,6 @@ ha_token: eyJ0eXAiOiJKV1Q...   # create in HA Profile
 panel_title: Casa
 columns: 3
 theme: dark
-kiosk_mode: true
 refresh_interval: 30
 entities:
   - entity_id: light.soggiorno

@@ -228,19 +228,7 @@ Fill in each field according to your setup:
 **Available values**:
 - `dark`: Dark background with light text (recommended for wall displays and bright environments)
 - `light`: Light background with dark text
-- `auto`: Automatically switches based on device's system settings (iOS/Android)
-
-#### `kiosk_mode` (optional)
-**Description**: Enables kiosk mode for wall-mounted displays.
-
-**Default**: `true` (enabled)
-
-**Effects when enabled**:
-- Text selection is disabled (prevents accidental highlighting on long-press)
-- Perfect for touch-only displays where accidental text selection is annoying
-- Settings are still accessible via the ⚙ icon in the sidebar (at `/config` URL)
-
-**Disable if**: You want to enable text selection on the display (e.g., for debugging)
+- `auto`: Follows the OS dark/light preference (`prefers-color-scheme`). On iOS, this reflects the system appearance set in Settings → Display & Brightness.
 
 #### `refresh_interval` (optional)
 **Description**: REST polling interval (seconds) as fallback when WebSocket is unavailable.
@@ -302,6 +290,29 @@ Access via:
 Access via:
 - Direct link in browser: `http://[HA-IP]:7654/config`
 - Or from the dashboard, click the ⚙ icon in the sidebar to navigate to config
+
+---
+
+## Kiosk Mode — Nascondere la UI di HA (opzionale)
+
+Se usi Retro Panel su un tablet a muro e vuoi nascondere la barra laterale e l'header
+di Home Assistant, usa [kiosk-mode](https://github.com/NemesisRE/kiosk-mode) (installabile via HACS).
+
+Una volta installato, aggiungi in `configuration.yaml`:
+
+```yaml
+kiosk_mode:
+  template_settings:
+    - template: "[[[ return location.href.includes('hassio/ingress'); ]]]"
+      hide_sidebar: true
+      hide_header: true
+```
+
+Questo attiva il kiosk solo sulla pagina ingress di Retro Panel (e di qualsiasi altro
+add-on con ingress), lasciando la UI di HA normale sulle altre pagine.
+
+> **Nota**: Per limitarlo al solo Retro Panel, sostituisci `hassio/ingress` con lo slug
+> specifico dell'add-on (visibile nell'URL quando apri il pannello da HA).
 
 ---
 

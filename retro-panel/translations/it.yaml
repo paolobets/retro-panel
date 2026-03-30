@@ -25,12 +25,6 @@ configuration:
       Tema visivo del pannello.
       "dark" (predefinito) è la scelta migliore per display sempre accesi, riduce il burn-in.
       "auto" segue le impostazioni di sistema del dispositivo.
-  kiosk_mode:
-    name: Modalità Kiosk
-    description: >-
-      Disabilita la selezione del testo e i menu contestuali al tocco prolungato.
-      Consigliato per tablet a muro. Abilita anche la modalità schermo intero su iOS —
-      apri il pannello in Safari e tocca Condividi → Aggiungi alla schermata Home.
   refresh_interval:
     name: Intervallo Aggiornamento Fallback (secondi)
     description: >-

@@ -25,12 +25,6 @@ configuration:
       Visual theme for the panel.
       "dark" (default) is best for always-on displays to reduce burn-in.
       "auto" follows the device's system preference.
-  kiosk_mode:
-    name: Kiosk Mode
-    description: >-
-      Disables text selection and long-press context menus.
-      Recommended for wall-mounted tablets. Also enables iOS "Add to Home Screen"
-      full-screen mode — open the panel in Safari and tap Share → Add to Home Screen.
   refresh_interval:
     name: Fallback Poll Interval (seconds)
     description: >-

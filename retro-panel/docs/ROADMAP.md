@@ -104,9 +104,23 @@ Retro Panel follows semantic versioning (MAJOR.MINOR.PATCH):
 
 ---
 
+## v2.7 - Theme Fix & Kiosk Cleanup (Released 2026-03-30)
+
+**Status**: RELEASED (current stable: v2.7.0)
+
+**Release Goal**: Fix `theme: auto` CSS, remove the non-functional `kiosk_mode` option, and document the HACS kiosk-mode integration.
+
+### Completed Features
+
+- [x] `theme: auto` — aggiunto `@media (prefers-color-scheme: light)` in `tokens.css`; ora segue la preferenza OS
+- [x] Rimossa opzione `kiosk_mode` da config, backend, API e frontend
+- [x] Documentazione: guida kiosk-mode (HACS) aggiunta in DOCS.md e INSTALLATION.md
+
+---
+
 ## v2.6 - Binary Sensor Improvements & Kiosk UX (Released 2026-03-30)
 
-**Status**: RELEASED (current stable: v2.6.1)
+**Status**: RELEASED
 
 **Release Goal**: Fix architectural bugs in the binary sensor subsystem, add four new binary layout types, and introduce a long-press reload gesture for kiosk deployments.
 
@@ -242,7 +256,8 @@ These targets apply to v2.0 and all future releases:
 | v2.3.1 | Released | 2026-03-28 | Completed |
 | v2.3.2 | Released | 2026-03-29 | Completed |
 | v2.6.0 | Released | 2026-03-30 | Completed |
-| v2.6.1 | Released | 2026-03-30 | Completed — current stable |
+| v2.6.1 | Released | 2026-03-30 | Completed |
+| v2.7.0 | Released | 2026-03-30 | Completed — current stable |
 | v3.0 | Planned | TBD | 2026 H2 (estimated) |
 
 ---

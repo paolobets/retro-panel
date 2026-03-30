@@ -16,7 +16,6 @@ Create `data/options.json` (this simulates add-on configuration):
   "ha_token": "YOUR_LONG_LIVED_TOKEN",
   "panel_title": "Home",
   "theme": "dark",
-  "kiosk_mode": false,
   "refresh_interval": 30
 }
 ```
