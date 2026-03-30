@@ -104,9 +104,37 @@ Retro Panel follows semantic versioning (MAJOR.MINOR.PATCH):
 
 ---
 
+## v2.6 - Binary Sensor Improvements & Kiosk UX (Released 2026-03-30)
+
+**Status**: RELEASED (current stable: v2.6.1)
+
+**Release Goal**: Fix architectural bugs in the binary sensor subsystem, add four new binary layout types, and introduce a long-press reload gesture for kiosk deployments.
+
+### Completed Features
+
+**v2.6.0 — Binary Sensor Improvements**:
+- [x] `loader.py` is now the single source of truth for `layout_type` — `sensor.js` no longer reads `attrs.device_class` in the render path
+- [x] Bug fix: `window` → `binary_window` (was incorrectly `binary_door`)
+- [x] Bug fix: `occupancy`/`presence` → `binary_presence` (was `binary_motion`)
+- [x] Bug fix: `smoke`/`gas`/`carbon_monoxide` → `binary_smoke` (was `binary_standard`)
+- [x] New: `binary_smoke` layout type — critical visual state (`srt-critical`/`sri-critical`)
+- [x] New: `binary_moisture` layout type — alert state
+- [x] New: `binary_lock` layout type — alert state
+- [x] New: `binary_vibration` layout type — alert state
+- [x] 15 TDD tests covering all binary sensor mappings
+
+**v2.6.1 — Long-press Reload Gesture**:
+- [x] 800ms long-press on `#panel-title` triggers hard reload via `?_r=<timestamp>` cache-buster
+- [x] Touch (iOS) + mouse (desktop) support, opacity feedback, drift cancellation
+- [x] `touchcancel` guard for WebKit scroll hand-off edge case
+- [x] Duplicate listener guard via `dataset.reloadGestureInit`
+- [x] `-webkit-user-select: none` on `#panel-title` to prevent text selection
+
+---
+
 ## v2.3 - Icon System, Light Subtypes & Stability (Released 2026-03-29)
 
-**Status**: RELEASED (current stable: v2.3.2)
+**Status**: RELEASED
 
 **Release Goal**: Complete MDI icon set, light layout subtypes, area-fallback for device-level areas, and CI pipeline hardening. Followed by a focused bugfix pass (v2.3.2).
 
@@ -212,7 +240,9 @@ These targets apply to v2.0 and all future releases:
 | v2.2 | Released | 2026-03-28 | Completed |
 | v2.3.0 | Released | 2026-03-28 | Completed |
 | v2.3.1 | Released | 2026-03-28 | Completed |
-| v2.3.2 | Released | 2026-03-29 | Completed — current stable |
+| v2.3.2 | Released | 2026-03-29 | Completed |
+| v2.6.0 | Released | 2026-03-30 | Completed |
+| v2.6.1 | Released | 2026-03-30 | Completed — current stable |
 | v3.0 | Planned | TBD | 2026 H2 (estimated) |
 
 ---

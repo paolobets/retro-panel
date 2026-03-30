@@ -7,6 +7,30 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.6.1] — 2026-03-30
+
+### Added
+- Long-press gesture (800ms) on the panel title forces a hard reload via a cache-busting URL (`?_r=<timestamp>`) — useful on iOS kiosk where clearing the browser cache is not practical
+- Touch and mouse support: `touchstart`/`touchend`/`touchmove`/`touchcancel` + `mousedown`/`mouseup`/`mouseleave`
+- Visual feedback: title dims to 40% opacity during hold, restores before reload
+- `#panel-title` receives `-webkit-user-select: none` to prevent accidental text selection on long-press
+
+---
+
+## [2.6.0] — 2026-03-30
+
+### Added
+- Four new binary sensor layout types: `binary_smoke` (smoke/gas/CO — critical alert), `binary_moisture` (moisture/wet — alert), `binary_lock` (lock — alert), `binary_vibration` (vibration/tamper — alert)
+- `binary_window` and `binary_presence` layout types now fully registered end-to-end
+
+### Fixed
+- `window` device_class was incorrectly mapped to `binary_door` — now correctly maps to `binary_window`
+- `occupancy` and `presence` device_classes were mapped to `binary_motion` — now correctly map to `binary_presence`
+- `smoke`, `gas`, `carbon_monoxide` device_classes were mapped to `binary_standard` — now map to `binary_smoke`
+- `sensor.js` no longer reads `attrs.device_class` in the binary render path — `loader.py` is now the sole source of truth for `layout_type` mapping
+
+---
+
 ## [2.3.3] — 2026-03-29
 
 ### Fixed
