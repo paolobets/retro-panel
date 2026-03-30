@@ -51,6 +51,8 @@
       titleEl.innerHTML = 'Retro <span style="color:var(--c-accent)">PANEL</span>';
     }
     document.title = config.title || 'Retro Panel';
+    // Reload gesture: long-press title to force hard reload
+    initReloadGesture();
     // Colonne: gestite interamente dai media query CSS su --tile-cols
   }
 
@@ -276,6 +278,54 @@
           + '</div>';
       }
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // initReloadGesture — long-press #panel-title forces a hard reload
+  // ---------------------------------------------------------------------------
+  function initReloadGesture() {
+    var titleEl = document.getElementById('panel-title');
+    if (!titleEl) { return; }
+
+    var holdTimer = null;
+    var touchStartX = 0;
+    var touchStartY = 0;
+
+    function startHold() {
+      titleEl.style.opacity = '0.4';
+      holdTimer = setTimeout(function () {
+        titleEl.style.opacity = '1';
+        setTimeout(function () {
+          window.location.href = window.location.pathname + '?_r=' + Date.now();
+        }, 150);
+      }, 800);
+    }
+
+    function cancelHold() {
+      clearTimeout(holdTimer);
+      holdTimer = null;
+      titleEl.style.opacity = '1';
+    }
+
+    titleEl.addEventListener('touchstart', function (e) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      startHold();
+    });
+
+    titleEl.addEventListener('touchmove', function (e) {
+      var dx = e.touches[0].clientX - touchStartX;
+      var dy = e.touches[0].clientY - touchStartY;
+      if (Math.sqrt(dx * dx + dy * dy) > 10) { cancelHold(); }
+    });
+
+    titleEl.addEventListener('touchend', cancelHold);
+
+    titleEl.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+    titleEl.addEventListener('mousedown', startHold);
+    titleEl.addEventListener('mouseup', cancelHold);
+    titleEl.addEventListener('mouseleave', cancelHold);
   }
 
   // Avvia al caricamento
