@@ -1083,7 +1083,6 @@ Configuration options exposed in Home Assistant add-on config panel and stored i
 | `ha_token` | password | `""` | — | Long-lived token (auto-fetched from SUPERVISOR_TOKEN if empty) |
 | `panel_title` | string | `"Home"` | 1–50 chars | Dashboard title in header |
 | `theme` | select | `"dark"` | dark, light, auto | Color theme (auto = system preference) |
-| `kiosk_mode` | boolean | `true` | — | Disable text selection and context menus |
 | `refresh_interval` | integer | `30` | 5–300 | REST fallback poll interval in seconds |
 
 **Notes**:
