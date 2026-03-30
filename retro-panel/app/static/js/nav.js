@@ -246,6 +246,10 @@ window.RP_Nav = (function () {
     if (sidebar) {
       sidebar.classList.toggle('collapsed', _sidebarCollapsed);
     }
+    var icon = document.querySelector('#sidebar-toggle .sidebar-toggle-icon');
+    if (icon) {
+      icon.innerHTML = _sidebarCollapsed ? '\u203A' : '&#9776;';
+    }
   }
 
   function getSidebarMode() {

@@ -179,11 +179,124 @@
 
 /* ---- ALARM TILE ---- */
 .tile-alarm {
-  min-height: 240px;
-  padding: 18px;
   cursor: default;
+  padding: 20px;
+  max-width: 460px;
+  margin: 0 auto;
+  width: 100%;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
 }
 .tile-alarm:active { transform: none; }
+
+.tile-alarm .tile-top {
+  -webkit-align-items: center;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.tile-alarm .tile-icon { font-size: 22px; margin-right: 8px; }
+.tile-alarm .tile-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-text-sec);
+  margin-bottom: 12px;
+}
+
+/* State badge */
+.alarm-state-text {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.alarm-state-disarmed  { background: rgba(156,163,175,0.12); color: #9ca3af; }
+.alarm-state-armed     { background: rgba(33,150,243,0.15);  color: var(--c-accent); }
+.alarm-state-pending   { background: rgba(255,152,0,0.15);   color: #ff9800; }
+.alarm-state-triggered { background: rgba(244,67,54,0.18);   color: #f44336; }
+
+/* PIN display */
+.alarm-pin-display {
+  font-size: 20px;
+  letter-spacing: 10px;
+  min-height: 38px;
+  text-align: center;
+  color: var(--c-text-pri);
+  border-bottom: 1px solid var(--c-surface-2);
+  padding-bottom: 8px;
+  margin-bottom: 6px;
+}
+
+/* Error */
+.alarm-error {
+  font-size: 11px;
+  color: #f44336;
+  text-align: center;
+  min-height: 16px;
+  margin-bottom: 8px;
+}
+
+/* Keypad — flex wrap, calc-based width for iOS 12 safe spacing */
+.alarm-keypad {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  margin: 0 -3px 10px;
+}
+.alarm-key {
+  width: calc(33.333% - 6px);
+  margin: 3px;
+  height: 52px;
+  background: var(--c-surface-2);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--c-text-pri);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+}
+.alarm-key:active { opacity: 0.6; background: var(--c-surface-2); -webkit-transform: scale(0.95); transform: scale(0.95); }
+.alarm-key.key-delete { font-size: 16px; color: var(--c-text-sec); }
+
+/* Action buttons */
+.alarm-actions {
+  display: -webkit-flex;
+  display: flex;
+  margin: -4px;
+}
+.alarm-btn {
+  -webkit-flex: 1;
+  flex: 1;
+  margin: 4px;
+  height: 46px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  border: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.alarm-btn-arm-home,
+.alarm-btn-arm-away { background: rgba(33,150,243,0.15); color: var(--c-accent); }
+.alarm-btn-arm-home:active,
+.alarm-btn-arm-away:active { background: rgba(33,150,243,0.28); }
+.alarm-btn-disarm { background: rgba(156,163,175,0.12); color: var(--c-text-sec); }
+.alarm-btn-disarm:active { background: rgba(156,163,175,0.22); }
+.alarm-btn-disarm-danger { background: rgba(244,67,54,0.15); color: #f44336; }
+.alarm-btn-disarm-danger:active { background: rgba(244,67,54,0.28); }
 
 /* ---- SCENARIO CARD ---- */
 .tile-scenario {
