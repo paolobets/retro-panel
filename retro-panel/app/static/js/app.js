@@ -76,9 +76,10 @@
     for (var j = 0; j < AppState.energyTiles.length; j++) {
       var et = AppState.energyTiles[j];
       var cfg = et.cfg;
-      if (entityId === cfg.solar_power  || entityId === cfg.battery_soc  ||
-          entityId === cfg.battery_power || entityId === cfg.grid_power  ||
-          entityId === cfg.home_power) {
+      if (entityId === cfg.solar_power            || entityId === cfg.home_power          ||
+          entityId === cfg.battery_soc             || entityId === cfg.battery_charge_power ||
+          entityId === cfg.battery_discharge_power || entityId === cfg.grid_import          ||
+          entityId === cfg.grid_export) {
         try { window.EnergyFlowComponent.updateTile(et.tile, AppState.states); }
         catch (err) { console.error('[app] EnergyFlow updateTile failed:', err); }
       }
