@@ -1,134 +1,164 @@
 /**
- * energy.js — Power Flow Card component
- * Retro Panel v2.0
+ * energy.js — Energy Flow Card v2 (Design G)
+ * Retro Panel v2.9.0
  *
- * Shows solar production, battery SOC/power, grid import/export, home consumption.
- * All sensors are configured by the user — nothing is hardcoded.
+ * Design G: semaforo go/caution/stop/idle + surplus solare + progress bar
+ * + 4 metriche secondarie (solar, home, battery SOC, grid).
  *
- * No ES modules — IIFE + window global. iOS 12+ Safari safe.
- * No const/let/=>/?./?? — only var, function declarations, IIFE pattern.
+ * 7 entità configurabili:
+ *   solar_power, home_power, battery_soc,
+ *   battery_charge_power, battery_discharge_power,
+ *   grid_import, grid_export
  *
- * Exposes globally: window.EnergyFlowComponent = { createTile, updateTile }
- *
- * Config shape (item from panel-config):
- *   { type: "energy_flow",
- *     solar_power, battery_soc, battery_power, grid_power, home_power }
- * Each value is an HA entity_id string (may be empty = sensor not configured).
- *
- * Note: energy CSS classes (.energy-node, .energy-connector, etc.) are not in
- * tiles.css — they will be in a future CSS file. DOM structure is preserved as-is.
+ * iOS 12 safe: solo var, nessuna arrow function, nessun optional chaining.
+ * IIFE + window.EnergyFlowComponent
  */
 window.EnergyFlowComponent = (function () {
   'use strict';
 
-  // Format a watt value: 0→"0 W", 1200→"1.2 kW"
+  var THRESHOLD = 10; // W — soglia rumore sensore
+
+  var TEXTS = {
+    go:      { main: 'Ottimo momento!',        sub: '\u2600\uFE0F Solare attivo \u00B7 Avvia lavatrice o lavastoviglie' },
+    caution: { main: 'Usa con moderazione',    sub: '\uD83D\uDD0B Solo batteria \u00B7 Solare spento \u00B7 Evita carichi pesanti' },
+    stop:    { main: 'Evita elettrodomestici', sub: '\u26A1 Prelievo rete \u00B7 Costo elevato \u00B7 Aspetta il solare' },
+    idle:    { main: 'Nessuna produzione',     sub: 'Notte \u00B7 Tutti i sistemi a riposo' }
+  };
+
   function fmtPower(val) {
     if (val === null || val === undefined || isNaN(val)) { return '\u2014'; }
     var abs = Math.abs(val);
-    if (abs >= 1000) {
-      return (val / 1000).toFixed(1) + ' kW';
-    }
+    if (abs >= 1000) { return (val / 1000).toFixed(1) + ' kW'; }
     return Math.round(val) + ' W';
   }
 
-  // Format a percentage (battery SOC)
   function fmtPct(val) {
     if (val === null || val === undefined || isNaN(val)) { return '\u2014'; }
     return Math.round(val) + '%';
   }
 
-  // Build a single energy node element
-  function makeNode(cssClass, iconText, valueClass, labelText, subClass) {
-    var node = document.createElement('div');
-    node.className = 'energy-node ' + cssClass;
-
-    var iconEl = document.createElement('div');
-    iconEl.className = 'energy-node-icon';
-    iconEl.textContent = iconText;
-
-    var valueEl = document.createElement('div');
-    valueEl.className = 'energy-node-value ' + valueClass;
-    valueEl.textContent = '\u2014';
-
-    node.appendChild(iconEl);
-    node.appendChild(valueEl);
-
-    if (subClass) {
-      var subEl = document.createElement('div');
-      subEl.className = 'energy-node-sub ' + subClass;
-      subEl.textContent = '';
-      node.appendChild(subEl);
-    }
-
-    var labelEl = document.createElement('div');
-    labelEl.className = 'energy-node-label';
-    labelEl.textContent = labelText;
-    node.appendChild(labelEl);
-
-    return node;
-  }
-
-  // Build a horizontal connector element
-  function makeConnector(arrowText) {
-    var el = document.createElement('div');
-    el.className = 'energy-connector';
-    el.setAttribute('data-arrow', arrowText || '');
+  function mk(tag, cls, text) {
+    var el = document.createElement(tag);
+    if (cls)  { el.className   = cls; }
+    if (text) { el.textContent = text; }
     return el;
   }
 
   function createTile(itemConfig) {
-    var DOM = window.RP_DOM;
-
-    var tile = DOM.createElement('div', 'tile');
+    var tile = mk('div', 'tile');
     tile.dataset.layoutType = 'energy_flow';
+    tile.classList.add('ef-state-idle');
 
-    var titleEl = DOM.createElement('div', 'energy-card-title', 'Power Flow');
-    tile.appendChild(titleEl);
+    // Hero row
+    var hero = mk('div', 'ef-hero');
 
-    // Solar row (top center)
-    var solarRow = DOM.createElement('div', 'energy-solar-row');
-    var solarNode = makeNode('solar', '\u2600', 'ef-solar-val', 'Solar', null);
-    solarRow.appendChild(solarNode);
+    // Semaforo
+    var semaforo = mk('div', 'ef-semaforo');
+    var dotGo      = mk('div', 'ef-dot ef-dot-go');
+    var dotCaution = mk('div', 'ef-dot ef-dot-caution');
+    var dotStop    = mk('div', 'ef-dot ef-dot-stop');
+    semaforo.appendChild(dotGo);
+    semaforo.appendChild(dotCaution);
+    semaforo.appendChild(dotStop);
 
-    // Vertical connector: solar → home
-    var connV = DOM.createElement('div', 'energy-connector-v');
-    solarRow.appendChild(connV);
-    tile.appendChild(solarRow);
+    // Action text
+    var action     = mk('div', 'ef-action');
+    var actionMain = mk('div', 'ef-action-main', TEXTS.idle.main);
+    var actionSub  = mk('div', 'ef-action-sub',  TEXTS.idle.sub);
+    action.appendChild(actionMain);
+    action.appendChild(actionSub);
 
-    // Main row: battery — home — grid
-    var mainRow = DOM.createElement('div', 'energy-main-row');
+    // Surplus
+    var surplus     = mk('div', 'ef-surplus');
+    var surplusVal  = mk('div', 'ef-surplus-val',  '\u2014');
+    var surplusUnit = mk('div', 'ef-surplus-unit', '');
+    var surplusLbl  = mk('div', 'ef-surplus-lbl',  'nessuna produzione');
+    surplus.appendChild(surplusVal);
+    surplus.appendChild(surplusUnit);
+    surplus.appendChild(surplusLbl);
 
-    var battNode  = makeNode('battery', '\uD83D\uDD0B', 'ef-batt-soc', 'Battery', 'ef-batt-pwr');
-    var connLeft  = makeConnector('\u2194');   // ↔
-    var homeNode  = makeNode('home', '\uD83C\uDFE0', 'ef-home-val', 'Home', null);
-    var connRight = makeConnector('\u2194');  // ↔
-    var gridNode  = makeNode('grid', '\u26A1', 'ef-grid-val', 'Grid', null);
+    hero.appendChild(semaforo);
+    hero.appendChild(action);
+    hero.appendChild(surplus);
+    tile.appendChild(hero);
 
-    mainRow.appendChild(battNode);
-    mainRow.appendChild(connLeft);
-    mainRow.appendChild(homeNode);
-    mainRow.appendChild(connRight);
-    mainRow.appendChild(gridNode);
-    tile.appendChild(mainRow);
+    // Progress bar
+    var progress     = mk('div', 'ef-progress');
+    var progressFill = mk('div', 'ef-progress-fill');
+    progress.appendChild(progressFill);
+    tile.appendChild(progress);
 
-    // Store references for updateTile
+    // Metrics row
+    var metrics = mk('div', 'ef-metrics');
+
+    // Solar metric
+    var mSolar    = mk('div', 'ef-metric ef-metric-solar');
+    var mSolarIco = mk('div', 'ef-metric-icon', '\u2600\uFE0F');
+    var mSolarVal = mk('div', 'ef-metric-val',  '\u2014');
+    var mSolarLbl = mk('div', 'ef-metric-lbl',  'Solare');
+    mSolar.appendChild(mSolarIco);
+    mSolar.appendChild(mSolarVal);
+    mSolar.appendChild(mSolarLbl);
+
+    // Home metric
+    var mHome    = mk('div', 'ef-metric ef-metric-home');
+    var mHomeIco = mk('div', 'ef-metric-icon', '\uD83C\uDFE0');
+    var mHomeVal = mk('div', 'ef-metric-val',  '\u2014');
+    var mHomeLbl = mk('div', 'ef-metric-lbl',  'Casa');
+    mHome.appendChild(mHomeIco);
+    mHome.appendChild(mHomeVal);
+    mHome.appendChild(mHomeLbl);
+
+    // Battery metric (with SOC bar)
+    var mBatt    = mk('div', 'ef-metric ef-metric-battery');
+    var mBattIco = mk('div', 'ef-metric-icon', '\uD83D\uDD0B');
+    var mBattVal = mk('div', 'ef-metric-val',  '\u2014');
+    var mBattLbl = mk('div', 'ef-metric-lbl',  'Batteria');
+    var battBar  = mk('div', 'ef-batt-bar');
+    var battFill = mk('div', 'ef-batt-fill');
+    battBar.appendChild(battFill);
+    mBatt.appendChild(mBattIco);
+    mBatt.appendChild(mBattVal);
+    mBatt.appendChild(mBattLbl);
+    mBatt.appendChild(battBar);
+
+    // Grid metric
+    var mGrid    = mk('div', 'ef-metric ef-metric-grid');
+    var mGridIco = mk('div', 'ef-metric-icon', '\u26A1');
+    var mGridVal = mk('div', 'ef-metric-val',  '\u2014');
+    var mGridLbl = mk('div', 'ef-metric-lbl',  'Rete');
+    mGrid.appendChild(mGridIco);
+    mGrid.appendChild(mGridVal);
+    mGrid.appendChild(mGridLbl);
+
+    metrics.appendChild(mSolar);
+    metrics.appendChild(mHome);
+    metrics.appendChild(mBatt);
+    metrics.appendChild(mGrid);
+    tile.appendChild(metrics);
+
+    // Store DOM refs for updateTile
     tile._ef = {
-      cfg:       itemConfig,
-      solarVal:  solarNode.querySelector('.ef-solar-val'),
-      connV:     connV,
-      battSoc:   battNode.querySelector('.ef-batt-soc'),
-      battPwr:   battNode.querySelector('.ef-batt-pwr'),
-      connLeft:  connLeft,
-      homeVal:   homeNode.querySelector('.ef-home-val'),
-      connRight: connRight,
-      gridVal:   gridNode.querySelector('.ef-grid-val'),
+      cfg:          itemConfig,
+      actionMain:   actionMain,
+      actionSub:    actionSub,
+      surplusVal:   surplusVal,
+      surplusUnit:  surplusUnit,
+      surplusLbl:   surplusLbl,
+      progressFill: progressFill,
+      solarVal:     mSolarVal,
+      homeVal:      mHomeVal,
+      battVal:      mBattVal,
+      battLbl:      mBattLbl,
+      battFill:     battFill,
+      gridVal:      mGridVal,
+      gridLbl:      mGridLbl,
     };
 
     return tile;
   }
 
   function updateTile(tile, states) {
-    // states: map of entity_id → {state, attributes}
     var ef = tile._ef;
     if (!ef) { return; }
     var cfg = ef.cfg;
@@ -141,61 +171,91 @@ window.EnergyFlowComponent = (function () {
       return isNaN(n) ? null : n;
     }
 
-    var solar  = getNum(cfg.solar_power);
-    var batSoc = getNum(cfg.battery_soc);
-    var batPwr = getNum(cfg.battery_power);
-    var grid   = getNum(cfg.grid_power);
-    var home   = getNum(cfg.home_power);
+    var solar    = getNum(cfg.solar_power)             || 0;
+    var home     = getNum(cfg.home_power)              || 0;
+    var batSoc   = getNum(cfg.battery_soc);
+    var batChg   = getNum(cfg.battery_charge_power)    || 0;
+    var batDis   = getNum(cfg.battery_discharge_power) || 0;
+    var gridIn   = getNum(cfg.grid_import)             || 0;
+    var gridOut  = getNum(cfg.grid_export)             || 0;
 
-    // Solar node
-    ef.solarVal.textContent = fmtPower(solar);
-    var solarActive = solar !== null && solar > 10;
-    if (solarActive) {
-      ef.connV.classList.add('flow-active');
-      ef.connV.setAttribute('data-arrow', '\u2193');
+    // ── State logic ──────────────────────────────────────────
+    var efState;
+    if (gridIn > THRESHOLD) {
+      efState = 'stop';
+    } else if (solar > THRESHOLD) {
+      efState = 'go';
+    } else if (batDis > THRESHOLD) {
+      efState = 'caution';
     } else {
-      ef.connV.classList.remove('flow-active');
-      ef.connV.setAttribute('data-arrow', '');
+      efState = 'idle';
     }
 
-    // Battery node
-    ef.battSoc.textContent = fmtPct(batSoc);
-    if (ef.battPwr) {
-      if (batPwr !== null) {
-        var absP = Math.abs(batPwr);
-        ef.battPwr.textContent = fmtPower(absP) + (batPwr > 10 ? ' \u2191' : batPwr < -10 ? ' \u2193' : '');
-      } else {
-        ef.battPwr.textContent = '';
-      }
-    }
-    // Battery connector direction
-    if (batPwr !== null && Math.abs(batPwr) > 10) {
-      ef.connLeft.classList.add('flow-active');
-      ef.connLeft.setAttribute('data-arrow', batPwr > 0 ? '\u2190' : '\u2192');  // charging←home, discharging→home
+    tile.classList.remove('ef-state-go', 'ef-state-caution', 'ef-state-stop', 'ef-state-idle');
+    tile.classList.add('ef-state-' + efState);
+
+    // ── Action text ──────────────────────────────────────────
+    ef.actionMain.textContent = TEXTS[efState].main;
+    ef.actionSub.textContent  = TEXTS[efState].sub;
+
+    // ── Surplus area ─────────────────────────────────────────
+    var sVal, sUnit, sLbl;
+    if (efState === 'go') {
+      var diff = solar - home;
+      sVal  = (diff >= 0 ? '+' : '') + fmtPower(diff);
+      sUnit = 'kW disponibili';
+      sLbl  = 'surplus solare';
+    } else if (efState === 'caution') {
+      sVal  = fmtPct(batSoc);
+      sUnit = '';
+      sLbl  = 'batteria disponibile';
+    } else if (efState === 'stop') {
+      sVal  = fmtPower(gridIn);
+      sUnit = 'prelievo';
+      sLbl  = 'costo in corso';
     } else {
-      ef.connLeft.classList.remove('flow-active');
-      ef.connLeft.setAttribute('data-arrow', '\u2194');
+      sVal  = '\u2014';
+      sUnit = '';
+      sLbl  = 'nessuna produzione';
+    }
+    ef.surplusVal.textContent  = sVal;
+    ef.surplusUnit.textContent = sUnit;
+    ef.surplusLbl.textContent  = sLbl;
+
+    // ── Progress bar (% consumo coperto da solare) ───────────
+    var pct = solar > 0 ? Math.min(100, (solar / Math.max(home, 0.001)) * 100) : 0;
+    ef.progressFill.style.width = Math.round(pct) + '%';
+
+    // ── Metriche ─────────────────────────────────────────────
+    ef.solarVal.textContent = solar > THRESHOLD ? fmtPower(solar) : '\u2014';
+    ef.homeVal.textContent  = home  > 0         ? fmtPower(home)  : '\u2014';
+
+    // Battery
+    if (batSoc !== null) {
+      ef.battVal.textContent  = fmtPct(batSoc);
+      ef.battFill.style.width = Math.round(batSoc) + '%';
+    } else {
+      ef.battVal.textContent  = '\u2014';
+      ef.battFill.style.width = '0%';
+    }
+    if (batChg > THRESHOLD) {
+      ef.battLbl.textContent = '+' + fmtPower(batChg) + ' \u2191';
+    } else if (batDis > THRESHOLD) {
+      ef.battLbl.textContent = '-' + fmtPower(batDis) + ' \u2193';
+    } else {
+      ef.battLbl.textContent = 'Batteria';
     }
 
-    // Home node
-    ef.homeVal.textContent = fmtPower(home);
-
-    // Grid connector direction
-    if (grid !== null && Math.abs(grid) > 10) {
-      ef.connRight.classList.add('flow-active');
-      ef.connRight.setAttribute('data-arrow', grid > 0 ? '\u2192' : '\u2190');  // import→home, export←home
+    // Grid
+    if (gridIn > THRESHOLD) {
+      ef.gridVal.textContent = fmtPower(gridIn);
+      ef.gridLbl.textContent = 'Prelievo';
+    } else if (gridOut > THRESHOLD) {
+      ef.gridVal.textContent = fmtPower(gridOut);
+      ef.gridLbl.textContent = 'Immissione';
     } else {
-      ef.connRight.classList.remove('flow-active');
-      ef.connRight.setAttribute('data-arrow', '\u2194');
-    }
-
-    // Grid node
-    if (grid !== null) {
-      var absGrid = Math.abs(grid);
-      var suffix = grid > 10 ? ' import' : grid < -10 ? ' export' : '';
-      ef.gridVal.textContent = fmtPower(absGrid) + suffix;
-    } else {
-      ef.gridVal.textContent = '\u2014';
+      ef.gridVal.textContent = '0 W';
+      ef.gridLbl.textContent = 'Rete';
     }
   }
 
