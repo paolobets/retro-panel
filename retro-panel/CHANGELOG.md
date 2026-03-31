@@ -7,6 +7,21 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## v2.9.0 — 2026-03-30
+
+### New
+- **Energy Card v2 — Design G**: tile semaforo verde/giallo/rosso con stato actionable immediato
+  - 🟢 **Verde** (Ottimo momento!): solare attivo, surplus disponibile per elettrodomestici
+  - 🟡 **Giallo** (Usa con moderazione): solo batteria, solare spento
+  - 🔴 **Rosso** (Evita elettrodomestici): prelievo dalla rete, costo elevato
+  - Progress bar: % consumo casa coperto dal solare
+  - 4 metriche secondarie: solare, casa, batteria SOC + barra, rete
+- **7 entità separabili**: `solar_power`, `home_power`, `battery_soc`, `battery_charge_power`, `battery_discharge_power`, `grid_import`, `grid_export`
+- **Wizard a 7 step** aggiornato in /config per associare ogni entità
+- Backward compat: config esistenti con `battery_power`/`grid_power` restano validi, i nuovi campi appaiono vuoti (riconfigurare via wizard)
+
+---
+
 ## [2.8.5] — 2026-03-30
 
 ### Added

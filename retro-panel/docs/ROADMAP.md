@@ -220,6 +220,23 @@ Retro Panel follows semantic versioning (MAJOR.MINOR.PATCH):
 
 ---
 
+## v2.9 - Energy Card v2 (Released 2026-03-30)
+
+**Status**: RELEASED (current stable: v2.9.0)
+
+**Release Goal**: Redesign completo del tile energy_flow con Design G (semaforo actionable) e supporto a 7 entità separate.
+
+### Completed Features
+
+- [x] Energy Card v2 — Design G: semaforo go/caution/stop/idle
+- [x] 7 entità: solar, home, battery_soc, battery_charge, battery_discharge, grid_import, grid_export
+- [x] Wizard a 7 step in /config
+- [x] Progress bar: % consumo solare
+- [x] Metriche secondarie: SOC batteria + barra, grid prelievo/immissione
+- [x] iOS 12 safe (var, no arrow functions, no gap)
+
+---
+
 ## v3.0+ (Long-term Vision)
 
 **Planned Features**:
@@ -290,7 +307,8 @@ These targets apply to v2.0 and all future releases:
 | v2.6.1 | Released | 2026-03-30 | Completed |
 | v2.7.0 | Released | 2026-03-30 | Completed |
 | v2.8.0 | Released | 2026-03-30 | Completed |
-| v2.8.1–2.8.5 | Released | 2026-03-30 | Post-release fixes — current stable |
+| v2.8.1–2.8.5 | Released | 2026-03-30 | Post-release fixes |
+| v2.9.0 | Released | 2026-03-30 | Completed |
 | v3.0 | Planned | TBD | 2026 H2 (estimated) |
 
 ---
@@ -316,6 +334,6 @@ These targets apply to v2.0 and all future releases:
 
 ---
 
-**Document Version**: 2.3.2
-**Last Updated**: 2026-03-29
+**Document Version**: 2.9.0
+**Last Updated**: 2026-03-30
 **Maintainer**: Retro Panel Team
