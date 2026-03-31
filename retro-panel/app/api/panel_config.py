@@ -32,11 +32,13 @@ def _serialize_item(item) -> dict:
         ef = item.energy_flow
         return {
             "type": "energy_flow",
-            "solar_power": ef.solar_power,
-            "battery_soc": ef.battery_soc,
-            "battery_power": ef.battery_power,
-            "grid_power": ef.grid_power,
-            "home_power": ef.home_power,
+            "solar_power":             ef.solar_power,
+            "home_power":              ef.home_power,
+            "battery_soc":             ef.battery_soc,
+            "battery_charge_power":    ef.battery_charge_power,
+            "battery_discharge_power": ef.battery_discharge_power,
+            "grid_import":             ef.grid_import,
+            "grid_export":             ef.grid_export,
         }
     return {}
 

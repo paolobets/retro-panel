@@ -57,7 +57,9 @@ def _parse_item(raw: dict, idx: int, context: str) -> dict:
         return item
     elif item_type == "energy_flow":
         item = {"type": "energy_flow"}
-        for f in ("solar_power", "battery_soc", "battery_power", "grid_power", "home_power"):
+        for f in ("solar_power", "home_power", "battery_soc",
+                  "battery_charge_power", "battery_discharge_power",
+                  "grid_import", "grid_export"):
             val = str(raw.get(f) or "").strip()
             if val:
                 try:
