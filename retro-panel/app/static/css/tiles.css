@@ -623,3 +623,176 @@
   -webkit-transition: -webkit-filter 0.4s ease;
   transition: filter 0.4s ease;
 }
+
+/* ================================================================
+   Energy Flow Card v2 — Design G
+   .ef-state-go / .ef-state-caution / .ef-state-stop / .ef-state-idle
+   ================================================================ */
+
+.tile[data-layout-type="energy_flow"] {
+  padding: 0;
+  overflow: hidden;
+  cursor: default;
+  min-height: 0;
+  height: auto;
+  max-height: none;
+}
+
+/* ── Hero row ──────────────────────────────────────────────── */
+.ef-hero {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  padding: 16px 16px 12px;
+}
+
+/* ── Semaforo ──────────────────────────────────────────────── */
+.ef-semaforo {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  -webkit-align-items: center;
+  align-items: center;
+  margin-right: 14px;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+.ef-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--c-surface-3);
+  margin-bottom: 4px;
+}
+.ef-dot:last-child { margin-bottom: 0; }
+
+.ef-state-go .ef-dot-go {
+  background: var(--c-on);
+  -webkit-box-shadow: 0 0 8px var(--c-on);
+  box-shadow: 0 0 8px var(--c-on);
+}
+.ef-state-caution .ef-dot-caution {
+  background: var(--c-warning);
+  -webkit-box-shadow: 0 0 8px var(--c-warning);
+  box-shadow: 0 0 8px var(--c-warning);
+}
+.ef-state-stop .ef-dot-stop {
+  background: var(--c-danger);
+  -webkit-box-shadow: 0 0 8px var(--c-danger);
+  box-shadow: 0 0 8px var(--c-danger);
+}
+
+/* ── Action text ───────────────────────────────────────────── */
+.ef-action {
+  -webkit-flex: 1;
+  flex: 1;
+}
+.ef-action-main {
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--c-text-pri);
+}
+.ef-state-go      .ef-action-main { color: var(--c-on); }
+.ef-state-caution .ef-action-main { color: var(--c-warning); }
+.ef-state-stop    .ef-action-main { color: var(--c-danger); }
+.ef-state-idle    .ef-action-main { color: var(--c-text-sec); }
+
+.ef-action-sub {
+  font-size: 12px;
+  color: var(--c-text-sec);
+  margin-top: 4px;
+  line-height: 1.3;
+}
+
+/* ── Surplus ───────────────────────────────────────────────── */
+.ef-surplus {
+  text-align: right;
+  margin-left: 12px;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+.ef-surplus-val {
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+}
+.ef-state-go      .ef-surplus-val { color: var(--c-on); }
+.ef-state-caution .ef-surplus-val { color: var(--c-warning); }
+.ef-state-stop    .ef-surplus-val { color: var(--c-danger); }
+.ef-state-idle    .ef-surplus-val { color: var(--c-text-sec); }
+
+.ef-surplus-unit {
+  font-size: 11px;
+  color: var(--c-text-sec);
+  margin-top: 2px;
+}
+.ef-surplus-lbl {
+  font-size: 10px;
+  color: var(--c-text-sec);
+  opacity: 0.7;
+}
+
+/* ── Progress bar ──────────────────────────────────────────── */
+.ef-progress {
+  height: 4px;
+  background: var(--c-surface-2);
+  margin: 0 16px 12px;
+}
+.ef-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--c-on);
+  -webkit-transition: width 0.5s ease;
+  transition: width 0.5s ease;
+}
+.ef-state-caution .ef-progress-fill { background: var(--c-warning); }
+.ef-state-stop    .ef-progress-fill { background: var(--c-danger); }
+
+/* ── Metrics row ───────────────────────────────────────────── */
+.ef-metrics {
+  display: -webkit-flex;
+  display: flex;
+  border-top: 1px solid var(--c-surface-2);
+}
+.ef-metric {
+  -webkit-flex: 1;
+  flex: 1;
+  padding: 10px 6px;
+  text-align: center;
+  border-right: 1px solid var(--c-surface-2);
+}
+.ef-metric:last-child { border-right: none; }
+.ef-metric-icon {
+  font-size: 15px;
+  margin-bottom: 3px;
+}
+.ef-metric-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-text-pri);
+}
+.ef-metric-lbl {
+  font-size: 10px;
+  color: var(--c-text-sec);
+  margin-top: 2px;
+}
+
+/* ── Battery SOC bar ───────────────────────────────────────── */
+.ef-batt-bar {
+  height: 3px;
+  background: var(--c-surface-3);
+  border-radius: 2px;
+  margin-top: 4px;
+  overflow: hidden;
+}
+.ef-batt-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--c-accent);
+  -webkit-transition: width 0.5s ease;
+  transition: width 0.5s ease;
+}
+.ef-state-caution .ef-batt-fill { background: var(--c-warning); }
