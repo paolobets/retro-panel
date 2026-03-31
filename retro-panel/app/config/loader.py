@@ -16,8 +16,8 @@ Entity layout is stored in /data/entities.json (v5 schema):
 
 Each item is one of:
   {"type": "entity", "entity_id", "label", "icon"}
-  {"type": "energy_flow", "solar_power", "battery_soc", "battery_power",
-   "grid_power", "home_power"}
+  {"type": "energy_flow", "solar_power", "home_power", "battery_soc",
+   "battery_charge_power", "battery_discharge_power", "grid_import", "grid_export"}
 
 v4 format is auto-migrated: flat overview.items -> single RoomSection,
   flat scenarios/cameras lists -> single ScenarioSection/CameraSection.
@@ -157,10 +157,12 @@ class EntityConfig:
 @dataclass
 class EnergyFlowConfig:
     solar_power: str = ""
-    battery_soc: str = ""
-    battery_power: str = ""
-    grid_power: str = ""
     home_power: str = ""
+    battery_soc: str = ""
+    battery_charge_power: str = ""
+    battery_discharge_power: str = ""
+    grid_import: str = ""
+    grid_export: str = ""
 
 
 @dataclass
@@ -285,7 +287,9 @@ class PanelConfig:
                 _add(item.entity_config.entity_id)
             elif item.type == "energy_flow" and item.energy_flow is not None:
                 ef = item.energy_flow
-                for eid in (ef.solar_power, ef.battery_soc, ef.battery_power, ef.grid_power, ef.home_power):
+                for eid in (ef.solar_power, ef.home_power, ef.battery_soc,
+                            ef.battery_charge_power, ef.battery_discharge_power,
+                            ef.grid_import, ef.grid_export):
                     _add(eid)
 
         for hs in self.header_sensors:
@@ -425,10 +429,12 @@ def _parse_entity(raw: dict) -> EntityConfig:
 def _parse_energy_flow(raw: dict) -> EnergyFlowConfig:
     return EnergyFlowConfig(
         solar_power=str(raw.get("solar_power") or "").strip(),
-        battery_soc=str(raw.get("battery_soc") or "").strip(),
-        battery_power=str(raw.get("battery_power") or "").strip(),
-        grid_power=str(raw.get("grid_power") or "").strip(),
         home_power=str(raw.get("home_power") or "").strip(),
+        battery_soc=str(raw.get("battery_soc") or "").strip(),
+        battery_charge_power=str(raw.get("battery_charge_power") or "").strip(),
+        battery_discharge_power=str(raw.get("battery_discharge_power") or "").strip(),
+        grid_import=str(raw.get("grid_import") or "").strip(),
+        grid_export=str(raw.get("grid_export") or "").strip(),
     )
 
 
