@@ -514,6 +514,10 @@
       <div class="wizard-step" data-step="3">4</div>
       <div class="wizard-step-line"></div>
       <div class="wizard-step" data-step="4">5</div>
+      <div class="wizard-step-line"></div>
+      <div class="wizard-step" data-step="5">6</div>
+      <div class="wizard-step-line"></div>
+      <div class="wizard-step" data-step="6">7</div>
     </div>
 
     <div id="energy-wizard-body"></div>
@@ -524,13 +528,15 @@
       <button id="energy-finish-btn" type="button" class="action-btn hidden">&#10003; Confirm</button>
     </div>
 
-    <!-- Legacy inputs (hidden, synced by JS) -->
+    <!-- Hidden inputs (synced by JS) -->
     <div class="hidden">
-      <input id="ef-solar" type="text" readonly>
-      <input id="ef-batt-soc" type="text" readonly>
-      <input id="ef-batt-pwr" type="text" readonly>
-      <input id="ef-grid" type="text" readonly>
-      <input id="ef-home" type="text" readonly>
+      <input id="ef-solar"          type="text" readonly>
+      <input id="ef-home"           type="text" readonly>
+      <input id="ef-batt-soc"       type="text" readonly>
+      <input id="ef-batt-charge"    type="text" readonly>
+      <input id="ef-batt-discharge" type="text" readonly>
+      <input id="ef-grid-import"    type="text" readonly>
+      <input id="ef-grid-export"    type="text" readonly>
     </div>
   </section>
 

@@ -52,7 +52,11 @@
   var energyContext = null;   // 'overview' | 'room'
   var energyItemIdx = null;   // index in the target items array (null = new)
   var wizardStep    = 0;
-  var wizardValues  = { 'ef-solar': '', 'ef-batt-soc': '', 'ef-batt-pwr': '', 'ef-grid': '', 'ef-home': '' };
+  var wizardValues  = {
+    'ef-solar': '', 'ef-home': '', 'ef-batt-soc': '',
+    'ef-batt-charge': '', 'ef-batt-discharge': '',
+    'ef-grid-import': '', 'ef-grid-export': ''
+  };
 
   // Active config tab
   var activeTab = 'overview';
@@ -2069,8 +2073,13 @@
     var titleEl = qs('sensor-picker-title');
     if (titleEl) {
       var FIELD_LABELS = {
-        'ef-solar': 'Solar production', 'ef-batt-soc': 'Battery SOC',
-        'ef-batt-pwr': 'Battery power', 'ef-grid': 'Grid power', 'ef-home': 'Home consumption',
+        'ef-solar':         'Produzione solare',
+        'ef-home':          'Consumo casa',
+        'ef-batt-soc':      'SOC batteria (%)',
+        'ef-batt-charge':   'Carica batteria (W)',
+        'ef-batt-discharge':'Scarica batteria (W)',
+        'ef-grid-import':   'Prelievo rete (W)',
+        'ef-grid-export':   'Immissione rete (W)',
       };
       var baseId = targetId.replace('__wizard', '');
       titleEl.textContent = 'Select: ' + (FIELD_LABELS[baseId] || targetId);
@@ -2186,21 +2195,27 @@
   // ── Energy card wizard ─────────────────────────────────────────────────────
 
   var WIZARD_STEPS = [
-    { field: 'ef-solar', title: 'Step 1 of 5 \u2014 Solar Production', icon: '\u2600',
-      description: 'Select the sensor measuring solar panel power output (Watts).\n\nExamples:\n\u2022 sensor.solar_power\n\u2022 sensor.pv_power\n\u2022 sensor.zcs_azzurro_power_pv\n\nTip: search \u201cpv\u201d or \u201csolar\u201d.',
+    { field: 'ef-solar', title: 'Step 1 di 7 \u2014 Produzione solare', icon: '\u2600\uFE0F',
+      description: 'Seleziona il sensore che misura la potenza prodotta dai pannelli fotovoltaici (Watt).\n\nEsempi:\n\u2022 sensor.solar_power\n\u2022 sensor.pv_power\n\u2022 sensor.zcs_azzurro_power_pv\n\nSuggerimento: cerca \u201cpv\u201d o \u201csolar\u201d.',
       placeholder: 'sensor.solar_power' },
-    { field: 'ef-batt-soc', title: 'Step 2 of 5 \u2014 Battery State of Charge', icon: '\uD83D\uDD0B',
-      description: 'Select the sensor showing battery charge level (0\u2013100%).\n\nExamples:\n\u2022 sensor.battery_soc\n\u2022 sensor.bms_state_of_charge\n\u2022 sensor.zcs_azzurro_battery_soc\n\nTip: search \u201csoc\u201d.',
-      placeholder: 'sensor.battery_soc' },
-    { field: 'ef-batt-pwr', title: 'Step 3 of 5 \u2014 Battery Power', icon: '\u26A1',
-      description: 'Select the battery charge/discharge power sensor (Watts).\n\nConvention:\n\u2022 Positive (+W) = charging\n\u2022 Negative (\u2212W) = discharging\n\nExamples:\n\u2022 sensor.battery_power\n\u2022 sensor.zcs_azzurro_battery_power',
-      placeholder: 'sensor.battery_power' },
-    { field: 'ef-grid', title: 'Step 4 of 5 \u2014 Grid Power', icon: '\uD83C\uDFED',
-      description: 'Select the grid exchange power sensor (Watts).\n\nConvention:\n\u2022 Positive (+W) = importing from grid\n\u2022 Negative (\u2212W) = exporting to grid\n\nExamples:\n\u2022 sensor.grid_power\n\u2022 sensor.zcs_azzurro_power_grid',
-      placeholder: 'sensor.grid_power' },
-    { field: 'ef-home', title: 'Step 5 of 5 \u2014 Home Consumption', icon: '\uD83C\uDFE0',
-      description: 'Select the total home power consumption sensor (Watts).\n\nExamples:\n\u2022 sensor.home_consumption\n\u2022 sensor.house_load\n\u2022 sensor.zcs_azzurro_power_load\n\nTip: search \u201cload\u201d or \u201cconsumption\u201d.',
+    { field: 'ef-home', title: 'Step 2 di 7 \u2014 Consumo casa', icon: '\uD83C\uDFE0',
+      description: 'Seleziona il sensore del consumo totale della casa (Watt).\n\nEsempi:\n\u2022 sensor.home_consumption\n\u2022 sensor.house_load\n\u2022 sensor.zcs_azzurro_power_load\n\nSuggerimento: cerca \u201cload\u201d o \u201cconsumption\u201d.',
       placeholder: 'sensor.home_consumption' },
+    { field: 'ef-batt-soc', title: 'Step 3 di 7 \u2014 SOC batteria (%)', icon: '\uD83D\uDD0B',
+      description: 'Seleziona il sensore che mostra la percentuale di carica della batteria (0\u2013100%).\n\nEsempi:\n\u2022 sensor.battery_soc\n\u2022 sensor.bms_state_of_charge\n\u2022 sensor.zcs_azzurro_battery_soc\n\nSuggerimento: cerca \u201csoc\u201d.',
+      placeholder: 'sensor.battery_soc' },
+    { field: 'ef-batt-charge', title: 'Step 4 di 7 \u2014 Carica batteria', icon: '\u2B06\uFE0F',
+      description: 'Seleziona il sensore della potenza di CARICA della batteria (Watt, sempre positivo quando in carica).\n\nEsempi:\n\u2022 sensor.battery_charge_power\n\u2022 sensor.batt_charge_w\n\nSuggerimento: cerca \u201ccharge\u201d o \u201ccaricat\u201d.',
+      placeholder: 'sensor.battery_charge_power' },
+    { field: 'ef-batt-discharge', title: 'Step 5 di 7 \u2014 Scarica batteria', icon: '\u2B07\uFE0F',
+      description: 'Seleziona il sensore della potenza di SCARICA della batteria (Watt, sempre positivo quando in scarica).\n\nEsempi:\n\u2022 sensor.battery_discharge_power\n\u2022 sensor.batt_discharge_w\n\nSuggerimento: cerca \u201cdischarge\u201d o \u201cscaric\u201d.',
+      placeholder: 'sensor.battery_discharge_power' },
+    { field: 'ef-grid-import', title: 'Step 6 di 7 \u2014 Prelievo rete', icon: '\u26A1',
+      description: 'Seleziona il sensore del PRELIEVO dalla rete (Watt, positivo quando importi dalla rete).\n\nEsempi:\n\u2022 sensor.grid_import\n\u2022 sensor.grid_consumption\n\u2022 sensor.zcs_azzurro_power_grid_in\n\nSuggerimento: cerca \u201cimport\u201d o \u201cprelievo\u201d.',
+      placeholder: 'sensor.grid_import' },
+    { field: 'ef-grid-export', title: 'Step 7 di 7 \u2014 Immissione rete', icon: '\uD83D\uDD1D',
+      description: 'Seleziona il sensore dell\u2019IMMISSIONE in rete (Watt, positivo quando esporti in rete).\n\nEsempi:\n\u2022 sensor.grid_export\n\u2022 sensor.grid_feedin\n\u2022 sensor.zcs_azzurro_power_grid_out\n\nSuggerimento: cerca \u201cexport\u201d o \u201cimmissione\u201d.',
+      placeholder: 'sensor.grid_export' },
   ];
 
   function openEnergyEditor(ctx, itemIdx) {
@@ -2211,11 +2226,13 @@
     var existingItem = (energyItemIdx !== null && items) ? items[energyItemIdx] : null;
 
     wizardValues = {
-      'ef-solar':    (existingItem && existingItem.solar_power)   || '',
-      'ef-batt-soc': (existingItem && existingItem.battery_soc)   || '',
-      'ef-batt-pwr': (existingItem && existingItem.battery_power) || '',
-      'ef-grid':     (existingItem && existingItem.grid_power)    || '',
-      'ef-home':     (existingItem && existingItem.home_power)    || '',
+      'ef-solar':         (existingItem && existingItem.solar_power)            || '',
+      'ef-home':          (existingItem && existingItem.home_power)             || '',
+      'ef-batt-soc':      (existingItem && existingItem.battery_soc)            || '',
+      'ef-batt-charge':   (existingItem && existingItem.battery_charge_power)   || '',
+      'ef-batt-discharge':(existingItem && existingItem.battery_discharge_power)|| '',
+      'ef-grid-import':   (existingItem && existingItem.grid_import)            || '',
+      'ef-grid-export':   (existingItem && existingItem.grid_export)            || '',
     };
 
     // Sync to legacy inputs
@@ -2299,11 +2316,13 @@
 
     var efItem = {
       type: 'energy_flow',
-      solar_power:   wizardValues['ef-solar']   || '',
-      battery_soc:   wizardValues['ef-batt-soc'] || '',
-      battery_power: wizardValues['ef-batt-pwr'] || '',
-      grid_power:    wizardValues['ef-grid']    || '',
-      home_power:    wizardValues['ef-home']    || '',
+      solar_power:            wizardValues['ef-solar']          || '',
+      home_power:             wizardValues['ef-home']           || '',
+      battery_soc:            wizardValues['ef-batt-soc']       || '',
+      battery_charge_power:   wizardValues['ef-batt-charge']    || '',
+      battery_discharge_power:wizardValues['ef-batt-discharge'] || '',
+      grid_import:            wizardValues['ef-grid-import']    || '',
+      grid_export:            wizardValues['ef-grid-export']    || '',
     };
 
     var items = getItemsForContext(energyContext);
