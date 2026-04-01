@@ -16,7 +16,7 @@
 window.EnergyFlowComponent = (function () {
   'use strict';
 
-  var THRESHOLD = 10; // W — soglia rumore sensore
+  var THRESHOLD = 30; // W — soglia rumore sensore (inverter standby tipico 10-25 W)
 
   var TEXTS = {
     go:      { main: 'Ottimo momento!',        sub: '\u2600\uFE0F Solare attivo \u00B7 Avvia lavatrice o lavastoviglie' },

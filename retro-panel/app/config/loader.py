@@ -427,14 +427,52 @@ def _parse_entity(raw: dict) -> EntityConfig:
 
 
 def _parse_energy_flow(raw: dict) -> EnergyFlowConfig:
+    # ── v2.9 field-name migration ────────────────────────────────────────────
+    # Pre-v2.9 configs used a single signed 'battery_power' entity (positive =
+    # charge, negative = discharge) and a single signed 'grid_power' entity.
+    # v2.9 split these into separate unidirectional sensors.  When the old keys
+    # are present but the new ones are absent, map the old entity ID to BOTH new
+    # fields as a best-effort fallback so the card is not silently broken.
+    # Users should reconfigure via the wizard to assign dedicated sensors.
+    legacy_batt = str(raw.get("battery_power") or "").strip()
+    legacy_grid = str(raw.get("grid_power") or "").strip()
+
+    battery_charge_power = str(raw.get("battery_charge_power") or "").strip()
+    battery_discharge_power = str(raw.get("battery_discharge_power") or "").strip()
+    grid_import = str(raw.get("grid_import") or "").strip()
+    grid_export = str(raw.get("grid_export") or "").strip()
+
+    if legacy_batt:
+        if not battery_charge_power:
+            battery_charge_power = legacy_batt
+            logger.warning(
+                "energy_flow: legacy 'battery_power' field detected (%r). "
+                "Mapped to 'battery_charge_power' as fallback. "
+                "Reconfigure via the Energy wizard to assign dedicated sensors.",
+                legacy_batt,
+            )
+        if not battery_discharge_power:
+            battery_discharge_power = legacy_batt
+    if legacy_grid:
+        if not grid_import:
+            grid_import = legacy_grid
+            logger.warning(
+                "energy_flow: legacy 'grid_power' field detected (%r). "
+                "Mapped to 'grid_import' as fallback. "
+                "Reconfigure via the Energy wizard to assign dedicated sensors.",
+                legacy_grid,
+            )
+        if not grid_export:
+            grid_export = legacy_grid
+
     return EnergyFlowConfig(
         solar_power=str(raw.get("solar_power") or "").strip(),
         home_power=str(raw.get("home_power") or "").strip(),
         battery_soc=str(raw.get("battery_soc") or "").strip(),
-        battery_charge_power=str(raw.get("battery_charge_power") or "").strip(),
-        battery_discharge_power=str(raw.get("battery_discharge_power") or "").strip(),
-        grid_import=str(raw.get("grid_import") or "").strip(),
-        grid_export=str(raw.get("grid_export") or "").strip(),
+        battery_charge_power=battery_charge_power,
+        battery_discharge_power=battery_discharge_power,
+        grid_import=grid_import,
+        grid_export=grid_export,
     )
 
 

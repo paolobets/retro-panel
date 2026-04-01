@@ -53,21 +53,23 @@ def test_parse_energy_flow_empty_fields_default_to_empty_string():
     assert ef.grid_export            == ''
 
 
-def test_parse_energy_flow_backward_compat_old_battery_power_ignored():
-    # Old field 'battery_power' must NOT map to any new field automatically.
-    # New fields simply stay empty — user must reconfigure via wizard.
+def test_parse_energy_flow_backward_compat_old_battery_power_migrated():
+    # Old field 'battery_power' is mapped to both new split fields as fallback
+    # so existing configs don't silently break after v2.9 upgrade.
+    # Users should reconfigure via wizard to assign dedicated sensors.
     raw = {'battery_power': 'sensor.old_batt', 'solar_power': 'sensor.solar'}
     ef = _parse_energy_flow(raw)
-    assert ef.battery_charge_power   == ''
-    assert ef.battery_discharge_power == ''
+    assert ef.battery_charge_power   == 'sensor.old_batt'
+    assert ef.battery_discharge_power == 'sensor.old_batt'
     assert ef.solar_power            == 'sensor.solar'
 
 
-def test_parse_energy_flow_backward_compat_old_grid_power_ignored():
+def test_parse_energy_flow_backward_compat_old_grid_power_migrated():
+    # Old field 'grid_power' is mapped to both new split fields as fallback.
     raw = {'grid_power': 'sensor.old_grid', 'home_power': 'sensor.home'}
     ef = _parse_energy_flow(raw)
-    assert ef.grid_import  == ''
-    assert ef.grid_export  == ''
+    assert ef.grid_import  == 'sensor.old_grid'
+    assert ef.grid_export  == 'sensor.old_grid'
     assert ef.home_power   == 'sensor.home'
 
 
