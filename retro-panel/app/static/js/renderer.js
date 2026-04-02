@@ -397,16 +397,14 @@ window.RP_Renderer = (function () {
   function _renderCameraItems(container, items) {
     if (!items || items.length === 0) { return; }
 
-    var grid = document.createElement('div');
-    grid.className = 'cameras-grid';
+    var grid = window.RP_DOM.createElement('div', 'cameras-grid');
 
     for (var i = 0; i < items.length; i++) {
       if (items[i].hidden) { continue; }
       try {
         if (!window.CameraComponent) { continue; }
         var tile = window.CameraComponent.createTile(items[i]);
-        var col = document.createElement('div');
-        col.className = 'cam-col';
+        var col = window.RP_DOM.createElement('div', 'cam-col');
         col.appendChild(tile);
         grid.appendChild(col);
       } catch (err) {
