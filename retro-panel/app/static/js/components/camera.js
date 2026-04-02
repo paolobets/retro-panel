@@ -33,6 +33,7 @@ window.CameraComponent = (function () {
 
     var closeBtn = document.createElement('button');
     closeBtn.className = 'cam-lb-close';
+    closeBtn.type = 'button';
     closeBtn.textContent = '\u2715'; // ✕
     closeBtn.onclick = _closeLightbox;
 
@@ -73,6 +74,7 @@ window.CameraComponent = (function () {
     var img = _lb.querySelector('.cam-lb-img');
     var nameEl = _lb.querySelector('.cam-lb-name');
     img.src = 'api/camera-proxy/' + entityId + '?t=' + Date.now();
+    img.alt = name;
     nameEl.textContent = name;
     _lb.className = 'cam-lb cam-lb--open';
   }
