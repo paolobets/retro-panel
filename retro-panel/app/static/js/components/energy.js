@@ -19,10 +19,11 @@ window.EnergyFlowComponent = (function () {
   var THRESHOLD = 30; // W — soglia rumore sensore (inverter standby tipico 10-25 W)
 
   var TEXTS = {
-    go:      { main: 'Ottimo momento!',        sub: '\u2600\uFE0F Solare attivo \u00B7 Avvia lavatrice o lavastoviglie' },
-    caution: { main: 'Usa con moderazione',    sub: '\uD83D\uDD0B Solo batteria \u00B7 Solare spento \u00B7 Evita carichi pesanti' },
-    stop:    { main: 'Evita elettrodomestici', sub: '\u26A1 Prelievo rete \u00B7 Costo elevato \u00B7 Aspetta il solare' },
-    idle:    { main: 'Nessuna produzione',     sub: 'Notte \u00B7 Tutti i sistemi a riposo' }
+    go:             { main: 'Ottimo momento!',        sub: '\u2600\uFE0F Solare attivo \u00B7 Avvia lavatrice o lavastoviglie' },
+    caution:        { main: 'Usa con moderazione',    sub: '\uD83D\uDD0B Batteria in uso \u00B7 Evita carichi pesanti' },
+    caution_solar:  { main: 'Bilancio neutro',        sub: '\u2600\uFE0F Solare \u2248 Consumo \u00B7 Batteria in standby' },
+    stop:           { main: 'Evita elettrodomestici', sub: '\u26A1 Prelievo rete \u00B7 Costo elevato \u00B7 Aspetta il solare' },
+    idle:           { main: 'Nessuna produzione',     sub: 'Notte \u00B7 Tutti i sistemi a riposo' }
   };
 
   function fmtPower(val) {
@@ -180,23 +181,35 @@ window.EnergyFlowComponent = (function () {
     var gridOut  = getNum(cfg.grid_export)             || 0;
 
     // ── State logic ──────────────────────────────────────────
+    // Verde  = solare copre casa con surplus (solar > home + soglia)
+    // Giallo = batteria in uso (no rete) oppure solare ≈ consumo casa
+    // Rosso  = prelievo dalla rete
+    // Idle   = niente produzione, niente rete
     var efState;
+    var efTextKey;
     if (gridIn > THRESHOLD) {
-      efState = 'stop';
-    } else if (solar > THRESHOLD) {
-      efState = 'go';
+      efState   = 'stop';
+      efTextKey = 'stop';
+    } else if (solar > home + THRESHOLD) {
+      efState   = 'go';
+      efTextKey = 'go';
     } else if (batDis > THRESHOLD) {
-      efState = 'caution';
+      efState   = 'caution';
+      efTextKey = 'caution';        // batteria copre casa, solare assente/insufficiente
+    } else if (solar > THRESHOLD) {
+      efState   = 'caution';
+      efTextKey = 'caution_solar';  // solare ≈ consumo casa, bilancio neutro
     } else {
-      efState = 'idle';
+      efState   = 'idle';
+      efTextKey = 'idle';
     }
 
     tile.classList.remove('ef-state-go', 'ef-state-caution', 'ef-state-stop', 'ef-state-idle');
     tile.classList.add('ef-state-' + efState);
 
     // ── Action text ──────────────────────────────────────────
-    ef.actionMain.textContent = TEXTS[efState].main;
-    ef.actionSub.textContent  = TEXTS[efState].sub;
+    ef.actionMain.textContent = TEXTS[efTextKey].main;
+    ef.actionSub.textContent  = TEXTS[efTextKey].sub;
 
     // ── Surplus area ─────────────────────────────────────────
     var sVal, sUnit, sLbl;
@@ -206,9 +219,17 @@ window.EnergyFlowComponent = (function () {
       sUnit = 'kW disponibili';
       sLbl  = 'surplus solare';
     } else if (efState === 'caution') {
-      sVal  = fmtPct(batSoc);
-      sUnit = '';
-      sLbl  = 'batteria disponibile';
+      if (batDis > THRESHOLD && solar <= THRESHOLD) {
+        // Batteria copre casa, solare assente
+        sVal  = fmtPower(batDis);
+        sUnit = 'scarica';
+        sLbl  = 'batteria in uso';
+      } else {
+        // Solare ≈ consumo, batteria in standby
+        sVal  = fmtPct(batSoc);
+        sUnit = '';
+        sLbl  = 'batteria disponibile';
+      }
     } else if (efState === 'stop') {
       sVal  = fmtPower(gridIn);
       sUnit = 'prelievo';
