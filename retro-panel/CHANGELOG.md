@@ -1,5 +1,10 @@
 # Retro Panel — Changelog
 
+## [2.9.3] — 2026-04-02
+
+### Added
+- Porta 7654 esposta per accesso diretto (bypass login HA per browser legacy iOS 12)
+
 ## [2.9.2] — 2026-04-02
 
 ### Fixed
