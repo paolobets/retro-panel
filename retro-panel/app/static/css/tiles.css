@@ -311,12 +311,16 @@
 
 /* ---- CAMERA TILE ---- */
 .tile-camera {
-  min-height: 160px;
-  cursor: default;
-  padding: 0;
+  position: relative;
+  padding-top: 56.25%; /* 16:9 ratio — no aspect-ratio (iOS 12) */
+  height: 0;
+  cursor: pointer;
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: 0;
   overflow: hidden;
 }
-.tile-camera:active { transform: none; }
+.tile-camera:active { transform: none; opacity: 0.85; }
 
 /* ---- State classes ---- */
 .tile.is-on               { border-color: var(--c-on); }
@@ -565,9 +569,13 @@
 
 /* ---- Camera tile ---- */
 .camera-img-wrap {
-  position: relative;
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: auto;
+  height: auto;
   background: var(--c-surface-2);
 }
 .camera-img {
@@ -611,9 +619,17 @@
   gap: 12px;
 }
 .cameras-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 12px;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  margin: -5px;
+}
+.cam-col {
+  -webkit-flex: 0 0 25%;
+  flex: 0 0 25%;
+  padding: 5px;
+  box-sizing: border-box;
 }
 
 /* ---- Disconnected / stale state ---- */
@@ -796,3 +812,89 @@
   transition: width 0.5s ease;
 }
 .ef-state-caution .ef-batt-fill { background: var(--c-warning); }
+
+/* ---- Camera Lightbox (v2.9.1) ---- */
+.cam-lb {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 200;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+}
+.cam-lb--open {
+  display: -webkit-flex;
+  display: flex;
+}
+.cam-lb-backdrop {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.88);
+}
+.cam-lb-content {
+  position: relative;
+  z-index: 1;
+  width: 90%;
+  max-width: 900px;
+}
+.cam-lb-img {
+  width: 100%;
+  display: block;
+  border-radius: 12px;
+  background: var(--c-surface-2);
+}
+.cam-lb-bar {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  -webkit-align-items: center;
+  align-items: center;
+  margin-top: 12px;
+  padding: 0 4px;
+}
+.cam-lb-name {
+  font-size: 17px;
+  font-weight: 600;
+  color: #e8ecf4;
+}
+.cam-lb-live {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  font-size: 13px;
+  color: #4caf50;
+}
+.cam-lb-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4caf50;
+  box-shadow: 0 0 6px #4caf50;
+  margin-right: 6px;
+}
+.cam-lb-close {
+  position: absolute;
+  top: -14px;
+  right: -14px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #2a2f45;
+  border: 2px solid #3d4460;
+  color: #e8ecf4;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  line-height: 1;
+}
+.cam-lb-close:hover { background: #3d4460; }
