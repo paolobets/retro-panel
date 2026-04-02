@@ -13,6 +13,10 @@ arch:
   - amd64
 ingress: true
 ingress_port: 7654
+ports:
+  7654/tcp: 7654
+ports_description:
+  7654/tcp: "Retro Panel direct access (bypass HA login for legacy browsers)"
 panel_icon: mdi:tablet-dashboard
 panel_title: Retro Panel
 startup: services
