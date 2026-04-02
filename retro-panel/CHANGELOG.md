@@ -1,5 +1,10 @@
 # Retro Panel — Changelog
 
+## [2.9.2] — 2026-04-02
+
+### Fixed
+- Energy semaforo: verde solo se solare > consumo casa (surplus reale); giallo per batteria in uso o solare = consumo; il surplus mostra i kW di scarica batteria quando solare assente
+
 All notable changes to this project are documented in this file.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
