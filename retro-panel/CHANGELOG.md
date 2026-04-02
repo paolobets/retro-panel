@@ -7,6 +7,14 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.9.1] — 2026-04-02
+
+### Changed
+- Camera tiles: griglia 4 colonne (da full-width) con proporzione 16:9
+- Camera tiles: tap su tile apre lightbox fullscreen con snapshot live e pulsante ✕ per chiudere
+
+---
+
 ## v2.9.0 — 2026-03-30
 
 ### New
