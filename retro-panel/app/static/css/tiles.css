@@ -632,6 +632,14 @@
   box-sizing: border-box;
 }
 
+/* Camera grid: 2 columns on phone portrait */
+@media (max-width: 599px) {
+  .cam-col {
+    -webkit-flex: 0 0 50%;
+    flex: 0 0 50%;
+  }
+}
+
 /* ---- Disconnected / stale state ---- */
 .content-stale .tile {
   -webkit-filter: grayscale(60%) opacity(0.7);
