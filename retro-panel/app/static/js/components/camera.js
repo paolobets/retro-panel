@@ -1,6 +1,6 @@
 /**
  * camera.js — Camera snapshot tile component
- * Retro Panel v2.0
+ * Retro Panel v2.9.1
  *
  * Shows snapshot JPEG updated periodically via /api/camera-proxy/{entity_id}.
  * No ES modules — IIFE + window global. iOS 12+ Safari safe.
@@ -12,7 +12,78 @@ window.CameraComponent = (function () {
   'use strict';
 
   var _timers = []; // Array of { entityId, timerId }
+  var _lb = null;   // Lightbox DOM node — lazy initialized on first tap
 
+  // ---------------------------------------------------------------------------
+  // Lightbox — single overlay reused for all cameras
+  // ---------------------------------------------------------------------------
+  function _initLightbox() {
+    if (_lb) { return; }
+
+    _lb = document.createElement('div');
+    _lb.id = 'cam-lightbox';
+    _lb.className = 'cam-lb';
+
+    var backdrop = document.createElement('div');
+    backdrop.className = 'cam-lb-backdrop';
+    backdrop.onclick = _closeLightbox;
+
+    var content = document.createElement('div');
+    content.className = 'cam-lb-content';
+
+    var closeBtn = document.createElement('button');
+    closeBtn.className = 'cam-lb-close';
+    closeBtn.textContent = '\u2715'; // ✕
+    closeBtn.onclick = _closeLightbox;
+
+    var img = document.createElement('img');
+    img.className = 'cam-lb-img';
+    img.alt = '';
+
+    var bar = document.createElement('div');
+    bar.className = 'cam-lb-bar';
+
+    var nameEl = document.createElement('span');
+    nameEl.className = 'cam-lb-name';
+
+    var liveEl = document.createElement('span');
+    liveEl.className = 'cam-lb-live';
+
+    var dot = document.createElement('span');
+    dot.className = 'cam-lb-dot';
+
+    liveEl.appendChild(dot);
+    liveEl.appendChild(document.createTextNode(' Live'));
+
+    bar.appendChild(nameEl);
+    bar.appendChild(liveEl);
+
+    content.appendChild(closeBtn);
+    content.appendChild(img);
+    content.appendChild(bar);
+
+    _lb.appendChild(backdrop);
+    _lb.appendChild(content);
+
+    document.body.appendChild(_lb);
+  }
+
+  function _openLightbox(entityId, name) {
+    _initLightbox();
+    var img = _lb.querySelector('.cam-lb-img');
+    var nameEl = _lb.querySelector('.cam-lb-name');
+    img.src = 'api/camera-proxy/' + entityId + '?t=' + Date.now();
+    nameEl.textContent = name;
+    _lb.className = 'cam-lb cam-lb--open';
+  }
+
+  function _closeLightbox() {
+    if (_lb) { _lb.className = 'cam-lb'; }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Tile
+  // ---------------------------------------------------------------------------
   function createTile(cfg) {
     var DOM = window.RP_DOM;
     var tile = DOM.createElement('div', 'tile tile-camera');
@@ -37,6 +108,13 @@ window.CameraComponent = (function () {
     imgWrap.appendChild(overlay);
     imgWrap.appendChild(errorEl);
     tile.appendChild(imgWrap);
+
+    // Click → open lightbox
+    var _entityId = cfg.entity_id;
+    var _name = cfg.title || cfg.entity_id;
+    tile.onclick = function () {
+      _openLightbox(_entityId, _name);
+    };
 
     // Load first snapshot immediately
     _loadSnapshot(img, errorEl, cfg.entity_id);
