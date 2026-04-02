@@ -397,16 +397,24 @@ window.RP_Renderer = (function () {
   function _renderCameraItems(container, items) {
     if (!items || items.length === 0) { return; }
 
+    var grid = document.createElement('div');
+    grid.className = 'cameras-grid';
+
     for (var i = 0; i < items.length; i++) {
       if (items[i].hidden) { continue; }
       try {
         if (!window.CameraComponent) { continue; }
         var tile = window.CameraComponent.createTile(items[i]);
-        container.appendChild(tile);
+        var col = document.createElement('div');
+        col.className = 'cam-col';
+        col.appendChild(tile);
+        grid.appendChild(col);
       } catch (err) {
         console.error('[renderer] camera tile failed:', items[i] && items[i].entity_id, err);
       }
     }
+
+    container.appendChild(grid);
   }
 
   // ---------------------------------------------------------------------------
