@@ -1,6 +1,6 @@
 /**
  * camera.js — Camera snapshot tile component
- * Retro Panel v2.9.1
+ * Retro Panel v2.9.4
  *
  * Shows snapshot JPEG updated periodically via /api/camera-proxy/{entity_id}.
  * No ES modules — IIFE + window global. iOS 12+ Safari safe.
@@ -11,8 +11,10 @@
 window.CameraComponent = (function () {
   'use strict';
 
-  var _timers = []; // Array of { entityId, timerId }
-  var _lb = null;   // Lightbox DOM node — lazy initialized on first tap
+  var _timers = [];        // Array of { entityId, timerId }
+  var _lb = null;          // Lightbox DOM node — lazy initialized on first tap
+  var _lbPollTimer = null; // F-03: interval ID for lightbox live refresh
+  var _lbEntityId = null;  // F-03: entity currently shown in lightbox
 
   // ---------------------------------------------------------------------------
   // Lightbox — single overlay reused for all cameras
@@ -27,6 +29,8 @@ window.CameraComponent = (function () {
     var backdrop = document.createElement('div');
     backdrop.className = 'cam-lb-backdrop';
     backdrop.onclick = _closeLightbox;
+    // F-04: reliable close on iOS 12 touch
+    backdrop.addEventListener('touchend', function (e) { e.preventDefault(); _closeLightbox(); });
 
     var content = document.createElement('div');
     content.className = 'cam-lb-content';
@@ -36,6 +40,8 @@ window.CameraComponent = (function () {
     closeBtn.type = 'button';
     closeBtn.textContent = '\u2715'; // ✕
     closeBtn.onclick = _closeLightbox;
+    // F-04: reliable close on iOS 12 touch
+    closeBtn.addEventListener('touchend', function (e) { e.preventDefault(); _closeLightbox(); });
 
     var img = document.createElement('img');
     img.className = 'cam-lb-img';
@@ -73,13 +79,26 @@ window.CameraComponent = (function () {
     _initLightbox();
     var img = _lb.querySelector('.cam-lb-img');
     var nameEl = _lb.querySelector('.cam-lb-name');
-    img.src = 'api/camera-proxy/' + entityId + '?t=' + Date.now();
+    img.src = 'api/camera-proxy/' + entityId + '?_t=' + Date.now();
     img.alt = name;
     nameEl.textContent = name;
     _lb.className = 'cam-lb cam-lb--open';
+    // F-03: avvia polling live per il lightbox
+    if (_lbPollTimer !== null) { clearInterval(_lbPollTimer); }
+    _lbEntityId = entityId;
+    _lbPollTimer = setInterval(function () {
+      var lbImg = _lb.querySelector('.cam-lb-img');
+      lbImg.src = 'api/camera-proxy/' + _lbEntityId + '?_t=' + Date.now();
+    }, 10000);
   }
 
   function _closeLightbox() {
+    // F-03: ferma il polling live alla chiusura
+    if (_lbPollTimer !== null) {
+      clearInterval(_lbPollTimer);
+      _lbPollTimer = null;
+    }
+    _lbEntityId = null;
     if (_lb) { _lb.className = 'cam-lb'; }
   }
 

@@ -10,12 +10,14 @@ Security model:
 - CORS is restricted to the configured HA origin (no wildcard).
 - Standard security headers applied on every response.
 - Rate limiting on service calls (10 req/s per IP, sliding window with cleanup).
+- Sensitive picker/config endpoints restricted to HA Ingress connections only.
 """
 
 from __future__ import annotations
 
 import asyncio
 import collections
+import ipaddress
 import logging
 import re
 import time
@@ -60,6 +62,12 @@ RATE_LIMIT_MAX = 10        # max service POST calls per window
 RATE_LIMIT_WINDOW = 1.0    # window size in seconds
 RATE_LIMIT_MAX_IPS = 5000  # cap on tracked IPs to prevent memory exhaustion
 
+# Alarm-specific rate limit: prevent PIN brute-force on alarm_control_panel endpoints.
+ALARM_RATE_LIMIT_MAX = 3          # max attempts per window
+ALARM_RATE_LIMIT_WINDOW = 30.0    # window size in seconds
+ALARM_RATE_LIMIT_LOCKOUT = 60.0   # lockout duration after breach, in seconds
+ALARM_RATE_LIMIT_MAX_IPS = 1000   # cap on tracked IPs for the alarm limiter
+
 # Validate entity_id format: domain.object_id (e.g. light.living_room)
 _ENTITY_ID_RE = re.compile(r"^[a-z_]+\.[a-z0-9_]+$")
 
@@ -89,6 +97,136 @@ def _get_rate_window(ip: str) -> collections.deque:
     return _rate_windows[ip]
 
 
+# ---------------------------------------------------------------------------
+# Alarm-specific rate limiter state (in-memory, asyncio single-threaded safe)
+# ---------------------------------------------------------------------------
+
+_alarm_windows: dict[str, collections.deque] = {}
+_alarm_lockouts: dict[str, float] = {}
+_alarm_keys_order: collections.deque = collections.deque()
+
+
+def _check_alarm_rate_limit(ip: str) -> bool:
+    """Check and update the alarm rate limit for an IP.
+
+    Returns True if the request is allowed, False if it must be blocked.
+    Max ALARM_RATE_LIMIT_MAX attempts per ALARM_RATE_LIMIT_WINDOW seconds;
+    ALARM_RATE_LIMIT_LOCKOUT seconds lockout on breach.
+    Uses request.remote exclusively — not X-Forwarded-For.
+    """
+    now = time.monotonic()
+
+    lockout_until = _alarm_lockouts.get(ip, 0.0)
+    if now < lockout_until:
+        return False
+
+    if ip not in _alarm_windows:
+        if len(_alarm_windows) >= ALARM_RATE_LIMIT_MAX_IPS:
+            oldest = _alarm_keys_order.popleft()
+            _alarm_windows.pop(oldest, None)
+            _alarm_lockouts.pop(oldest, None)
+        _alarm_windows[ip] = collections.deque()
+        _alarm_keys_order.append(ip)
+
+    window = _alarm_windows[ip]
+    while window and now - window[0] > ALARM_RATE_LIMIT_WINDOW:
+        window.popleft()
+
+    if len(window) >= ALARM_RATE_LIMIT_MAX:
+        _alarm_lockouts[ip] = now + ALARM_RATE_LIMIT_LOCKOUT
+        logger.warning(
+            "Alarm rate limit breached for IP %s — locked out for %.0f s",
+            ip,
+            ALARM_RATE_LIMIT_LOCKOUT,
+        )
+        return False
+
+    window.append(now)
+    return True
+
+
+# ---------------------------------------------------------------------------
+# IP whitelist middleware (S-01)
+# ---------------------------------------------------------------------------
+
+@web.middleware
+async def ip_whitelist_middleware(
+    request: web.Request,
+    handler: Callable[[web.Request], Awaitable[web.Response]],
+) -> web.Response:
+    """Block direct-port requests from IPs not in allowed_direct_ips.
+
+    Skipped entirely for HA Ingress connections (X-Ingress-Path present) —
+    those are already authenticated by HA Supervisor.
+    Uses request.remote exclusively; not X-Forwarded-For (to prevent spoofing).
+    A list containing '0.0.0.0/0' (the default) allows all IPs (whitelist disabled).
+    """
+    if request.headers.get("X-Ingress-Path"):
+        return await handler(request)
+
+    config = request.app.get("config")
+    allowed_ips: list = getattr(config, "allowed_direct_ips", ["0.0.0.0/0"])
+
+    # Fast path: 0.0.0.0/0 present → allow all
+    if "0.0.0.0/0" in allowed_ips:
+        return await handler(request)
+
+    client_ip_str: str = request.remote or ""
+    try:
+        client_ip = ipaddress.ip_address(client_ip_str)
+    except ValueError:
+        logger.warning("ip_whitelist: unparseable client IP %r — denying", client_ip_str)
+        return web.json_response({"error": "Access denied."}, status=403)
+
+    for cidr in allowed_ips:
+        try:
+            if client_ip in ipaddress.ip_network(cidr, strict=False):
+                return await handler(request)
+        except ValueError:
+            continue  # already validated at load time, but be defensive
+
+    logger.warning("ip_whitelist: blocked %s (not in allowed_direct_ips)", client_ip_str)
+    return web.json_response({"error": "Access denied."}, status=403)
+
+
+# ---------------------------------------------------------------------------
+# Ingress-only endpoint protection (S-02/S-03)
+# ---------------------------------------------------------------------------
+
+# Endpoints that expose sensitive home data or allow full config overwrite.
+# Must not be reachable on the direct port (7654) without Ingress authentication.
+_INGRESS_ONLY_PATHS: frozenset[str] = frozenset({
+    "/api/picker/entities",
+    "/api/picker/areas",
+    "/api/picker/cameras",
+    "/api/config",
+})
+
+
+@web.middleware
+async def ingress_only_middleware(
+    request: web.Request,
+    handler: Callable[[web.Request], Awaitable[web.Response]],
+) -> web.Response:
+    """Restrict sensitive endpoints to HA Ingress connections only.
+
+    Picker and config endpoints expose sensitive home data and must not
+    be accessible on the direct port without Ingress authentication.
+    Requests without X-Ingress-Path to these paths are rejected with 403.
+    """
+    if request.path in _INGRESS_ONLY_PATHS and not request.headers.get("X-Ingress-Path"):
+        logger.warning(
+            "Blocked direct-port access to protected endpoint: %s from %s",
+            request.path,
+            request.remote,
+        )
+        return web.json_response(
+            {"error": "This endpoint is only accessible via Home Assistant."},
+            status=403,
+        )
+    return await handler(request)
+
+
 @web.middleware
 async def rate_limit_middleware(
     request: web.Request,
@@ -97,11 +235,17 @@ async def rate_limit_middleware(
     """Sliding-window rate limiter: max 10 service POST calls per IP per second.
 
     Only applies to POST /api/service/* routes. All other routes pass through.
-    Uses X-Forwarded-For when present (HA Ingress sets this header).
+    Uses X-Forwarded-For only when the request comes through HA Ingress
+    (X-Ingress-Path present); direct connections use request.remote to prevent
+    IP spoofing via the header.
     """
     if request.method == "POST" and request.path.startswith("/api/service/"):
-        # Prefer X-Forwarded-For set by HA Ingress proxy; fall back to remote
-        ip: str = request.headers.get("X-Forwarded-For", request.remote or "unknown").split(",")[0].strip()
+        # Use X-Forwarded-For only when behind HA Ingress; direct connections
+        # use request.remote to prevent trivial rate-limit bypass via spoofed header.
+        if request.headers.get("X-Ingress-Path"):
+            ip: str = request.headers.get("X-Forwarded-For", request.remote or "unknown").split(",")[0].strip()
+        else:
+            ip: str = request.remote or "unknown"
         now = time.monotonic()
         window = _get_rate_window(ip)
 
@@ -117,6 +261,16 @@ async def rate_limit_middleware(
             )
 
         window.append(now)
+
+        # Alarm-specific brute-force protection (uses request.remote, not X-Forwarded-For)
+        if request.path.startswith("/api/service/alarm_control_panel/"):
+            alarm_ip: str = request.remote or "unknown"
+            if not _check_alarm_rate_limit(alarm_ip):
+                logger.warning("Alarm rate limit blocked request from IP %s", alarm_ip)
+                return web.json_response(
+                    {"error": "Too many alarm attempts. Try again later."},
+                    status=429,
+                )
 
     return await handler(request)
 
@@ -172,7 +326,7 @@ async def security_headers_middleware(
     frame_ancestors = ha_url.rstrip("/") if ha_url else "'self'"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline'; "
+        "script-src 'self'; "
         "style-src 'self' 'unsafe-inline'; "
         "img-src 'self' data:; "
         "connect-src 'self' ws: wss:; "
@@ -266,12 +420,16 @@ def create_app(config, ha_client: HAClient, ws_proxy: WSProxy) -> web.Applicatio
     Middleware stack (applied in order):
     1. ingress_path_middleware  — strips HA Ingress prefix
     2. security_headers_middleware — adds security headers + restricted CORS
-    3. rate_limit_middleware    — limits service POST calls per IP
+    3. ip_whitelist_middleware  — blocks direct-port access from non-whitelisted IPs
+    4. ingress_only_middleware  — blocks picker/config on direct-port connections
+    5. rate_limit_middleware    — limits service POST calls per IP
     """
     app = web.Application(
         middlewares=[
             ingress_path_middleware,
             security_headers_middleware,
+            ip_whitelist_middleware,
+            ingress_only_middleware,
             rate_limit_middleware,
         ]
     )

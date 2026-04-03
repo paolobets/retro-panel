@@ -104,7 +104,8 @@ async def save_config(request: web.Request) -> web.Response:
     """Accept v5 structure, write to /data/entities.json, reload in-memory config."""
     try:
         body = await request.json()
-    except Exception:
+    except Exception as exc:
+        logger.warning("save_config: invalid JSON body: %s", exc)
         return web.json_response({"error": "Invalid JSON body"}, status=400)
 
     # --- overview ---

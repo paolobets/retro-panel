@@ -1,5 +1,30 @@
 # Retro Panel — Changelog
 
+## [2.9.4] — 2026-04-03
+
+### Security
+- **S-01** IP whitelist per accesso diretto porta 7654: nuovo campo `allowed_direct_ips` in options.json (default `0.0.0.0/0` = aperto); le connessioni via HA Ingress bypassano sempre il controllo
+- **S-02/S-03** Picker entities/areas/cameras e `POST /api/config` ora restituiscono 403 se acceduti direttamente senza HA Ingress (`X-Ingress-Path` assente)
+- **S-04** Rate limiter servizi: usa `X-Forwarded-For` solo su connessioni Ingress; su porta diretta usa `request.remote` per prevenire spoofing header
+- **S-06** CSP: rimosso `'unsafe-inline'` da `script-src` (nessuno script inline nel pannello)
+- Alarm control panel: rate limit dedicato 3 tentativi/30s con lockout 60s su porta diretta
+
+### Fixed
+- **Energy card**: sensori `unavailable`/`unknown` in HA ora mostrano stato grigio "Dati non disponibili" invece di interpretare il valore come 0
+- **Camera lightbox**: polling live 10s durante apertura; chiusura affidabile su iOS 12 via `touchend` su backdrop e pulsante ✕
+- **Scenari**: chiamate a `scene.*` e `script.*` non restituiscono più 400 (domini aggiunti alla allowlist servizi)
+- **App boot**: rimosso `async/await` e `AbortController` — `api.js` e `app.js` ora usano Promise chain compatibili iOS 12
+
+### Changed
+- **UI**: font secondari 10px → 11px (label sensori, energy card, scenari)
+- **UI**: swatches colore bottom sheet 36px → 44px (touch target Apple HIG)
+- **UI**: pulsante ✕ lightbox camera 38px → 44px; sidebar toggle 40px → 44px
+- **UI**: testo italiano ovunque (loading screen, banner riconnessione, bottom sheet)
+- **Scenarios grid**: convertito da CSS Grid a flex con negative margin (compatibilità iOS 12)
+- **Test**: `test_handlers_entities.py` aggiornato al nuovo modulo `picker_entities` (13 test ora inclusi nella suite)
+
+---
+
 ## [2.9.3] — 2026-04-02
 
 ### Added

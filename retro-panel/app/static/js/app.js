@@ -15,7 +15,8 @@
  * Rendering  → window.RP_Renderer
  * Cameras    → window.CameraComponent
  *
- * No ES modules. iOS 12+ Safari safe (no const/let/arrow/import/export).
+ * No ES modules. iOS 12 Safari safe.
+ * No async/await, no AbortController.
  * Depends on: utils/dom.js, api.js, ws.js, nav.js, renderer.js, camera.js,
  *             components/*.js
  */
@@ -98,12 +99,14 @@
     if (!dot) { return; }
     if (connected) {
       dot.className = 'status-dot status-connected';
-      dot.title = 'Connected';
+      dot.title = 'Connesso';
       if (banner) { banner.classList.add('hidden'); }
       if (contentArea) { contentArea.classList.remove('content-stale'); }
+      // Annulla eventuale poll residuo alla riconnessione
+      if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
     } else {
       dot.className = 'status-dot status-disconnected';
-      dot.title = 'Disconnected';
+      dot.title = 'Disconnesso';
       if (banner) { banner.classList.remove('hidden'); }
       if (contentArea) { contentArea.classList.add('content-stale'); }
     }
@@ -111,7 +114,7 @@
 
   function setConnecting() {
     var dot = DOM.qs('#connection-status');
-    if (dot) { dot.className = 'status-dot status-connecting'; dot.title = 'Connecting\u2026'; }
+    if (dot) { dot.className = 'status-dot status-connecting'; dot.title = 'Connessione\u2026'; }
   }
 
   // ---------------------------------------------------------------------------
@@ -136,9 +139,9 @@
     var clockEl = DOM.qs('#panel-clock');
     var dateEl  = DOM.qs('#panel-date');
 
-    var DAYS   = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var DAYS   = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+    var MONTHS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu',
+                  'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
 
     function tick() {
       var now = new Date();
@@ -164,11 +167,10 @@
 
   function scheduleStatePoll(intervalSeconds) {
     if (pollTimer) { return; }
-    pollTimer = setTimeout(async function () {
+    pollTimer = setTimeout(function () {
       pollTimer = null;
       if (AppState.wsConnected) { return; }
-      try {
-        var statesArray = await window.getAllStates();
+      window.getAllStates().then(function (statesArray) {
         if (Array.isArray(statesArray)) {
           for (var i = 0; i < statesArray.length; i++) {
             var s = statesArray[i];
@@ -177,19 +179,19 @@
             }
           }
         }
-      } catch (err) {
+      }, function (err) {
         console.warn('[app] State poll failed:', err);
-      }
-      if (!AppState.wsConnected) { scheduleStatePoll(intervalSeconds); }
+      }).then(function () {
+        if (!AppState.wsConnected) { scheduleStatePoll(intervalSeconds); }
+      });
     }, intervalSeconds * 1000);
   }
 
   // ---------------------------------------------------------------------------
   // Boot
   // ---------------------------------------------------------------------------
-  async function boot() {
-    try {
-      var config = await window.getPanelConfig();
+  function boot() {
+    window.getPanelConfig().then(function (config) {
       AppState.config = config;
       applyConfig(config);
 
@@ -197,74 +199,75 @@
       window.RP_Renderer.init();
 
       // Fetch stati iniziali
-      var statesArray = await window.getAllStates();
-      if (Array.isArray(statesArray)) {
-        for (var i = 0; i < statesArray.length; i++) {
-          var s = statesArray[i];
-          if (s && s.entity_id) {
-            AppState.states[s.entity_id] = { state: s.state, attributes: s.attributes };
+      return window.getAllStates().then(function (statesArray) {
+        if (Array.isArray(statesArray)) {
+          for (var i = 0; i < statesArray.length; i++) {
+            var s = statesArray[i];
+            if (s && s.entity_id) {
+              AppState.states[s.entity_id] = { state: s.state, attributes: s.attributes };
+            }
           }
         }
-      }
 
-      // Inizializza nav — la callback di navigazione aggiorna AppState e ri-renderizza
-      window.RP_Nav.init(config, AppState.activeSectionId, function (sectionId) {
-        AppState.activeSectionId = sectionId;
-        // Distruggi timer camere prima di cambiare sezione
-        if (window.CameraComponent) { window.CameraComponent.destroyAll(); }
-        window.RP_Renderer.renderActiveSection(AppState);
-        window.RP_Nav.setActiveSidebarItem(sectionId);
-        // Lazy-load states for the newly visible section entities
-        if (window.getStates && window.RP_Nav.getSectionEntityIds) {
-          var sectionIds = window.RP_Nav.getSectionEntityIds(sectionId);
-          if (sectionIds && sectionIds.length > 0) {
-            window.getStates(sectionIds).then(function (statesArray) {
-              if (Array.isArray(statesArray)) {
-                for (var i = 0; i < statesArray.length; i++) {
-                  var s = statesArray[i];
-                  if (s && s.entity_id) {
-                    updateEntityState(s.entity_id, { state: s.state, attributes: s.attributes });
+        // Inizializza nav — la callback di navigazione aggiorna AppState e ri-renderizza
+        window.RP_Nav.init(config, AppState.activeSectionId, function (sectionId) {
+          AppState.activeSectionId = sectionId;
+          // Distruggi timer camere prima di cambiare sezione
+          if (window.CameraComponent) { window.CameraComponent.destroyAll(); }
+          window.RP_Renderer.renderActiveSection(AppState);
+          window.RP_Nav.setActiveSidebarItem(sectionId);
+          // Lazy-load states for the newly visible section entities
+          if (window.getStates && window.RP_Nav.getSectionEntityIds) {
+            var sectionIds = window.RP_Nav.getSectionEntityIds(sectionId);
+            if (sectionIds && sectionIds.length > 0) {
+              window.getStates(sectionIds).then(function (arr) {
+                if (Array.isArray(arr)) {
+                  for (var i = 0; i < arr.length; i++) {
+                    var s = arr[i];
+                    if (s && s.entity_id) {
+                      updateEntityState(s.entity_id, { state: s.state, attributes: s.attributes });
+                    }
                   }
                 }
-              }
-            }).catch(function (err) {
-              console.warn('[app] Section state refresh failed:', err);
-            });
+              }).catch(function (err) {
+                console.warn('[app] Section state refresh failed:', err);
+              });
+            }
           }
+        });
+
+        // Sidebar toggle
+        var toggleBtn = DOM.qs('#sidebar-toggle');
+        if (toggleBtn) {
+          toggleBtn.addEventListener('touchend', function (e) {
+            e.preventDefault();
+            window.RP_Nav.toggleSidebar();
+          });
+          toggleBtn.addEventListener('click', function () {
+            if (!('ontouchstart' in window)) { window.RP_Nav.toggleSidebar(); }
+          });
         }
+
+        // Render sezione iniziale
+        window.RP_Renderer.renderActiveSection(AppState);
+
+        showPanel();
+        hideLoadingScreen();
+        startClock();
+
+        // WebSocket
+        setConnecting();
+        window.connectWS(
+          function (entityId, newState) { updateEntityState(entityId, newState); },
+          function () { setConnectionStatus(true); },
+          function () {
+            setConnectionStatus(false);
+            scheduleStatePoll(config.refresh_interval || 30);
+          }
+        );
       });
 
-      // Sidebar toggle
-      var toggleBtn = DOM.qs('#sidebar-toggle');
-      if (toggleBtn) {
-        toggleBtn.addEventListener('touchend', function (e) {
-          e.preventDefault();
-          window.RP_Nav.toggleSidebar();
-        });
-        toggleBtn.addEventListener('click', function () {
-          if (!('ontouchstart' in window)) { window.RP_Nav.toggleSidebar(); }
-        });
-      }
-
-      // Render sezione iniziale
-      window.RP_Renderer.renderActiveSection(AppState);
-
-      showPanel();
-      hideLoadingScreen();
-      startClock();
-
-      // WebSocket
-      setConnecting();
-      window.connectWS(
-        function (entityId, newState) { updateEntityState(entityId, newState); },
-        function () { setConnectionStatus(true); },
-        function () {
-          setConnectionStatus(false);
-          scheduleStatePoll(config.refresh_interval || 30);
-        }
-      );
-
-    } catch (err) {
+    }).catch(function (err) {
       console.error('[app] Boot failed:', err);
       showPanel();
       hideLoadingScreen();
@@ -272,11 +275,11 @@
       if (ca) {
         ca.innerHTML = '<div class="empty-state">'
           + '<span class="empty-state-icon">\u26A0</span>'
-          + '<p class="empty-state-title">Cannot connect to Home Assistant</p>'
-          + '<p class="empty-state-hint">Check add-on logs for details.</p>'
+          + '<p class="empty-state-title">Impossibile connettersi a Home Assistant</p>'
+          + '<p class="empty-state-hint">Controlla i log del componente aggiuntivo.</p>'
           + '</div>';
       }
-    }
+    });
   }
 
   // ---------------------------------------------------------------------------

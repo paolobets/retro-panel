@@ -250,6 +250,7 @@ class PanelConfig:
     scenarios_section_icon: str = "palette"
     cameras_section_title: str = "Telecamere"
     cameras_section_icon: str = "cctv"
+    allowed_direct_ips: List[str] = field(default_factory=lambda: ["0.0.0.0/0"])
 
     # --------------- backward compat helpers ---------------
 
@@ -771,6 +772,30 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
 # Public API
 # ---------------------------------------------------------------------------
 
+def _parse_allowed_ips(raw) -> List[str]:
+    """Parse and validate allowed_direct_ips from options.json.
+
+    Each entry must be a valid IP address or CIDR network string.
+    Invalid entries are logged and skipped. Returns ["0.0.0.0/0"] (allow all)
+    when the list is missing or empty — preserves backward compatibility for
+    installations that don't have this field yet.
+    """
+    import ipaddress as _ipaddress
+    if not raw or not isinstance(raw, list):
+        return ["0.0.0.0/0"]
+    result = []
+    for entry in raw:
+        s = str(entry or "").strip()
+        if not s:
+            continue
+        try:
+            _ipaddress.ip_network(s, strict=False)
+            result.append(s)
+        except ValueError:
+            logger.warning("allowed_direct_ips: invalid entry %r — skipped", s)
+    return result if result else ["0.0.0.0/0"]
+
+
 def load_config() -> PanelConfig:
     """Load and parse the add-on configuration from options.json."""
     config_path = _resolve_config_path()
@@ -847,6 +872,7 @@ def load_config() -> PanelConfig:
         scenarios_section_icon=scenarios_section_icon,
         cameras_section_title=cameras_section_title,
         cameras_section_icon=cameras_section_icon,
+        allowed_direct_ips=_parse_allowed_ips(raw.get("allowed_direct_ips")),
     )
 
     logger.info(

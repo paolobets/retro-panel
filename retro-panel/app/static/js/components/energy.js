@@ -1,6 +1,6 @@
 /**
  * energy.js — Energy Flow Card v2 (Design G)
- * Retro Panel v2.9.0
+ * Retro Panel v2.9.4
  *
  * Design G: semaforo go/caution/stop/idle + surplus solare + progress bar
  * + 4 metriche secondarie (solar, home, battery SOC, grid).
@@ -23,7 +23,8 @@ window.EnergyFlowComponent = (function () {
     caution:        { main: 'Usa con moderazione',    sub: '\uD83D\uDD0B Batteria in uso \u00B7 Evita carichi pesanti' },
     caution_solar:  { main: 'Bilancio neutro',        sub: '\u2600\uFE0F Solare \u2248 Consumo \u00B7 Batteria in standby' },
     stop:           { main: 'Evita elettrodomestici', sub: '\u26A1 Prelievo rete \u00B7 Costo elevato \u00B7 Aspetta il solare' },
-    idle:           { main: 'Nessuna produzione',     sub: 'Notte \u00B7 Tutti i sistemi a riposo' }
+    idle:           { main: 'Nessuna produzione',     sub: 'Notte \u00B7 Tutti i sistemi a riposo' },
+    unavailable:    { main: 'Dati non disponibili',   sub: 'Uno o pi\u00F9 sensori non raggiungibili' }
   };
 
   function fmtPower(val) {
@@ -164,30 +165,49 @@ window.EnergyFlowComponent = (function () {
     if (!ef) { return; }
     var cfg = ef.cfg;
 
+    // Returns: number = valid reading, null = entity not configured,
+    //          undefined = entity configured but unavailable/unknown in HA
     function getNum(entityId) {
       if (!entityId) { return null; }
       var s = states[entityId];
       if (!s) { return null; }
+      if (s.state === 'unavailable' || s.state === 'unknown') { return undefined; }
       var n = parseFloat(s.state);
       return isNaN(n) ? null : n;
     }
 
-    var solar    = getNum(cfg.solar_power)             || 0;
-    var home     = getNum(cfg.home_power)              || 0;
-    var batSoc   = getNum(cfg.battery_soc);
-    var batChg   = getNum(cfg.battery_charge_power)    || 0;
-    var batDis   = getNum(cfg.battery_discharge_power) || 0;
-    var gridIn   = getNum(cfg.grid_import)             || 0;
-    var gridOut  = getNum(cfg.grid_export)             || 0;
+    var solar_raw  = getNum(cfg.solar_power);
+    var home_raw   = getNum(cfg.home_power);
+    var batSoc     = getNum(cfg.battery_soc);
+    var batChg_raw = getNum(cfg.battery_charge_power);
+    var batDis_raw = getNum(cfg.battery_discharge_power);
+    var gridIn_raw = getNum(cfg.grid_import);
+    var gridOut_raw= getNum(cfg.grid_export);
+
+    // If any configured critical sensor is unavailable, show unavail state
+    var criticalUnavail = (solar_raw === undefined || home_raw === undefined ||
+                           gridIn_raw === undefined || gridOut_raw === undefined);
+
+    // Coerce undefined/null to 0 only after unavail check
+    var solar   = solar_raw   || 0;
+    var home    = home_raw    || 0;
+    var batChg  = batChg_raw  || 0;
+    var batDis  = batDis_raw  || 0;
+    var gridIn  = gridIn_raw  || 0;
+    var gridOut = gridOut_raw || 0;
 
     // ── State logic ──────────────────────────────────────────
-    // Verde  = solare copre casa con surplus (solar > home + soglia)
-    // Giallo = batteria in uso (no rete) oppure solare ≈ consumo casa
-    // Rosso  = prelievo dalla rete
-    // Idle   = niente produzione, niente rete
+    // Unavail = uno o più sensori critici offline
+    // Verde   = solare copre casa con surplus (solar > home + soglia)
+    // Giallo  = batteria in uso (no rete) oppure solare ≈ consumo casa
+    // Rosso   = prelievo dalla rete
+    // Idle    = niente produzione, niente rete
     var efState;
     var efTextKey;
-    if (gridIn > THRESHOLD) {
+    if (criticalUnavail) {
+      efState   = 'unavail';
+      efTextKey = 'unavailable';
+    } else if (gridIn > THRESHOLD) {
       efState   = 'stop';
       efTextKey = 'stop';
     } else if (solar > home + THRESHOLD) {
@@ -204,7 +224,7 @@ window.EnergyFlowComponent = (function () {
       efTextKey = 'idle';
     }
 
-    tile.classList.remove('ef-state-go', 'ef-state-caution', 'ef-state-stop', 'ef-state-idle');
+    tile.classList.remove('ef-state-go', 'ef-state-caution', 'ef-state-stop', 'ef-state-idle', 'ef-state-unavail');
     tile.classList.add('ef-state-' + efState);
 
     // ── Action text ──────────────────────────────────────────
@@ -251,8 +271,8 @@ window.EnergyFlowComponent = (function () {
     ef.solarVal.textContent = solar > THRESHOLD ? fmtPower(solar) : '\u2014';
     ef.homeVal.textContent  = home  > 0         ? fmtPower(home)  : '\u2014';
 
-    // Battery
-    if (batSoc !== null) {
+    // Battery (null = not configured, undefined = offline — both show '—')
+    if (typeof batSoc === 'number') {
       ef.battVal.textContent  = fmtPct(batSoc);
       ef.battFill.style.width = Math.round(batSoc) + '%';
     } else {

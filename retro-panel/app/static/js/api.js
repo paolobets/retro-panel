@@ -1,9 +1,10 @@
 /**
  * api.js — Fetch wrapper for Retro Panel backend API
  * All paths are relative so the app works behind HA Ingress.
- * No ES modules — loaded as regular script. iOS 15 Safari safe.
+ * No ES modules — loaded as regular script. iOS 12 Safari safe.
+ * No async/await, no AbortController (not reliable on iOS 12.0).
  *
- * Exposes globally: getPanelConfig, getAllStates, getState, callService
+ * Exposes globally: getPanelConfig, getAllStates, getStates, getState, callService
  */
 (function () {
   'use strict';
@@ -18,19 +19,29 @@
   ApiError.prototype = Object.create(Error.prototype);
 
   /**
+   * Returns a Promise that rejects after ms milliseconds.
+   * Used instead of AbortController (not available on iOS 12.0).
+   */
+  function withTimeout(promise, ms) {
+    var timeoutPromise = new Promise(function (_, reject) {
+      setTimeout(function () {
+        reject(new Error('Request timed out after ' + (ms / 1000) + 's'));
+      }, ms);
+    });
+    return Promise.race([promise, timeoutPromise]);
+  }
+
+  /**
    * Core fetch wrapper with timeout and retry on network error.
-   * @param {string} path  Relative API path, e.g. "api/panel-config"
-   * @param {object} [options]  fetch options
-   * @param {number} [retries]  Number of retries on network error (default 2)
+   * @param {string} path     Relative API path, e.g. "api/panel-config"
+   * @param {object} options  fetch options
+   * @param {number} retries  Number of retries on network error (default 2)
    * @returns {Promise<any>}  Parsed JSON response
    */
-  async function apiFetch(path, options, retries) {
-    if (options === undefined) options = {};
-    if (retries === undefined) retries = 2;
+  function apiFetch(path, options, retries) {
+    if (options === undefined) { options = {}; }
+    if (retries === undefined) { retries = 2; }
 
-    // Only send Content-Type for requests that have a body (POST, PUT, PATCH).
-    // Adding Content-Type to GET requests triggers CORS preflight in some
-    // iOS Safari / WKWebView contexts and is semantically incorrect.
     var isBodyRequest = options.method && options.method !== 'GET';
     var headers = Object.assign(
       {},
@@ -38,41 +49,32 @@
       options.headers || {}
     );
 
-    var lastError;
-    for (var attempt = 0; attempt <= retries; attempt++) {
-      var controller = new AbortController();
-      var timeoutId = setTimeout(function () { controller.abort(); }, FETCH_TIMEOUT_MS);
-      try {
-        var resp = await fetch(path, Object.assign({}, options, {
-          headers: headers,
-          signal: controller.signal,
-        }));
-        clearTimeout(timeoutId);
-
+    function attempt(n) {
+      return withTimeout(
+        fetch(path, Object.assign({}, options, { headers: headers })),
+        FETCH_TIMEOUT_MS
+      ).then(function (resp) {
         if (!resp.ok) {
-          var msg = 'HTTP ' + resp.status;
-          try {
-            var body = await resp.json();
-            msg = body.error || msg;
-          } catch (_) { /* ignore */ }
-          throw new ApiError(msg, resp.status);
+          return resp.json().catch(function () { return null; }).then(function (body) {
+            var msg = (body && body.error) ? body.error : 'HTTP ' + resp.status;
+            throw new ApiError(msg, resp.status);
+          });
         }
-
-        return await resp.json();
-      } catch (err) {
-        clearTimeout(timeoutId);
-        lastError = err;
-        if (err instanceof ApiError) throw err;
-        if (err.name === 'AbortError') {
-          lastError = new Error('Request timed out after ' + (FETCH_TIMEOUT_MS / 1000) + 's');
-          break; // no retry on timeout
+        return resp.json();
+      }).catch(function (err) {
+        if (err instanceof ApiError) { throw err; }
+        if (n < retries) {
+          return new Promise(function (resolve) {
+            setTimeout(resolve, 1000);
+          }).then(function () {
+            return attempt(n + 1);
+          });
         }
-        if (attempt < retries) {
-          await new Promise(function (resolve) { setTimeout(resolve, 1000); });
-        }
-      }
+        throw err;
+      });
     }
-    throw lastError;
+
+    return attempt(0);
   }
 
   window.getPanelConfig = function () { return apiFetch('api/panel-config'); };

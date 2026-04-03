@@ -156,7 +156,7 @@
   flex: 1;
 }
 .tile-sensor .name {
-  font-size: 10px;
+  font-size: 11px;
   color: #9ca3af;
   white-space: nowrap;
   overflow: hidden;
@@ -172,7 +172,7 @@
   white-space: nowrap;
 }
 .tile-sensor .unit {
-  font-size: 10px;
+  font-size: 11px;
   color: #9ca3af;
   margin-left: 2px;
 }
@@ -560,7 +560,7 @@
   word-break: break-word;
 }
 .scenario-domain {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--c-accent);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -612,11 +612,16 @@
 }
 .camera-error.hidden { display: none; }
 
-/* ---- Grids per scenari e camere (grid: gap OK) ---- */
+/* ---- Grids per scenari e camere (flex: iOS 12 safe — NO grid/gap) ---- */
 .scenarios-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 12px;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  margin: -6px;
+}
+.scenarios-grid .tile-col-scenario {
+  padding: 6px;
 }
 .cameras-grid {
   display: -webkit-flex;
@@ -754,7 +759,7 @@
   margin-top: 2px;
 }
 .ef-surplus-lbl {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--c-text-sec);
   opacity: 0.7;
 }
@@ -799,7 +804,7 @@
   color: var(--c-text-pri);
 }
 .ef-metric-lbl {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--c-text-sec);
   margin-top: 2px;
 }
@@ -820,6 +825,12 @@
   transition: width 0.5s ease;
 }
 .ef-state-caution .ef-batt-fill { background: var(--c-warning); }
+
+/* ── Energy unavail state (sensori offline) ─────────────────────────────── */
+.ef-state-unavail .ef-action-main { color: var(--c-text-sec); }
+.ef-state-unavail .ef-surplus-val { color: var(--c-text-sec); }
+.ef-state-unavail .ef-progress-fill { background: var(--c-surface-3); }
+.ef-state-unavail .ef-batt-fill { background: var(--c-surface-3); }
 
 /* ---- Camera Lightbox (v2.9.1) ---- */
 .cam-lb {
@@ -890,10 +901,10 @@
 }
 .cam-lb-close {
   position: absolute;
-  top: -14px;
-  right: -14px;
-  width: 38px;
-  height: 38px;
+  top: -16px;
+  right: -16px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: #2a2f45;
   border: 2px solid #3d4460;
