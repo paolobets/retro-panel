@@ -118,6 +118,13 @@ window.AlarmComponent = (function () {
     /* PIN area inserted before disarmBtn in updateTile via DOM order;
        we append disarmBtn after pinArea below */
 
+    /* -- Pending/transition spinner (arming / disarming) -- */
+    var pendingSection = _el('div', 'alarm-pending-section');
+    var pendingSpinner = _el('div', 'alarm-spinner');
+    var pendingMsg     = _el('div', 'alarm-pending-msg', 'In attesa\u2026');
+    pendingSection.appendChild(pendingSpinner);
+    pendingSection.appendChild(pendingMsg);
+
     /* -- Triggered banner -- */
     var triggeredBanner = _el('div', 'alarm-triggered-banner', '\u26A0\uFE0F Allarme rilevato');
 
@@ -174,11 +181,13 @@ window.AlarmComponent = (function () {
     /* Hide all optional sections initially; updateTile() shows what's needed */
     modesSection.style.display   = 'none';
     disarmSection.style.display  = 'none';
+    pendingSection.style.display = 'none';
     triggeredBanner.style.display= 'none';
     pinArea.style.display        = 'none';
 
     body.appendChild(modesSection);
     body.appendChild(disarmSection);
+    body.appendChild(pendingSection);
     body.appendChild(triggeredBanner);
 
     tile.appendChild(statusBar);
@@ -349,6 +358,8 @@ window.AlarmComponent = (function () {
       disarmSection:  disarmSection,
       disarmLabel:    disarmLabel,
       disarmBtn:      disarmBtn,
+      pendingSection: pendingSection,
+      pendingMsg:     pendingMsg,
       triggeredBanner:triggeredBanner,
       pinArea:        pinArea,
       pinDisplay:     pinDisplay,
@@ -415,10 +426,20 @@ window.AlarmComponent = (function () {
     _setDisplay(r.chipAway,  showAway  ? '' : 'none');
     _setDisplay(r.chipNight, showNight ? '' : 'none');
 
+    /* arming/disarming = transition spinner; 'pending' = entry delay, show disarm */
+    var isTransitioning = (state === 'arming' || state === 'disarming');
+
     /* ---- Section visibility ---- */
     _setDisplay(r.modesSection,    isDisarmed ? '' : 'none');
-    _setDisplay(r.disarmSection,   (isArmed || isPending) ? '' : 'none');
+    _setDisplay(r.disarmSection,   (!isTransitioning && (isArmed || isPending)) ? '' : 'none');
+    _setDisplay(r.pendingSection,  isTransitioning ? '' : 'none');
     _setDisplay(r.triggeredBanner, isTriggered ? '' : 'none');
+
+    /* Pending section message */
+    if (r.pendingMsg) {
+      r.pendingMsg.textContent = (state === 'arming') ? 'Inserimento in corso\u2026'
+                               : 'Disinserimento in corso\u2026';
+    }
 
     /* Modes label: only if there are visible chips AND arm requires code or user needs to pick */
     var anyChip = showHome || showAway || showNight;
@@ -426,13 +447,13 @@ window.AlarmComponent = (function () {
 
     /* ---- PIN area ---- */
     /* Show PIN area when:
-       - disarmed + (code_arm_required=true OR code_format set)
-       - armed/pending + code_format set
+       - disarmed + (code_arm_required=true AND code_format set)
+       - armed/pending (non-transitioning) + code_format set
        - triggered (always show) */
     var showPin = false;
     if (isDisarmed) {
       showPin = (codeFormat !== null) && codeArm;
-    } else if (isArmed || isPending) {
+    } else if (!isTransitioning && (isArmed || isPending)) {
       showPin = (codeFormat !== null);
     } else if (isTriggered) {
       showPin = true;
@@ -449,11 +470,13 @@ window.AlarmComponent = (function () {
     _setDisplay(r.pinDisplay,(showPin && useKeypad)  ? '' : 'none');
     _setDisplay(r.textInput, (showPin && !useKeypad) ? '' : 'none');
 
-    /* ---- Confirm button label ---- */
+    /* ---- Confirm button label + style ---- */
     if (isDisarmed) {
       r.confirmBtn.textContent = 'Arma';
+      r.confirmBtn.className   = 'alarm-confirm-btn btn-arm';
     } else {
       r.confirmBtn.textContent = 'Disarma';
+      r.confirmBtn.className   = 'alarm-confirm-btn btn-disarm-danger';
     }
 
     /* ---- Unavailable: disable interactions ---- */

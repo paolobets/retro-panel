@@ -442,10 +442,11 @@ window.RP_Renderer = (function () {
           alarmCol.appendChild(alarmTile);
           container.appendChild(alarmCol);
           appState.tileMap[alarmCfg.entity_id] = alarmTile;
-          var alarmState = appState.states[alarmCfg.entity_id];
-          if (alarmState) {
-            try { alarmComp.updateTile(alarmTile, alarmState); } catch (ue) { }
-          }
+          /* Always call updateTile — fallback to 'unknown' so sections are
+             correctly shown/hidden even if HA state hasn't arrived yet */
+          var alarmState = appState.states[alarmCfg.entity_id]
+                        || { state: 'unknown', attributes: {} };
+          try { alarmComp.updateTile(alarmTile, alarmState); } catch (ue) { }
         } catch (err) {
           console.error('[renderer] alarm tile failed:', alarmCfg.entity_id, err);
         }

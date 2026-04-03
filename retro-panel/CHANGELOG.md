@@ -1,5 +1,14 @@
 # Retro Panel — Changelog
 
+## [2.9.10] — 2026-04-03
+
+### Fixed
+- **Alarm tile — sezioni nascoste**: `renderer.js` chiamava `updateTile()` solo se lo stato HA era già in cache; se l'entità non era ancora arrivata, il tile restava vuoto (solo status bar visibile). Ora `updateTile` viene sempre chiamato con fallback `{state:'unknown'}` se lo stato non è disponibile al momento del render
+
+### Changed
+- **Alarm tile — spinner arming/disarming**: aggiunta sezione `alarm-pending-section` con spinner CSS animato e testo "Inserimento in corso…" / "Disinserimento in corso…" durante le transizioni di stato; sostituisce il corpo del tile come da mockup
+- **Alarm tile — stile pulsante conferma**: pulsante "Arma" usa `btn-arm` (sfondo accent/blue), pulsante "Disarma" usa `btn-disarm-danger` (sfondo rosso pieno) — allineato al mockup; prima il pulsante non aveva stile applicato
+
 ## [2.9.9] — 2026-04-03
 
 ### Fixed
