@@ -1224,3 +1224,27 @@
 }
 .cam-lb-close:hover { background: #3d4460; }
 
+/* ════════════════════════════════════════════
+   LIGHT THEME — sensor bubble color overrides
+   Pastel values chosen for dark backgrounds need
+   darkening to remain legible on white surfaces.
+   ════════════════════════════════════════════ */
+body.theme-light .s-temp-freeze  { border-color: #1d4ed8; } body.theme-light .s-temp-freeze  .bubble { color: #1d4ed8; }
+body.theme-light .s-temp-cold    { border-color: #2563eb; } body.theme-light .s-temp-cold    .bubble { color: #2563eb; }
+body.theme-light .s-temp-cool    { border-color: #0891b2; } body.theme-light .s-temp-cool    .bubble { color: #0891b2; }
+body.theme-light .s-hum-high     { border-color: #0891b2; } body.theme-light .s-hum-high     .bubble { color: #0891b2; }
+body.theme-light .s-hum-wet      { border-color: #4338ca; } body.theme-light .s-hum-wet      .bubble { color: #4338ca; }
+body.theme-light .s-energy       { border-color: #6d28d9; } body.theme-light .s-energy       .bubble { color: #6d28d9; }
+body.theme-light .s-lux-dark     { border-color: #1d4ed8; } body.theme-light .s-lux-dark     .bubble { color: #1d4ed8; }
+body.theme-light .s-lux-dim      { border-color: #2563eb; } body.theme-light .s-lux-dim      .bubble { color: #2563eb; }
+body.theme-light .s-lux-bright   { border-color: #92400e; } body.theme-light .s-lux-bright   .bubble { color: #92400e; }
+body.theme-light .s-aq-hazard    { border-color: #6d28d9; } body.theme-light .s-aq-hazard    .bubble { color: #6d28d9; }
+body.theme-light .s-electrical   { border-color: #3730a3; } body.theme-light .s-electrical   .bubble { color: #3730a3; }
+body.theme-light .s-ph-alkaline  { border-color: #1d4ed8; } body.theme-light .s-ph-alkaline  .bubble { color: #1d4ed8; }
+body.theme-light .s-moist-on     { border-color: #1d4ed8; } body.theme-light .s-moist-on     .bubble { color: #1d4ed8; }
+body.theme-light .s-spd-breezy   { border-color: #0891b2; } body.theme-light .s-spd-breezy   .bubble { color: #0891b2; }
+body.theme-light .s-water        { border-color: #0f766e; } body.theme-light .s-water        .bubble { color: #0f766e; }
+body.theme-light .s-pressure     { border-color: #475569; } body.theme-light .s-pressure     .bubble { color: #475569; }
+body.theme-light .s-physical     { border-color: #475569; } body.theme-light .s-physical     .bubble { color: #475569; }
+body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-generic      .bubble { color: #475569; }
+

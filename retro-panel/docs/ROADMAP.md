@@ -299,6 +299,13 @@ Retro Panel follows semantic versioning (MAJOR.MINOR.PATCH):
 - [x] Hint dinamico: "Tocca per armare" vs "Seleziona modalità, poi inserisci il codice"
 - [x] Confirm/disarm button: height 52px, font 15px, transform 0.1s feedback tattile
 
+### v2.9.15 — Light Theme Bug Fixes + Whitelist UI (2026-04-03)
+
+- [x] Fix: toast "Saved" invisibile in light mode (#save-feedback aveva `color:#fff` su sfondo `--c-surface` bianco → ora sfondo fisso #1e1e1e)
+- [x] Fix: FOUC (flash contenuto scuro) alla riapertura di /config in light mode → script sincrono legge `localStorage.rp_theme` e applica classe prima del paint
+- [x] Fix: bubble sensori quasi invisibili in light mode — 18 overrides `body.theme-light` in tiles.css con versioni sature/scure degli stessi hue (giallo, blu, ciano, lavanda, viola, teal)
+- [x] Whitelist UI: aggiunti `translations/en.yaml` e `translations/it.yaml` con titolo "White List — Accesso Diretto (porta 7654)" e testo esplicativo completo (IP singolo, rete /24, tutti, blocco totale)
+
 ---
 
 ## v3.0+ (Long-term Vision)
@@ -380,7 +387,8 @@ These targets apply to v2.0 and all future releases:
 | v2.9.10–2.9.11 | Released | 2026-04-03 | Completed |
 | v2.9.12 | Released | 2026-04-03 | Completed |
 | v2.9.13 | Released | 2026-04-03 | Completed |
-| v2.9.14 | Released | 2026-04-03 | **Current stable** |
+| v2.9.14 | Released | 2026-04-03 | Completed |
+| v2.9.15 | Released | 2026-04-03 | **Current stable** |
 | v3.0 | Planned | TBD | 2026 H2 (estimated) |
 
 ---

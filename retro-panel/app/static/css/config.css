@@ -979,8 +979,8 @@ html, body {
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: var(--c-surface);
-  color: #fff;
+  background-color: #1e1e1e;
+  color: #f0f0f0;
   padding: 10px 20px;
   border-radius: var(--radius-sm);
   font-size: 14px;
@@ -1956,3 +1956,4 @@ html, body {
   flex: 1;
   padding: 0 0 16px;
 }
+

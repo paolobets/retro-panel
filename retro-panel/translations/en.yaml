@@ -36,3 +36,18 @@ configuration:
       List of Home Assistant entities to display on the panel.
       Each entry requires an entity_id. Label, icon, row, and col are optional.
       Supported domains: light, switch, sensor, binary_sensor, alarm_control_panel.
+  allowed_direct_ips:
+    name: "White List — Direct Access (port 7654)"
+    description: >-
+      IP addresses or CIDR ranges allowed to access Retro Panel directly on port 7654,
+      without going through Home Assistant authentication. Required for legacy devices
+      (e.g. old tablets whose browsers do not support the HA login page).
+
+      HOW TO CONFIGURE:
+      • Authorise a single device:  192.168.1.50
+      • Authorise the entire LAN:   192.168.1.0/24
+      • Authorise everyone (open):  0.0.0.0/0
+      • Block all direct access:    leave the list empty
+
+      Note: access via HA Ingress ("Open Web UI" button) is never affected by this list —
+      it is always protected by Home Assistant authentication.

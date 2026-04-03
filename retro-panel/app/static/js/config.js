@@ -282,6 +282,7 @@
     if (tabId === 'cameras')    { renderCamSectionsList(); renderCamSectionDetail(); }
     if (tabId === 'alarms')     { renderAlarmsList(); }
 
+
     // Close room editor when leaving rooms tab
     if (tabId !== 'rooms') { closeRoomEditor(); }
   }
@@ -2704,7 +2705,9 @@
     // Load saved panel config first (critical — reads local entities.json, works offline)
     cfgFetchPanelConfig()
       .then(function (cfg) {
-        document.body.className = 'theme-' + (cfg.theme || 'dark');
+        var resolvedTheme = cfg.theme || 'dark';
+        document.body.className = 'theme-' + resolvedTheme;
+        try { localStorage.setItem('rp_theme', resolvedTheme); } catch (e) {}
 
         // Populate state from saved config
         var ovRaw = cfg.overview || {};
@@ -2797,7 +2800,7 @@
           };
         });
 
-        state.header_sensors = cfg.header_sensors || [];
+        state.header_sensors      = cfg.header_sensors || [];
 
         // Render UI immediately with saved data
         var ovTitleInput = qs('overview-title-input');
