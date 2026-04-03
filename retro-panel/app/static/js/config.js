@@ -2009,43 +2009,48 @@
     for (var i = 0; i < alarms.length; i++) {
       var a = alarms[i];
       var sensors = a.sensors || [];
-      html += '<div class="alarm-config-row" data-id="' + esc(a.id) + '">';
-      // header row: entity + remove
-      html += '<div class="alarm-config-header">';
-      html += '<span class="alarm-config-entity">' + esc(a.entity_id) + '</span>';
+      html += '<div class="alarm-card" data-id="' + esc(a.id) + '">';
+
+      // ── Header: entity id + remove button ──
+      html += '<div class="alarm-card-hdr">';
+      html += '<span class="selected-id">' + esc(a.entity_id) + '</span>';
       html += '<button class="remove-btn alarm-del-btn" type="button" data-id="' + esc(a.id) + '">\u2715</button>';
       html += '</div>';
-      // label
-      html += '<div class="alarm-config-label-row">';
-      html += '<label class="field-label" style="min-width:60px;font-size:11px;">Label</label>';
-      html += '<input type="text" class="alarm-label-input field-input" style="flex:1;" placeholder="Nome display\u2026" maxlength="64" value="' + esc(a.label || '') + '" data-id="' + esc(a.id) + '">';
+
+      // ── Label field (reuse .field-row layout) ──
+      html += '<div class="field-row">';
+      html += '<label class="field-label">Label</label>';
+      html += '<input type="text" class="alarm-label-input field-input" placeholder="Nome display\u2026" maxlength="64" value="' + esc(a.label || '') + '" data-id="' + esc(a.id) + '">';
       html += '</div>';
-      // sensors sub-section
-      html += '<div class="alarm-sensors-section">';
-      html += '<div class="alarm-sensors-header">';
+
+      // ── Sensors sub-section ──
+      html += '<div class="alarm-sensors-hdr">';
       html += '<span class="sections-col-label">Sensori zona (' + sensors.length + ')</span>';
       html += '<button class="action-btn-sm alarm-add-sensor-btn" type="button" data-id="' + esc(a.id) + '">+ Sensore</button>';
       html += '</div>';
+
       if (sensors.length === 0) {
-        html += '<p class="cfg-placeholder" style="font-size:11px;padding:6px 0;">Nessun sensore.</p>';
+        html += '<p class="cfg-placeholder">Nessun sensore aggiunto.</p>';
       } else {
         for (var j = 0; j < sensors.length; j++) {
           var s = sensors[j];
-          html += '<div class="alarm-sensor-row">';
-          html += '<span class="selected-id" style="flex:1;font-size:11px;">' + esc(s.entity_id) + '</span>';
-          html += '<input type="text" class="alarm-sensor-label-input field-input" style="width:100px;font-size:11px;" placeholder="Label" maxlength="64" value="' + esc(s.label || '') + '" data-alarm-id="' + esc(a.id) + '" data-idx="' + j + '">';
-          html += '<select class="alarm-sensor-dc-select" style="font-size:11px;margin:0 4px;" data-alarm-id="' + esc(a.id) + '" data-idx="' + j + '">';
+          html += '<div class="selected-row alarm-sensor-row">';
+          html += '<div class="selected-entity-info">';
+          html += '<span class="selected-id">' + esc(s.entity_id) + '</span>';
+          html += '<input type="text" class="alarm-sensor-label-input item-label-input" placeholder="Label\u2026" maxlength="64" value="' + esc(s.label || '') + '" data-alarm-id="' + esc(a.id) + '" data-idx="' + j + '">';
+          html += '</div>';
+          html += '<select class="alarm-sensor-dc-select field-select" style="flex:none;width:auto;" data-alarm-id="' + esc(a.id) + '" data-idx="' + j + '">';
           for (var k = 0; k < DCS.length; k++) {
             var dcv = DCS[k];
             html += '<option value="' + esc(dcv) + '"' + (s.device_class === dcv ? ' selected' : '') + '>' + esc(DC_LABELS[dcv]) + '</option>';
           }
           html += '</select>';
-          html += '<button class="remove-btn alarm-sensor-del-btn" type="button" data-alarm-id="' + esc(a.id) + '" data-idx="' + j + '">\u2715</button>';
+          html += '<div class="selected-actions"><button class="remove-btn alarm-sensor-del-btn" type="button" data-alarm-id="' + esc(a.id) + '" data-idx="' + j + '">\u2715</button></div>';
           html += '</div>';
         }
       }
-      html += '</div>'; // /alarm-sensors-section
-      html += '</div>'; // /alarm-config-row
+
+      html += '</div>'; // /alarm-card
     }
     container.innerHTML = html;
 

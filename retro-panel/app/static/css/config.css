@@ -1880,3 +1880,79 @@ html, body {
 .visual-type-option-label {
   flex: 1;
 }
+
+/* ════════════════════════════════════════════
+   ALARMS TAB
+   ════════════════════════════════════════════ */
+
+/* Alarm panel card */
+.alarm-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-surface-2);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin-bottom: 12px;
+}
+
+/* Card header: entity id on left, × on right */
+.alarm-card-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+/* Sensors sub-section header */
+.alarm-sensors-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 10px 0 6px;
+}
+
+/* Sensor row inside card (extends .selected-row) */
+.alarm-sensor-row {
+  gap: 8px;
+}
+
+/* ════════════════════════════════════════════
+   ALARM PICKERS (entity + sensor)
+   ════════════════════════════════════════════ */
+
+#alarm-entity-picker-header,
+#alarm-sensor-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-surface-2);
+}
+
+#alarm-entity-search-wrap,
+#alarm-sensor-search-wrap {
+  padding: 10px 0 6px;
+}
+
+#alarm-entity-search-wrap input,
+#alarm-sensor-search-wrap input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-surface-2);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-size: 15px;
+  padding: 8px 12px;
+  outline: none;
+  font-family: inherit;
+}
+#alarm-entity-search-wrap input:focus,
+#alarm-sensor-search-wrap input:focus { border-color: var(--color-accent); }
+
+#alarm-entity-list,
+#alarm-sensor-list {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  flex: 1;
+  padding: 0 0 16px;
+}

@@ -1,5 +1,12 @@
 # Retro Panel — Changelog
 
+## [2.9.8] — 2026-04-03
+
+### Fixed
+- **Alarm tab — layout e CSS**: aggiunto stile per `.alarm-card`, `.alarm-card-hdr`, `.alarm-sensors-hdr` in config.css; il layout ora usa le classi esistenti (`selected-row`, `selected-entity-info`, `field-row`) come le altre schede
+- **Alarm pickers — layout**: aggiunti stili per `#alarm-entity-picker-header`, `#alarm-sensor-picker-header`, search wrap e list in config.css (stessi di camera-picker)
+- **Alarm list render**: rewritten to use existing CSS classes — label usa `.field-row`, sensori usano `.selected-row` + `.selected-entity-info` + `.item-label-input` (stesso pattern dei tile nelle camere)
+
 ## [2.9.7] — 2026-04-03
 
 ### Added
