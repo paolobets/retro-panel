@@ -193,9 +193,10 @@
 }
 .tile-alarm:active { -webkit-transform: none; transform: none; }
 
-/* Status bar — full-width colored header */
+/* Status bar — full-width colored header, centered for kiosk/wall display */
 .alarm-status-bar {
-  padding: 18px 20px 14px;
+  padding: 20px 20px 16px;
+  text-align: center;
 }
 .alarm-status-bar.s-disarmed  { background: linear-gradient(135deg, rgba(100,100,100,0.08), transparent); }
 .alarm-status-bar.s-armed     { background: linear-gradient(135deg, rgba(33,150,243,0.10), transparent); }
@@ -212,7 +213,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin-bottom: 4px;
+  margin-top: 10px;
 }
 .alarm-badge-dot {
   width: 7px;
@@ -236,15 +237,16 @@
 .alarm-badge-text.text-unavail  { color: var(--c-text-sec); }
 
 .alarm-entity-name {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--c-text-pri);
-  margin-top: 4px;
+  display: block;
 }
 .alarm-entity-sub {
   font-size: 12px;
   color: var(--c-text-sec);
-  margin-top: 2px;
+  margin-top: 3px;
+  display: block;
 }
 
 /* Body */
@@ -260,22 +262,27 @@
   margin-bottom: 8px;
 }
 
-/* Mode chips */
+/* Mode chips — full-width flex row, equal-width chips, large touch targets */
 .alarm-modes-row {
   display: -webkit-flex;
   display: flex;
-  -webkit-flex-wrap: wrap;
-  flex-wrap: wrap;
-  margin: -4px -4px 16px;
+  -webkit-flex-wrap: nowrap;
+  flex-wrap: nowrap;
+  margin: 0 0 16px;
 }
 .alarm-mode-chip {
-  display: -webkit-inline-flex;
-  display: inline-flex;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex: 1;
+  flex: 1;
   -webkit-align-items: center;
   align-items: center;
-  padding: 10px 16px;
+  -webkit-justify-content: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 14px 8px;
   border-radius: 24px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   background: var(--c-surface-2);
   color: var(--c-text-sec);
@@ -284,11 +291,13 @@
   touch-action: manipulation;
   -webkit-user-select: none;
   user-select: none;
-  margin: 4px;
+  margin: 0 4px;
   -webkit-transition: all 0.15s;
   transition: all 0.15s;
 }
-.alarm-mode-chip:active { -webkit-transform: scale(0.94); transform: scale(0.94); }
+.alarm-mode-chip:first-child { margin-left: 0; }
+.alarm-mode-chip:last-child  { margin-right: 0; }
+.alarm-mode-chip:active { -webkit-transform: scale(0.96); transform: scale(0.96); }
 .alarm-mode-chip.chip-selected {
   background: rgba(33,150,243,0.12);
   color: var(--c-accent);
@@ -428,20 +437,20 @@
   margin-bottom: 8px;
 }
 
-/* Confirm / disarm buttons */
+/* Confirm / disarm buttons — tall for kiosk touch targets */
 .alarm-confirm-btn {
   width: 100%;
-  height: 48px;
+  height: 52px;
   border-radius: 12px;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
   border: none;
   touch-action: manipulation;
   -webkit-user-select: none;
   user-select: none;
-  -webkit-transition: opacity 0.15s;
-  transition: opacity 0.15s;
+  -webkit-transition: opacity 0.15s, -webkit-transform 0.1s;
+  transition: opacity 0.15s, transform 0.1s;
 }
 .alarm-confirm-btn:active { opacity: 0.8; -webkit-transform: scale(0.98); transform: scale(0.98); }
 .alarm-confirm-btn.btn-arm { background: var(--c-accent); color: #fff; }
@@ -477,15 +486,15 @@
   text-align: center;
 }
 
-/* No-code hint — callout style matching mockup */
+/* Hint below chips — callout style, dynamic text based on arm scenario */
 .alarm-no-code-hint {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--c-text-sec);
   background: var(--c-surface-2);
   border-left: 3px solid var(--c-accent);
   border-radius: 8px;
   padding: 10px 12px;
-  margin-top: 4px;
+  margin-top: 8px;
 }
 
 /* alarm-disarm-section spacing */

@@ -1,5 +1,17 @@
 # Retro Panel — Changelog
 
+## [2.9.14] — 2026-04-03
+
+### Changed
+- **Alarm — gerarchia status bar**: nome entità spostato in alto (centrato, 20px), badge stato spostato sotto con `margin-top: 10px` di separazione — lettura più naturale su tablet a muro
+- **Alarm — sub-label modalità armata**: aggiunta riga "Modalità: Casa/Fuori/Notte" visibile nello status bar quando l'allarme è armato
+- **Alarm — chip più grandi**: `flex: 1` (occupano tutta la larghezza), `min-height: 52px`, `font-size: 14px` — touch target WCAG-compliant per kiosk touch
+- **Alarm — hint dinamico**: testo aggiornato in base allo scenario — "Tocca per armare" (senza codice) vs "Seleziona modalità, poi inserisci il codice" (con codice richiesto)
+- **Alarm — confirm/disarm button**: `height: 52px`, `font-size: 15px`, transizione con `transform 0.1s` per feedback tattile visivo su press
+- **CSS — status bar**: `text-align: center`, `padding: 20px 20px 16px`
+- **CSS — entity name**: `font-size: 20px`, `display: block` (era `<span>`)
+- **CSS — hint**: `font-size: 12px`, `margin-top: 8px`
+
 ## [2.9.13] — 2026-04-03
 
 ### Fixed

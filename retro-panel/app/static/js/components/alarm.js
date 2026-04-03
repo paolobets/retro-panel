@@ -42,6 +42,15 @@ window.AlarmComponent = (function () {
     disarming: true
   };
 
+  /* ---- Armed state → sub-label shown below entity name ---- */
+  var ARMED_MODE_LABELS = {
+    armed_home:          'Modalit\u00e0: Casa',
+    armed_away:          'Modalit\u00e0: Fuori',
+    armed_night:         'Modalit\u00e0: Notte',
+    armed_custom_bypass: 'Modalit\u00e0: Personalizzata',
+    armed_vacation:      'Modalit\u00e0: Vacanza'
+  };
+
   /*
    * State → status-bar CSS class + badge dot/text classes + Italian label.
    * barClass matches CSS: .alarm-status-bar.s-*
@@ -95,17 +104,24 @@ window.AlarmComponent = (function () {
     /* ---- Status bar ---- */
     var statusBar = _el('div', 'alarm-status-bar s-disarmed');
 
-    /* Badge: dot + text as separate elements for per-state color via CSS */
+    /* Entity name: top, centered — primary identifier */
+    var entityName = _el('div', 'alarm-entity-name', label);
+
+    /* Sub-label: shown only when armed, displays the active mode ("Modalità: Casa") */
+    var entitySub  = _el('div', 'alarm-entity-sub', '');
+    entitySub.style.display = 'none';
+
+    /* Badge: dot + text below entity name, separated — shows state */
     var badge     = _el('div', 'alarm-badge');
     var badgeDot  = _el('span', 'alarm-badge-dot dot-disarmed');
     var badgeText = _el('span', 'alarm-badge-text text-disarmed', 'DISARMATO');
     badge.appendChild(badgeDot);
     badge.appendChild(badgeText);
 
-    var entityName = _el('span', 'alarm-entity-name', label);
-
-    statusBar.appendChild(badge);
+    /* DOM order: name → sub → badge (name at top, state at bottom) */
     statusBar.appendChild(entityName);
+    statusBar.appendChild(entitySub);
+    statusBar.appendChild(badge);
 
     /* ---- Body ---- */
     var body = _el('div', 'alarm-body');
@@ -127,8 +143,8 @@ window.AlarmComponent = (function () {
     modesRow.appendChild(chipAway);
     modesRow.appendChild(chipNight);
 
-    /* Hint text for no-code arm scenario */
-    var noCodeHint = _el('div', 'alarm-no-code-hint', 'Seleziona una modalit\u00e0 per armare');
+    /* Hint text shown when no code needed — text updated dynamically in updateTile */
+    var noCodeHint = _el('div', 'alarm-no-code-hint', 'Tocca per armare');
 
     modesSection.appendChild(modesLabel);
     modesSection.appendChild(modesRow);
@@ -390,6 +406,7 @@ window.AlarmComponent = (function () {
       badgeText:      badgeText,
       statusBar:      statusBar,
       entityName:     entityName,
+      entitySub:      entitySub,
       modesSection:   modesSection,
       modesLabel:     modesLabel,
       modesRow:       modesRow,
@@ -455,6 +472,11 @@ window.AlarmComponent = (function () {
     r.badgeText.className = 'alarm-badge-text ' + info.textClass;
     r.badgeText.textContent = info.label;
 
+    /* ---- Entity sub-label: active armed mode ("Modalità: Casa"), hidden otherwise ---- */
+    var subLabel = ARMED_MODE_LABELS[state] || '';
+    r.entitySub.textContent = subLabel;
+    _setDisplay(r.entitySub, subLabel ? '' : 'none');
+
     /* ---- Mode chips visibility (based on supported_features bitmask) ---- */
     var showHome  = !!(features & FEAT_ARM_HOME);
     var showAway  = !!(features & FEAT_ARM_AWAY);
@@ -493,10 +515,16 @@ window.AlarmComponent = (function () {
     /* modesLabel: show only when chips are available */
     _setDisplay(r.modesLabel, anyChip ? '' : 'none');
 
-    /* noCodeHint: shown when disarmed and arm does NOT require a code.
-       Tells user to tap a chip to arm directly. */
+    /* noCodeHint: shown when disarmed with chips available.
+       Text varies: no-code → "Tocca per armare"; code-required → guide text. */
     var directArmMode = isDisarmed && anyChip && ((codeFormat === null) || !codeArm);
-    _setDisplay(r.noCodeHint, directArmMode ? '' : 'none');
+    var needsCodeArm  = isDisarmed && anyChip && !directArmMode;
+    _setDisplay(r.noCodeHint, (isDisarmed && anyChip) ? '' : 'none');
+    if (directArmMode) {
+      r.noCodeHint.textContent = 'Tocca per armare';
+    } else if (needsCodeArm) {
+      r.noCodeHint.textContent = 'Seleziona modalit\u00e0, poi inserisci il codice';
+    }
 
     /* ---- PIN area (at body level, independent visibility) ----
        Show when:
