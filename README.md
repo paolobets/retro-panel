@@ -27,15 +27,15 @@
 **A touch-optimized kiosk dashboard for Home Assistant, built for legacy and older devices.**
 
 Give a second life to an old iPad, Android tablet, Kindle Fire, or any device
-that struggles with the standard Lovelace interface. Retro Panel is a
-lightweight, always-on control panel designed to work flawlessly on
-**iOS 15 Safari**, old Android browsers, and any device from the last decade.
+that no longer receives OS updates and struggles with the standard Lovelace interface.
+Retro Panel is a lightweight, always-on control panel designed to work flawlessly on
+**legacy browsers and older devices**, without requiring any modern JavaScript features.
 
 ---
 
 ## Features
 
-- **Works on old devices** — iOS 15 Safari, Android 9+, any ES2017-capable browser
+- **Works on old devices** — legacy browsers and older devices that no longer receive OS updates
 - **Real-time updates** — WebSocket-powered, with REST fallback if WS drops
 - **Touch-optimized** — 56px+ tap targets, zero tap delay, immediate visual feedback
 - **Secure** — HA token stays on the server, never reaches the browser
@@ -120,7 +120,7 @@ entities:
 ## Architecture
 
 ```
-Old tablet (iOS 15 / Android)
+Old tablet (legacy browser / Android)
   ↓  HTTPS via HA Ingress (auth handled by Supervisor)
 Home Assistant Supervisor
   ↓  HTTP internal
@@ -181,9 +181,10 @@ If you access Home Assistant from outside your network:
 
 | Version | Status | Content |
 |---------|--------|---------|
-| **v1.0** | Released | light, switch, alarm, sensor, binary_sensor |
-| **v1.5** | Planned | cover, input_boolean, multiple pages, auto-layout |
-| **v2.0** | Planned | climate, media_player, panel PIN lock, sparklines |
+| **v2.0** | Released | Full frontend/backend refactor, layout_type system, two-URL architecture |
+| **v2.9** | Released | Energy Card v2, Camera grid+lightbox, Alarm tile full redesign, Security hardening |
+| **v2.9.14** | **Current** | Alarm UX: status hierarchy, WCAG touch targets, direct arm without code |
+| **v3.0** | Planned | Plugin system, custom themes, history charts, offline-first |
 
 ---
 

@@ -191,12 +191,14 @@ The Power Flow Card visualises your home energy flow in real time:
 To configure it:
 
 1. In **Settings → Overview** (or inside a Room), tap **+ Add Power Flow Card**.
-2. Step through the 5-screen wizard:
-   - **Solar** — production power sensor (W). Positive = producing.
-   - **Battery SOC** — state of charge (%). Range 0–100.
-   - **Battery Power** — charge/discharge power (W). Positive = charging.
-   - **Grid** — import/export power (W). Positive = importing from grid.
-   - **Home** — total home consumption (W).
+2. Step through the 7-screen wizard:
+   - **Step 1 — Solar** — production power sensor (W). Positive = producing.
+   - **Step 2 — Home** — total home consumption (W).
+   - **Step 3 — Battery SOC** — state of charge (%). Range 0–100.
+   - **Step 4 — Battery Charge** — charging power (W). Positive = charging.
+   - **Step 5 — Battery Discharge** — discharge power (W). Positive = discharging.
+   - **Step 6 — Grid Import** — power drawn from grid (W). Positive = importing.
+   - **Step 7 — Grid Export** — power fed to grid (W). Positive = exporting.
 3. Use the 🔍 button on each step to search sensors by entity_id or friendly name.
 4. Tap **Confirm** when done.
 
@@ -208,14 +210,22 @@ Arrows animate based on the direction of energy flow. If a sensor is not configu
 
 ## Alarm panel
 
-The alarm tile shows a PIN keypad when tapped:
+The alarm tile shows the arming mode chips and a PIN keypad when needed.
 
-1. Enter your PIN using the number buttons.
-2. Tap **Arm Home**, **Arm Away**, or **Disarm**.
+**Arming (disarmed state):**
+1. Tap one of the mode chips: **Casa**, **Fuori**, or **Notte**.
+2. If your alarm requires a code to arm, enter the PIN and tap **Arma**.
+3. If no code is required, tapping the chip arms immediately — no PIN needed.
 
-The PIN is never stored — it is sent directly to HA and immediately cleared.
+**Disarming (armed state):**
+1. If no code is required, tap **Disarma** directly.
+2. If a code is required, enter the PIN and tap **Disarma**.
 
-> If your alarm does not require a PIN, leave the keypad empty and tap the action button directly.
+The alarm status bar shows the entity name at the top and the current state (DISARMATO / ARMATO / INSERIMENTO… / ALLARME!) below it. When armed, a sub-label shows the active mode (e.g. "Modalità: Casa").
+
+The PIN is never stored — it is sent directly to HA and immediately cleared after each action.
+
+> Configure alarm entities in the **Settings → Alarms** tab in the config UI. You can add multiple alarm panels and associate zone sensors (binary_sensor) to each one.
 
 ---
 
@@ -318,5 +328,5 @@ A **reconnecting banner** appears at the top when the connection is lost and dis
 
 ---
 
-**Document Version**: 2.0
-**Last Updated**: 2026-03-27
+**Document Version**: 2.9.14
+**Last Updated**: 2026-04-03

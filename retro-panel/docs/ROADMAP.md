@@ -220,13 +220,11 @@ Retro Panel follows semantic versioning (MAJOR.MINOR.PATCH):
 
 ---
 
-## v2.9 - Energy Card v2 (Released 2026-03-30)
+## v2.9 - Energy Card v2 + Alarm Tile (Released 2026-03-30 → 2026-04-03)
 
-**Status**: RELEASED (current stable: v2.9.0)
+**Status**: RELEASED (current stable: v2.9.14)
 
-**Release Goal**: Redesign completo del tile energy_flow con Design G (semaforo actionable) e supporto a 7 entità separate.
-
-### Completed Features
+### v2.9.0 — Energy Card v2 (2026-03-30)
 
 - [x] Energy Card v2 — Design G: semaforo go/caution/stop/idle
 - [x] 7 entità: solar, home, battery_soc, battery_charge, battery_discharge, grid_import, grid_export
@@ -234,6 +232,72 @@ Retro Panel follows semantic versioning (MAJOR.MINOR.PATCH):
 - [x] Progress bar: % consumo solare
 - [x] Metriche secondarie: SOC batteria + barra, grid prelievo/immissione
 - [x] iOS 12 safe (var, no arrow functions, no gap)
+
+### v2.9.1 — Camera Tile Grid + Lightbox (2026-04-02)
+
+- [x] Griglia camera: 4 colonne su tablet/desktop, 2 colonne su phone
+- [x] Lightbox fullscreen: tap su tile → overlay con snapshot + nome + dot live
+- [x] iOS 12 safe: aspect-ratio 16:9 via padding-top 56.25% hack, no CSS grid
+
+### v2.9.2 — Energy Semaforo Fix (2026-04-02)
+
+- [x] Verde solo se solar > home + 30W (surplus solare reale)
+- [x] Giallo batteria: batteria copre casa, nessun prelievo rete
+- [x] Giallo solare≈casa: solare ≈ consumo, batteria in standby
+
+### v2.9.3 — Porta 7654 Diretta (2026-04-02)
+
+- [x] Porta 7654 esposta direttamente per accesso bypass HA login
+- [x] `allowed_direct_ips` CIDR whitelist in options
+- [x] Necessario per dispositivi legacy che non supportano il login HA moderno
+
+### v2.9.4 — Security Hardening (2026-04-03)
+
+- [x] IP whitelist CIDR per porta diretta
+- [x] CSP: no unsafe-inline su script-src
+- [x] Rate limiting: max 10 service call/sec per IP
+- [x] Alarm brute-force: 3 tentativi/30s, lockout 60s
+- [x] Touch target 44px su tutti i controlli interattivi
+
+### v2.9.5 — Energy Barre Colorate (2026-04-03)
+
+- [x] Barre colorate semantiche per sensori energy/power
+- [x] Label 12px/600, timestamp aggiornamento
+
+### v2.9.6–v2.9.9 — Alarm Tab Config + Bug Fix (2026-04-03)
+
+- [x] Tab Allarmi in /config: picker entity + sensori zona
+- [x] Fix layout alarm tab: classi CSS corrette
+- [x] Tile allarme dinamico: code_format, supported_features, PIN tastiera
+- [x] Fix: pulsante Fatto in pickers, sezioni visibili all'avvio, tema chiaro
+
+### v2.9.10–v2.9.11 — Alarm State Sync (2026-04-03)
+
+- [x] Fix tile alarm: spinner arming/disarming, stile pulsanti arm/disarm
+- [x] all_entity_ids include alarm panel + zone sensors (fix stato sempre SCONOSCIUTO)
+- [x] WebSocket state_changed filtra correttamente entità allarme
+
+### v2.9.12 — Alarm Tile Rewrite — Bug Critici (2026-04-03)
+
+- [x] Fix strutturale: pinArea spostata fuori da disarmSection (era dentro display:none)
+- [x] Fix: chip modalità ora arma direttamente via callService (non solo selezione visuale)
+- [x] Fix CSS: barClass allineata a `s-*` (era `alarm-bar-*` non esistenti)
+- [x] Fix CSS: chip-selected invece di alarm-mode-chip-selected
+- [x] Fix: badge ristrutturato con dot + text separati
+
+### v2.9.13 — Fix 403 Service Call (2026-04-03)
+
+- [x] Fix critico: panel_service.py usava config.entities invece di config.all_entity_ids
+- [x] Ogni chiamata arm/disarm riceveva 403 silenziosamente
+- [x] Test documentazione invariante: alarm in all_entity_ids ma non in entities
+
+### v2.9.14 — Alarm UX Redesign (2026-04-03)
+
+- [x] Status bar: entity name in alto centrato (20px), badge stato sotto separato
+- [x] Sub-label modalità armata: "Modalità: Casa/Fuori/Notte" quando armato
+- [x] Mode chips: flex:1 full-width, min-height 52px, font 14px — WCAG-compliant
+- [x] Hint dinamico: "Tocca per armare" vs "Seleziona modalità, poi inserisci il codice"
+- [x] Confirm/disarm button: height 52px, font 15px, transform 0.1s feedback tattile
 
 ---
 
@@ -309,6 +373,14 @@ These targets apply to v2.0 and all future releases:
 | v2.8.0 | Released | 2026-03-30 | Completed |
 | v2.8.1–2.8.5 | Released | 2026-03-30 | Post-release fixes |
 | v2.9.0 | Released | 2026-03-30 | Completed |
+| v2.9.1 | Released | 2026-04-02 | Completed |
+| v2.9.2 | Released | 2026-04-02 | Completed |
+| v2.9.3 | Released | 2026-04-02 | Completed |
+| v2.9.4–2.9.9 | Released | 2026-04-03 | Completed |
+| v2.9.10–2.9.11 | Released | 2026-04-03 | Completed |
+| v2.9.12 | Released | 2026-04-03 | Completed |
+| v2.9.13 | Released | 2026-04-03 | Completed |
+| v2.9.14 | Released | 2026-04-03 | **Current stable** |
 | v3.0 | Planned | TBD | 2026 H2 (estimated) |
 
 ---
@@ -334,6 +406,6 @@ These targets apply to v2.0 and all future releases:
 
 ---
 
-**Document Version**: 2.9.0
-**Last Updated**: 2026-03-30
+**Document Version**: 2.9.14
+**Last Updated**: 2026-04-03
 **Maintainer**: Retro Panel Team

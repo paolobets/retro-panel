@@ -302,17 +302,27 @@ Features:
 - iOS 12+ compatible CSS (no gap/inset/100dvh)
 - 22 passing unit tests
 
-### v2.1+ (Future)
+### v2.9.x (Released 2026-04-03 — Current Stable: v2.9.14)
 
-**Future releases will include**:
-- Climate entity support
-- Additional automation features
-- Performance optimizations
-- Extended device class support
-- User theming system
+Iterative improvements to the alarm tile, energy card, and camera grid:
+
+- Energy Card v2: semaforo actionable, 7 entità, barre colorate
+- Camera tile: griglia 4 colonne + lightbox fullscreen
+- Security: IP whitelist, CSP, rate limit, alarm brute-force protection
+- Porta 7654 diretta per dispositivi legacy che non supportano il login HA
+- Alarm tile: completo rewrite con fix strutturali, CSS, state sync WS
+- Fix critico: whitelist service call ora usa `all_entity_ids` (include alarm panel)
+- UX: gerarchia status bar, chip WCAG 52px, hint dinamico armo
+
+### v3.0+ (Planned)
+
+- Plugin system for custom entity types
+- Custom theme UI
+- History charts and sparklines
+- Offline-first with local cache
 
 ---
 
-**Document Version**: 2.0
-**Last Updated**: 2026-03-27
-**Status**: v2.0 RELEASED
+**Document Version**: 2.9.14
+**Last Updated**: 2026-04-03
+**Status**: v2.9.14 RELEASED
