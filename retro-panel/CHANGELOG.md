@@ -1,5 +1,13 @@
 # Retro Panel — Changelog
 
+## [2.9.13] — 2026-04-03
+
+### Fixed
+- **Alarm — service call bloccata con 403 (bug critico)**: `panel_service.py` usava `config.entities` come whitelist per le service call, ma `config.entities` contiene solo le entità dei layout-section — i pannelli `alarm_control_panel` sono in `config.alarms` e venivano bloccati con "Entity not in configured list". Fix: whitelist cambiata a `set(config.all_entity_ids)` che include correttamente alarm panel + zone sensors
+
+### Tests
+- Aggiunto `test_alarm_entity_in_all_entity_ids_but_not_in_entities` che documenta che `alarm_control_panel.*` deve essere in `all_entity_ids` (usato dalla whitelist di `panel_service.py`) ma NON in `cfg.entities` (soli layout entities)
+
 ## [2.9.12] — 2026-04-03
 
 ### Fixed

@@ -122,3 +122,14 @@ def test_all_entity_ids_no_alarms():
     """Empty alarms list contributes nothing to all_entity_ids."""
     cfg = _config_with_alarms([])
     assert cfg.all_entity_ids == []
+
+
+def test_alarm_entity_in_all_entity_ids_but_not_in_entities():
+    """alarm_control_panel must be in all_entity_ids (service call whitelist uses this).
+    It must NOT be in cfg.entities which only covers layout section entities.
+    This test documents the invariant required by panel_service.py."""
+    alarm = AlarmConfig(entity_id="alarm_control_panel.casa")
+    cfg = _config_with_alarms([alarm])
+    assert "alarm_control_panel.casa" in cfg.all_entity_ids
+    layout_ids = [e.entity_id for e in cfg.entities]
+    assert "alarm_control_panel.casa" not in layout_ids

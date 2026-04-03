@@ -122,7 +122,9 @@ async def call_service(request: web.Request) -> web.Response:
         )
 
     # --- 5. Entity whitelist check ---
-    allowed = {e.entity_id for e in config.entities}
+    # Use all_entity_ids which includes alarm panels and zone sensors,
+    # not just layout entities.
+    allowed = set(config.all_entity_ids)
     if entity_id not in allowed:
         logger.warning("Blocked service call for unconfigured entity: %s", entity_id)
         return web.json_response(
