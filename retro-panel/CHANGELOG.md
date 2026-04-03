@@ -1,5 +1,13 @@
 # Retro Panel — Changelog
 
+## [2.9.5] — 2026-04-03
+
+### Changed
+- **Energy card**: barre colorate per ogni metrica con scala semantica — solare rosso→verde (0–6 kW), casa verde→rosso (0–3.5 kW), batteria rosso→verde (0–100%), rete blu→rosso (prelievo) / blu→verde (immissione)
+- **Energy card**: colore batteria SOC dinamico (hsl interpolato) — rimosso overide statico caution/warning
+- **Energy card**: label metriche (Casa, Solare, ecc.) da 11px a 12px font-weight 600
+- **Energy card**: timestamp "Aggiornato HH:MM:SS" ad ogni refresh WebSocket
+
 ## [2.9.4] — 2026-04-03
 
 ### Security

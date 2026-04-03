@@ -804,9 +804,25 @@
   color: var(--c-text-pri);
 }
 .ef-metric-lbl {
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--c-text-sec);
   margin-top: 2px;
+}
+
+/* ── Metric bars (solar, home, grid) ───────────────────────── */
+.ef-metric-bar {
+  height: 3px;
+  background: var(--c-surface-3);
+  border-radius: 2px;
+  margin-top: 4px;
+  overflow: hidden;
+}
+.ef-metric-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  -webkit-transition: width 0.5s ease, background 0.5s ease;
+  transition: width 0.5s ease, background 0.5s ease;
 }
 
 /* ── Battery SOC bar ───────────────────────────────────────── */
@@ -821,16 +837,25 @@
   height: 100%;
   border-radius: 2px;
   background: var(--c-accent);
-  -webkit-transition: width 0.5s ease;
-  transition: width 0.5s ease;
+  -webkit-transition: width 0.5s ease, background 0.5s ease;
+  transition: width 0.5s ease, background 0.5s ease;
 }
-.ef-state-caution .ef-batt-fill { background: var(--c-warning); }
 
 /* ── Energy unavail state (sensori offline) ─────────────────────────────── */
 .ef-state-unavail .ef-action-main { color: var(--c-text-sec); }
 .ef-state-unavail .ef-surplus-val { color: var(--c-text-sec); }
 .ef-state-unavail .ef-progress-fill { background: var(--c-surface-3); }
 .ef-state-unavail .ef-batt-fill { background: var(--c-surface-3); }
+
+/* ── Timestamp ultimo aggiornamento ─────────────────────────── */
+.ef-timestamp {
+  font-size: 10px;
+  color: var(--c-text-sec);
+  opacity: 0.6;
+  text-align: center;
+  margin-top: 6px;
+  padding-bottom: 2px;
+}
 
 /* ---- Camera Lightbox (v2.9.1) ---- */
 .cam-lb {

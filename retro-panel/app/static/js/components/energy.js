@@ -16,7 +16,22 @@
 window.EnergyFlowComponent = (function () {
   'use strict';
 
-  var THRESHOLD = 30; // W — soglia rumore sensore (inverter standby tipico 10-25 W)
+  var THRESHOLD   = 30;   // W — soglia rumore sensore (inverter standby tipico 10-25 W)
+  var SOLAR_MAX_W = 6000; // W — picco impianto fotovoltaico (scala barra solare)
+  var HOME_MAX_W  = 3500; // W — consumo massimo atteso casa (scala barra consumo)
+  var GRID_MAX_W  = 3000; // W — max prelievo/immissione rete (scala barra rete)
+
+  // Interpola hue tra hueFrom e hueTo in base a pct (0.0–1.0)
+  // Restituisce stringa 'hsl(H,80%,42%)' — supportato da iOS 12 Safari
+  function calcBarColor(pct, hueFrom, hueTo) {
+    var hue = Math.round(hueFrom + (hueTo - hueFrom) * pct);
+    return 'hsl(' + hue + ',80%,42%)';
+  }
+
+  function fmtTime(d) {
+    var pad = function (n) { return n < 10 ? '0' + n : '' + n; };
+    return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+  }
 
   var TEXTS = {
     go:             { main: 'Ottimo momento!',        sub: '\u2600\uFE0F Solare attivo \u00B7 Avvia lavatrice o lavastoviglie' },
@@ -94,24 +109,32 @@ window.EnergyFlowComponent = (function () {
     var metrics = mk('div', 'ef-metrics');
 
     // Solar metric
-    var mSolar    = mk('div', 'ef-metric ef-metric-solar');
-    var mSolarIco = mk('div', 'ef-metric-icon', '\u2600\uFE0F');
-    var mSolarVal = mk('div', 'ef-metric-val',  '\u2014');
-    var mSolarLbl = mk('div', 'ef-metric-lbl',  'Solare');
+    var mSolar       = mk('div', 'ef-metric ef-metric-solar');
+    var mSolarIco    = mk('div', 'ef-metric-icon', '\u2600\uFE0F');
+    var mSolarVal    = mk('div', 'ef-metric-val',  '\u2014');
+    var mSolarLbl    = mk('div', 'ef-metric-lbl',  'Solare');
+    var solarBar     = mk('div', 'ef-metric-bar');
+    var solarBarFill = mk('div', 'ef-metric-bar-fill');
+    solarBar.appendChild(solarBarFill);
     mSolar.appendChild(mSolarIco);
     mSolar.appendChild(mSolarVal);
     mSolar.appendChild(mSolarLbl);
+    mSolar.appendChild(solarBar);
 
     // Home metric
-    var mHome    = mk('div', 'ef-metric ef-metric-home');
-    var mHomeIco = mk('div', 'ef-metric-icon', '\uD83C\uDFE0');
-    var mHomeVal = mk('div', 'ef-metric-val',  '\u2014');
-    var mHomeLbl = mk('div', 'ef-metric-lbl',  'Casa');
+    var mHome       = mk('div', 'ef-metric ef-metric-home');
+    var mHomeIco    = mk('div', 'ef-metric-icon', '\uD83C\uDFE0');
+    var mHomeVal    = mk('div', 'ef-metric-val',  '\u2014');
+    var mHomeLbl    = mk('div', 'ef-metric-lbl',  'Casa');
+    var homeBar     = mk('div', 'ef-metric-bar');
+    var homeBarFill = mk('div', 'ef-metric-bar-fill');
+    homeBar.appendChild(homeBarFill);
     mHome.appendChild(mHomeIco);
     mHome.appendChild(mHomeVal);
     mHome.appendChild(mHomeLbl);
+    mHome.appendChild(homeBar);
 
-    // Battery metric (with SOC bar)
+    // Battery metric (with SOC bar — colore dinamico via JS)
     var mBatt    = mk('div', 'ef-metric ef-metric-battery');
     var mBattIco = mk('div', 'ef-metric-icon', '\uD83D\uDD0B');
     var mBattVal = mk('div', 'ef-metric-val',  '\u2014');
@@ -125,19 +148,27 @@ window.EnergyFlowComponent = (function () {
     mBatt.appendChild(battBar);
 
     // Grid metric
-    var mGrid    = mk('div', 'ef-metric ef-metric-grid');
-    var mGridIco = mk('div', 'ef-metric-icon', '\u26A1');
-    var mGridVal = mk('div', 'ef-metric-val',  '\u2014');
-    var mGridLbl = mk('div', 'ef-metric-lbl',  'Rete');
+    var mGrid       = mk('div', 'ef-metric ef-metric-grid');
+    var mGridIco    = mk('div', 'ef-metric-icon', '\u26A1');
+    var mGridVal    = mk('div', 'ef-metric-val',  '\u2014');
+    var mGridLbl    = mk('div', 'ef-metric-lbl',  'Rete');
+    var gridBar     = mk('div', 'ef-metric-bar');
+    var gridBarFill = mk('div', 'ef-metric-bar-fill');
+    gridBar.appendChild(gridBarFill);
     mGrid.appendChild(mGridIco);
     mGrid.appendChild(mGridVal);
     mGrid.appendChild(mGridLbl);
+    mGrid.appendChild(gridBar);
 
     metrics.appendChild(mSolar);
     metrics.appendChild(mHome);
     metrics.appendChild(mBatt);
     metrics.appendChild(mGrid);
     tile.appendChild(metrics);
+
+    // Timestamp ultimo aggiornamento
+    var lastUpdate = mk('div', 'ef-timestamp', '\u2014');
+    tile.appendChild(lastUpdate);
 
     // Store DOM refs for updateTile
     tile._ef = {
@@ -149,12 +180,16 @@ window.EnergyFlowComponent = (function () {
       surplusLbl:   surplusLbl,
       progressFill: progressFill,
       solarVal:     mSolarVal,
+      solarBarFill: solarBarFill,
       homeVal:      mHomeVal,
+      homeBarFill:  homeBarFill,
       battVal:      mBattVal,
       battLbl:      mBattLbl,
       battFill:     battFill,
       gridVal:      mGridVal,
       gridLbl:      mGridLbl,
+      gridBarFill:  gridBarFill,
+      lastUpdate:   lastUpdate,
     };
 
     return tile;
@@ -269,15 +304,26 @@ window.EnergyFlowComponent = (function () {
 
     // ── Metriche ─────────────────────────────────────────────
     ef.solarVal.textContent = solar > THRESHOLD ? fmtPower(solar) : '\u2014';
-    ef.homeVal.textContent  = home  > 0         ? fmtPower(home)  : '\u2014';
+    // Solar bar: rosso→verde (0→120) in base a SOLAR_MAX_W
+    var solarPct = Math.min(1, solar / SOLAR_MAX_W);
+    ef.solarBarFill.style.width      = Math.round(solarPct * 100) + '%';
+    ef.solarBarFill.style.background = calcBarColor(solarPct, 0, 120);
+
+    ef.homeVal.textContent = home > 0 ? fmtPower(home) : '\u2014';
+    // Home bar: verde→rosso (120→0) in base a HOME_MAX_W
+    var homePct = Math.min(1, home / HOME_MAX_W);
+    ef.homeBarFill.style.width      = Math.round(homePct * 100) + '%';
+    ef.homeBarFill.style.background = calcBarColor(homePct, 120, 0);
 
     // Battery (null = not configured, undefined = offline — both show '—')
     if (typeof batSoc === 'number') {
-      ef.battVal.textContent  = fmtPct(batSoc);
-      ef.battFill.style.width = Math.round(batSoc) + '%';
+      ef.battVal.textContent       = fmtPct(batSoc);
+      ef.battFill.style.width      = Math.round(batSoc) + '%';
+      ef.battFill.style.background = calcBarColor(batSoc / 100, 0, 120);
     } else {
-      ef.battVal.textContent  = '\u2014';
-      ef.battFill.style.width = '0%';
+      ef.battVal.textContent       = '\u2014';
+      ef.battFill.style.width      = '0%';
+      ef.battFill.style.background = '';
     }
     if (batChg > THRESHOLD) {
       ef.battLbl.textContent = '+' + fmtPower(batChg) + ' \u2191';
@@ -287,17 +333,29 @@ window.EnergyFlowComponent = (function () {
       ef.battLbl.textContent = 'Batteria';
     }
 
-    // Grid
+    // Grid bar: prelievo = blu→rosso (210→0), immissione = blu→verde (210→120)
+    var gridPct, gridColor;
     if (gridIn > THRESHOLD) {
       ef.gridVal.textContent = fmtPower(gridIn);
       ef.gridLbl.textContent = 'Prelievo';
+      gridPct   = Math.min(1, gridIn / GRID_MAX_W);
+      gridColor = calcBarColor(gridPct, 210, 0);
     } else if (gridOut > THRESHOLD) {
       ef.gridVal.textContent = fmtPower(gridOut);
       ef.gridLbl.textContent = 'Immissione';
+      gridPct   = Math.min(1, gridOut / GRID_MAX_W);
+      gridColor = calcBarColor(gridPct, 210, 120);
     } else {
       ef.gridVal.textContent = '0 W';
       ef.gridLbl.textContent = 'Rete';
+      gridPct   = 0;
+      gridColor = calcBarColor(0, 210, 0);
     }
+    ef.gridBarFill.style.width      = Math.round(gridPct * 100) + '%';
+    ef.gridBarFill.style.background = gridColor;
+
+    // ── Timestamp ultimo aggiornamento ────────────────────────
+    ef.lastUpdate.textContent = 'Aggiornato ' + fmtTime(new Date());
   }
 
   return { createTile: createTile, updateTile: updateTile };
