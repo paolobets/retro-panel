@@ -7,8 +7,8 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Retro Panel — Settings</title>
-  <link rel="stylesheet" href="static/css/tokens.css?v=296">
-  <link rel="stylesheet" href="static/css/config.css?v=296">
+  <link rel="stylesheet" href="static/css/tokens.css?v=297">
+  <link rel="stylesheet" href="static/css/config.css?v=297">
 </head>
 <body class="theme-dark">
 
@@ -25,6 +25,7 @@
     <button class="cfg-tab" type="button" data-tab="rooms">Rooms</button>
     <button class="cfg-tab" type="button" data-tab="scenarios">Scenarios</button>
     <button class="cfg-tab" type="button" data-tab="cameras">Cameras</button>
+    <button class="cfg-tab" type="button" data-tab="alarms">Alarms</button>
   </div>
 
   <div id="cfg-body">
@@ -406,6 +407,40 @@
 
     </section>
 
+    <section id="tab-alarms" class="cfg-section hidden">
+
+  <div class="section-header">
+    <h2 class="section-title">Alarms</h2>
+  </div>
+  <p class="cfg-hint">Configura i pannelli allarme e i sensori di zona (porte, finestre, movimento, presenza).</p>
+
+  <div class="field-group" style="margin-bottom:16px;">
+    <div class="field-row">
+      <label class="field-label" for="alarms-title-input">Nome sezione</label>
+      <input id="alarms-title-input" type="text" class="field-input"
+        maxlength="32" autocomplete="off" autocorrect="off"
+        autocapitalize="words" spellcheck="false" placeholder="Allarme">
+    </div>
+    <div class="field-row">
+      <label class="field-label">Icona</label>
+      <input id="alarms-icon-value" type="hidden" value="shield-home">
+      <button id="alarms-icon-btn" type="button" class="icon-picker-btn">
+        <span id="alarms-icon-preview" class="icon-picker-btn-icon"></span>
+        <span id="alarms-icon-name" class="icon-picker-btn-label">shield-home</span>
+        <span class="icon-picker-chevron" aria-hidden="true">&#8964;</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="alarms-list">
+    <p class="cfg-placeholder">Nessun allarme configurato.</p>
+  </div>
+  <div class="items-actions" style="margin-top:12px;">
+    <button id="add-alarm-btn" type="button" class="action-btn">+ Aggiungi Allarme</button>
+  </div>
+
+    </section>
+
   </div><!-- /cfg-body -->
 
   <!-- ══════════════════════════════════════════════
@@ -495,6 +530,44 @@
   </section>
 
   <!-- ══════════════════════════════════════════════
+       ALARM ENTITY PICKER
+       ══════════════════════════════════════════════ -->
+  <section id="alarm-entity-picker" class="cfg-overlay hidden">
+    <div id="alarm-entity-picker-header">
+      <button id="alarm-entity-picker-cancel-btn" type="button" class="action-btn-outline">Annulla</button>
+      <h2 class="section-title" style="margin:0;">Seleziona Allarme</h2>
+    </div>
+    <div id="alarm-entity-search-wrap">
+      <input id="alarm-entity-search-input" type="text"
+        placeholder="Cerca alarm_control_panel&#8230;"
+        autocomplete="off" autocorrect="off"
+        autocapitalize="off" spellcheck="false">
+    </div>
+    <div id="alarm-entity-list">
+      <p class="cfg-placeholder">Caricamento&#8230;</p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       ALARM SENSOR PICKER
+       ══════════════════════════════════════════════ -->
+  <section id="alarm-sensor-picker" class="cfg-overlay hidden">
+    <div id="alarm-sensor-picker-header">
+      <button id="alarm-sensor-picker-cancel-btn" type="button" class="action-btn-outline">Annulla</button>
+      <h2 class="section-title" style="margin:0;">Aggiungi Sensore di Zona</h2>
+    </div>
+    <div id="alarm-sensor-search-wrap">
+      <input id="alarm-sensor-search-input" type="text"
+        placeholder="Cerca binary_sensor&#8230;"
+        autocomplete="off" autocorrect="off"
+        autocapitalize="off" spellcheck="false">
+    </div>
+    <div id="alarm-sensor-list">
+      <p class="cfg-placeholder">Caricamento&#8230;</p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
        ENERGY CARD WIZARD
        ══════════════════════════════════════════════ -->
   <section id="energy-editor" class="cfg-overlay hidden">
@@ -580,8 +653,8 @@
     </div>
   </section>
 
-  <script src="static/js/mdi-icons.js?v=296"></script>
-  <script src="static/js/config-api.js?v=296"></script>
-  <script src="static/js/config.js?v=296"></script>
+  <script src="static/js/mdi-icons.js?v=297"></script>
+  <script src="static/js/config-api.js?v=297"></script>
+  <script src="static/js/config.js?v=297"></script>
 </body>
 </html>

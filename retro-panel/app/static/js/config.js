@@ -24,6 +24,8 @@
     header_sensors:    [],  // [{entity_id, icon, label}]
     cameras:           [],  // list of sections: [{id, title, items:[]}]
     cameras_section:   { title: 'Cameras', icon: 'cctv' },
+    alarms:           [],  // list: [{id, entity_id, label, sensors:[{entity_id, label, device_class}]}]
+    alarms_section:   { title: 'Allarme', icon: 'shield-home' },
   };
 
   var allEntities  = [];   // from /api/entities
@@ -47,6 +49,12 @@
   var editingOvSectionId  = null;   // active section in overview editor
   var editingScSectionId  = null;   // active section in scenarios editor
   var editingCamSectionId = null;   // active section in cameras editor
+
+  var editingAlarmId        = null;   // alarm id whose sensor sub-list is being edited
+  var allAlarmEntities      = [];     // alarm_control_panel entity list from HA
+  var allBinarySensors      = [];     // binary_sensor entity list from HA
+  var alarmEntitySearchText = '';
+  var alarmSensorSearchText = '';
 
   // Energy wizard state
   var energyContext = null;   // 'overview' | 'room'
@@ -262,7 +270,7 @@
       tabs[i].classList.toggle('active', tabs[i].getAttribute('data-tab') === tabId);
     }
 
-    var sections = ['overview', 'rooms', 'scenarios', 'header', 'cameras'];
+    var sections = ['overview', 'rooms', 'scenarios', 'header', 'cameras', 'alarms'];
     for (var j = 0; j < sections.length; j++) {
       var el = qs('tab-' + sections[j]);
       if (el) { el.classList.toggle('hidden', sections[j] !== tabId); }
@@ -272,6 +280,7 @@
     if (tabId === 'overview')   { renderOvSectionsList();  renderOvSectionDetail(); }
     if (tabId === 'scenarios')  { renderScSectionsList();  renderScSectionDetail(); }
     if (tabId === 'cameras')    { renderCamSectionsList(); renderCamSectionDetail(); }
+    if (tabId === 'alarms')     { renderAlarmsList(); }
 
     // Close room editor when leaving rooms tab
     if (tabId !== 'rooms') { closeRoomEditor(); }
@@ -1975,6 +1984,280 @@
     });
   }
 
+  // ── Alarms ─────────────────────────────────────────────────────────────────
+
+  function findAlarmById(id) {
+    var al = state.alarms || [];
+    for (var i = 0; i < al.length; i++) {
+      if (al[i].id === id) { return al[i]; }
+    }
+    return null;
+  }
+
+  function renderAlarmsList() {
+    var container = qs('alarms-list');
+    if (!container) { return; }
+    var alarms = state.alarms || [];
+    if (alarms.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">Nessun allarme configurato. Clicca &ldquo;+ Aggiungi Allarme&rdquo;.</p>';
+      return;
+    }
+    var DCS = ['', 'door', 'window', 'motion', 'presence', 'smoke', 'gas', 'moisture', 'vibration'];
+    var DC_LABELS = { '': 'Auto', door: 'Porta', window: 'Finestra', motion: 'Movimento',
+      presence: 'Presenza', smoke: 'Fumo', gas: 'Gas', moisture: 'Umidit\u00e0', vibration: 'Vibrazione' };
+    var html = '';
+    for (var i = 0; i < alarms.length; i++) {
+      var a = alarms[i];
+      var sensors = a.sensors || [];
+      html += '<div class="alarm-config-row" data-id="' + esc(a.id) + '">';
+      // header row: entity + remove
+      html += '<div class="alarm-config-header">';
+      html += '<span class="alarm-config-entity">' + esc(a.entity_id) + '</span>';
+      html += '<button class="remove-btn alarm-del-btn" type="button" data-id="' + esc(a.id) + '">\u2715</button>';
+      html += '</div>';
+      // label
+      html += '<div class="alarm-config-label-row">';
+      html += '<label class="field-label" style="min-width:60px;font-size:11px;">Label</label>';
+      html += '<input type="text" class="alarm-label-input field-input" style="flex:1;" placeholder="Nome display\u2026" maxlength="64" value="' + esc(a.label || '') + '" data-id="' + esc(a.id) + '">';
+      html += '</div>';
+      // sensors sub-section
+      html += '<div class="alarm-sensors-section">';
+      html += '<div class="alarm-sensors-header">';
+      html += '<span class="sections-col-label">Sensori zona (' + sensors.length + ')</span>';
+      html += '<button class="action-btn-sm alarm-add-sensor-btn" type="button" data-id="' + esc(a.id) + '">+ Sensore</button>';
+      html += '</div>';
+      if (sensors.length === 0) {
+        html += '<p class="cfg-placeholder" style="font-size:11px;padding:6px 0;">Nessun sensore.</p>';
+      } else {
+        for (var j = 0; j < sensors.length; j++) {
+          var s = sensors[j];
+          html += '<div class="alarm-sensor-row">';
+          html += '<span class="selected-id" style="flex:1;font-size:11px;">' + esc(s.entity_id) + '</span>';
+          html += '<input type="text" class="alarm-sensor-label-input field-input" style="width:100px;font-size:11px;" placeholder="Label" maxlength="64" value="' + esc(s.label || '') + '" data-alarm-id="' + esc(a.id) + '" data-idx="' + j + '">';
+          html += '<select class="alarm-sensor-dc-select" style="font-size:11px;margin:0 4px;" data-alarm-id="' + esc(a.id) + '" data-idx="' + j + '">';
+          for (var k = 0; k < DCS.length; k++) {
+            var dcv = DCS[k];
+            html += '<option value="' + esc(dcv) + '"' + (s.device_class === dcv ? ' selected' : '') + '>' + esc(DC_LABELS[dcv]) + '</option>';
+          }
+          html += '</select>';
+          html += '<button class="remove-btn alarm-sensor-del-btn" type="button" data-alarm-id="' + esc(a.id) + '" data-idx="' + j + '">\u2715</button>';
+          html += '</div>';
+        }
+      }
+      html += '</div>'; // /alarm-sensors-section
+      html += '</div>'; // /alarm-config-row
+    }
+    container.innerHTML = html;
+
+    container.querySelectorAll('.alarm-del-btn').forEach(function(btn) {
+      initConfirmableBtn(btn, function() {
+        var id = btn.getAttribute('data-id');
+        state.alarms = (state.alarms || []).filter(function(a) { return a.id !== id; });
+        markDirty();
+        renderAlarmsList();
+      });
+    });
+
+    container.querySelectorAll('.alarm-label-input').forEach(function(inp) {
+      inp.addEventListener('change', function() {
+        var alarm = findAlarmById(this.getAttribute('data-id'));
+        if (alarm) { alarm.label = this.value.trim(); markDirty(); }
+      });
+    });
+
+    container.querySelectorAll('.alarm-add-sensor-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        editingAlarmId = this.getAttribute('data-id');
+        openAlarmSensorPicker();
+      });
+    });
+
+    container.querySelectorAll('.alarm-sensor-label-input').forEach(function(inp) {
+      inp.addEventListener('change', function() {
+        var alarm = findAlarmById(this.getAttribute('data-alarm-id'));
+        var idx = parseInt(this.getAttribute('data-idx'), 10);
+        if (alarm && alarm.sensors[idx]) { alarm.sensors[idx].label = this.value.trim(); markDirty(); }
+      });
+    });
+
+    container.querySelectorAll('.alarm-sensor-dc-select').forEach(function(sel) {
+      sel.addEventListener('change', function() {
+        var alarm = findAlarmById(this.getAttribute('data-alarm-id'));
+        var idx = parseInt(this.getAttribute('data-idx'), 10);
+        if (alarm && alarm.sensors[idx]) { alarm.sensors[idx].device_class = this.value; markDirty(); }
+      });
+    });
+
+    container.querySelectorAll('.alarm-sensor-del-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var alarm = findAlarmById(this.getAttribute('data-alarm-id'));
+        var idx = parseInt(this.getAttribute('data-idx'), 10);
+        if (alarm) { alarm.sensors.splice(idx, 1); markDirty(); renderAlarmsList(); }
+      });
+    });
+  }
+
+  function openAlarmEntityPicker() {
+    alarmEntitySearchText = '';
+    var searchEl = qs('alarm-entity-search-input');
+    if (searchEl) { searchEl.value = ''; }
+    showOverlay('alarm-entity-picker');
+    if (allAlarmEntities.length > 0) {
+      renderAlarmEntityPickerList();
+    } else {
+      var listEl = qs('alarm-entity-list');
+      if (listEl) { listEl.innerHTML = '<p class="cfg-placeholder">Caricamento\u2026</p>'; }
+      fetch('api/picker/entities?domain=alarm_control_panel')
+        .then(function(r) { return r.ok ? r.json() : []; })
+        .then(function(entities) {
+          allAlarmEntities = entities || [];
+          renderAlarmEntityPickerList();
+        })
+        .catch(function() {
+          var el = qs('alarm-entity-list');
+          if (el) { el.innerHTML = '<p class="cfg-placeholder">Nessun allarme trovato in HA.</p>'; }
+        });
+    }
+    if (searchEl) { setTimeout(function() { searchEl.focus(); }, 100); }
+  }
+
+  function renderAlarmEntityPickerList() {
+    var container = qs('alarm-entity-list');
+    if (!container) { return; }
+    if (allAlarmEntities.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">Nessun alarm_control_panel trovato in HA.</p>';
+      return;
+    }
+    var filtered = allAlarmEntities.filter(function(e) {
+      if (!alarmEntitySearchText) { return true; }
+      var hay = (e.entity_id + ' ' + (e.friendly_name || '')).toLowerCase();
+      return hay.indexOf(alarmEntitySearchText) !== -1;
+    });
+    if (filtered.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">Nessun risultato.</p>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < filtered.length; i++) {
+      var e = filtered[i];
+      var already = false;
+      var al = state.alarms || [];
+      for (var j = 0; j < al.length; j++) {
+        if (al[j].entity_id === e.entity_id) { already = true; break; }
+      }
+      html += '<div class="entity-row' + (already ? ' entity-row--selected' : '') + '">';
+      html += '<span class="entity-domain">alarm</span>';
+      html += '<span class="entity-info"><span class="entity-name">' + esc(e.friendly_name || e.entity_id) + '</span>';
+      html += '<span class="entity-id-label">' + esc(e.entity_id) + '</span></span>';
+      if (already) {
+        html += '<span class="entity-check">&#10003;</span>';
+      } else {
+        html += '<button class="add-btn alarm-entity-pick-btn" type="button"'
+          + ' data-id="' + esc(e.entity_id) + '"'
+          + ' data-name="' + esc(e.friendly_name || '') + '">+</button>';
+      }
+      html += '</div>';
+    }
+    container.innerHTML = html;
+    container.querySelectorAll('.alarm-entity-pick-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if ((state.alarms || []).length >= 10) { return; }
+        var eid = this.getAttribute('data-id');
+        var name = this.getAttribute('data-name');
+        if (!state.alarms) { state.alarms = []; }
+        state.alarms.push({ id: genSecId(), entity_id: eid, label: name, sensors: [] });
+        markDirty();
+        renderAlarmEntityPickerList();
+        renderAlarmsList();
+      });
+    });
+  }
+
+  function openAlarmSensorPicker() {
+    alarmSensorSearchText = '';
+    var searchEl = qs('alarm-sensor-search-input');
+    if (searchEl) { searchEl.value = ''; }
+    showOverlay('alarm-sensor-picker');
+    if (allBinarySensors.length > 0) {
+      renderAlarmSensorPickerList();
+    } else {
+      var listEl = qs('alarm-sensor-list');
+      if (listEl) { listEl.innerHTML = '<p class="cfg-placeholder">Caricamento\u2026</p>'; }
+      fetch('api/picker/entities?domain=binary_sensor')
+        .then(function(r) { return r.ok ? r.json() : []; })
+        .then(function(entities) {
+          allBinarySensors = entities || [];
+          renderAlarmSensorPickerList();
+        })
+        .catch(function() {
+          var el = qs('alarm-sensor-list');
+          if (el) { el.innerHTML = '<p class="cfg-placeholder">Nessun binary_sensor trovato.</p>'; }
+        });
+    }
+    if (searchEl) { setTimeout(function() { searchEl.focus(); }, 100); }
+  }
+
+  function renderAlarmSensorPickerList() {
+    var container = qs('alarm-sensor-list');
+    if (!container) { return; }
+    var alarm = editingAlarmId ? findAlarmById(editingAlarmId) : null;
+    if (!alarm) {
+      container.innerHTML = '<p class="cfg-placeholder">Errore: nessun allarme selezionato.</p>';
+      return;
+    }
+    var filtered = allBinarySensors.filter(function(e) {
+      if (!alarmSensorSearchText) { return true; }
+      var hay = (e.entity_id + ' ' + (e.friendly_name || '') + ' ' + (e.device_class || '')).toLowerCase();
+      return hay.indexOf(alarmSensorSearchText) !== -1;
+    });
+    if (filtered.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">Nessun risultato.</p>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < filtered.length; i++) {
+      var e = filtered[i];
+      var already = false;
+      var sens = alarm.sensors || [];
+      for (var j = 0; j < sens.length; j++) {
+        if (sens[j].entity_id === e.entity_id) { already = true; break; }
+      }
+      var meta = e.device_class || '';
+      html += '<div class="entity-row' + (already ? ' entity-row--selected' : '') + '">';
+      html += '<span class="entity-domain">binary</span>';
+      html += '<span class="entity-info"><span class="entity-name">' + esc(e.friendly_name || e.entity_id) + '</span>';
+      html += '<span class="entity-id-label">' + esc(e.entity_id);
+      if (meta) { html += ' <em class="entity-meta">(' + esc(meta) + ')</em>'; }
+      html += '</span></span>';
+      if (already) {
+        html += '<span class="entity-check">&#10003;</span>';
+      } else {
+        html += '<button class="add-btn alarm-sensor-pick-btn" type="button"'
+          + ' data-id="' + esc(e.entity_id) + '"'
+          + ' data-name="' + esc(e.friendly_name || '') + '"'
+          + ' data-dc="' + esc(e.device_class || '') + '">+</button>';
+      }
+      html += '</div>';
+    }
+    container.innerHTML = html;
+    container.querySelectorAll('.alarm-sensor-pick-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var alm = findAlarmById(editingAlarmId);
+        if (!alm) { return; }
+        if ((alm.sensors || []).length >= 30) { return; }
+        if (!alm.sensors) { alm.sensors = []; }
+        alm.sensors.push({
+          entity_id: this.getAttribute('data-id'),
+          label: this.getAttribute('data-name'),
+          device_class: this.getAttribute('data-dc') || ''
+        });
+        markDirty();
+        renderAlarmSensorPickerList();
+        renderAlarmsList();
+      });
+    });
+  }
+
   // ── Entity picker ──────────────────────────────────────────────────────────
 
   function openEntityPicker(context) {
@@ -2338,7 +2621,7 @@
 
   // ── Overlay management ─────────────────────────────────────────────────────
 
-  var OVERLAYS = ['entity-picker', 'sensor-picker', 'scenario-picker', 'energy-editor', 'camera-picker', 'visual-type-picker', 'icon-picker-modal'];
+  var OVERLAYS = ['entity-picker', 'sensor-picker', 'scenario-picker', 'energy-editor', 'camera-picker', 'alarm-entity-picker', 'alarm-sensor-picker', 'visual-type-picker', 'icon-picker-modal'];
 
   function showOverlay(id) {
     for (var i = 0; i < OVERLAYS.length; i++) {
@@ -2492,6 +2775,23 @@
           };
         });
 
+        // alarms: flat list
+        var almRaw = cfg.alarms_section || {};
+        state.alarms_section = {
+          title: almRaw.title || 'Allarme',
+          icon:  almRaw.icon  || 'shield-home',
+        };
+        state.alarms = (cfg.alarms || []).map(function(a) {
+          return {
+            id:        genSecId(),
+            entity_id: a.entity_id || '',
+            label:     a.label     || '',
+            sensors:   (a.sensors || []).map(function(s) {
+              return { entity_id: s.entity_id || '', label: s.label || '', device_class: s.device_class || '' };
+            }),
+          };
+        });
+
         state.header_sensors = cfg.header_sensors || [];
 
         // Render UI immediately with saved data
@@ -2507,6 +2807,10 @@
         if (camTitleInput) { camTitleInput.value = state.cameras_section.title; }
         updateSectionIconPreview('cameras', state.cameras_section.icon);
 
+        var almTitleInput = qs('alarms-title-input');
+        if (almTitleInput) { almTitleInput.value = state.alarms_section.title; }
+        updateSectionIconPreview('alarms', state.alarms_section.icon);
+
         renderOvSectionsList();
         renderOvSectionDetail();
         renderRoomsList();
@@ -2515,6 +2819,7 @@
         renderHeaderSensorsList();
         renderCamSectionsList();
         renderCamSectionDetail();
+        renderAlarmsList();
 
         // Load live entities from HA separately — non-fatal if HA is offline
         cfgFetchEntities()
@@ -2535,7 +2840,7 @@
       });
 
     // ── Tab buttons — inject MDI icons and wire clicks ────────────────────
-    var TAB_ICONS = { overview: 'home', rooms: 'floor-plan', scenarios: 'palette', header: 'thermometer', cameras: 'cctv' };
+    var TAB_ICONS = { overview: 'home', rooms: 'floor-plan', scenarios: 'palette', header: 'thermometer', cameras: 'cctv', alarms: 'shield-home' };
     document.querySelectorAll('.cfg-tab').forEach(function (btn) {
       var tab = btn.getAttribute('data-tab');
       if (window.RP_MDI && TAB_ICONS[tab]) {
@@ -2692,6 +2997,57 @@
           state.cameras_section.icon = name;
           updateSectionIconPreview('cameras', name);
         });
+      });
+    }
+
+    // ── Alarms section title & icon ────────────────────────────────────────────
+    var almTitleInput2 = qs('alarms-title-input');
+    if (almTitleInput2) {
+      almTitleInput2.addEventListener('input', function () {
+        markDirty();
+        state.alarms_section.title = this.value.trim() || 'Allarme';
+      });
+    }
+
+    var almIconBtn = qs('alarms-icon-btn');
+    if (almIconBtn) {
+      almIconBtn.addEventListener('click', function () {
+        openIconPickerModal(state.alarms_section.icon, function (name) {
+          markDirty();
+          state.alarms_section.icon = name;
+          updateSectionIconPreview('alarms', name);
+        });
+      });
+    }
+
+    // ── Add alarm button ───────────────────────────────────────────────────────
+    var addAlarmBtn = qs('add-alarm-btn');
+    if (addAlarmBtn) { addAlarmBtn.addEventListener('click', openAlarmEntityPicker); }
+
+    // ── Alarm entity picker controls ───────────────────────────────────────────
+    var almEntityCancelBtn = qs('alarm-entity-picker-cancel-btn');
+    if (almEntityCancelBtn) { almEntityCancelBtn.addEventListener('click', hideOverlay); }
+
+    var almEntitySearchEl = qs('alarm-entity-search-input');
+    if (almEntitySearchEl) {
+      almEntitySearchEl.addEventListener('input', function () {
+        alarmEntitySearchText = this.value.toLowerCase();
+        renderAlarmEntityPickerList();
+      });
+    }
+
+    // ── Alarm sensor picker controls ───────────────────────────────────────────
+    var almSensorCancelBtn = qs('alarm-sensor-picker-cancel-btn');
+    if (almSensorCancelBtn) { almSensorCancelBtn.addEventListener('click', function() {
+      editingAlarmId = null;
+      hideOverlay();
+    }); }
+
+    var almSensorSearchEl = qs('alarm-sensor-search-input');
+    if (almSensorSearchEl) {
+      almSensorSearchEl.addEventListener('input', function () {
+        alarmSensorSearchText = this.value.toLowerCase();
+        renderAlarmSensorPickerList();
       });
     }
 

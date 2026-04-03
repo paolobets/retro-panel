@@ -1,5 +1,13 @@
 # Retro Panel — Changelog
 
+## [2.9.7] — 2026-04-03
+
+### Added
+- **Config Alarms tab**: nuovo tab "Alarms" nella pagina Settings con sezione dedicata per configurare pannelli allarme e sensori di zona
+- **Alarm entity picker**: picker per selezionare `alarm_control_panel.*` da HA (max 10 allarmi)
+- **Sensor zone picker**: picker per aggiungere `binary_sensor.*` a ogni allarme (max 30 sensori per allarme) con selezione device_class (porta/finestra/movimento/presenza/ecc.) e label personalizzata
+- **Nav section**: nome e icona della sezione Allarme configurabili da Settings
+
 ## [2.9.6] — 2026-04-03
 
 ### Added
