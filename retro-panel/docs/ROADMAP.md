@@ -299,6 +299,11 @@ Retro Panel follows semantic versioning (MAJOR.MINOR.PATCH):
 - [x] Hint dinamico: "Tocca per armare" vs "Seleziona modalità, poi inserisci il codice"
 - [x] Confirm/disarm button: height 52px, font 15px, transform 0.1s feedback tattile
 
+### v2.9.16 — Light Theme FOUC + html bg fix (2026-04-03)
+
+- [x] Fix: `html, body` rule separata — `<html>` non ha mai la classe `theme-light`, il suo sfondo scuro traspariva sotto il body quando il contenuto era corto (tab Cameras/Alarms vuoti). Fix: regola separata con `min-height: 100vh` su `body`
+- [x] Fix: FOUC completo — `app.js` ora salva il tema in `localStorage.rp_theme` quando il dashboard lo riceve dall'API; lo script sincrono in /config trovava null al primo accesso e non applicava il tema corretto prima del paint
+
 ### v2.9.15 — Light Theme Bug Fixes + Whitelist UI (2026-04-03)
 
 - [x] Fix: toast "Saved" invisibile in light mode (#save-feedback aveva `color:#fff` su sfondo `--c-surface` bianco → ora sfondo fisso #1e1e1e)
@@ -388,7 +393,8 @@ These targets apply to v2.0 and all future releases:
 | v2.9.12 | Released | 2026-04-03 | Completed |
 | v2.9.13 | Released | 2026-04-03 | Completed |
 | v2.9.14 | Released | 2026-04-03 | Completed |
-| v2.9.15 | Released | 2026-04-03 | **Current stable** |
+| v2.9.15 | Released | 2026-04-03 | Completed |
+| v2.9.16 | Released | 2026-04-03 | **Current stable** |
 | v3.0 | Planned | TBD | 2026 H2 (estimated) |
 
 ---

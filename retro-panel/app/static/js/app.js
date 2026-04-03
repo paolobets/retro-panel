@@ -42,8 +42,10 @@
   // applyConfig — tema, colonne, titolo
   // ---------------------------------------------------------------------------
   function applyConfig(config) {
+    var resolvedTheme = config.theme || 'dark';
     document.body.classList.remove('theme-dark', 'theme-light', 'theme-auto');
-    document.body.classList.add('theme-' + (config.theme || 'dark'));
+    document.body.classList.add('theme-' + resolvedTheme);
+    try { localStorage.setItem('rp_theme', resolvedTheme); } catch (e) {}
 
     var titleEl = DOM.qs('#panel-title');
     if (titleEl) {

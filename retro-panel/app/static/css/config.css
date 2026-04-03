@@ -19,9 +19,15 @@
 }
 
 /* Base page styles (base.css removed in v2.0) */
-html, body {
+html {
   overflow: auto;
   height: auto;
+  margin: 0;
+  padding: 0;
+}
+body {
+  overflow: auto;
+  min-height: 100vh;
   background-color: var(--c-bg);
   color: var(--c-text-pri);
   font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
