@@ -164,6 +164,12 @@ window.RP_Nav = (function () {
       var camSec = config.cameras_section || {};
       addNavItem(nav, 'cameras', _mdi(camSec.icon || 'cctv', 22), camSec.title || 'Cameras');
     }
+
+    // Allarme
+    if (config.alarms && config.alarms.length > 0) {
+      var almSec = config.alarms_section || {};
+      addNavItem(nav, 'alarms', _mdi(almSec.icon || 'shield-home', 22), almSec.title || 'Allarme');
+    }
   }
 
   function showRoomsSubmenu(config) {

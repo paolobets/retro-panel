@@ -24,6 +24,10 @@ _MAX_SECTIONS = 20
 _MAX_SCENARIOS = 50
 _MAX_HEADER_SENSORS = 6
 _MAX_CAMERAS = 20
+_MAX_ALARMS = 10
+_MAX_ALARM_SENSORS = 30
+_ALARM_ENTITY_RE = re.compile(r'^alarm_control_panel\.[a-z0-9_]+$')
+_ALARM_SENSOR_RE = re.compile(r'^binary_sensor\.[a-z0-9_]+$')
 
 _CAMERA_ENTITY_RE = re.compile(r"^camera\.[a-z0-9_]+$")
 
@@ -286,6 +290,36 @@ async def save_config(request: web.Request) -> web.Response:
         "icon": str(cam_sec_raw.get("icon") or "cctv").strip()[:_MAX_ICON] or "cctv",
     }
 
+    # --- alarms ---
+    alm_sec_raw = body.get("alarms_section") or {}
+    alarms_section_title = str(alm_sec_raw.get("title") or "Allarme").strip()[:_MAX_TITLE] or "Allarme"
+    alarms_section_icon = str(alm_sec_raw.get("icon") or "shield-home").strip()[:_MAX_ICON] or "shield-home"
+
+    alarms_out = []
+    for alm in (body.get("alarms") or [])[:_MAX_ALARMS]:
+        if not isinstance(alm, dict):
+            continue
+        alm_eid = str(alm.get("entity_id") or "").strip()
+        if not alm_eid or not _ALARM_ENTITY_RE.match(alm_eid):
+            continue
+        sensors_out = []
+        for s in (alm.get("sensors") or [])[:_MAX_ALARM_SENSORS]:
+            if not isinstance(s, dict):
+                continue
+            s_eid = str(s.get("entity_id") or "").strip()
+            if not s_eid or not _ALARM_SENSOR_RE.match(s_eid):
+                continue
+            sensors_out.append({
+                "entity_id": s_eid,
+                "label": str(s.get("label") or "").strip()[:_MAX_LABEL],
+                "device_class": str(s.get("device_class") or "").strip()[:32],
+            })
+        alarms_out.append({
+            "entity_id": alm_eid,
+            "label": str(alm.get("label") or "").strip()[:_MAX_LABEL],
+            "sensors": sensors_out,
+        })
+
     v5_data = {
         "version": 5,
         "header_sensors": header_sensors,
@@ -299,6 +333,8 @@ async def save_config(request: web.Request) -> web.Response:
         "scenarios_section": scenarios_section,
         "cameras": camera_sections,
         "cameras_section": cameras_section,
+        "alarms": alarms_out,
+        "alarms_section": {"title": alarms_section_title, "icon": alarms_section_icon},
     }
 
     try:

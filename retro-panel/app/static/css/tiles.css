@@ -177,82 +177,238 @@
   margin-left: 2px;
 }
 
-/* ---- ALARM TILE ---- */
+/* ══════════════════════════════════════════════════════
+   ALARM CONTROL PANEL — Redesign v2.9.6
+   ══════════════════════════════════════════════════════ */
+
 .tile-alarm {
   cursor: default;
-  padding: 20px;
-  max-width: 460px;
-  margin: 0 auto;
+  padding: 0;
+  overflow: hidden;
   width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
   -webkit-box-sizing: border-box;
   box-sizing: border-box;
 }
-.tile-alarm:active { transform: none; }
+.tile-alarm:active { -webkit-transform: none; transform: none; }
 
-.tile-alarm .tile-top {
+/* Status bar — full-width colored header */
+.alarm-status-bar {
+  padding: 16px 20px 14px;
+}
+.alarm-status-bar.s-disarmed  { background: linear-gradient(135deg, rgba(100,100,100,0.08), transparent); }
+.alarm-status-bar.s-armed     { background: linear-gradient(135deg, rgba(33,150,243,0.12), transparent); }
+.alarm-status-bar.s-pending   { background: linear-gradient(135deg, rgba(255,152,0,0.12), transparent); }
+.alarm-status-bar.s-triggered { background: linear-gradient(135deg, rgba(244,67,54,0.18), transparent); }
+.alarm-status-bar.s-unavail   { background: transparent; }
+
+.alarm-badge {
+  display: -webkit-inline-flex;
+  display: inline-flex;
   -webkit-align-items: center;
   align-items: center;
-  margin-bottom: 6px;
-}
-.tile-alarm .tile-icon { font-size: 22px; margin-right: 8px; }
-.tile-alarm .tile-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--c-text-sec);
-  margin-bottom: 12px;
-}
-
-/* State badge */
-.alarm-state-text {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 20px;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
 }
-.alarm-state-disarmed  { background: rgba(156,163,175,0.12); color: #9ca3af; }
-.alarm-state-armed     { background: rgba(33,150,243,0.15);  color: var(--c-accent); }
-.alarm-state-pending   { background: rgba(255,152,0,0.15);   color: #ff9800; }
-.alarm-state-triggered { background: rgba(244,67,54,0.18);   color: #f44336; }
+.alarm-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+@-webkit-keyframes alarm-blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+@keyframes alarm-blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
 
-/* PIN display */
-.alarm-pin-display {
-  font-size: 20px;
-  letter-spacing: 10px;
-  min-height: 38px;
-  text-align: center;
+.alarm-badge-dot.dot-disarmed { background: #666; }
+.alarm-badge-dot.dot-armed    { background: var(--c-accent); }
+.alarm-badge-dot.dot-pending  { background: var(--c-warning); -webkit-animation: alarm-blink 1.2s ease-in-out infinite; animation: alarm-blink 1.2s ease-in-out infinite; }
+.alarm-badge-dot.dot-triggered{ background: var(--c-danger);  -webkit-animation: alarm-blink 0.7s ease-in-out infinite; animation: alarm-blink 0.7s ease-in-out infinite; }
+.alarm-badge-dot.dot-unavail  { background: #444; }
+
+.alarm-badge-text.text-disarmed { color: #888; }
+.alarm-badge-text.text-armed    { color: var(--c-accent); }
+.alarm-badge-text.text-pending  { color: var(--c-warning); }
+.alarm-badge-text.text-triggered{ color: var(--c-danger); }
+.alarm-badge-text.text-unavail  { color: #555; }
+
+.alarm-entity-name {
+  font-size: 19px;
+  font-weight: 700;
   color: var(--c-text-pri);
-  border-bottom: 1px solid var(--c-surface-2);
-  padding-bottom: 8px;
-  margin-bottom: 6px;
+  margin-top: 4px;
+}
+.alarm-entity-sub {
+  font-size: 12px;
+  color: var(--c-text-sec);
+  margin-top: 2px;
 }
 
-/* Error */
-.alarm-error {
-  font-size: 11px;
-  color: #f44336;
-  text-align: center;
-  min-height: 16px;
+/* Body */
+.alarm-body { padding: 14px 20px 20px; }
+
+/* Section label */
+.alarm-section-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--c-text-sec);
   margin-bottom: 8px;
 }
 
-/* Keypad — flex wrap, calc-based width for iOS 12 safe spacing */
+/* Mode chips */
+.alarm-modes-row {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  margin: -4px -4px 16px;
+}
+.alarm-mode-chip {
+  display: -webkit-inline-flex;
+  display: inline-flex;
+  -webkit-align-items: center;
+  align-items: center;
+  padding: 10px 16px;
+  border-radius: 24px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--c-surface-2);
+  color: var(--c-text-sec);
+  border: 2px solid transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  margin: 4px;
+  -webkit-transition: all 0.15s;
+  transition: all 0.15s;
+}
+.alarm-mode-chip:active { -webkit-transform: scale(0.94); transform: scale(0.94); }
+.alarm-mode-chip.chip-selected {
+  background: rgba(33,150,243,0.12);
+  color: var(--c-accent);
+  border-color: var(--c-accent);
+}
+.alarm-disarm-chip {
+  display: -webkit-inline-flex;
+  display: inline-flex;
+  -webkit-align-items: center;
+  align-items: center;
+  padding: 10px 16px;
+  border-radius: 24px;
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(244,67,54,0.08);
+  color: var(--c-danger);
+  border: 2px solid transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  margin: 4px;
+}
+.alarm-disarm-chip.chip-selected { border-color: var(--c-danger); background: rgba(244,67,54,0.15); }
+.alarm-disarm-chip:active { -webkit-transform: scale(0.94); transform: scale(0.94); }
+
+/* Separator */
+.alarm-sep {
+  height: 1px;
+  background: var(--c-surface-2);
+  margin-bottom: 14px;
+}
+
+/* Triggered banner */
+.alarm-triggered-banner {
+  background: rgba(244,67,54,0.12);
+  border: 1px solid rgba(244,67,54,0.3);
+  border-radius: 10px;
+  padding: 12px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-danger);
+  margin-bottom: 14px;
+  letter-spacing: 0.02em;
+}
+
+/* Arming/disarming spinner */
+.alarm-arming-view { text-align: center; padding: 20px 0 8px; }
+@-webkit-keyframes alarm-spin { from { -webkit-transform: rotate(0deg); } to { -webkit-transform: rotate(360deg); } }
+@keyframes alarm-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.alarm-spinner {
+  width: 34px; height: 34px;
+  border: 3px solid var(--c-surface-2);
+  border-top-color: var(--c-warning);
+  border-radius: 50%;
+  display: inline-block;
+  -webkit-animation: alarm-spin 0.75s linear infinite;
+  animation: alarm-spin 0.75s linear infinite;
+  margin-bottom: 10px;
+}
+.alarm-arming-msg { font-size: 14px; font-weight: 600; color: var(--c-warning); }
+
+/* PIN display */
+.alarm-pin-display {
+  background: var(--c-surface-2);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 22px;
+  letter-spacing: 14px;
+  text-align: center;
+  min-height: 52px;
+  color: var(--c-text-pri);
+  margin-bottom: 8px;
+  border: 2px solid var(--c-surface-2);
+  -webkit-transition: border-color 0.2s;
+  transition: border-color 0.2s;
+}
+.alarm-pin-display.has-val { border-color: var(--c-accent); }
+.alarm-pin-display.pin-err { border-color: var(--c-danger); }
+@-webkit-keyframes alarm-shake { 0%,100%{-webkit-transform:translateX(0)} 20%,60%{-webkit-transform:translateX(-7px)} 40%,80%{-webkit-transform:translateX(7px)} }
+@keyframes alarm-shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-7px)} 40%,80%{transform:translateX(7px)} }
+.alarm-pin-display.shaking { -webkit-animation: alarm-shake 0.35s ease; animation: alarm-shake 0.35s ease; }
+
+/* Text input for alphanumeric */
+.alarm-text-input {
+  width: 100%;
+  background: var(--c-surface-2);
+  border: 2px solid var(--c-surface-2);
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 16px;
+  color: var(--c-text-pri);
+  font-family: inherit;
+  outline: none;
+  margin-bottom: 8px;
+  -webkit-appearance: none;
+  -webkit-transition: border-color 0.2s;
+  transition: border-color 0.2s;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+}
+.alarm-text-input:focus { border-color: var(--c-accent); }
+
+/* Keypad */
 .alarm-keypad {
   display: -webkit-flex;
   display: flex;
   -webkit-flex-wrap: wrap;
   flex-wrap: wrap;
-  margin: 0 -3px 10px;
+  margin: -3px -3px 8px;
 }
 .alarm-key {
   width: calc(33.333% - 6px);
   margin: 3px;
   height: 52px;
   background: var(--c-surface-2);
-  border: 1px solid transparent;
+  border: 1px solid var(--c-surface-3, #333);
   border-radius: 10px;
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 600;
   color: var(--c-text-pri);
   cursor: pointer;
@@ -265,38 +421,123 @@
   align-items: center;
   -webkit-justify-content: center;
   justify-content: center;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
 }
-.alarm-key:active { opacity: 0.6; background: var(--c-surface-2); -webkit-transform: scale(0.95); transform: scale(0.95); }
-.alarm-key.key-delete { font-size: 16px; color: var(--c-text-sec); }
+.alarm-key:active { background: var(--c-surface-3, #333); -webkit-transform: scale(0.93); transform: scale(0.93); }
+.alarm-key.key-del { font-size: 15px; color: var(--c-text-sec); }
+.alarm-key.key-empty { background: transparent; border-color: transparent; pointer-events: none; }
 
-/* Action buttons */
-.alarm-actions {
-  display: -webkit-flex;
-  display: flex;
-  margin: -4px;
+/* Error message */
+.alarm-pin-error {
+  font-size: 11px;
+  color: var(--c-danger);
+  text-align: center;
+  min-height: 16px;
+  margin-bottom: 8px;
 }
-.alarm-btn {
-  -webkit-flex: 1;
-  flex: 1;
-  margin: 4px;
-  height: 46px;
-  border-radius: 10px;
-  font-size: 13px;
+
+/* Confirm / disarm buttons */
+.alarm-confirm-btn {
+  width: 100%;
+  height: 48px;
+  border-radius: 12px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  touch-action: manipulation;
   border: none;
+  touch-action: manipulation;
   -webkit-user-select: none;
   user-select: none;
+  -webkit-transition: opacity 0.15s;
+  transition: opacity 0.15s;
 }
-.alarm-btn-arm-home,
-.alarm-btn-arm-away { background: rgba(33,150,243,0.15); color: var(--c-accent); }
-.alarm-btn-arm-home:active,
-.alarm-btn-arm-away:active { background: rgba(33,150,243,0.28); }
-.alarm-btn-disarm { background: rgba(156,163,175,0.12); color: var(--c-text-sec); }
-.alarm-btn-disarm:active { background: rgba(156,163,175,0.22); }
-.alarm-btn-disarm-danger { background: rgba(244,67,54,0.15); color: #f44336; }
-.alarm-btn-disarm-danger:active { background: rgba(244,67,54,0.28); }
+.alarm-confirm-btn:active { opacity: 0.8; -webkit-transform: scale(0.98); transform: scale(0.98); }
+.alarm-confirm-btn.btn-arm { background: var(--c-accent); color: #fff; }
+.alarm-confirm-btn.btn-disarm { background: rgba(244,67,54,0.12); color: var(--c-danger); border: 1px solid rgba(244,67,54,0.3); }
+.alarm-confirm-btn.btn-disarm-danger { background: var(--c-danger); color: #fff; }
+.alarm-confirm-btn.btn-direct-disarm { background: rgba(244,67,54,0.1); color: var(--c-danger); border: 1px solid rgba(244,67,54,0.2); }
+
+/* No-code hint */
+.alarm-no-code-hint {
+  font-size: 11px;
+  color: var(--c-text-sec);
+  text-align: center;
+  padding: 8px 0 4px;
+}
+
+/* ══════════════════════════════════════════════════════
+   ALARM SENSOR ZONE GRID
+   ══════════════════════════════════════════════════════ */
+
+.alarm-sensor-grid {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  margin: 8px -4px 0;
+}
+
+.tile-alarm-sensor {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  background: var(--c-surface-2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 4px;
+  width: calc(50% - 8px);
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  -webkit-transition: border-color 0.2s, background 0.2s;
+  transition: border-color 0.2s, background 0.2s;
+}
+.tile-alarm-sensor.as-alert {
+  border-color: rgba(244,67,54,0.4);
+  background: rgba(244,67,54,0.08);
+}
+.tile-alarm-sensor.as-unavail { opacity: 0.5; }
+
+@media (max-width: 420px) {
+  .tile-alarm-sensor { width: calc(100% - 8px); }
+}
+
+.as-icon {
+  font-size: 20px;
+  margin-right: 8px;
+  flex-shrink: 0;
+  width: 28px;
+  text-align: center;
+}
+.as-info { -webkit-flex: 1; flex: 1; min-width: 0; }
+.as-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--c-text-pri);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.as-state {
+  font-size: 10px;
+  color: var(--c-text-sec);
+  margin-top: 1px;
+}
+.tile-alarm-sensor.as-alert .as-state { color: var(--c-danger); font-weight: 600; }
+
+.as-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-left: 6px;
+  background: var(--c-text-sec);
+}
+.as-dot.dot-ok      { background: var(--c-on); }
+.as-dot.dot-alert   { background: var(--c-danger); }
+.as-dot.dot-unavail { background: #444; }
 
 /* ---- SCENARIO CARD ---- */
 .tile-scenario {
@@ -946,3 +1187,4 @@
   line-height: 1;
 }
 .cam-lb-close:hover { background: #3d4460; }
+

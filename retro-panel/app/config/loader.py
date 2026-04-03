@@ -221,6 +221,22 @@ class CameraConfig:
 
 
 @dataclass
+class AlarmSensorConfig:
+    """A binary sensor associated with an alarm panel zone."""
+    entity_id: str
+    label: str = ''
+    device_class: str = ''
+
+
+@dataclass
+class AlarmConfig:
+    """An alarm control panel with optional zone sensors."""
+    entity_id: str
+    label: str = ''
+    sensors: List[AlarmSensorConfig] = field(default_factory=list)
+
+
+@dataclass
 class RoomConfig:
     """A room/area with its own entity grid."""
     id: str
@@ -251,6 +267,9 @@ class PanelConfig:
     cameras_section_title: str = "Telecamere"
     cameras_section_icon: str = "cctv"
     allowed_direct_ips: List[str] = field(default_factory=lambda: ["0.0.0.0/0"])
+    alarms: List[AlarmConfig] = field(default_factory=list)
+    alarms_section_title: str = 'Allarme'
+    alarms_section_icon: str = 'shield-home'
 
     # --------------- backward compat helpers ---------------
 
@@ -586,6 +605,29 @@ def _parse_camera_section(raw: dict, idx: int) -> CameraSection:
     return CameraSection(id=sec_id, title=title, items=cam_items)
 
 
+def _parse_alarm(raw: dict) -> Optional[AlarmConfig]:
+    """Parse a single alarm entry from entities.json v5."""
+    eid = str(raw.get('entity_id') or '').strip()
+    if not eid or not eid.startswith('alarm_control_panel.'):
+        return None
+    sensors: list[AlarmSensorConfig] = []
+    for s in (raw.get('sensors') or []):
+        if not isinstance(s, dict):
+            continue
+        s_eid = str(s.get('entity_id') or '').strip()
+        if s_eid and s_eid.startswith('binary_sensor.'):
+            sensors.append(AlarmSensorConfig(
+                entity_id=s_eid,
+                label=str(s.get('label') or '').strip(),
+                device_class=str(s.get('device_class') or '').strip(),
+            ))
+    return AlarmConfig(
+        entity_id=eid,
+        label=str(raw.get('label') or '').strip(),
+        sensors=sensors,
+    )
+
+
 def _migrate_v4_to_v5(raw: dict) -> tuple[
     list[RoomSection],       # overview_sections
     list[RoomConfig],        # rooms
@@ -656,9 +698,12 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
     str,                       # scenarios_section_icon   [8]
     str,                       # cameras_section_title    [9]
     str,                       # cameras_section_icon     [10]
+    list[AlarmConfig],         # alarms                   [11]
+    str,                       # alarms_section_title     [12]
+    str,                       # alarms_section_icon      [13]
 ]:
     """Load layout from /data/entities.json, migrating older formats."""
-    empty = ([], "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv")
+    empty = ([], "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv", [], "Allarme", "shield-home")
 
     if entities_file.exists():
         try:
@@ -703,6 +748,8 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
             ]
             sc_sec = raw.get("scenarios_section") or {}
             cam_sec = raw.get("cameras_section") or {}
+            alm_sec = raw.get("alarms_section") or {}
+            alarms = [a for a in [_parse_alarm(x) for x in (raw.get("alarms") or []) if isinstance(x, dict)] if a]
             return (
                 overview_sections, overview_title, overview_icon,
                 rooms, scenario_sections, header_sensors, camera_sections,
@@ -710,6 +757,9 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
                 str(sc_sec.get("icon") or "palette").strip() or "palette",
                 str(cam_sec.get("title") or "Telecamere").strip() or "Telecamere",
                 str(cam_sec.get("icon") or "cctv").strip() or "cctv",
+                alarms,
+                str(alm_sec.get("title") or "Allarme").strip() or "Allarme",
+                str(alm_sec.get("icon") or "shield-home").strip() or "shield-home",
             )
 
         # v3/v4 format — migrate to v5 shape (also handles v3 rooms via _parse_room migration logic)
@@ -739,6 +789,7 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
                 rooms, scenario_sections, header_sensors, camera_sections,
                 scenarios_section_title, scenarios_section_icon,
                 cameras_section_title, cameras_section_icon,
+                [], "Allarme", "shield-home",
             )
 
         # v2 format: migrate first page to overview
@@ -746,14 +797,14 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
             logger.info("Migrating v2 pages format to v5")
             ov_items = _migrate_v2_pages(raw.get("pages") or [])
             ov_secs = [RoomSection(id="sec_default", title="", items=ov_items)] if ov_items else []
-            return (ov_secs, "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv")
+            return (ov_secs, "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv", [], "Allarme", "shield-home")
 
         # v1 format: plain list
         if isinstance(raw, list):
             logger.info("Migrating v1 flat entities format to v5")
             ov_items = _migrate_v1_flat(raw)
             ov_secs = [RoomSection(id="sec_default", title="", items=ov_items)] if ov_items else []
-            return (ov_secs, "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv")
+            return (ov_secs, "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv", [], "Allarme", "shield-home")
 
         logger.warning("Unrecognised entities.json format, using empty layout")
         return empty
@@ -763,7 +814,7 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
         logger.info("No entities.json found, migrating from options.json")
         ov_items = _migrate_v1_flat(options_fallback)
         ov_secs = [RoomSection(id="sec_default", title="", items=ov_items)] if ov_items else []
-        return (ov_secs, "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv")
+        return (ov_secs, "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv", [], "Allarme", "shield-home")
 
     return empty
 
@@ -835,7 +886,8 @@ def load_config() -> PanelConfig:
     options_entities = raw.get("entities", [])
     (overview_sections, overview_title, overview_icon, rooms, scenario_sections, header_sensors, camera_sections,
      scenarios_section_title, scenarios_section_icon,
-     cameras_section_title, cameras_section_icon) = _load_layout(
+     cameras_section_title, cameras_section_icon,
+     alarms, alarms_section_title, alarms_section_icon) = _load_layout(
         entities_file,
         options_entities if isinstance(options_entities, list) else [],
     )
@@ -873,15 +925,19 @@ def load_config() -> PanelConfig:
         cameras_section_title=cameras_section_title,
         cameras_section_icon=cameras_section_icon,
         allowed_direct_ips=_parse_allowed_ips(raw.get("allowed_direct_ips")),
+        alarms=alarms,
+        alarms_section_title=alarms_section_title,
+        alarms_section_icon=alarms_section_icon,
     )
 
     logger.info(
-        "Config loaded: title=%r, overview=%d entities, rooms=%d, scenarios=%d, cameras=%d, theme=%r",
+        "Config loaded: title=%r, overview=%d entities, rooms=%d, scenarios=%d, cameras=%d, alarms=%d, theme=%r",
         config.title,
         total_entities,
         len(rooms),
         len(scenario_sections),
         len(camera_sections),
+        len(alarms),
         config.theme,
     )
     return config

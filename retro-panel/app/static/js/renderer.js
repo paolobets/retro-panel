@@ -51,6 +51,7 @@ window.RP_Renderer = (function () {
     'binary_lock':        null,
     'binary_vibration':   null,
     'alarm':              null,
+    'alarm_sensor':       null,
     'camera':             null,
     'scenario':           null,
     'energy_flow':        null,
@@ -89,6 +90,7 @@ window.RP_Renderer = (function () {
     'binary_lock':        'tile-col-sensor',
     'binary_vibration':   'tile-col-sensor',
     'alarm':              'tile-col-full',
+    'alarm_sensor':       'tile-col-alarm-sensor',
     'camera':             'tile-col-full',
     'scenario':           'tile-col-compact',
     'energy_flow':        'tile-col-full',
@@ -126,6 +128,7 @@ window.RP_Renderer = (function () {
     COMPONENT_MAP['binary_lock']        = window.SensorComponent   || null;
     COMPONENT_MAP['binary_vibration']   = window.SensorComponent   || null;
     COMPONENT_MAP['alarm']              = window.AlarmComponent    || null;
+    COMPONENT_MAP['alarm_sensor']       = window.AlarmSensorComponent || null;
     COMPONENT_MAP['camera']             = window.CameraComponent   || null;
     COMPONENT_MAP['scenario']           = window.ScenarioComponent || null;
     COMPONENT_MAP['energy_flow']        = window.EnergyFlowComponent || null;
@@ -298,6 +301,10 @@ window.RP_Renderer = (function () {
         'No cameras configured'
       );
 
+    } else if (sectionId === 'alarms') {
+      var alarmSec = config.alarms_section || {};
+      _renderAlarmSection(contentArea, config.alarms, alarmSec, appState);
+
     } else if (sectionId.indexOf('room:') === 0) {
       var roomId = sectionId.slice(5);
       var rooms = config.rooms || [];
@@ -413,6 +420,78 @@ window.RP_Renderer = (function () {
     }
 
     container.appendChild(grid);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Alarm items — renders alarm control panel + sensor zone grid
+  // ---------------------------------------------------------------------------
+  function _renderAlarmItems(container, alarms, appState) {
+    if (!alarms || alarms.length === 0) { return; }
+    var DOM = window.RP_DOM;
+
+    for (var i = 0; i < alarms.length; i++) {
+      var alarmCfg = alarms[i];
+      if (!alarmCfg || !alarmCfg.entity_id) { continue; }
+
+      // Alarm control panel tile
+      var alarmComp = COMPONENT_MAP['alarm'];
+      if (alarmComp) {
+        try {
+          var alarmTile = alarmComp.createTile(alarmCfg);
+          var alarmCol = DOM.createElement('div', 'tile-col-full');
+          alarmCol.appendChild(alarmTile);
+          container.appendChild(alarmCol);
+          appState.tileMap[alarmCfg.entity_id] = alarmTile;
+          var alarmState = appState.states[alarmCfg.entity_id];
+          if (alarmState) {
+            try { alarmComp.updateTile(alarmTile, alarmState); } catch (ue) { }
+          }
+        } catch (err) {
+          console.error('[renderer] alarm tile failed:', alarmCfg.entity_id, err);
+        }
+      }
+
+      // Sensor zone grid (if any)
+      var sensors = alarmCfg.sensors || [];
+      if (sensors.length > 0) {
+        var sensorComp = COMPONENT_MAP['alarm_sensor'];
+        if (sensorComp) {
+          var sensorGrid = DOM.createElement('div', 'alarm-sensor-grid');
+          for (var j = 0; j < sensors.length; j++) {
+            var sensorCfg = sensors[j];
+            if (!sensorCfg || !sensorCfg.entity_id) { continue; }
+            try {
+              var sensorTile = sensorComp.createTile(sensorCfg);
+              sensorGrid.appendChild(sensorTile);
+              appState.tileMap[sensorCfg.entity_id] = sensorTile;
+              var sensorState = appState.states[sensorCfg.entity_id];
+              if (sensorState) {
+                try { sensorComp.updateTile(sensorTile, sensorState); } catch (ue) { }
+              }
+            } catch (serr) {
+              console.error('[renderer] alarm sensor tile failed:', sensorCfg.entity_id, serr);
+            }
+          }
+          container.appendChild(sensorGrid);
+        }
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Alarm section — entry point for the 'alarms' section
+  // ---------------------------------------------------------------------------
+  function _renderAlarmSection(container, alarms, sectionCfg, appState) {
+    var DOM = window.RP_DOM;
+    if (!alarms || alarms.length === 0) {
+      var empty = DOM.createElement('div', 'empty-state');
+      empty.innerHTML = '<span class="empty-state-icon">\uD83D\uDEE1\uFE0F</span>'
+        + '<p class="empty-state-title">Nessun allarme configurato</p>'
+        + '<p class="empty-state-hint">Apri Config per aggiungere un allarme.</p>';
+      container.appendChild(empty);
+      return;
+    }
+    _renderAlarmItems(container, alarms, appState);
   }
 
   // ---------------------------------------------------------------------------

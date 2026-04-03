@@ -120,14 +120,34 @@ async def get_panel_config(request: web.Request) -> web.Response:
             "title": config.cameras_section_title,
             "icon":  config.cameras_section_icon,
         },
+        "alarms": [
+            {
+                "entity_id": a.entity_id,
+                "label": a.label,
+                "sensors": [
+                    {
+                        "entity_id": s.entity_id,
+                        "label": s.label,
+                        "device_class": s.device_class,
+                    }
+                    for s in a.sensors
+                ],
+            }
+            for a in config.alarms
+        ],
+        "alarms_section": {
+            "title": config.alarms_section_title,
+            "icon":  config.alarms_section_icon,
+        },
     }
 
     logger.debug(
-        "Panel config requested: overview=%d sections, rooms=%d, scenarios=%d sections, header_sensors=%d, cameras=%d sections",
+        "Panel config requested: overview=%d sections, rooms=%d, scenarios=%d sections, header_sensors=%d, cameras=%d sections, alarms=%d",
         len(payload["overview"]["sections"]),
         len(rooms_payload),
         len(payload["scenarios"]),
         len(header_sensors_payload),
         len(payload["cameras"]),
+        len(payload["alarms"]),
     )
     return web.json_response(payload)

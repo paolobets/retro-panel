@@ -1,5 +1,21 @@
 # Retro Panel — Changelog
 
+## [2.9.6] — 2026-04-03
+
+### Added
+- **Sezione Allarme**: nuovo tab dedicato "Allarme" nella sidebar (icona shield-home), parallelo a Telecamere
+- **Alarm tile dinamico**: legge da HA gli attributi `code_format`, `code_arm_required`, `supported_features` — adatta UI in tempo reale (bitmask ARM_HOME/AWAY/NIGHT/VACATION/CUSTOM/TRIGGER)
+- **PIN numerico**: tastiera a 12 tasti (0-9 + canc + invio) con display asterischi e animazione shake su errore
+- **Codice alfanumerico**: input text con invio da tastiera virtuale iOS
+- **Badge di stato**: dot animato (blink) + testo colorato per ogni stato (disarmed/armed/pending/triggered/arming/unavailable)
+- **Mode chips**: chip per ogni modalità supportata (Casa/Fuori/Notte/Vacanza/Personaliz) + chip rosso Disinserisci
+- **Banner triggered**: banner rosso pulsante in stato triggered
+- **Sensor zone dashboard**: ogni configurazione allarme può includere sensori `binary_sensor.*` — porte, finestre, movimento, presenza, gas, fumo, vibrazione — visualizzati come tile compatte accanto all'allarme
+- **AlarmSensorComponent**: icona + nome + stato testuale + dot colorato; aggiornamenti real-time via WebSocket come tutti gli altri tile
+- **Backend loader**: dataclass `AlarmConfig` + `AlarmSensorConfig`, `_parse_alarm()` con validazione prefissi; tuple `_load_layout` estesa a 14 elementi
+- **API panel_config**: esporta `alarms[]` e `alarms_section` al frontend
+- **API panel_config_save**: parsing e salvataggio configurazione allarme + sensori (max 10 allarmi, 30 sensori)
+
 ## [2.9.5] — 2026-04-03
 
 ### Changed
