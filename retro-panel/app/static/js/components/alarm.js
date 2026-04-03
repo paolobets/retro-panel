@@ -171,6 +171,12 @@ window.AlarmComponent = (function () {
     disarmSection.appendChild(pinArea);
     disarmSection.appendChild(disarmBtn);
 
+    /* Hide all optional sections initially; updateTile() shows what's needed */
+    modesSection.style.display   = 'none';
+    disarmSection.style.display  = 'none';
+    triggeredBanner.style.display= 'none';
+    pinArea.style.display        = 'none';
+
     body.appendChild(modesSection);
     body.appendChild(disarmSection);
     body.appendChild(triggeredBanner);

@@ -3033,6 +3033,9 @@
     var almEntityCancelBtn = qs('alarm-entity-picker-cancel-btn');
     if (almEntityCancelBtn) { almEntityCancelBtn.addEventListener('click', hideOverlay); }
 
+    var almEntityDoneBtn = qs('alarm-entity-picker-done-btn');
+    if (almEntityDoneBtn) { almEntityDoneBtn.addEventListener('click', hideOverlay); }
+
     var almEntitySearchEl = qs('alarm-entity-search-input');
     if (almEntitySearchEl) {
       almEntitySearchEl.addEventListener('input', function () {
@@ -3044,6 +3047,12 @@
     // ── Alarm sensor picker controls ───────────────────────────────────────────
     var almSensorCancelBtn = qs('alarm-sensor-picker-cancel-btn');
     if (almSensorCancelBtn) { almSensorCancelBtn.addEventListener('click', function() {
+      editingAlarmId = null;
+      hideOverlay();
+    }); }
+
+    var almSensorDoneBtn = qs('alarm-sensor-picker-done-btn');
+    if (almSensorDoneBtn) { almSensorDoneBtn.addEventListener('click', function() {
       editingAlarmId = null;
       hideOverlay();
     }); }

@@ -1,5 +1,13 @@
 # Retro Panel — Changelog
 
+## [2.9.9] — 2026-04-03
+
+### Fixed
+- **Alarm config — pulsante Fatto**: aggiunti pulsanti "Fatto" all'alarm entity picker e all'alarm sensor picker; prima era possibile solo premere "Annulla" anche dopo aver aggiunto elementi
+- **Alarm tile — sezioni sempre visibili**: modesSection, disarmSection, triggeredBanner e pinArea ora partono nascosti (`display:none`) e vengono mostrati da `updateTile()` in base allo stato reale di HA; prima tutte le sezioni erano visibili contemporaneamente
+- **Tema chiaro — valori sensori illeggibili**: rimossi colori hardcoded da `tiles.css` per `.tile-sensor` (`.name`, `.val`, `.unit`, border) — ora usano `var(--c-text-pri)`, `var(--c-text-sec)`, `var(--c-surface-3)` che si adattano al tema
+- **Tema chiaro — colori hardcoded in tiles.css**: rimpiazzati `#9ca3af`, `#f9fafb`, `#374151`, `#666`, `#444`, `#888`, `#555`, `#6b7280` con variabili CSS per alarm badges, sensori di zona e stato off dei tile
+
 ## [2.9.8] — 2026-04-03
 
 ### Fixed

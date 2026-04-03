@@ -122,7 +122,7 @@
   min-height: 56px;
   padding: 10px 12px;
   cursor: default;
-  border: 1.5px solid #374151;
+  border: 1.5px solid var(--c-surface-3);
 }
 .tile-sensor:active { transform: none; }
 
@@ -157,7 +157,7 @@
 }
 .tile-sensor .name {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--c-text-sec);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -167,13 +167,13 @@
 .tile-sensor .val {
   font-size: 14px;
   font-weight: 600;
-  color: #f9fafb;
+  color: var(--c-text-pri);
   line-height: 1.2;
   white-space: nowrap;
 }
 .tile-sensor .unit {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--c-text-sec);
   margin-left: 2px;
 }
 
@@ -223,17 +223,17 @@
 @-webkit-keyframes alarm-blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
 @keyframes alarm-blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
 
-.alarm-badge-dot.dot-disarmed { background: #666; }
+.alarm-badge-dot.dot-disarmed { background: var(--c-text-sec); }
 .alarm-badge-dot.dot-armed    { background: var(--c-accent); }
 .alarm-badge-dot.dot-pending  { background: var(--c-warning); -webkit-animation: alarm-blink 1.2s ease-in-out infinite; animation: alarm-blink 1.2s ease-in-out infinite; }
 .alarm-badge-dot.dot-triggered{ background: var(--c-danger);  -webkit-animation: alarm-blink 0.7s ease-in-out infinite; animation: alarm-blink 0.7s ease-in-out infinite; }
-.alarm-badge-dot.dot-unavail  { background: #444; }
+.alarm-badge-dot.dot-unavail  { background: var(--c-surface-3); }
 
-.alarm-badge-text.text-disarmed { color: #888; }
+.alarm-badge-text.text-disarmed { color: var(--c-text-sec); }
 .alarm-badge-text.text-armed    { color: var(--c-accent); }
 .alarm-badge-text.text-pending  { color: var(--c-warning); }
 .alarm-badge-text.text-triggered{ color: var(--c-danger); }
-.alarm-badge-text.text-unavail  { color: #555; }
+.alarm-badge-text.text-unavail  { color: var(--c-text-sec); }
 
 .alarm-entity-name {
   font-size: 19px;
@@ -537,7 +537,7 @@
 }
 .as-dot.dot-ok      { background: var(--c-on); }
 .as-dot.dot-alert   { background: var(--c-danger); }
-.as-dot.dot-unavail { background: #444; }
+.as-dot.dot-unavail { background: var(--c-surface-3); }
 
 /* ---- SCENARIO CARD ---- */
 .tile-scenario {
@@ -565,8 +565,8 @@
 
 /* ---- State classes ---- */
 .tile.is-on               { border-color: var(--c-on); }
-.tile.is-off              { border-color: #6b7280; }
-.tile.is-off .tile-icon   { color: #6b7280; }
+.tile.is-off              { border-color: var(--c-surface-3); }
+.tile.is-off .tile-icon   { color: var(--c-text-sec); }
 .tile.is-unavail          { opacity: 0.45; pointer-events: none; }
 
 .tile-scenario.is-on {
