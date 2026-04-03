@@ -1,11 +1,14 @@
 """Tests for alarm section parsing in loader.py."""
 from __future__ import annotations
 import json
+import sys
+import os
 import tempfile
 from pathlib import Path
 import pytest
 
-from app.config.loader import load_config, AlarmConfig, AlarmSensorConfig
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'app'))
+from config.loader import load_config, AlarmConfig, AlarmSensorConfig, PanelConfig
 
 
 def _write_entities(tmp_path: Path, data: dict) -> None:
@@ -70,3 +73,52 @@ def test_alarm_sensor_list_independent():
     a2 = AlarmConfig(entity_id="alarm_control_panel.b")
     a1.sensors.append(AlarmSensorConfig(entity_id="binary_sensor.x"))
     assert len(a2.sensors) == 0
+
+
+def _config_with_alarms(alarms):
+    """Helper: PanelConfig with given alarm list, no layout sections."""
+    return PanelConfig(
+        ha_url='http://homeassistant:8123',
+        ha_token='',
+        title='Test',
+        theme='dark',
+        refresh_interval=30,
+        alarms=alarms,
+    )
+
+
+def test_all_entity_ids_includes_alarm_panel():
+    """alarm_control_panel entity must appear in all_entity_ids (needed for state fetch + WS)."""
+    alarm = AlarmConfig(entity_id="alarm_control_panel.casa")
+    cfg = _config_with_alarms([alarm])
+    assert "alarm_control_panel.casa" in cfg.all_entity_ids
+
+
+def test_all_entity_ids_includes_alarm_sensors():
+    """Zone binary_sensor entities must appear in all_entity_ids."""
+    sensors = [
+        AlarmSensorConfig(entity_id="binary_sensor.door", label="Door", device_class="door"),
+        AlarmSensorConfig(entity_id="binary_sensor.window", label="Win", device_class="window"),
+    ]
+    alarm = AlarmConfig(entity_id="alarm_control_panel.casa", sensors=sensors)
+    cfg = _config_with_alarms([alarm])
+    ids = cfg.all_entity_ids
+    assert "alarm_control_panel.casa" in ids
+    assert "binary_sensor.door" in ids
+    assert "binary_sensor.window" in ids
+
+
+def test_all_entity_ids_deduplicates_shared_sensors():
+    """A sensor shared across two alarms appears only once."""
+    shared = AlarmSensorConfig(entity_id="binary_sensor.shared")
+    a1 = AlarmConfig(entity_id="alarm_control_panel.a", sensors=[shared])
+    a2 = AlarmConfig(entity_id="alarm_control_panel.b", sensors=[shared])
+    cfg = _config_with_alarms([a1, a2])
+    ids = cfg.all_entity_ids
+    assert ids.count("binary_sensor.shared") == 1
+
+
+def test_all_entity_ids_no_alarms():
+    """Empty alarms list contributes nothing to all_entity_ids."""
+    cfg = _config_with_alarms([])
+    assert cfg.all_entity_ids == []

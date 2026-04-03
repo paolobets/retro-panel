@@ -293,7 +293,8 @@ class PanelConfig:
 
     @property
     def all_entity_ids(self) -> list[str]:
-        """All entity_ids referenced anywhere (entities + energy sensors + header sensors)."""
+        """All entity_ids referenced anywhere (entities + energy sensors + header sensors +
+        alarm panels + alarm zone sensors)."""
         seen: set[str] = set()
         ids: list[str] = []
 
@@ -318,6 +319,11 @@ class PanelConfig:
         for sec in self.camera_sections:
             for cam in sec.items:
                 _add(cam.entity_id)
+
+        for alarm in self.alarms:
+            _add(alarm.entity_id)
+            for sensor in alarm.sensors:
+                _add(sensor.entity_id)
 
         return ids
 

@@ -1,5 +1,11 @@
 # Retro Panel — Changelog
 
+## [2.9.11] — 2026-04-03
+
+### Fixed
+- **Alarm — stato sempre "SCONOSCIUTO"**: `all_entity_ids` in `loader.py` non includeva le entità `alarm_control_panel` né i `binary_sensor` di zona → il backend le escludeva dalla whitelist, `getAllStates()` non le restituiva, e il WSProxy filtrava via tutti gli eventi `state_changed` — risultato: il tile non riceveva mai lo stato reale da HA
+- **Test**: aggiunti 4 test in `test_alarm_config.py` che verificano che `all_entity_ids` includa alarm panel + zone sensors e deduplichi entità condivise
+
 ## [2.9.10] — 2026-04-03
 
 ### Fixed
