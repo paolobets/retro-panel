@@ -1,6 +1,6 @@
 /**
  * alarm.js — alarm_control_panel tile + alarm sensor tile
- * Retro Panel v2.9.6
+ * Retro Panel v2.9.12
  *
  * No ES modules — IIFE + window globals. iOS 12+ Safari safe.
  * No const/let/=>/?./?? — only var, function declarations, IIFE pattern.
@@ -9,6 +9,14 @@
  * Exposes globally:
  *   window.AlarmComponent      = { createTile, updateTile }
  *   window.AlarmSensorComponent = { createTile, updateTile }
+ *
+ * Fix v2.9.12:
+ *   - pinArea moved to body level (was trapped inside hidden disarmSection)
+ *   - Chip handlers arm directly when code_format=null (no-code scenario)
+ *   - barClass fixed to match CSS s-* naming convention
+ *   - Badge split into dot+text elements for per-state color support
+ *   - Chip selection uses chip-selected (matches CSS)
+ *   - Emoji removed from chip labels
  */
 
 /* ============================================================
@@ -34,24 +42,29 @@ window.AlarmComponent = (function () {
     disarming: true
   };
 
-  /* ---- State → status-bar CSS class + Italian badge label ---- */
+  /*
+   * State → status-bar CSS class + badge dot/text classes + Italian label.
+   * barClass matches CSS: .alarm-status-bar.s-*
+   * dotClass matches CSS: .alarm-badge-dot.dot-*
+   * textClass matches CSS: .alarm-badge-text.text-*
+   */
   var STATE_INFO = {
-    disarmed:            { barClass: 'alarm-bar-disarmed',  badge: '\u25CF DISARMATO' },
-    armed_home:          { barClass: 'alarm-bar-armed',     badge: '\u25CF ARMATO \u2014 CASA' },
-    armed_away:          { barClass: 'alarm-bar-armed',     badge: '\u25CF ARMATO \u2014 FUORI' },
-    armed_night:         { barClass: 'alarm-bar-armed',     badge: '\u25CF ARMATO \u2014 NOTTE' },
-    armed_custom_bypass: { barClass: 'alarm-bar-armed',     badge: '\u25CF ARMATO' },
-    armed_vacation:      { barClass: 'alarm-bar-armed',     badge: '\u25CF ARMATO \u2014 VACANZA' },
-    arming:              { barClass: 'alarm-bar-pending',   badge: '\u25CF INSERIMENTO\u2026' },
-    disarming:           { barClass: 'alarm-bar-pending',   badge: '\u25CF DISINSERIMENTO\u2026' },
-    pending:             { barClass: 'alarm-bar-pending',   badge: '\u25CF IN ATTESA\u2026' },
-    triggered:           { barClass: 'alarm-bar-triggered', badge: '\u25CF ALLARME!' },
-    unavailable:         { barClass: 'alarm-bar-disarmed',  badge: '\u25CF NON DISP.' },
-    unknown:             { barClass: 'alarm-bar-disarmed',  badge: '\u25CF SCONOSCIUTO' }
+    disarmed:            { barClass: 's-disarmed',  dotClass: 'dot-disarmed',  textClass: 'text-disarmed',  label: 'DISARMATO' },
+    armed_home:          { barClass: 's-armed',     dotClass: 'dot-armed',     textClass: 'text-armed',     label: 'ARMATO \u2014 CASA' },
+    armed_away:          { barClass: 's-armed',     dotClass: 'dot-armed',     textClass: 'text-armed',     label: 'ARMATO \u2014 FUORI' },
+    armed_night:         { barClass: 's-armed',     dotClass: 'dot-armed',     textClass: 'text-armed',     label: 'ARMATO \u2014 NOTTE' },
+    armed_custom_bypass: { barClass: 's-armed',     dotClass: 'dot-armed',     textClass: 'text-armed',     label: 'ARMATO' },
+    armed_vacation:      { barClass: 's-armed',     dotClass: 'dot-armed',     textClass: 'text-armed',     label: 'ARMATO \u2014 VACANZA' },
+    arming:              { barClass: 's-pending',   dotClass: 'dot-pending',   textClass: 'text-pending',   label: 'INSERIMENTO\u2026' },
+    disarming:           { barClass: 's-pending',   dotClass: 'dot-pending',   textClass: 'text-pending',   label: 'DISINSERIMENTO\u2026' },
+    pending:             { barClass: 's-pending',   dotClass: 'dot-pending',   textClass: 'text-pending',   label: 'IN ATTESA\u2026' },
+    triggered:           { barClass: 's-triggered', dotClass: 'dot-triggered', textClass: 'text-triggered', label: 'ALLARME!' },
+    unavailable:         { barClass: 's-disarmed',  dotClass: 'dot-unavail',   textClass: 'text-unavail',   label: 'NON DISPONIBILE' },
+    unknown:             { barClass: 's-disarmed',  dotClass: 'dot-unavail',   textClass: 'text-unavail',   label: 'NON DISPONIBILE' }
   };
 
   function _getStateInfo(state) {
-    return STATE_INFO[state] || { barClass: 'alarm-bar-disarmed', badge: '\u25CF ' + (state || '?') };
+    return STATE_INFO[state] || { barClass: 's-disarmed', dotClass: 'dot-unavail', textClass: 'text-unavail', label: state || '?' };
   }
 
   /* ---- Feature bitmask constants ---- */
@@ -80,9 +93,15 @@ window.AlarmComponent = (function () {
     tile.setAttribute('data-entity-id', entity_id);
 
     /* ---- Status bar ---- */
-    var statusBar = _el('div', 'alarm-status-bar');
+    var statusBar = _el('div', 'alarm-status-bar s-disarmed');
 
-    var badge = _el('span', 'alarm-badge', '\u25CF DISARMATO');
+    /* Badge: dot + text as separate elements for per-state color via CSS */
+    var badge     = _el('div', 'alarm-badge');
+    var badgeDot  = _el('span', 'alarm-badge-dot dot-disarmed');
+    var badgeText = _el('span', 'alarm-badge-text text-disarmed', 'DISARMATO');
+    badge.appendChild(badgeDot);
+    badge.appendChild(badgeText);
+
     var entityName = _el('span', 'alarm-entity-name', label);
 
     statusBar.appendChild(badge);
@@ -94,29 +113,32 @@ window.AlarmComponent = (function () {
     /* -- Disarmed section: mode chips -- */
     var modesSection = _el('div', 'alarm-modes-section');
 
-    var modesLabel = _el('div', 'alarm-modes-label', 'Seleziona modalit\u00e0:');
+    /* Label uses alarm-section-lbl (matches CSS) */
+    var modesLabel = _el('div', 'alarm-section-lbl', 'Seleziona modalit\u00e0:');
 
     var modesRow = _el('div', 'alarm-modes-row');
 
-    var chipHome  = _buildModeChip('home',  '\uD83C\uDFE0 Casa');
-    var chipAway  = _buildModeChip('away',  '\uD83D\uDE97 Fuori');
-    var chipNight = _buildModeChip('night', '\uD83C\uDF19 Notte');
+    /* No emoji on chip labels (user request) */
+    var chipHome  = _buildModeChip('home',  'Casa');
+    var chipAway  = _buildModeChip('away',  'Fuori');
+    var chipNight = _buildModeChip('night', 'Notte');
 
     modesRow.appendChild(chipHome);
     modesRow.appendChild(chipAway);
     modesRow.appendChild(chipNight);
 
+    /* Hint text for no-code arm scenario */
+    var noCodeHint = _el('div', 'alarm-no-code-hint', 'Seleziona una modalit\u00e0 per armare');
+
     modesSection.appendChild(modesLabel);
     modesSection.appendChild(modesRow);
+    modesSection.appendChild(noCodeHint);
 
-    /* -- Armed section: disarm -- */
+    /* -- Armed section: direct disarm button (no code needed) -- */
     var disarmSection = _el('div', 'alarm-disarm-section');
-    var disarmLabel   = _el('div', 'alarm-disarm-label', 'Codice disarmo:');
-    var disarmBtn     = _el('button', 'alarm-disarm-btn', 'Disarma');
+    var disarmBtn     = _el('button', 'alarm-confirm-btn btn-direct-disarm', 'Disarma');
     disarmBtn.type = 'button';
-    disarmSection.appendChild(disarmLabel);
-    /* PIN area inserted before disarmBtn in updateTile via DOM order;
-       we append disarmBtn after pinArea below */
+    disarmSection.appendChild(disarmBtn);
 
     /* -- Pending/transition spinner (arming / disarming) -- */
     var pendingSection = _el('div', 'alarm-pending-section');
@@ -126,9 +148,13 @@ window.AlarmComponent = (function () {
     pendingSection.appendChild(pendingMsg);
 
     /* -- Triggered banner -- */
-    var triggeredBanner = _el('div', 'alarm-triggered-banner', '\u26A0\uFE0F Allarme rilevato');
+    var triggeredBanner = _el('div', 'alarm-triggered-banner', 'Allarme rilevato');
 
-    /* -- PIN area (shared: numeric keypad OR text input) -- */
+    /* -- PIN area (shared: numeric keypad OR text input).
+       Placed directly in body — NOT inside disarmSection.
+       This ensures it is visible when isDisarmed (modesSection visible)
+       and when isArmed (disarmSection visible). Previously it was trapped
+       inside disarmSection which was hidden in disarmed state. -- */
     var pinArea      = _el('div', 'alarm-pin-area');
     var pinDisplay   = _el('div', 'alarm-pin-display', '');
     var textInput    = _el('input', 'alarm-text-input');
@@ -138,10 +164,10 @@ window.AlarmComponent = (function () {
     textInput.setAttribute('autocapitalize', 'none');
     textInput.setAttribute('spellcheck', 'false');
     textInput.setAttribute('placeholder', 'Inserisci codice\u2026');
-    var keypad       = _el('div', 'alarm-keypad');
-    var pinError     = _el('div', 'alarm-pin-error', '');
-    var confirmBtn   = _el('button', 'alarm-confirm-btn', 'Conferma');
-    confirmBtn.type  = 'button';
+    var keypad     = _el('div', 'alarm-keypad');
+    var pinError   = _el('div', 'alarm-pin-error', '');
+    var confirmBtn = _el('button', 'alarm-confirm-btn btn-arm', 'Arma');
+    confirmBtn.type = 'button';
 
     pinArea.appendChild(pinDisplay);
     pinArea.appendChild(textInput);
@@ -158,7 +184,6 @@ window.AlarmComponent = (function () {
       keyBtn.type = 'button';
       if (k === '\u232B') {
         keyBtn.className = 'alarm-key key-delete';
-        /* Use closure to bind delete action */
         (function (btn) {
           btn.addEventListener('touchend', function (e) { e.preventDefault(); _deleteDigit(); });
           btn.addEventListener('click',    function ()  { if (!('ontouchstart' in window)) { _deleteDigit(); } });
@@ -166,7 +191,6 @@ window.AlarmComponent = (function () {
       } else if (k === '') {
         keyBtn.style.visibility = 'hidden';
       } else {
-        /* Capture digit in closure */
         (function (btn, digit) {
           btn.addEventListener('touchend', function (e) { e.preventDefault(); _addDigit(digit); });
           btn.addEventListener('click',    function ()  { if (!('ontouchstart' in window)) { _addDigit(digit); } });
@@ -175,20 +199,19 @@ window.AlarmComponent = (function () {
       keypad.appendChild(keyBtn);
     }
 
-    disarmSection.appendChild(pinArea);
-    disarmSection.appendChild(disarmBtn);
-
     /* Hide all optional sections initially; updateTile() shows what's needed */
-    modesSection.style.display   = 'none';
-    disarmSection.style.display  = 'none';
-    pendingSection.style.display = 'none';
-    triggeredBanner.style.display= 'none';
-    pinArea.style.display        = 'none';
+    modesSection.style.display    = 'none';
+    disarmSection.style.display   = 'none';
+    pendingSection.style.display  = 'none';
+    triggeredBanner.style.display = 'none';
+    pinArea.style.display         = 'none';
+    noCodeHint.style.display      = 'none';
 
     body.appendChild(modesSection);
     body.appendChild(disarmSection);
     body.appendChild(pendingSection);
     body.appendChild(triggeredBanner);
+    body.appendChild(pinArea);  /* pinArea at body level — independent visibility */
 
     tile.appendChild(statusBar);
     tile.appendChild(body);
@@ -225,7 +248,6 @@ window.AlarmComponent = (function () {
 
     function _shakePin() {
       pinDisplay.classList.remove('alarm-pin-shake');
-      /* Force reflow to restart animation */
       void pinDisplay.offsetWidth;
       pinDisplay.classList.add('alarm-pin-shake');
     }
@@ -241,34 +263,53 @@ window.AlarmComponent = (function () {
       var chips = modesRow.querySelectorAll('.alarm-mode-chip');
       var j;
       for (j = 0; j < chips.length; j++) {
-        chips[j].classList.remove('alarm-mode-chip-selected');
+        /* chip-selected matches CSS: .alarm-mode-chip.chip-selected */
+        chips[j].classList.remove('chip-selected');
       }
       if (chip) {
-        chip.classList.add('alarm-mode-chip-selected');
+        chip.classList.add('chip-selected');
         _selectedMode = chip.getAttribute('data-mode');
       } else {
         _selectedMode = '';
       }
     }
 
-    /* Chip tap handlers */
+    /* Chip tap handlers.
+       When code_format is absent and code_arm_required is false: arm directly on tap.
+       Otherwise: select chip (user then enters code and presses confirm). */
     function _makeChipHandler(chip) {
-      chip.addEventListener('touchend', function (e) {
-        e.preventDefault();
-        if (chip.classList.contains('alarm-mode-chip-selected')) {
+      function _doChip() {
+        var codeFormat = tile.getAttribute('data-code-format') || '';
+        var codeArm    = tile.getAttribute('data-code-arm') === 'true';
+        var directArm  = (codeFormat === '') || !codeArm;
+
+        if (directArm) {
+          /* No code needed: arm immediately on chip tap */
+          var mode = chip.getAttribute('data-mode');
+          _selectModeChip(chip);
+          _callAlarm('alarm_arm_' + mode, '')
+            .then(function () { /* state_changed event will update UI */ })
+            .catch(function (err) {
+              console.error('[alarm] direct arm failed:', err);
+              _selectModeChip(null);
+            });
+          return;
+        }
+
+        /* Code required: toggle chip selection, user will press confirm */
+        if (chip.classList.contains('chip-selected')) {
           _selectModeChip(null);
         } else {
           _selectModeChip(chip);
         }
+      }
+
+      chip.addEventListener('touchend', function (e) {
+        e.preventDefault();
+        _doChip();
       });
       chip.addEventListener('click', function () {
-        if (!('ontouchstart' in window)) {
-          if (chip.classList.contains('alarm-mode-chip-selected')) {
-            _selectModeChip(null);
-          } else {
-            _selectModeChip(chip);
-          }
-        }
+        if (!('ontouchstart' in window)) { _doChip(); }
       });
     }
     _makeChipHandler(chipHome);
@@ -289,7 +330,7 @@ window.AlarmComponent = (function () {
       return window.callService('alarm_control_panel', service, data);
     }
 
-    /* Confirm button: depends on current tile state */
+    /* Confirm button: depends on current tile state (arm vs disarm) */
     confirmBtn.addEventListener('touchend', function (e) {
       e.preventDefault();
       _handleConfirm();
@@ -304,7 +345,6 @@ window.AlarmComponent = (function () {
       var pinVal       = _getPin(codeFormat);
 
       if (currentState === 'disarmed') {
-        /* Arming — need a mode selected */
         var mode = _selectedMode || 'home';
         var armService = 'alarm_arm_' + mode;
         _callAlarm(armService, pinVal)
@@ -314,7 +354,6 @@ window.AlarmComponent = (function () {
             _showError('Operazione fallita. Verificare il codice.');
           });
       } else {
-        /* Disarm or cancel triggered */
         _callAlarm('alarm_disarm', pinVal)
           .then(function () { _clearPin(); })
           .catch(function (err) {
@@ -324,7 +363,7 @@ window.AlarmComponent = (function () {
       }
     }
 
-    /* Disarm button (armed section, no-code path) */
+    /* Disarm button (armed/pending, no-code path) */
     disarmBtn.addEventListener('touchend', function (e) {
       e.preventDefault();
       _handleDisarmBtn();
@@ -347,6 +386,8 @@ window.AlarmComponent = (function () {
     /* ---- Store refs ---- */
     tile._alarm = {
       badge:          badge,
+      badgeDot:       badgeDot,
+      badgeText:      badgeText,
       statusBar:      statusBar,
       entityName:     entityName,
       modesSection:   modesSection,
@@ -355,8 +396,8 @@ window.AlarmComponent = (function () {
       chipHome:       chipHome,
       chipAway:       chipAway,
       chipNight:      chipNight,
+      noCodeHint:     noCodeHint,
       disarmSection:  disarmSection,
-      disarmLabel:    disarmLabel,
       disarmBtn:      disarmBtn,
       pendingSection: pendingSection,
       pendingMsg:     pendingMsg,
@@ -390,7 +431,7 @@ window.AlarmComponent = (function () {
 
     var state      = stateObj.state || 'unknown';
     var attrs      = stateObj.attributes || {};
-    var codeFormat = attrs.code_format || null;        /* "number" | "text" | null */
+    var codeFormat = attrs.code_format || null;         /* "number" | "text" | null */
     var codeArm    = attrs.code_arm_required !== false; /* default true */
     var features   = attrs.supported_features || 0;
 
@@ -400,24 +441,21 @@ window.AlarmComponent = (function () {
     var isTriggered = (state === 'triggered');
     var isUnavail   = (state === 'unavailable' || state === 'unknown');
 
-    /* Store on tile for use in handlers */
+    /* Store on tile for use in chip handlers and confirm handler */
     tile.setAttribute('data-alarm-state', state);
     tile.setAttribute('data-code-format', codeFormat || '');
+    tile.setAttribute('data-code-arm', codeArm ? 'true' : 'false');
 
-    /* ---- Status bar ---- */
+    /* ---- Status bar: gradient background via s-* CSS class ---- */
     var info = _getStateInfo(state);
-    r.badge.textContent = info.badge;
-
     r.statusBar.className = 'alarm-status-bar ' + info.barClass;
 
-    /* Pulsing for triggered */
-    if (isTriggered) {
-      r.statusBar.classList.add('alarm-bar-pulse');
-    } else {
-      r.statusBar.classList.remove('alarm-bar-pulse');
-    }
+    /* ---- Badge: dot and text updated independently for color ---- */
+    r.badgeDot.className  = 'alarm-badge-dot '  + info.dotClass;
+    r.badgeText.className = 'alarm-badge-text ' + info.textClass;
+    r.badgeText.textContent = info.label;
 
-    /* ---- Mode chips visibility ---- */
+    /* ---- Mode chips visibility (based on supported_features bitmask) ---- */
     var showHome  = !!(features & FEAT_ARM_HOME);
     var showAway  = !!(features & FEAT_ARM_AWAY);
     var showNight = !!(features & FEAT_ARM_NIGHT);
@@ -426,13 +464,24 @@ window.AlarmComponent = (function () {
     _setDisplay(r.chipAway,  showAway  ? '' : 'none');
     _setDisplay(r.chipNight, showNight ? '' : 'none');
 
-    /* arming/disarming = transition spinner; 'pending' = entry delay, show disarm */
+    var anyChip = showHome || showAway || showNight;
+
+    /* arming/disarming = spinner; 'pending' = entry delay, show disarm options */
     var isTransitioning = (state === 'arming' || state === 'disarming');
 
     /* ---- Section visibility ---- */
-    _setDisplay(r.modesSection,    isDisarmed ? '' : 'none');
-    _setDisplay(r.disarmSection,   (!isTransitioning && (isArmed || isPending)) ? '' : 'none');
+    /* modesSection: shown when disarmed (chips to select mode for arming) */
+    _setDisplay(r.modesSection, isDisarmed ? '' : 'none');
+
+    /* disarmSection: shown when armed/pending (no code) — only contains disarmBtn.
+       When code IS required, pinArea (at body level) provides code entry + confirm. */
+    var showDisarmSection = !isTransitioning && (isArmed || isPending) && (codeFormat === null);
+    _setDisplay(r.disarmSection, showDisarmSection ? '' : 'none');
+
+    /* pendingSection: spinner shown during arming/disarming transitions */
     _setDisplay(r.pendingSection,  isTransitioning ? '' : 'none');
+
+    /* triggeredBanner: shown when alarm triggered */
     _setDisplay(r.triggeredBanner, isTriggered ? '' : 'none');
 
     /* Pending section message */
@@ -441,15 +490,19 @@ window.AlarmComponent = (function () {
                                : 'Disinserimento in corso\u2026';
     }
 
-    /* Modes label: only if there are visible chips AND arm requires code or user needs to pick */
-    var anyChip = showHome || showAway || showNight;
+    /* modesLabel: show only when chips are available */
     _setDisplay(r.modesLabel, anyChip ? '' : 'none');
 
-    /* ---- PIN area ---- */
-    /* Show PIN area when:
-       - disarmed + (code_arm_required=true AND code_format set)
-       - armed/pending (non-transitioning) + code_format set
-       - triggered (always show) */
+    /* noCodeHint: shown when disarmed and arm does NOT require a code.
+       Tells user to tap a chip to arm directly. */
+    var directArmMode = isDisarmed && anyChip && ((codeFormat === null) || !codeArm);
+    _setDisplay(r.noCodeHint, directArmMode ? '' : 'none');
+
+    /* ---- PIN area (at body level, independent visibility) ----
+       Show when:
+       - disarmed + code_arm_required=true + code_format set (arm needs code)
+       - armed/pending (non-transitioning) + code_format set (disarm needs code)
+       - triggered (always show to allow disarm) */
     var showPin = false;
     if (isDisarmed) {
       showPin = (codeFormat !== null) && codeArm;
@@ -461,14 +514,11 @@ window.AlarmComponent = (function () {
 
     _setDisplay(r.pinArea, showPin ? '' : 'none');
 
-    /* ---- Disarm label & button visibility (armed/pending section) ---- */
-    _setDisplay(r.disarmLabel, (codeFormat !== null) ? '' : 'none');
-
     /* ---- Switch keypad vs text input ---- */
     var useKeypad = (codeFormat === 'number' || codeFormat === null);
-    _setDisplay(r.keypad,    (showPin && useKeypad)  ? '' : 'none');
-    _setDisplay(r.pinDisplay,(showPin && useKeypad)  ? '' : 'none');
-    _setDisplay(r.textInput, (showPin && !useKeypad) ? '' : 'none');
+    _setDisplay(r.keypad,     (showPin && useKeypad)  ? '' : 'none');
+    _setDisplay(r.pinDisplay, (showPin && useKeypad)  ? '' : 'none');
+    _setDisplay(r.textInput,  (showPin && !useKeypad) ? '' : 'none');
 
     /* ---- Confirm button label + style ---- */
     if (isDisarmed) {

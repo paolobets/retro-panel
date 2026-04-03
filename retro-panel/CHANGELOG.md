@@ -1,5 +1,25 @@
 # Retro Panel — Changelog
 
+## [2.9.12] — 2026-04-03
+
+### Fixed
+- **Alarm — pulsanti armo non funzionanti (bug critico)**: `pinArea` (contenente il `confirmBtn`) era dentro `disarmSection`, ma `disarmSection` ha `display:none` quando lo stato è `disarmed` — il pulsante conferma era strutturalmente irraggiungibile. Fix: `pinArea` spostata al livello `body` come elemento indipendente, con visibilità gestita autonomamente tramite la variabile `showPin`
+- **Alarm — chip modalità non armavano**: `_makeChipHandler` faceva solo selezione visuale. Fix: quando `code_format=null` o `code_arm_required=false`, il tap sul chip arma direttamente via `callService` senza attendere il pulsante conferma
+- **Alarm — status bar gradiente non applicato**: `barClass` in `STATE_INFO` usava nomi `alarm-bar-*` non corrispondenti alle classi CSS `s-*`. Fix: tutti i `barClass` allineati a `s-disarmed`, `s-armed`, `s-pending`, `s-triggered`
+- **Alarm — badge dot/text senza colore**: il badge era un singolo `<span>` con testo unicode; CSS prevedeva struttura separata `alarm-badge-dot.dot-*` + `alarm-badge-text.text-*`. Fix: badge ristrutturato con due elementi separati per colori corretti per stato
+- **Alarm — chip selezione senza effetto visivo**: `_selectModeChip` aggiungeva classe `alarm-mode-chip-selected` ma CSS definisce `.alarm-mode-chip.chip-selected`. Fix: classe corretta → `chip-selected`
+
+### Changed
+- **Alarm — chip labels**: rimossi emoji dai chip modalità (`🏠 Casa` → `Casa`, `🚗 Fuori` → `Fuori`, `🌙 Notte` → `Notte`)
+- **Alarm — no-code hint**: aggiunto hint callout con bordo accent-left visibile quando non è richiesto codice per armare
+- **Alarm — disarmSection semplificata**: rimossa `disarmLabel` ("Codice disarmo:"); `disarmSection` contiene solo il pulsante "Disarma" e appare solo quando armato senza codice; quando è necessario un codice è `pinArea` a gestire il disarmo via `confirmBtn`
+- **CSS — status bar padding**: `padding-top` 16px → 18px (allineato al mockup)
+- **CSS — entity name font-size**: 19px → 18px (allineato al mockup)
+- **CSS — gradiente stati**: opacità `s-armed` 0.12→0.10, `s-pending` 0.12→0.10, `s-triggered` 0.18→0.16 (allineate al mockup)
+- **CSS — alarm-no-code-hint**: stile callout con `border-left`, `background`, `border-radius` (allineato al mockup)
+- **CSS — alarm-pin-area**: aggiunto `margin-top: 14px` per spaziatura corretta nel body
+- **CSS — spinner doppia definizione**: `.alarm-spinner` era definito due volte; la seconda sovrascriveva (32px/0.8s) quella fedele al mockup (34px/0.75s); rimossa ridefinizione duplicata, unificata a 34px/0.75s/surface-2; `.alarm-pending-section` padding allineata al mockup (20px 0 8px); font-size msg 13px→14px; rimossi `.alarm-arming-view` e `.alarm-arming-msg` legacy
+
 ## [2.9.11] — 2026-04-03
 
 ### Fixed
