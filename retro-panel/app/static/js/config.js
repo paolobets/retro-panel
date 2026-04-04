@@ -1887,12 +1887,17 @@
       var headerHtml = sec.title
         ? '<div class="preview-section-title">' + esc(sec.title) + '</div>'
         : '';
+      var visibleCams = (sec.items || []).filter(function(c) { return !c.hidden; });
       var chipsHtml = (sec.items || []).length === 0
         ? '<p class="preview-empty-section">No cameras</p>'
         : '<div class="preview-tiles-row">' + (sec.items || []).map(function(c) {
-            return '<div class="preview-tile-chip"><span class="chip-domain">cam</span>' + esc(c.title || c.entity_id) + '</div>';
+            return '<div class="preview-tile-chip' + (c.hidden ? ' preview-tile-chip--hidden' : '') + '">'
+              + '<span class="chip-domain">cam</span>' + esc(c.title || c.entity_id) + '</div>';
           }).join('') + '</div>';
-      return '<div class="preview-room-section">' + headerHtml + chipsHtml + '</div>';
+      var countNote = (sec.items || []).length > visibleCams.length
+        ? '<span class="preview-hidden-count">' + ((sec.items || []).length - visibleCams.length) + ' nascosta/e</span>'
+        : '';
+      return '<div class="preview-room-section">' + headerHtml + chipsHtml + countNote + '</div>';
     }).join('');
   }
 
@@ -1906,12 +1911,15 @@
     }
     container.innerHTML = sections.map(function(sec) {
       var isActive = sec.id === editingCamSectionId;
-      var count = (sec.items || []).length;
+      var totalCount = (sec.items || []).length;
+      var visibleCount = (sec.items || []).filter(function(c) { return !c.hidden; }).length;
+      var countLabel = visibleCount + ' camera' + (visibleCount === 1 ? '' : 's')
+        + (totalCount > visibleCount ? ' (' + (totalCount - visibleCount) + ' hidden)' : '');
       return '<div class="section-row' + (isActive ? ' section-row--active' : '') + '" data-id="' + esc(sec.id) + '">'
         + '<span class="section-row-drag">&#9776;</span>'
         + '<div class="section-row-info">'
         + '<span class="section-row-title">' + esc(sec.title || 'Unnamed') + '</span>'
-        + '<span class="section-row-count">' + count + ' camera' + (count === 1 ? '' : 's') + '</span>'
+        + '<span class="section-row-count">' + countLabel + '</span>'
         + '</div>'
         + '<div class="section-row-actions">'
         + '<button class="remove-btn cam-sec-del-btn" type="button" data-id="' + esc(sec.id) + '">\u2715</button>'
@@ -1999,7 +2007,7 @@
       inp.addEventListener('change', function() {
         var idx = parseInt(this.getAttribute('data-idx'), 10);
         var its = activeCamItems();
-        if (its[idx]) { its[idx].title = this.value.trim(); }
+        if (its[idx]) { its[idx].title = this.value.trim(); markDirty(); }
       });
     });
     container.querySelectorAll('.camera-refresh-input').forEach(function(inp) {
@@ -2010,18 +2018,23 @@
         if (val > 60) { val = 60; }
         this.value = val;
         var its = activeCamItems();
-        if (its[idx]) { its[idx].refresh_interval = val; }
+        if (its[idx]) { its[idx].refresh_interval = val; markDirty(); }
       });
     });
     container.querySelectorAll('.cam-item-visible-toggle').forEach(function(cb) {
       cb.addEventListener('change', function() {
         var idx = parseInt(this.getAttribute('data-idx'), 10);
         var its = activeCamItems();
-        if (its[idx]) { its[idx].hidden = !this.checked; renderCamSectionItemsList(); }
+        if (its[idx]) {
+          its[idx].hidden = !this.checked;
+          markDirty();
+          renderCamSectionItemsList();
+        }
       });
     });
     container.querySelectorAll('.cam-item-remove-btn').forEach(function(btn) {
       btn.addEventListener('click', function() {
+        markDirty();
         activeCamItems().splice(parseInt(btn.getAttribute('data-idx'), 10), 1);
         renderCamSectionItemsList();
       });

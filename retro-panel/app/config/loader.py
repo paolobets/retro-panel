@@ -602,9 +602,9 @@ def _parse_camera_section(raw: dict, idx: int) -> CameraSection:
     for c in (raw.get("items") or []):
         if isinstance(c, dict) and c.get("entity_id"):
             try:
-                refresh_interval = int(c.get("refresh_interval") or 10)
+                refresh_interval = int(c.get("refresh_interval") or 3)
             except (ValueError, TypeError):
-                refresh_interval = 10
+                refresh_interval = 3
             cam_items.append(CameraConfig(
                 entity_id=str(c["entity_id"]).strip(),
                 title=str(c.get("title") or "").strip(),

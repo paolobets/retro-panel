@@ -1243,9 +1243,17 @@ body {
   color: var(--color-text-primary);
   transition: opacity 0.2s;
 }
-.preview-tile-chip.hidden {
+.preview-tile-chip.hidden,
+.preview-tile-chip--hidden {
   opacity: 0.3;
   text-decoration: line-through;
+}
+.preview-hidden-count {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  font-style: italic;
+  margin-top: 4px;
+  display: block;
 }
 .chip-domain {
   font-size: 9px;

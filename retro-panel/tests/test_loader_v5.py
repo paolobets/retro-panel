@@ -150,7 +150,7 @@ def test_invalid_refresh_interval_falls_back_to_default(tmp_path):
     result = _load_layout(f, [])
     cam_sections = result[6]
     assert len(cam_sections) == 1
-    assert cam_sections[0].items[0].refresh_interval == 10
+    assert cam_sections[0].items[0].refresh_interval == 3  # default changed from 10 to 3
 
 
 def test_version_as_string_5_parsed_as_v5(tmp_path):
