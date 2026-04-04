@@ -89,7 +89,7 @@ window.CameraComponent = (function () {
     _lbPollTimer = setInterval(function () {
       var lbImg = _lb.querySelector('.cam-lb-img');
       lbImg.src = 'api/camera-proxy/' + _lbEntityId + '?_t=' + Date.now();
-    }, 10000);
+    }, 2000);
   }
 
   function _closeLightbox() {
@@ -140,9 +140,9 @@ window.CameraComponent = (function () {
     // Load first snapshot immediately
     _loadSnapshot(img, errorEl, cfg.entity_id);
 
-    // Polling — clamp between 3s and 60s
-    var intervalMs = cfg.refresh_interval ? cfg.refresh_interval * 1000 : 10000;
-    if (intervalMs < 3000) { intervalMs = 3000; }
+    // Polling — default 3s, clamp between 1s and 60s
+    var intervalMs = cfg.refresh_interval ? cfg.refresh_interval * 1000 : 3000;
+    if (intervalMs < 1000) { intervalMs = 1000; }
     if (intervalMs > 60000) { intervalMs = 60000; }
 
     var timerId = setInterval(function () {

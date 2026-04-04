@@ -399,27 +399,92 @@ window.RP_Renderer = (function () {
   }
 
   // ---------------------------------------------------------------------------
-  // Camera items (full-width tiles, no heading) — used by _renderGenericSections
+  // Camera items — 2-column grid, 4 cameras per page, with pagination
   // ---------------------------------------------------------------------------
   function _renderCameraItems(container, items) {
     if (!items || items.length === 0) { return; }
 
-    var grid = window.RP_DOM.createElement('div', 'cameras-grid');
+    var CAMS_PER_PAGE = 4;
+    var DOM = window.RP_DOM;
 
-    for (var i = 0; i < items.length; i++) {
-      if (items[i].hidden) { continue; }
-      try {
-        if (!window.CameraComponent) { continue; }
-        var tile = window.CameraComponent.createTile(items[i]);
-        var col = window.RP_DOM.createElement('div', 'cam-col');
-        col.appendChild(tile);
-        grid.appendChild(col);
-      } catch (err) {
-        console.error('[renderer] camera tile failed:', items[i] && items[i].entity_id, err);
-      }
+    // Filter hidden
+    var visible = [];
+    for (var k = 0; k < items.length; k++) {
+      if (!items[k].hidden) { visible.push(items[k]); }
+    }
+    if (visible.length === 0) { return; }
+
+    var totalPages = Math.ceil(visible.length / CAMS_PER_PAGE);
+    var currentPage = 0;
+
+    var grid = DOM.createElement('div', 'cameras-grid');
+    container.appendChild(grid);
+
+    // Pagination bar (only rendered when needed)
+    var prevBtn = null;
+    var nextBtn = null;
+    var pageInfo = null;
+    if (totalPages > 1) {
+      var paginationEl = DOM.createElement('div', 'cam-pagination');
+      prevBtn = document.createElement('button');
+      prevBtn.type = 'button';
+      prevBtn.className = 'cam-page-btn';
+      prevBtn.innerHTML = '&#8592;';  // ←
+      nextBtn = document.createElement('button');
+      nextBtn.type = 'button';
+      nextBtn.className = 'cam-page-btn';
+      nextBtn.innerHTML = '&#8594;';  // →
+      pageInfo = document.createElement('span');
+      pageInfo.className = 'cam-page-info';
+      paginationEl.appendChild(prevBtn);
+      paginationEl.appendChild(pageInfo);
+      paginationEl.appendChild(nextBtn);
+      container.appendChild(paginationEl);
     }
 
-    container.appendChild(grid);
+    function _renderPage(page) {
+      // Destroy timers for cameras currently in the grid
+      var oldTiles = grid.querySelectorAll('.tile-camera');
+      if (window.CameraComponent) {
+        for (var t = 0; t < oldTiles.length; t++) {
+          var eid = oldTiles[t].dataset.entityId;
+          if (eid) { window.CameraComponent.destroyForEntity(eid); }
+        }
+      }
+      grid.innerHTML = '';
+
+      var start = page * CAMS_PER_PAGE;
+      var end = Math.min(start + CAMS_PER_PAGE, visible.length);
+      for (var i = start; i < end; i++) {
+        try {
+          if (!window.CameraComponent) { continue; }
+          var tile = window.CameraComponent.createTile(visible[i]);
+          var col = DOM.createElement('div', 'cam-col');
+          col.appendChild(tile);
+          grid.appendChild(col);
+        } catch (err) {
+          console.error('[renderer] camera tile failed:', visible[i] && visible[i].entity_id, err);
+        }
+      }
+
+      currentPage = page;
+      if (prevBtn) { prevBtn.disabled = (page === 0); }
+      if (nextBtn) { nextBtn.disabled = (page >= totalPages - 1); }
+      if (pageInfo) { pageInfo.textContent = (page + 1) + ' / ' + totalPages; }
+    }
+
+    if (prevBtn) {
+      prevBtn.addEventListener('click', function () {
+        if (currentPage > 0) { _renderPage(currentPage - 1); }
+      });
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener('click', function () {
+        if (currentPage < totalPages - 1) { _renderPage(currentPage + 1); }
+      });
+    }
+
+    _renderPage(0);
   }
 
   // ---------------------------------------------------------------------------

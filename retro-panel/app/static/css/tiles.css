@@ -908,18 +908,58 @@
   margin: -5px;
 }
 .cam-col {
-  -webkit-flex: 0 0 25%;
-  flex: 0 0 25%;
+  -webkit-flex: 0 0 50%;
+  flex: 0 0 50%;
   padding: 5px;
   box-sizing: border-box;
 }
 
-/* Camera grid: 2 columns on phone portrait */
+/* Camera grid: 1 column on phone portrait */
 @media (max-width: 599px) {
   .cam-col {
-    -webkit-flex: 0 0 50%;
-    flex: 0 0 50%;
+    -webkit-flex: 0 0 100%;
+    flex: 0 0 100%;
   }
+}
+
+/* Camera pagination bar */
+.cam-pagination {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  padding: 10px 0 2px;
+}
+.cam-page-btn {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  background: var(--c-surface-2);
+  color: var(--c-text-pri);
+  font-size: 16px;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  margin: 0 6px;
+}
+.cam-page-btn:active { background: var(--c-surface-3); }
+.cam-page-btn:disabled { opacity: 0.3; cursor: default; }
+.cam-page-info {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-text-sec);
+  min-width: 48px;
+  text-align: center;
 }
 
 /* ---- Disconnected / stale state ---- */

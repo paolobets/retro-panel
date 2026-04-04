@@ -299,6 +299,15 @@ Retro Panel follows semantic versioning (MAJOR.MINOR.PATCH):
 - [x] Hint dinamico: "Tocca per armare" vs "Seleziona modalità, poi inserisci il codice"
 - [x] Confirm/disarm button: height 52px, font 15px, transform 0.1s feedback tattile
 
+### v2.9.21 — Camera grid 2-col, pagination, faster refresh, hide toggle (2026-04-04)
+
+- [x] Camera grid: 4 colonne → **2 colonne** (tile più grandi); 1 colonna su telefono portrait
+- [x] **Paginazione**: 4 telecamere per pagina, bottoni ← → con contatore "X / N"; timer delle cam fuori schermo distrutti al cambio pagina
+- [x] Refresh tile: default **3s** (era 10s), min 1s, max 60s
+- [x] Refresh lightbox: **2s** (era 10s) per una visione ingrandita più fluida
+- [x] Config: aggiunto **toggle visibilità** (show/hide) per ogni telecamera, coerente con il pattern delle altre sezioni
+- [x] Config: min refresh abbassato a 1s, default 3s
+
 ### v2.9.20 — Per-device theme toggle in dashboard header (2026-04-04)
 
 - [x] **Theme toggle button** in dashboard header, between sensor chips and connection status dot
@@ -422,7 +431,8 @@ These targets apply to v2.0 and all future releases:
 | v2.9.17 | Released | 2026-04-04 | Completed |
 | v2.9.18 | Released | 2026-04-04 | Completed |
 | v2.9.19 | Released | 2026-04-04 | Completed |
-| v2.9.20 | Released | 2026-04-04 | **Current stable** |
+| v2.9.20 | Released | 2026-04-04 | Completed |
+| v2.9.21 | Released | 2026-04-04 | **Current stable** |
 | v3.0 | Planned | TBD | 2026 H2 (estimated) |
 
 ---

@@ -1857,7 +1857,8 @@
     }
 
     var html = items.map(function(c, i) {
-      return '<div class="selected-row" data-idx="' + i + '">'
+      var isHidden = !!c.hidden;
+      return '<div class="selected-row' + (isHidden ? ' selected-row--hidden' : '') + '" data-idx="' + i + '">'
         + '<span class="item-drag-handle">&#9776;</span>'
         + '<div class="selected-entity-info">'
         + '<span class="selected-id">' + esc(c.entity_id) + '</span>'
@@ -1865,10 +1866,14 @@
         + ' value="' + esc(c.title || '') + '" data-idx="' + i + '">'
         + '<div class="camera-refresh-row">'
         + '<label class="camera-refresh-label">Refresh (sec):</label>'
-        + '<input type="number" class="camera-refresh-input" min="3" max="60"'
-        + ' value="' + (c.refresh_interval || 10) + '" data-idx="' + i + '">'
+        + '<input type="number" class="camera-refresh-input" min="1" max="60"'
+        + ' value="' + (c.refresh_interval || 3) + '" data-idx="' + i + '">'
         + '</div></div>'
         + '<div class="selected-actions">'
+        + '<label class="toggle-wrap" title="' + (isHidden ? 'Hidden' : 'Visible') + '">'
+        + '<input type="checkbox" class="cam-item-visible-toggle" data-idx="' + i + '"' + (isHidden ? '' : ' checked') + '>'
+        + '<span class="toggle-slider"></span>'
+        + '</label>'
         + '<button class="remove-btn cam-item-remove-btn" type="button" data-idx="' + i + '">\u2715</button>'
         + '</div></div>';
     }).join('');
@@ -1887,11 +1892,18 @@
       inp.addEventListener('change', function() {
         var idx = parseInt(this.getAttribute('data-idx'), 10);
         var val = parseInt(this.value, 10);
-        if (isNaN(val) || val < 3) { val = 3; }
+        if (isNaN(val) || val < 1) { val = 1; }
         if (val > 60) { val = 60; }
         this.value = val;
         var its = activeCamItems();
         if (its[idx]) { its[idx].refresh_interval = val; }
+      });
+    });
+    container.querySelectorAll('.cam-item-visible-toggle').forEach(function(cb) {
+      cb.addEventListener('change', function() {
+        var idx = parseInt(this.getAttribute('data-idx'), 10);
+        var its = activeCamItems();
+        if (its[idx]) { its[idx].hidden = !this.checked; renderCamSectionItemsList(); }
       });
     });
     container.querySelectorAll('.cam-item-remove-btn').forEach(function(btn) {
@@ -1978,7 +1990,7 @@
       btn.addEventListener('click', function () {
         var eid  = this.getAttribute('data-id');
         var sec = activeCamSectionObj();
-        if (sec) { sec.items.push({ entity_id: eid, title: '', refresh_interval: 10 }); }
+        if (sec) { sec.items.push({ entity_id: eid, title: '', refresh_interval: 3, hidden: false }); }
         renderCameraPickerList();
         renderCamSectionItemsList();
       });
@@ -2782,7 +2794,7 @@
             id:    sec.id    || genSecId(),
             title: sec.title || '',
             items: (sec.items || []).map(function(c) {
-              return { entity_id: c.entity_id, title: c.title || '', refresh_interval: c.refresh_interval || 10 };
+              return { entity_id: c.entity_id, title: c.title || '', refresh_interval: c.refresh_interval || 3, hidden: !!c.hidden };
             }),
           };
         });
