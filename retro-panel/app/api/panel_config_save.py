@@ -112,6 +112,11 @@ async def save_config(request: web.Request) -> web.Response:
         logger.warning("save_config: invalid JSON body: %s", exc)
         return web.json_response({"error": "Invalid JSON body"}, status=400)
 
+    # --- theme ---
+    theme_raw = str(body.get("theme") or "dark").strip().lower()
+    if theme_raw not in ("dark", "light", "auto"):
+        theme_raw = "dark"
+
     # --- overview ---
     ov_raw = body.get("overview") or {}
     overview_title = str(ov_raw.get("title") or "Overview").strip()[:64] or "Overview"
@@ -322,6 +327,7 @@ async def save_config(request: web.Request) -> web.Response:
 
     v5_data = {
         "version": 5,
+        "theme": theme_raw,
         "header_sensors": header_sensors,
         "overview": {
             "title": overview_title,

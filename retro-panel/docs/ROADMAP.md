@@ -299,6 +299,12 @@ Retro Panel follows semantic versioning (MAJOR.MINOR.PATCH):
 - [x] Hint dinamico: "Tocca per armare" vs "Seleziona modalità, poi inserisci il codice"
 - [x] Confirm/disarm button: height 52px, font 15px, transform 0.1s feedback tattile
 
+### v2.9.17 — Light Theme root cause fix (2026-04-04)
+
+- [x] Fix critico: `config.js` usava `document.body.className = 'theme-dark'` sovrascrivendo la classe corretta impostata dallo script inline — tutte le aree (section list, detail, preview) tornавano scure dopo il caricamento dell'API
+- [x] Fix: il tema ora viene letto prima da `cfg.theme`, poi da `localStorage.rp_theme` come fallback; usa `classList.remove/add` invece di `className =`
+- [x] Fix: `panel_config_save.py` ora include `theme` in `v5_data` → il tema viene persistito in `entities.json` e non si resetta a 'dark' ad ogni salvataggio
+
 ### v2.9.16 — Light Theme FOUC + html bg fix (2026-04-03)
 
 - [x] Fix: `html, body` rule separata — `<html>` non ha mai la classe `theme-light`, il suo sfondo scuro traspariva sotto il body quando il contenuto era corto (tab Cameras/Alarms vuoti). Fix: regola separata con `min-height: 100vh` su `body`
@@ -394,7 +400,8 @@ These targets apply to v2.0 and all future releases:
 | v2.9.13 | Released | 2026-04-03 | Completed |
 | v2.9.14 | Released | 2026-04-03 | Completed |
 | v2.9.15 | Released | 2026-04-03 | Completed |
-| v2.9.16 | Released | 2026-04-03 | **Current stable** |
+| v2.9.16 | Released | 2026-04-03 | Completed |
+| v2.9.17 | Released | 2026-04-04 | **Current stable** |
 | v3.0 | Planned | TBD | 2026 H2 (estimated) |
 
 ---

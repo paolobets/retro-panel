@@ -2705,8 +2705,12 @@
     // Load saved panel config first (critical — reads local entities.json, works offline)
     cfgFetchPanelConfig()
       .then(function (cfg) {
-        var resolvedTheme = cfg.theme || 'dark';
-        document.body.className = 'theme-' + resolvedTheme;
+        var resolvedTheme = cfg.theme || '';
+        try { if (!resolvedTheme) { resolvedTheme = localStorage.getItem('rp_theme') || ''; } } catch (e) {}
+        if (resolvedTheme !== 'light' && resolvedTheme !== 'auto') { resolvedTheme = 'dark'; }
+        document.body.classList.remove('theme-dark', 'theme-light', 'theme-auto');
+        document.body.classList.add('theme-' + resolvedTheme);
+        state.theme = resolvedTheme;
         try { localStorage.setItem('rp_theme', resolvedTheme); } catch (e) {}
 
         // Populate state from saved config
