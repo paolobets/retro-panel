@@ -299,6 +299,14 @@ Retro Panel follows semantic versioning (MAJOR.MINOR.PATCH):
 - [x] Hint dinamico: "Tocca per armare" vs "Seleziona modalità, poi inserisci il codice"
 - [x] Confirm/disarm button: height 52px, font 15px, transform 0.1s feedback tattile
 
+### v2.9.20 — Per-device theme toggle in dashboard header (2026-04-04)
+
+- [x] **Theme toggle button** in dashboard header, between sensor chips and connection status dot
+- [x] Icon: `weather-sunny` (dark mode → click to switch to light) / `weather-night` (light mode → click to switch to dark) — MDI icons via `window.RP_MDI`, consistent with the rest of the app
+- [x] Purely client-side: `localStorage.setItem('rp_theme', ...)` — per-device preference, no backend changes
+- [x] FOUC prevention script added to `index.html` (mirrors `config.html`): reads localStorage before first paint
+- [x] `applyConfig()` in `app.js` calls `initThemeToggle()` to sync icon with server-side default on first load
+
 ### v2.9.19 — CSS cascade fix: alias block :root → body (2026-04-04)
 
 - [x] Fix **vera causa radice** del tema scuro in /config: il blocco `--color-*` in `config.css` era su `:root` invece di `body` — gli alias `var(--c-surface)` ecc. risolvevano contro lo scope di `:root` (sempre scuro), ignorando completamente l'override `body.theme-light`; spostando il blocco su `body` gli alias ereditano il valore corretto da `body.theme-light`
@@ -413,7 +421,8 @@ These targets apply to v2.0 and all future releases:
 | v2.9.16 | Released | 2026-04-03 | Completed |
 | v2.9.17 | Released | 2026-04-04 | Completed |
 | v2.9.18 | Released | 2026-04-04 | Completed |
-| v2.9.19 | Released | 2026-04-04 | **Current stable** |
+| v2.9.19 | Released | 2026-04-04 | Completed |
+| v2.9.20 | Released | 2026-04-04 | **Current stable** |
 | v3.0 | Planned | TBD | 2026 H2 (estimated) |
 
 ---

@@ -221,6 +221,32 @@ html, body {
   color: var(--c-text-sec);
 }
 
+/* Theme toggle button */
+#theme-btn {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--c-text-sec);
+  margin-left: 8px;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  padding: 0;
+  line-height: 1;
+}
+#theme-btn:active { background: var(--c-surface-2); }
+
 /* Connection status dot */
 #connection-status {
   width: 8px;

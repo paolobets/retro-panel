@@ -39,6 +39,32 @@
   };
 
   // ---------------------------------------------------------------------------
+  // Theme toggle
+  // ---------------------------------------------------------------------------
+  function _updateThemeBtn() {
+    var btn = DOM.qs('#theme-btn');
+    if (!btn || !window.RP_MDI) { return; }
+    var iconName = document.body.classList.contains('theme-light') ? 'weather-night' : 'weather-sunny';
+    btn.innerHTML = window.RP_MDI(iconName, 18);
+  }
+
+  function initThemeToggle() {
+    var btn = DOM.qs('#theme-btn');
+    if (!btn || btn.dataset.themeInit) { return; }
+    btn.dataset.themeInit = '1';
+    _updateThemeBtn();
+    function doToggle() {
+      var next = document.body.classList.contains('theme-light') ? 'dark' : 'light';
+      document.body.classList.remove('theme-dark', 'theme-light', 'theme-auto');
+      document.body.classList.add('theme-' + next);
+      try { localStorage.setItem('rp_theme', next); } catch (e) {}
+      _updateThemeBtn();
+    }
+    btn.addEventListener('touchend', function (e) { e.preventDefault(); doToggle(); });
+    btn.addEventListener('click', function () { if (!('ontouchstart' in window)) { doToggle(); } });
+  }
+
+  // ---------------------------------------------------------------------------
   // applyConfig — tema, colonne, titolo
   // ---------------------------------------------------------------------------
   function applyConfig(config) {
@@ -46,6 +72,7 @@
     document.body.classList.remove('theme-dark', 'theme-light', 'theme-auto');
     document.body.classList.add('theme-' + resolvedTheme);
     try { localStorage.setItem('rp_theme', resolvedTheme); } catch (e) {}
+    initThemeToggle();
 
     var titleEl = DOM.qs('#panel-title');
     if (titleEl) {
