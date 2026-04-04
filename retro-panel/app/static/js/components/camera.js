@@ -1,20 +1,30 @@
 /**
- * camera.js — Camera snapshot tile component
+ * camera.js — Camera tile + lightbox component
  * Retro Panel v2.9.4
  *
- * Shows snapshot JPEG updated periodically via /api/camera-proxy/{entity_id}.
+ * Tile: snapshot polling every N seconds (configurable).
+ * Lightbox: tries MJPEG stream first (api/camera-proxy-stream/); if HA
+ *   returns 404 or the connection errors within 5 s, falls back to snapshot
+ *   polling at the same interval configured for the tile.
+ *
+ * Status badge:
+ *   • MJPEG active  → green dot + "Live Streaming"
+ *   • Snapshot mode → amber dot + "Snapshot • Xs"
+ *
  * No ES modules — IIFE + window global. iOS 12+ Safari safe.
  * No const/let/=>/?./?? — only var, function declarations, IIFE pattern.
  *
- * Exposes globally: window.CameraComponent = { createTile, updateTile, destroyAll, destroyForEntity }
+ * Exposes: window.CameraComponent = { createTile, updateTile, destroyAll, destroyForEntity }
  */
 window.CameraComponent = (function () {
   'use strict';
 
-  var _timers = [];        // Array of { entityId, timerId }
-  var _lb = null;          // Lightbox DOM node — lazy initialized on first tap
-  var _lbPollTimer = null; // F-03: interval ID for lightbox live refresh
-  var _lbEntityId = null;  // F-03: entity currently shown in lightbox
+  var _timers = [];            // Array of { entityId, timerId } for tile polling
+  var _lb = null;              // Lightbox DOM node — lazy initialized on first tap
+  var _lbPollTimer = null;     // interval ID for snapshot fallback polling
+  var _lbStreamTimeout = null; // timeout to trigger fallback if stream never loads
+  var _lbEntityId = null;      // entity currently shown in lightbox
+  var _lbRefreshInterval = 2;  // fallback snapshot interval in seconds
 
   // ---------------------------------------------------------------------------
   // Lightbox — single overlay reused for all cameras
@@ -29,7 +39,6 @@ window.CameraComponent = (function () {
     var backdrop = document.createElement('div');
     backdrop.className = 'cam-lb-backdrop';
     backdrop.onclick = _closeLightbox;
-    // F-04: reliable close on iOS 12 touch
     backdrop.addEventListener('touchend', function (e) { e.preventDefault(); _closeLightbox(); });
 
     var content = document.createElement('div');
@@ -40,7 +49,6 @@ window.CameraComponent = (function () {
     closeBtn.type = 'button';
     closeBtn.textContent = '\u2715'; // ✕
     closeBtn.onclick = _closeLightbox;
-    // F-04: reliable close on iOS 12 touch
     closeBtn.addEventListener('touchend', function (e) { e.preventDefault(); _closeLightbox(); });
 
     var img = document.createElement('img');
@@ -59,8 +67,12 @@ window.CameraComponent = (function () {
     var dot = document.createElement('span');
     dot.className = 'cam-lb-dot';
 
+    var modeSpan = document.createElement('span');
+    modeSpan.className = 'cam-lb-mode';
+    modeSpan.textContent = 'Live Streaming';
+
     liveEl.appendChild(dot);
-    liveEl.appendChild(document.createTextNode(' Live'));
+    liveEl.appendChild(modeSpan);
 
     bar.appendChild(nameEl);
     bar.appendChild(liveEl);
@@ -75,31 +87,105 @@ window.CameraComponent = (function () {
     document.body.appendChild(_lb);
   }
 
-  function _openLightbox(entityId, name) {
+  // Update the badge: 'stream' = green + "Live Streaming",
+  //                   'snapshot' = amber + "Snapshot • Xs"
+  function _setLbMode(mode) {
+    var dot     = _lb.querySelector('.cam-lb-dot');
+    var modeSpan = _lb.querySelector('.cam-lb-mode');
+    var liveEl  = _lb.querySelector('.cam-lb-live');
+    if (!dot || !modeSpan || !liveEl) { return; }
+    if (mode === 'stream') {
+      dot.className      = 'cam-lb-dot';
+      liveEl.className   = 'cam-lb-live';
+      modeSpan.textContent = 'Live Streaming';
+    } else {
+      dot.className      = 'cam-lb-dot cam-lb-dot--snapshot';
+      liveEl.className   = 'cam-lb-live cam-lb-live--snapshot';
+      modeSpan.textContent = 'Snapshot \u2022 ' + (_lbRefreshInterval || 2) + 's';
+    }
+  }
+
+  function _openLightbox(entityId, name, refreshInterval) {
     _initLightbox();
-    var img = _lb.querySelector('.cam-lb-img');
+    var img    = _lb.querySelector('.cam-lb-img');
     var nameEl = _lb.querySelector('.cam-lb-name');
-    img.src = 'api/camera-proxy/' + entityId + '?_t=' + Date.now();
-    img.alt = name;
+    img.alt        = name;
     nameEl.textContent = name;
-    _lb.className = 'cam-lb cam-lb--open';
-    // F-03: avvia polling live per il lightbox
-    if (_lbPollTimer !== null) { clearInterval(_lbPollTimer); }
-    _lbEntityId = entityId;
+    _lb.className  = 'cam-lb cam-lb--open';
+
+    // Clear any previous timers
+    if (_lbPollTimer !== null)     { clearInterval(_lbPollTimer);  _lbPollTimer = null; }
+    if (_lbStreamTimeout !== null) { clearTimeout(_lbStreamTimeout); _lbStreamTimeout = null; }
+    img.onerror = null;
+    img.onload  = null;
+    img.src     = '';   // abort previous connection
+
+    _lbEntityId        = entityId;
+    _lbRefreshInterval = refreshInterval || 2;
+
+    // Optimistically show "Live Streaming" and attempt MJPEG stream
+    _setLbMode('stream');
+
+    img.onerror = function () {
+      _startSnapshotFallback();
+    };
+    img.onload = function () {
+      // First frame arrived — stream is healthy. Cancel the safety timeout.
+      if (_lbStreamTimeout !== null) { clearTimeout(_lbStreamTimeout); _lbStreamTimeout = null; }
+      img.onload = null; // don't re-fire on subsequent MJPEG frames
+    };
+
+    img.src = 'api/camera-proxy-stream/' + entityId;
+
+    // Safety net: if no frame arrives within 5 s, fall back to snapshots
+    _lbStreamTimeout = setTimeout(function () {
+      _lbStreamTimeout = null;
+      var lbImg = _lb ? _lb.querySelector('.cam-lb-img') : null;
+      // If the img is still pointing at the stream URL, it hasn't loaded
+      if (lbImg && lbImg.src && lbImg.src.indexOf('camera-proxy-stream') !== -1) {
+        _startSnapshotFallback();
+      }
+    }, 5000);
+  }
+
+  function _startSnapshotFallback() {
+    var img = _lb ? _lb.querySelector('.cam-lb-img') : null;
+    if (!img) { return; }
+
+    // Cancel safety timeout if still pending
+    if (_lbStreamTimeout !== null) { clearTimeout(_lbStreamTimeout); _lbStreamTimeout = null; }
+    // Stop any existing poll
+    if (_lbPollTimer !== null) { clearInterval(_lbPollTimer); _lbPollTimer = null; }
+
+    img.onerror = null;
+    img.onload  = null;
+
+    _setLbMode('snapshot');
+
+    // Load first snapshot
+    img.src = 'api/camera-proxy/' + _lbEntityId + '?_t=' + Date.now();
+
+    // Start periodic refresh
+    var intervalMs = Math.max(1000, (_lbRefreshInterval || 2) * 1000);
     _lbPollTimer = setInterval(function () {
-      var lbImg = _lb.querySelector('.cam-lb-img');
-      lbImg.src = 'api/camera-proxy/' + _lbEntityId + '?_t=' + Date.now();
-    }, 2000);
+      var lbImg = _lb ? _lb.querySelector('.cam-lb-img') : null;
+      if (lbImg) { lbImg.src = 'api/camera-proxy/' + _lbEntityId + '?_t=' + Date.now(); }
+    }, intervalMs);
   }
 
   function _closeLightbox() {
-    // F-03: ferma il polling live alla chiusura
-    if (_lbPollTimer !== null) {
-      clearInterval(_lbPollTimer);
-      _lbPollTimer = null;
-    }
+    if (_lbPollTimer !== null)     { clearInterval(_lbPollTimer);    _lbPollTimer = null; }
+    if (_lbStreamTimeout !== null) { clearTimeout(_lbStreamTimeout); _lbStreamTimeout = null; }
     _lbEntityId = null;
-    if (_lb) { _lb.className = 'cam-lb'; }
+    if (_lb) {
+      var img = _lb.querySelector('.cam-lb-img');
+      if (img) {
+        img.onerror = null;
+        img.onload  = null;
+        img.src     = ''; // abort MJPEG stream / stop snapshot load
+      }
+      _lb.className = 'cam-lb';
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -108,7 +194,7 @@ window.CameraComponent = (function () {
   function createTile(cfg) {
     var DOM = window.RP_DOM;
     var tile = DOM.createElement('div', 'tile tile-camera');
-    tile.dataset.entityId = cfg.entity_id;
+    tile.dataset.entityId  = cfg.entity_id;
     tile.dataset.layoutType = 'camera';
 
     var imgWrap = DOM.createElement('div', 'camera-img-wrap');
@@ -118,7 +204,7 @@ window.CameraComponent = (function () {
     img.alt = cfg.title || cfg.entity_id;
 
     var overlay = DOM.createElement('div', 'camera-overlay');
-    var nameEl = DOM.createElement('span', 'camera-name');
+    var nameEl  = DOM.createElement('span', 'camera-name');
     nameEl.textContent = cfg.title || cfg.entity_id;
     overlay.appendChild(nameEl);
 
@@ -130,19 +216,20 @@ window.CameraComponent = (function () {
     imgWrap.appendChild(errorEl);
     tile.appendChild(imgWrap);
 
-    // Click → open lightbox
     var _entityId = cfg.entity_id;
-    var _name = cfg.title || cfg.entity_id;
+    var _name     = cfg.title || cfg.entity_id;
+    var _ri       = cfg.refresh_interval || 2;
+
     tile.onclick = function () {
-      _openLightbox(_entityId, _name);
+      _openLightbox(_entityId, _name, _ri);
     };
 
     // Load first snapshot immediately
     _loadSnapshot(img, errorEl, cfg.entity_id);
 
-    // Polling — default 3s, clamp between 1s and 60s
+    // Tile polling — default 3 s, clamp 1–60 s
     var intervalMs = cfg.refresh_interval ? cfg.refresh_interval * 1000 : 3000;
-    if (intervalMs < 1000) { intervalMs = 1000; }
+    if (intervalMs < 1000)  { intervalMs = 1000; }
     if (intervalMs > 60000) { intervalMs = 60000; }
 
     var timerId = setInterval(function () {
@@ -157,12 +244,8 @@ window.CameraComponent = (function () {
   function _loadSnapshot(img, errorEl, entityId) {
     errorEl.classList.add('hidden');
     var newSrc = 'api/camera-proxy/' + entityId + '?t=' + Date.now();
-    img.onload = function () {
-      errorEl.classList.add('hidden');
-    };
-    img.onerror = function () {
-      errorEl.classList.remove('hidden');
-    };
+    img.onload  = function () { errorEl.classList.add('hidden'); };
+    img.onerror = function () { errorEl.classList.remove('hidden'); };
     img.src = newSrc;
   }
 
@@ -178,6 +261,9 @@ window.CameraComponent = (function () {
       clearInterval(_timers[i].timerId);
     }
     _timers = [];
+    // Also stop lightbox if open
+    if (_lbPollTimer !== null)     { clearInterval(_lbPollTimer);    _lbPollTimer = null; }
+    if (_lbStreamTimeout !== null) { clearTimeout(_lbStreamTimeout); _lbStreamTimeout = null; }
   }
 
   function destroyForEntity(entityId) {
@@ -193,9 +279,9 @@ window.CameraComponent = (function () {
   }
 
   return {
-    createTile: createTile,
-    updateTile: updateTile,
-    destroyAll: destroyAll,
+    createTile:       createTile,
+    updateTile:       updateTile,
+    destroyAll:       destroyAll,
     destroyForEntity: destroyForEntity,
   };
 }());

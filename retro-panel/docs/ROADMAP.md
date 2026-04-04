@@ -299,6 +299,17 @@ Retro Panel follows semantic versioning (MAJOR.MINOR.PATCH):
 - [x] Hint dinamico: "Tocca per armare" vs "Seleziona modalità, poi inserisci il codice"
 - [x] Confirm/disarm button: height 52px, font 15px, transform 0.1s feedback tattile
 
+### v2.9.24 — Lightbox MJPEG streaming con fallback a snapshot (2026-04-04)
+
+- [x] **Lightbox**: al click su una camera tenta MJPEG stream (`/api/camera-proxy-stream/{id}`)
+- [x] **Badge**: verde + "Live Streaming" se MJPEG attivo; amber + "Snapshot • Xs" se fallback
+- [x] **Fallback automatico**: se HA risponde 404/errore o nessun frame in 5 s → snapshot polling trasparente
+- [x] **Chiusura pulita**: `img.src = ''` alla chiusura del lightbox interrompe lo stream e rilascia la connessione
+- [x] **Backend** `ha_client.py`: aggiunto `get_camera_stream_request()` (no total timeout, sock_read 30 s)
+- [x] **Backend** `camera_proxy.py`: nuovo handler `get_camera_proxy_stream` con `web.StreamResponse`, proxy MJPEG chunked
+- [x] **Backend** `server.py`: rotta `GET /api/camera-proxy-stream/{entity_id}` registrata
+- [x] **Tile**: rimane snapshot polling (invariato), solo il lightbox usa lo stream
+
 ### v2.9.23 — Fix camera hidden toggle: markDirty, preview, loader default (2026-04-04)
 
 - [x] **Bug fix**: toggle visibilità telecamera non marcava la config come sporca → `markDirty()` aggiunto a toggle, title, refresh e remove handler
@@ -451,7 +462,8 @@ These targets apply to v2.0 and all future releases:
 | v2.9.20 | Released | 2026-04-04 | Completed |
 | v2.9.21 | Released | 2026-04-04 | Completed |
 | v2.9.22 | Released | 2026-04-04 | Completed |
-| v2.9.23 | Released | 2026-04-04 | **Current stable** |
+| v2.9.23 | Released | 2026-04-04 | Completed |
+| v2.9.24 | Released | 2026-04-04 | **Current stable** |
 | v3.0 | Planned | TBD | 2026 H2 (estimated) |
 
 ---

@@ -137,6 +137,24 @@ class HAClient:
         except asyncio.TimeoutError as exc:
             raise TimeoutError(f"Camera proxy request for '{entity_id}' timed out") from exc
 
+    def get_camera_stream_request(self, entity_id: str):
+        """Return a context manager for the HA MJPEG camera stream.
+
+        Unlike get_camera_proxy(), this does NOT await the full response —
+        the caller is responsible for iterating the response chunks.
+        No total timeout so the stream can live as long as needed; sock_read
+        detects dead connections after 30 s of silence.
+
+        Usage:
+            async with ha_client.get_camera_stream_request(entity_id) as resp:
+                async for chunk in resp.content.iter_chunked(8192):
+                    ...
+        """
+        url = f"{self._ha_url}/api/camera_proxy_stream/{entity_id}"
+        session = self._get_session()
+        timeout = aiohttp.ClientTimeout(total=None, sock_read=30)
+        return session.get(url, timeout=timeout)
+
     async def get_all_entity_states(self) -> list[dict[str, Any]]:
         """Fetch ALL entity states from HA (used by the entity picker config page).
 

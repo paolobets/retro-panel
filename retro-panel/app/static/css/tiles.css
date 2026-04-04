@@ -1240,6 +1240,15 @@
   background: #4caf50;
   box-shadow: 0 0 6px #4caf50;
   margin-right: 6px;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+.cam-lb-dot--snapshot {
+  background: #f59e0b;
+  box-shadow: 0 0 6px #f59e0b;
+}
+.cam-lb-live--snapshot {
+  color: #f59e0b;
 }
 .cam-lb-close {
   position: absolute;

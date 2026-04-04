@@ -47,7 +47,7 @@ from api.panel_config import get_panel_config
 from api.panel_states import get_state, get_all_states
 from api.panel_service import call_service
 from api.panel_config_save import save_config
-from api.camera_proxy import get_camera_proxy
+from api.camera_proxy import get_camera_proxy, get_camera_proxy_stream
 from api.picker_entities import get_picker_entities
 from api.picker_areas import get_picker_areas
 from api.picker_cameras import get_picker_cameras
@@ -458,6 +458,7 @@ def create_app(config, ha_client: HAClient, ws_proxy: WSProxy) -> web.Applicatio
     app.router.add_get("/api/picker/areas", get_picker_areas)
     app.router.add_get("/api/picker/cameras", get_picker_cameras)
     app.router.add_get("/api/camera-proxy/{entity_id}", get_camera_proxy)
+    app.router.add_get("/api/camera-proxy-stream/{entity_id}", get_camera_proxy_stream)
     app.router.add_post("/api/config", save_config)
     app.router.add_post("/api/service/{domain}/{service}", call_service)
     app.router.add_get("/ws", ws_handler)
