@@ -3,8 +3,11 @@
    ============================================================ */
 
 /* Token aliases — config.css was written with --color-* names;
-   map them to the v2.0 design tokens from tokens.css */
-:root {
+   map them to the v2.0 design tokens from tokens.css.
+   IMPORTANT: must be on `body`, NOT `:root` — aliases defined on :root
+   resolve --c-* against :root scope (always dark), so body.theme-light
+   overrides on --c-surface etc. would never propagate through the alias. */
+body {
   --color-bg:             var(--c-bg);
   --color-surface:        var(--c-surface);
   --color-surface-2:      var(--c-surface-2);

@@ -299,6 +299,11 @@ Retro Panel follows semantic versioning (MAJOR.MINOR.PATCH):
 - [x] Hint dinamico: "Tocca per armare" vs "Seleziona modalità, poi inserisci il codice"
 - [x] Confirm/disarm button: height 52px, font 15px, transform 0.1s feedback tattile
 
+### v2.9.19 — CSS cascade fix: alias block :root → body (2026-04-04)
+
+- [x] Fix **vera causa radice** del tema scuro in /config: il blocco `--color-*` in `config.css` era su `:root` invece di `body` — gli alias `var(--c-surface)` ecc. risolvevano contro lo scope di `:root` (sempre scuro), ignorando completamente l'override `body.theme-light`; spostando il blocco su `body` gli alias ereditano il valore corretto da `body.theme-light`
+- [x] Tutti gli elementi che usano `var(--color-surface)`, `var(--color-surface-2)`, `var(--color-text-primary)` ecc. ora diventano chiari con `body.theme-light`
+
 ### v2.9.18 — Server-side theme injection (2026-04-04)
 
 - [x] Fix definitivo: `server.py` inietta il tema corretto direttamente nell'HTML prima di servire `index.html` e `config.html` — `class="theme-dark"` viene sostituito con `class="theme-{theme}"` lato server, eliminando ogni dipendenza da localStorage, script sincroni e race condition JavaScript
@@ -407,7 +412,8 @@ These targets apply to v2.0 and all future releases:
 | v2.9.15 | Released | 2026-04-03 | Completed |
 | v2.9.16 | Released | 2026-04-03 | Completed |
 | v2.9.17 | Released | 2026-04-04 | Completed |
-| v2.9.18 | Released | 2026-04-04 | **Current stable** |
+| v2.9.18 | Released | 2026-04-04 | Completed |
+| v2.9.19 | Released | 2026-04-04 | **Current stable** |
 | v3.0 | Planned | TBD | 2026 H2 (estimated) |
 
 ---
