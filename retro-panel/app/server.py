@@ -400,14 +400,23 @@ async def ws_handler(request: web.Request) -> web.WebSocketResponse:
 # Static file / index route
 # ---------------------------------------------------------------------------
 
-async def index_handler(request: web.Request) -> web.FileResponse:
-    """Serve the main SPA entry point (index.html)."""
-    return web.FileResponse(STATIC_DIR / "index.html")
+def _inject_theme(path, theme: str) -> web.Response:
+    """Read an HTML file and replace the default body class with the configured theme."""
+    html = path.read_text(encoding="utf-8")
+    html = html.replace('class="theme-dark"', f'class="theme-{theme}"', 1)
+    return web.Response(content_type="text/html", text=html)
 
 
-async def config_page_handler(request: web.Request) -> web.FileResponse:
-    """Serve the entity picker configuration page (config.html)."""
-    return web.FileResponse(STATIC_DIR / "config.html")
+async def index_handler(request: web.Request) -> web.Response:
+    """Serve the main SPA entry point (index.html) with the configured theme."""
+    theme = request.app["config"].theme or "dark"
+    return _inject_theme(STATIC_DIR / "index.html", theme)
+
+
+async def config_page_handler(request: web.Request) -> web.Response:
+    """Serve the config page (config.html) with the configured theme."""
+    theme = request.app["config"].theme or "dark"
+    return _inject_theme(STATIC_DIR / "config.html", theme)
 
 
 # ---------------------------------------------------------------------------

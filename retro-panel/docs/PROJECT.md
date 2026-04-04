@@ -302,7 +302,7 @@ Features:
 - iOS 12+ compatible CSS (no gap/inset/100dvh)
 - 22 passing unit tests
 
-### v2.9.x (Released 2026-04-04 — Current Stable: v2.9.17)
+### v2.9.x (Released 2026-04-04 — Current Stable: v2.9.18)
 
 Iterative improvements to the alarm tile, energy card, and camera grid:
 
@@ -323,6 +323,6 @@ Iterative improvements to the alarm tile, energy card, and camera grid:
 
 ---
 
-**Document Version**: 2.9.17
+**Document Version**: 2.9.18
 **Last Updated**: 2026-04-03
-**Status**: v2.9.17 RELEASED
+**Status**: v2.9.18 RELEASED

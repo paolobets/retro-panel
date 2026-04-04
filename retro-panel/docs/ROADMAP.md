@@ -299,6 +299,11 @@ Retro Panel follows semantic versioning (MAJOR.MINOR.PATCH):
 - [x] Hint dinamico: "Tocca per armare" vs "Seleziona modalità, poi inserisci il codice"
 - [x] Confirm/disarm button: height 52px, font 15px, transform 0.1s feedback tattile
 
+### v2.9.18 — Server-side theme injection (2026-04-04)
+
+- [x] Fix definitivo: `server.py` inietta il tema corretto direttamente nell'HTML prima di servire `index.html` e `config.html` — `class="theme-dark"` viene sostituito con `class="theme-{theme}"` lato server, eliminando ogni dipendenza da localStorage, script sincroni e race condition JavaScript
+- [x] Sia il dashboard che la pagina /config ricevono il tema corretto all'arrivo del primo byte, senza alcun FOUC
+
 ### v2.9.17 — Light Theme root cause fix (2026-04-04)
 
 - [x] Fix critico: `config.js` usava `document.body.className = 'theme-dark'` sovrascrivendo la classe corretta impostata dallo script inline — tutte le aree (section list, detail, preview) tornавano scure dopo il caricamento dell'API
@@ -401,7 +406,8 @@ These targets apply to v2.0 and all future releases:
 | v2.9.14 | Released | 2026-04-03 | Completed |
 | v2.9.15 | Released | 2026-04-03 | Completed |
 | v2.9.16 | Released | 2026-04-03 | Completed |
-| v2.9.17 | Released | 2026-04-04 | **Current stable** |
+| v2.9.17 | Released | 2026-04-04 | Completed |
+| v2.9.18 | Released | 2026-04-04 | **Current stable** |
 | v3.0 | Planned | TBD | 2026 H2 (estimated) |
 
 ---
