@@ -26,6 +26,7 @@
     cameras_section:   { title: 'Cameras', icon: 'cctv' },
     alarms:           [],  // list: [{id, entity_id, label, sensors:[{entity_id, label, device_class}]}]
     alarms_section:   { title: 'Allarme', icon: 'shield-home' },
+    nav_order:        ['rooms', 'scenarios', 'cameras', 'alarms'],
   };
 
   var allEntities  = [];   // from /api/entities
@@ -227,6 +228,119 @@
 
   function genSecId() { return 'sec_' + Math.random().toString(36).slice(2, 9); }
 
+  // ---------------------------------------------------------------------------
+  // Nav Order — drag-to-reorder sidebar sections (Overview locked at top)
+  // ---------------------------------------------------------------------------
+  var _NAV_META = {
+    rooms:     { label: 'Rooms',    icon: 'floor-plan'  },
+    scenarios: { label: 'Scenari',  icon: 'palette'     },
+    cameras:   { label: 'Cameras',  icon: 'cctv'        },
+    alarms:    { label: 'Allarme',  icon: 'shield-home' },
+  };
+
+  function renderNavOrder() {
+    var container = qs('nav-order-list');
+    if (!container) { return; }
+    var order = state.nav_order || ['rooms', 'scenarios', 'cameras', 'alarms'];
+
+    var html = '<div class="nav-order-row nav-order-locked">'
+      + '<span class="nav-order-handle nav-order-lock-icon">&#128274;</span>'
+      + '<span class="nav-order-icon">' + (window.RP_MDI ? window.RP_MDI('home', 18) : '') + '</span>'
+      + '<span class="nav-order-label">Overview</span>'
+      + '</div>';
+
+    for (var i = 0; i < order.length; i++) {
+      var meta = _NAV_META[order[i]];
+      if (!meta) { continue; }
+      html += '<div class="nav-order-row" data-sec="' + order[i] + '">'
+        + '<span class="nav-order-handle" title="Drag to reorder">&#9776;</span>'
+        + '<span class="nav-order-icon">' + (window.RP_MDI ? window.RP_MDI(meta.icon, 18) : '') + '</span>'
+        + '<span class="nav-order-label">' + esc(meta.label) + '</span>'
+        + '</div>';
+    }
+    container.innerHTML = html;
+    _initNavOrderDragDrop(container);
+  }
+
+  function _initNavOrderDragDrop(container) {
+    var rows = Array.prototype.slice.call(container.querySelectorAll('.nav-order-row:not(.nav-order-locked)'));
+    if (rows.length < 2) { return; }
+
+    var dragIdx = -1;
+    var ghostEl = null;
+    var startY = 0;
+    var rowRects = [];
+
+    var calcTarget = function (dy) {
+      var ghostCenter = rowRects[dragIdx].top + dy + rowRects[dragIdx].height / 2;
+      var t = dragIdx;
+      for (var i = 0; i < rowRects.length; i++) {
+        if (ghostCenter > rowRects[i].top + rowRects[i].height / 2) { t = i; }
+      }
+      return t;
+    };
+
+    var onMove = null;
+    var onUp = null;
+
+    var startDrag = function (e, handleEl) {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      var row = handleEl.parentNode;
+      rows = Array.prototype.slice.call(container.querySelectorAll('.nav-order-row:not(.nav-order-locked)'));
+      dragIdx = rows.indexOf(row);
+      if (dragIdx < 0) { return; }
+      startY = e.clientY;
+      rowRects = rows.map(function (r) { return r.getBoundingClientRect(); });
+      var rect = rowRects[dragIdx];
+      ghostEl = row.cloneNode(true);
+      ghostEl.className += ' nav-order-ghost';
+      ghostEl.style.cssText = 'position:fixed;left:' + rect.left + 'px;top:' + rect.top + 'px;width:' + rect.width + 'px;z-index:9999;pointer-events:none;';
+      document.body.appendChild(ghostEl);
+      row.classList.add('nav-order-dragging');
+      e.preventDefault();
+
+      onMove = function (ev) {
+        if (dragIdx < 0 || !ghostEl) { return; }
+        ghostEl.style.top = (rowRects[dragIdx].top + (ev.clientY - startY)) + 'px';
+        var t = calcTarget(ev.clientY - startY);
+        rows.forEach(function (r, i) {
+          r.classList.remove('nav-order-insert-before', 'nav-order-insert-after');
+          if (i === t && t < dragIdx) { r.classList.add('nav-order-insert-before'); }
+          else if (i === t && t > dragIdx) { r.classList.add('nav-order-insert-after'); }
+        });
+      };
+
+      onUp = function (ev) {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        if (dragIdx < 0) { return; }
+        var targetIdx = calcTarget(ev.clientY - startY);
+        if (ghostEl) { ghostEl.parentNode && ghostEl.parentNode.removeChild(ghostEl); ghostEl = null; }
+        rows.forEach(function (r) {
+          r.classList.remove('nav-order-dragging', 'nav-order-insert-before', 'nav-order-insert-after');
+        });
+        if (targetIdx !== dragIdx) {
+          var removed = state.nav_order.splice(dragIdx, 1)[0];
+          state.nav_order.splice(targetIdx > dragIdx ? targetIdx : targetIdx, 0, removed);
+          markDirty();
+        }
+        dragIdx = -1;
+        renderNavOrder();
+      };
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    };
+
+    rows.forEach(function (row) {
+      var handle = row.querySelector('.nav-order-handle');
+      if (handle) {
+        handle.addEventListener('mousedown', function (e) { startDrag(e, handle); });
+      }
+    });
+  }
+
   function cloneItem(it) {
     var copy = {};
     for (var k in it) { if (Object.prototype.hasOwnProperty.call(it, k)) { copy[k] = it[k]; } }
@@ -277,7 +391,7 @@
     }
 
     // Refresh relevant section lists when switching tabs
-    if (tabId === 'overview')   { renderOvSectionsList();  renderOvSectionDetail(); }
+    if (tabId === 'overview')   { renderNavOrder(); renderOvSectionsList();  renderOvSectionDetail(); }
     if (tabId === 'scenarios')  { renderScSectionsList();  renderScSectionDetail(); }
     if (tabId === 'cameras')    { renderCamSectionsList(); renderCamSectionDetail(); }
     if (tabId === 'alarms')     { renderAlarmsList(); }
@@ -2799,6 +2913,11 @@
           };
         });
 
+        // nav_order
+        state.nav_order = (Array.isArray(cfg.nav_order) && cfg.nav_order.length > 0)
+          ? cfg.nav_order.filter(function(s) { return ['rooms','scenarios','cameras','alarms'].indexOf(s) !== -1; })
+          : ['rooms', 'scenarios', 'cameras', 'alarms'];
+
         // alarms: flat list
         var almRaw = cfg.alarms_section || {};
         state.alarms_section = {
@@ -2835,6 +2954,7 @@
         if (almTitleInput) { almTitleInput.value = state.alarms_section.title; }
         updateSectionIconPreview('alarms', state.alarms_section.icon);
 
+        renderNavOrder();
         renderOvSectionsList();
         renderOvSectionDetail();
         renderRoomsList();

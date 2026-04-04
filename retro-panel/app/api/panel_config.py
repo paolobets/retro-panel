@@ -106,7 +106,7 @@ async def get_panel_config(request: web.Request) -> web.Response:
                 "id": sec.id,
                 "title": sec.title,
                 "items": [
-                    {"entity_id": c.entity_id, "title": c.title, "refresh_interval": c.refresh_interval}
+                    {"entity_id": c.entity_id, "title": c.title, "refresh_interval": c.refresh_interval, "hidden": c.hidden}
                     for c in sec.items
                 ],
             }
@@ -139,6 +139,7 @@ async def get_panel_config(request: web.Request) -> web.Response:
             "title": config.alarms_section_title,
             "icon":  config.alarms_section_icon,
         },
+        "nav_order": config.nav_order,
     }
 
     logger.debug(

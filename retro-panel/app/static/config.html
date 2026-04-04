@@ -7,8 +7,8 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Retro Panel — Settings</title>
-  <link rel="stylesheet" href="static/css/tokens.css?v=2921">
-  <link rel="stylesheet" href="static/css/config.css?v=2921">
+  <link rel="stylesheet" href="static/css/tokens.css?v=2922">
+  <link rel="stylesheet" href="static/css/config.css?v=2922">
 </head>
 <body class="theme-dark">
   <script>try{var _t=localStorage.getItem('rp_theme');if(_t==='light'||_t==='dark'||_t==='auto'){document.body.className='theme-'+_t;}}catch(e){}</script>
@@ -58,6 +58,15 @@
         <span class="icon-picker-chevron" aria-hidden="true">&#8964;</span>
       </button>
     </div>
+  </div>
+
+  <!-- Navigation Order -->
+  <div class="cfg-nav-order-wrap">
+    <div class="cfg-nav-order-header">
+      <span class="cfg-nav-order-title">Navigation Order</span>
+      <span class="cfg-nav-order-hint">Drag to reorder. Overview is always first.</span>
+    </div>
+    <div id="nav-order-list" class="nav-order-list"></div>
   </div>
 
   <!-- Editor + Preview side by side (same as room-editor-body) -->
@@ -656,8 +665,8 @@
     </div>
   </section>
 
-  <script src="static/js/mdi-icons.js?v=2921"></script>
-  <script src="static/js/config-api.js?v=2921"></script>
-  <script src="static/js/config.js?v=2921"></script>
+  <script src="static/js/mdi-icons.js?v=2922"></script>
+  <script src="static/js/config-api.js?v=2922"></script>
+  <script src="static/js/config.js?v=2922"></script>
 </body>
 </html>

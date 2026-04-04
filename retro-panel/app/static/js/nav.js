@@ -140,35 +140,41 @@ window.RP_Nav = (function () {
 
     addNavItem(nav, 'overview', _mdi(overviewIcon, 22), overviewTitle);
 
-    // "Rooms" entry: apre il submenu se ci sono stanze, altrimenti è un normale nav item
+    // Build ordered list of visible sections from nav_order (default order if missing)
+    var navOrder = config.nav_order || ['rooms', 'scenarios', 'cameras', 'alarms'];
+
     var visibleRooms = [];
     var rooms = config.rooms || [];
     for (var i = 0; i < rooms.length; i++) {
       if (!rooms[i].hidden) { visibleRooms.push(rooms[i]); }
     }
 
-    if (visibleRooms.length > 0) {
-      addNavAction(nav, 'rooms-menu', _mdi('floor-plan', 22), 'Rooms', function () {
-        showRoomsSubmenu(_config);
-      });
-    }
-
-    // Scenari
-    if (config.scenarios && config.scenarios.length > 0) {
-      var scSec = config.scenarios_section || {};
-      addNavItem(nav, 'scenarios', _mdi(scSec.icon || 'palette', 22), scSec.title || 'Scenari');
-    }
-
-    // Telecamere
-    if (config.cameras && config.cameras.length > 0) {
-      var camSec = config.cameras_section || {};
-      addNavItem(nav, 'cameras', _mdi(camSec.icon || 'cctv', 22), camSec.title || 'Cameras');
-    }
-
-    // Allarme
-    if (config.alarms && config.alarms.length > 0) {
-      var almSec = config.alarms_section || {};
-      addNavItem(nav, 'alarms', _mdi(almSec.icon || 'shield-home', 22), almSec.title || 'Allarme');
+    for (var o = 0; o < navOrder.length; o++) {
+      var secId = navOrder[o];
+      if (secId === 'rooms') {
+        if (visibleRooms.length > 0) {
+          (function () {
+            addNavAction(nav, 'rooms-menu', _mdi('floor-plan', 22), 'Rooms', function () {
+              showRoomsSubmenu(_config);
+            });
+          })();
+        }
+      } else if (secId === 'scenarios') {
+        if (config.scenarios && config.scenarios.length > 0) {
+          var scSec = config.scenarios_section || {};
+          addNavItem(nav, 'scenarios', _mdi(scSec.icon || 'palette', 22), scSec.title || 'Scenari');
+        }
+      } else if (secId === 'cameras') {
+        if (config.cameras && config.cameras.length > 0) {
+          var camSec = config.cameras_section || {};
+          addNavItem(nav, 'cameras', _mdi(camSec.icon || 'cctv', 22), camSec.title || 'Cameras');
+        }
+      } else if (secId === 'alarms') {
+        if (config.alarms && config.alarms.length > 0) {
+          var almSec = config.alarms_section || {};
+          addNavItem(nav, 'alarms', _mdi(almSec.icon || 'shield-home', 22), almSec.title || 'Allarme');
+        }
+      }
     }
   }
 

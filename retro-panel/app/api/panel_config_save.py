@@ -276,15 +276,16 @@ async def save_config(request: web.Request) -> web.Response:
             if not _CAMERA_ENTITY_RE.match(eid):
                 continue
             try:
-                ri = int(c.get("refresh_interval") or 10)
+                ri = int(c.get("refresh_interval") or 3)
             except (ValueError, TypeError):
-                ri = 10
-            if ri < 3: ri = 3
+                ri = 3
+            if ri < 1: ri = 1
             if ri > 60: ri = 60
             items.append({
                 "entity_id": eid,
                 "title": str(c.get("title") or "").strip()[:_MAX_TITLE],
                 "refresh_interval": ri,
+                "hidden": bool(c.get("hidden") or False),
             })
         camera_sections.append({"id": sec_id, "title": sec_title, "items": items})
 
@@ -325,6 +326,22 @@ async def save_config(request: web.Request) -> web.Response:
             "sensors": sensors_out,
         })
 
+    # --- nav_order ---
+    _VALID_NAV = {'rooms', 'scenarios', 'cameras', 'alarms'}
+    _DEFAULT_NAV = ['rooms', 'scenarios', 'cameras', 'alarms']
+    nav_order_raw = body.get("nav_order") or []
+    if not isinstance(nav_order_raw, list):
+        nav_order_raw = []
+    seen_nav: set[str] = set()
+    nav_order: list[str] = []
+    for item in nav_order_raw:
+        if isinstance(item, str) and item in _VALID_NAV and item not in seen_nav:
+            nav_order.append(item)
+            seen_nav.add(item)
+    for sec in _DEFAULT_NAV:
+        if sec not in seen_nav:
+            nav_order.append(sec)
+
     v5_data = {
         "version": 5,
         "theme": theme_raw,
@@ -341,6 +358,7 @@ async def save_config(request: web.Request) -> web.Response:
         "cameras_section": cameras_section,
         "alarms": alarms_out,
         "alarms_section": {"title": alarms_section_title, "icon": alarms_section_icon},
+        "nav_order": nav_order,
     }
 
     try:

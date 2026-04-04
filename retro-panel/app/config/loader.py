@@ -217,7 +217,8 @@ class ScenarioConfig:
 class CameraConfig:
     entity_id: str
     title: str = ""
-    refresh_interval: int = 10
+    refresh_interval: int = 3
+    hidden: bool = False
 
 
 @dataclass
@@ -270,6 +271,7 @@ class PanelConfig:
     alarms: List[AlarmConfig] = field(default_factory=list)
     alarms_section_title: str = 'Allarme'
     alarms_section_icon: str = 'shield-home'
+    nav_order: List[str] = field(default_factory=lambda: ['rooms', 'scenarios', 'cameras', 'alarms'])
 
     # --------------- backward compat helpers ---------------
 
@@ -607,6 +609,7 @@ def _parse_camera_section(raw: dict, idx: int) -> CameraSection:
                 entity_id=str(c["entity_id"]).strip(),
                 title=str(c.get("title") or "").strip(),
                 refresh_interval=refresh_interval,
+                hidden=bool(c.get("hidden") or False),
             ))
     return CameraSection(id=sec_id, title=title, items=cam_items)
 
@@ -692,6 +695,26 @@ def _migrate_v2_pages(pages_raw: list) -> list[SectionItem]:
     return _parse_items(first.get("items") or [], "v2-migration")
 
 
+_VALID_NAV_SECTIONS = ('rooms', 'scenarios', 'cameras', 'alarms')
+_DEFAULT_NAV_ORDER  = list(_VALID_NAV_SECTIONS)
+
+
+def _parse_nav_order(raw: object) -> list[str]:
+    """Validate and normalise nav_order, ensuring all 4 sections are present."""
+    if not isinstance(raw, list):
+        return list(_DEFAULT_NAV_ORDER)
+    seen: set[str] = set()
+    result: list[str] = []
+    for item in raw:
+        if isinstance(item, str) and item in _VALID_NAV_SECTIONS and item not in seen:
+            result.append(item)
+            seen.add(item)
+    for sec in _DEFAULT_NAV_ORDER:
+        if sec not in seen:
+            result.append(sec)
+    return result
+
+
 def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
     list[RoomSection],         # overview_sections       [0]
     str,                       # overview_title           [1]
@@ -707,9 +730,10 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
     list[AlarmConfig],         # alarms                   [11]
     str,                       # alarms_section_title     [12]
     str,                       # alarms_section_icon      [13]
+    list[str],                 # nav_order                [14]
 ]:
     """Load layout from /data/entities.json, migrating older formats."""
-    empty = ([], "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv", [], "Allarme", "shield-home")
+    empty = ([], "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv", [], "Allarme", "shield-home", list(_DEFAULT_NAV_ORDER))
 
     if entities_file.exists():
         try:
@@ -766,6 +790,7 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
                 alarms,
                 str(alm_sec.get("title") or "Allarme").strip() or "Allarme",
                 str(alm_sec.get("icon") or "shield-home").strip() or "shield-home",
+                _parse_nav_order(raw.get("nav_order")),
             )
 
         # v3/v4 format — migrate to v5 shape (also handles v3 rooms via _parse_room migration logic)
@@ -795,7 +820,7 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
                 rooms, scenario_sections, header_sensors, camera_sections,
                 scenarios_section_title, scenarios_section_icon,
                 cameras_section_title, cameras_section_icon,
-                [], "Allarme", "shield-home",
+                [], "Allarme", "shield-home", list(_DEFAULT_NAV_ORDER),
             )
 
         # v2 format: migrate first page to overview
@@ -803,14 +828,14 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
             logger.info("Migrating v2 pages format to v5")
             ov_items = _migrate_v2_pages(raw.get("pages") or [])
             ov_secs = [RoomSection(id="sec_default", title="", items=ov_items)] if ov_items else []
-            return (ov_secs, "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv", [], "Allarme", "shield-home")
+            return (ov_secs, "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv", [], "Allarme", "shield-home", list(_DEFAULT_NAV_ORDER))
 
         # v1 format: plain list
         if isinstance(raw, list):
             logger.info("Migrating v1 flat entities format to v5")
             ov_items = _migrate_v1_flat(raw)
             ov_secs = [RoomSection(id="sec_default", title="", items=ov_items)] if ov_items else []
-            return (ov_secs, "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv", [], "Allarme", "shield-home")
+            return (ov_secs, "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv", [], "Allarme", "shield-home", list(_DEFAULT_NAV_ORDER))
 
         logger.warning("Unrecognised entities.json format, using empty layout")
         return empty
@@ -893,7 +918,7 @@ def load_config() -> PanelConfig:
     (overview_sections, overview_title, overview_icon, rooms, scenario_sections, header_sensors, camera_sections,
      scenarios_section_title, scenarios_section_icon,
      cameras_section_title, cameras_section_icon,
-     alarms, alarms_section_title, alarms_section_icon) = _load_layout(
+     alarms, alarms_section_title, alarms_section_icon, nav_order) = _load_layout(
         entities_file,
         options_entities if isinstance(options_entities, list) else [],
     )
@@ -934,6 +959,7 @@ def load_config() -> PanelConfig:
         alarms=alarms,
         alarms_section_title=alarms_section_title,
         alarms_section_icon=alarms_section_icon,
+        nav_order=nav_order,
     )
 
     logger.info(

@@ -299,6 +299,16 @@ Retro Panel follows semantic versioning (MAJOR.MINOR.PATCH):
 - [x] Hint dinamico: "Tocca per armare" vs "Seleziona modalità, poi inserisci il codice"
 - [x] Confirm/disarm button: height 52px, font 15px, transform 0.1s feedback tattile
 
+### v2.9.22 — Drag-and-drop navigation order in /config (2026-04-04)
+
+- [x] Config → Overview tab: nuova card **"Navigation Order"** con lista drag-and-drop
+- [x] **Overview bloccato** in prima posizione (locked, non riordinabile)
+- [x] Rooms, Scenarios, Cameras, Alarms liberamente riordinabili tramite drag-and-drop
+- [x] Persiste in `nav_order` in `entities.json` v5 e propagato via API
+- [x] Dashboard rispetta l'ordine al caricamento (`nav.js` legge `config.nav_order`)
+- [x] Backend: `PanelConfig.nav_order`, `_parse_nav_order()`, serializzato in `panel_config.py` e validato in `panel_config_save.py`
+- [x] Camera: aggiunto campo `hidden` nel loader e save (fix mancante v2.9.21)
+
 ### v2.9.21 — Camera grid 2-col, pagination, faster refresh, hide toggle (2026-04-04)
 
 - [x] Camera grid: 4 colonne → **2 colonne** (tile più grandi); 1 colonna su telefono portrait
@@ -432,7 +442,8 @@ These targets apply to v2.0 and all future releases:
 | v2.9.18 | Released | 2026-04-04 | Completed |
 | v2.9.19 | Released | 2026-04-04 | Completed |
 | v2.9.20 | Released | 2026-04-04 | Completed |
-| v2.9.21 | Released | 2026-04-04 | **Current stable** |
+| v2.9.21 | Released | 2026-04-04 | Completed |
+| v2.9.22 | Released | 2026-04-04 | **Current stable** |
 | v3.0 | Planned | TBD | 2026 H2 (estimated) |
 
 ---
