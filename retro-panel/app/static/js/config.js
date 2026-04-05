@@ -917,6 +917,170 @@
   var _iconPickerCurrentIcon = 'home';
   var _iconPickerFiltered    = [];
 
+  // Italian → English icon search map ─────────────────────────────────────
+  var _IT_EN_MAP = {
+    // Rifiuti / differenziata
+    'carta':           ['paper', 'newspaper', 'file'],
+    'cartone':         ['package', 'box'],
+    'secco':           ['trash', 'delete', 'garbage'],
+    'indifferenziato': ['trash', 'delete', 'garbage'],
+    'umido':           ['compost', 'leaf', 'sprout'],
+    'organico':        ['compost', 'leaf', 'sprout'],
+    'vetro':           ['glass-fragile', 'glass', 'bottle'],
+    'plastica':        ['recycle', 'bottle', 'trash'],
+    'lattine':         ['bottle', 'can', 'recycle'],
+    'alluminio':       ['bottle', 'recycle'],
+    'metallo':         ['wrench', 'metal'],
+    'rifiuti':         ['trash', 'recycle', 'delete'],
+    'raccolta':        ['recycle', 'trash'],
+    'differenziata':   ['recycle'],
+    'pile':            ['battery'],
+    'farmaci':         ['pill', 'medical-bag'],
+    'farmaco':         ['pill', 'medical-bag'],
+    // Casa / ambiente
+    'casa':            ['home'],
+    'stanza':          ['room', 'sofa'],
+    'cucina':          ['chef-hat', 'stove', 'pot-steam'],
+    'bagno':           ['shower', 'bathtub'],
+    'camera':          ['bed', 'bedroom'],
+    'letto':           ['bed', 'sleep'],
+    'soggiorno':       ['sofa', 'television'],
+    'garage':          ['garage', 'car'],
+    'cantina':         ['home-floor-b', 'storage'],
+    'terrazza':        ['balcony'],
+    // Luci
+    'luce':            ['light', 'bulb', 'lamp', 'lightbulb'],
+    'lampada':         ['lamp', 'floor-lamp', 'desk-lamp'],
+    'lampadina':       ['lightbulb', 'bulb'],
+    'faretto':         ['spotlight-beam'],
+    'neon':            ['light-recessed', 'ceiling-light'],
+    'dimmer':          ['brightness-6', 'brightness-percent'],
+    // Interruttori / prese
+    'interruttore':    ['toggle-switch', 'switch'],
+    'presa':           ['power-socket', 'plug'],
+    'spina':           ['power-plug', 'plug'],
+    'multipresa':      ['power-socket', 'power-strip'],
+    // Serrature / sicurezza
+    'serratura':       ['lock', 'lock-open'],
+    'lucchetto':       ['lock', 'padlock'],
+    'porta':           ['door', 'door-open', 'door-closed'],
+    'portone':         ['door', 'garage'],
+    'finestra':        ['window-closed', 'window-open'],
+    'allarme':         ['alarm', 'alert', 'bell', 'alarm-light'],
+    'sirena':          ['alarm-light', 'bell-ring'],
+    'sensore':         ['motion-sensor', 'eye'],
+    'movimento':       ['motion-sensor', 'run'],
+    'fumo':            ['smoke', 'smoke-detector'],
+    'incendio':        ['fire', 'fire-alert'],
+    'co2':             ['molecule-co2', 'air-filter'],
+    // Tapparelle / tende / coperture
+    'tapparella':      ['window-shutter', 'blinds'],
+    'persiana':        ['window-shutter', 'blinds'],
+    'tenda':           ['curtains', 'blinds-horizontal'],
+    'veneziana':       ['blinds-horizontal'],
+    'copertura':       ['window-shutter'],
+    'cancello':        ['gate', 'boom-gate'],
+    'garage':          ['garage', 'garage-open'],
+    // Clima / temperatura
+    'temperatura':     ['thermometer', 'temperature-celsius'],
+    'termostato':      ['thermostat', 'thermometer'],
+    'caldaia':         ['water-boiler', 'radiator'],
+    'riscaldamento':   ['radiator', 'fire', 'heat-wave'],
+    'raffreddamento':  ['air-conditioner', 'snowflake'],
+    'condizionatore':  ['air-conditioner'],
+    'ventilatore':     ['fan', 'fan-speed-1'],
+    'pompa':           ['heat-pump', 'pump'],
+    'calore':          ['heat-wave', 'fire'],
+    'freddo':          ['snowflake', 'air-conditioner'],
+    'gelo':            ['snowflake'],
+    // Umidità / qualità aria
+    'umidità':         ['humidity', 'water-percent'],
+    'umido':           ['water-percent', 'humidity'],
+    'aria':            ['air-filter', 'air-humidifier', 'weather-windy'],
+    'pressione':       ['gauge', 'pressure'],
+    'pm25':            ['air-filter', 'molecule'],
+    'qualità':         ['air-filter', 'check-circle'],
+    // Energia / solare
+    'energia':         ['energy', 'lightning-bolt', 'power'],
+    'solare':          ['solar-power', 'sun', 'weather-sunny'],
+    'fotovoltaico':    ['solar-power', 'solar-panel'],
+    'pannello':        ['solar-panel', 'solar-power'],
+    'batteria':        ['battery', 'battery-charging'],
+    'accumulo':        ['battery', 'battery-charging'],
+    'rete':            ['transmission-tower', 'power-plug'],
+    'inverter':        ['solar-power', 'swap-horizontal'],
+    'consumo':         ['flash', 'meter-electric'],
+    'produzione':      ['solar-power', 'flash'],
+    'potenza':         ['lightning-bolt', 'gauge'],
+    'watt':            ['lightning-bolt', 'flash'],
+    'contatore':       ['meter-electric', 'counter'],
+    'gas':             ['gas-burner', 'meter-gas', 'fire'],
+    'acqua':           ['water', 'water-pump'],
+    // Meteo
+    'sole':            ['weather-sunny', 'sun'],
+    'pioggia':         ['weather-rainy', 'rain'],
+    'neve':            ['weather-snowy', 'snowflake'],
+    'vento':           ['weather-windy', 'wind-turbine'],
+    'nuvola':          ['weather-cloudy', 'cloud'],
+    'nebbia':          ['weather-fog', 'fog'],
+    'temporale':       ['weather-lightning', 'weather-lightning-rainy'],
+    // Elettrodomestici
+    'lavatrice':       ['washing-machine'],
+    'lavastoviglie':   ['dishwasher'],
+    'forno':           ['stove', 'microwave'],
+    'microonde':       ['microwave'],
+    'frigorifero':     ['fridge'],
+    'frigo':           ['fridge'],
+    'asciugatrice':    ['tumble-dryer'],
+    'lavanderia':      ['washing-machine', 'tumble-dryer'],
+    // Telecamere
+    'telecamera':      ['camera', 'cctv', 'video'],
+    'videocamera':     ['camera', 'cctv', 'video'],
+    'sorveglianza':    ['cctv', 'camera-outline'],
+    'citofono':        ['doorbell', 'intercom'],
+    // Auto / EV
+    'auto':            ['car', 'ev-station'],
+    'macchina':        ['car'],
+    'ev':              ['ev-station', 'car-electric'],
+    'colonnina':       ['ev-station', 'ev-plug-ccs1'],
+    'ricarica':        ['battery-charging', 'ev-station'],
+    // Persone / presenza
+    'persona':         ['account', 'walk'],
+    'presenza':        ['motion-sensor', 'account'],
+    'occupazione':     ['seat', 'account-group'],
+    // Rete / connettività
+    'wifi':            ['wifi', 'router-wireless'],
+    'router':          ['router', 'router-wireless'],
+    'internet':        ['web', 'earth'],
+    'bluetooth':       ['bluetooth'],
+    // Altro
+    'telefono':        ['phone', 'cellphone'],
+    'orario':          ['clock', 'timer'],
+    'calendario':      ['calendar'],
+    'notifica':        ['bell', 'notify'],
+    'musica':          ['music', 'speaker'],
+    'volume':          ['volume-high', 'speaker'],
+    'tv':              ['television', 'monitor'],
+    'schermo':         ['monitor', 'television'],
+    'computer':        ['computer', 'laptop'],
+    'stampante':       ['printer']
+  };
+
+  function _expandQuery(q) {
+    var terms = [q];
+    var keys  = Object.keys(_IT_EN_MAP);
+    for (var k = 0; k < keys.length; k++) {
+      var it = keys[k];
+      if (it.indexOf(q) !== -1 || q.indexOf(it) !== -1) {
+        var enTerms = _IT_EN_MAP[it];
+        for (var i = 0; i < enTerms.length; i++) {
+          if (terms.indexOf(enTerms[i]) === -1) { terms.push(enTerms[i]); }
+        }
+      }
+    }
+    return terms;
+  }
+
   // Recently used ──────────────────────────────────────────────────────────
   var _RP_RECENT_KEY  = 'rp_icon_picker_recent';
   var _recentIcons    = [];
@@ -1018,9 +1182,17 @@
     if (!grid) { return; }
     var names = window.RP_MDI_NAMES || Object.keys(window.RP_MDI_PATHS || {});
     var q     = query.toLowerCase().trim();
-    _iconPickerFiltered = q
-      ? names.filter(function (n) { return n.indexOf(q) !== -1; })
-      : names;
+    if (q) {
+      var terms = _expandQuery(q);
+      _iconPickerFiltered = names.filter(function (n) {
+        for (var i = 0; i < terms.length; i++) {
+          if (n.indexOf(terms[i]) !== -1) { return true; }
+        }
+        return false;
+      });
+    } else {
+      _iconPickerFiltered = names;
+    }
 
     // Per spec §2.1: hide recently-used row when a search query is active
     if (recentSec) {

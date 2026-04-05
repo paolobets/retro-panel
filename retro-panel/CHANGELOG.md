@@ -3,6 +3,8 @@
 ## [2.9.26] — 2026-04-05
 
 ### Added
+- **Ricerca icone in italiano**: l'icon picker ora comprende termini in italiano (es. "carta", "umido", "tapparella", "energia", "solare") — `_IT_EN_MAP` in `config.js` mappa ~100 termini italiani ai corrispondenti frammenti di nome MDI; `_expandQuery()` espande la query con tutti i termini inglesi associati prima di filtrare i 7.447 icone disponibili
+- **Bug fix — icon picker chiudeva l'editor condizionale**: selezione di un'icona nell'editor sensore condizionale non chiude più la modale di configurazione — risolto con `setTimeout(..., 0)` che rimanda `showOverlay('conditional-editor')` al tick successivo, dopo che l'icon picker termina il suo `hideOverlay()` sincrono
 - **Config UI — Sensori Condizionali**: pulsante "+ Add Conditional Sensor" nella sezione Overview del pannello di configurazione (`/config`) — apre un editor modale con: selezione entità principale (via entity picker), etichetta personalizzabile, icona (via icon picker), colore bordo (color picker `<input type="color">` + campo hex), toggle AND/OR per `condition_logic`, lista regole condizione ciascuna con: pulsante selezione entità, operatore (`=`, `≠`, `>`, `<`, `≥`, `≤`, `contiene`), campo valore, rimozione
 - **Editor condizioni riutilizza entity picker esistente**: click su "Seleziona entità" nella regola apre il pannello picker standard con tutti i domini (sensor, binary_sensor, input_boolean, ecc.) — chiusura automatica e ritorno all'editor condizionale
 - **Sensore Condizionale (`sensor_conditional`)**: nuovo tipo di item per l'Overview — tile sensore visibile solo quando la/le condizioni configurate sono soddisfatte; invisibile (display:none, nessun gap) quando la condizione è falsa
