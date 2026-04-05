@@ -2933,9 +2933,12 @@
       iconBtn.addEventListener('click', function() {
         openIconPickerModal(conditionalDraft.icon || 'help-circle', function(iconName) {
           conditionalDraft.icon = iconName;
-          hideOverlay();
-          showOverlay('conditional-editor');
-          renderConditionalEditor();
+          // setTimeout: the icon picker calls hideOverlay() AFTER this callback returns,
+          // which would close the conditional editor. Defer re-opening to the next tick.
+          setTimeout(function() {
+            showOverlay('conditional-editor');
+            renderConditionalEditor();
+          }, 0);
         });
       });
     }
