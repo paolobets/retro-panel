@@ -452,21 +452,20 @@ conditions:
 Con `condition_logic: and` entrambe le condizioni devono essere vere.
 Con `condition_logic: or` basta che una sia vera.
 
-### Sistema colori bordo
+### Sistema colori bordo — hex libero
 
-Il campo `border_color` accetta un **token semantico** risolto a variabile CSS dal tema corrente.
-Il token si applica sia al `border-color` del tile che al colore della bolla icona.
+Il campo `border_color` è una stringa esadecimale scelta liberamente dall'utente (es. `#e91e63`).
+Viene applicato inline nel tile, senza classi CSS predefinite:
 
-| Token | CSS var | Dark | Light | Uso tipico |
-|-------|---------|------|-------|------------|
-| `accent` | `--c-accent` | `#2196f3` | `#2196f3` | informativo, neutro |
-| `on` | `--c-on` | `#4caf50` | `#4caf50` | condizione positiva, ok |
-| `warning` | `--c-warning` | `#ff9800` | `#ff9800` | attenzione, promemoria |
-| `danger` | `--c-danger` | `#f44336` | `#f44336` | emergenza, critico |
-| `alert` | `--c-binary-alert` | `#FF6B00` | `#FF6B00` | allerta arancione |
-| `neutral` | `--c-text-sec` | `#999` | `#555` | generico, si adatta al tema |
+```javascript
+tile.style.borderColor = cfg.border_color;
+bubble.style.color     = cfg.border_color;
+```
 
-**Nessun hex hardcoded** — tutto tramite variabili CSS: funziona su dark, light e auto senza CSS aggiuntivo.
+**Config UI**: `<input type="color">` nativo (iOS 12+ supportato) sincronizzato con un campo testo hex.
+16 chip di "suggerimenti rapidi" coprono i colori più comuni — sono solo scorciatoie, non vincoli.
+
+**Tema**: il colore hex è fisso per dark e light — scelta consapevole dell'utente. Se l'utente sceglie un colore chiaro su dark theme, è responsabilità sua. Per convenzione si consiglia colori saturi su tone medio (es. `#ff9800`, `#4caf50`, `#2196f3`).
 
 ### Comportamento runtime
 

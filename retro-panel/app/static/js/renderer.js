@@ -55,6 +55,8 @@ window.RP_Renderer = (function () {
     'camera':             null,
     'scenario':           null,
     'energy_flow':        null,
+    'cover_standard':     null,
+    'sensor_conditional': null,
   };
 
   // Column class for each layout_type
@@ -94,6 +96,8 @@ window.RP_Renderer = (function () {
     'camera':             'tile-col-full',
     'scenario':           'tile-col-compact',
     'energy_flow':        'tile-col-full',
+    'cover_standard':     'tile-col-compact',
+    'sensor_conditional': 'tile-col-sensor',
   };
 
   function _initComponents() {
@@ -132,6 +136,8 @@ window.RP_Renderer = (function () {
     COMPONENT_MAP['camera']             = window.CameraComponent   || null;
     COMPONENT_MAP['scenario']           = window.ScenarioComponent || null;
     COMPONENT_MAP['energy_flow']        = window.EnergyFlowComponent || null;
+    COMPONENT_MAP['cover_standard']     = window.CoverComponent              || null;
+    COMPONENT_MAP['sensor_conditional'] = window.SensorConditionalComponent  || null;
   }
 
   // ---------------------------------------------------------------------------
@@ -154,6 +160,19 @@ window.RP_Renderer = (function () {
       appState.energyTiles.push({ tile: efTile, cfg: item });
       efComp.updateTile(efTile, appState.states);
       return efTile;
+    }
+
+    // sensor_conditional is handled separately (visibility driven by conditions on other entities)
+    if (item.type === 'sensor_conditional') {
+      var scComp = COMPONENT_MAP['sensor_conditional'];
+      if (!scComp) { return null; }
+      var scTile = scComp.createTile(item);
+      var scCol = DOM.createElement('div', COL_CLASS_MAP['sensor_conditional'] || 'tile-col-sensor');
+      scCol.appendChild(scTile);
+      tileRow.appendChild(scCol);
+      appState.conditionalTiles.push({ tile: scTile, cfg: item });
+      scComp.updateTile(scTile, appState.states);
+      return scTile;
     }
 
     if (item.type !== 'entity' || !item.entity_id) { return null; }

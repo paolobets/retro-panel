@@ -40,6 +40,20 @@ def _serialize_item(item) -> dict:
             "grid_import":             ef.grid_import,
             "grid_export":             ef.grid_export,
         }
+    elif item.type == "sensor_conditional" and item.conditional_sensor is not None:
+        cs = item.conditional_sensor
+        return {
+            "type":             "sensor_conditional",
+            "entity_id":        cs.entity_id,
+            "label":            cs.label,
+            "icon":             cs.icon,
+            "border_color":     cs.border_color,
+            "condition_logic":  cs.condition_logic,
+            "conditions": [
+                {"entity": r.entity, "op": r.op, "value": r.value}
+                for r in cs.conditions
+            ],
+        }
     return {}
 
 

@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retro Panel — v2.9.26 Conditional Sensor Mockup</title>
+<style>
+/* ── Design Tokens ── */
+:root {
+  --c-bg:           #0f0f0f;
+  --c-surface:      #1a1a1a;
+  --c-surface-2:    #252525;
+  --c-surface-3:    #2e2e2e;
+  --c-text-pri:     #f0f0f0;
+  --c-text-sec:     #999999;
+  --c-accent:       #2196f3;
+  --c-accent-bg:    rgba(33,150,243,0.10);
+  --c-on:           #4caf50;
+  --c-danger:       #f44336;
+  --c-warning:      #ff9800;
+  --c-light-on:     #FFB700;
+  --c-binary-alert: #FF6B00;
+  --radius:         14px;
+  --radius-sm:      8px;
+}
+body.theme-light {
+  --c-bg:        #f0f2f5;
+  --c-surface:   #ffffff;
+  --c-surface-2: #e8eaed;
+  --c-surface-3: #dde0e5;
+  --c-text-pri:  #111111;
+  --c-text-sec:  #555555;
+}
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--c-bg); color: var(--c-text-pri);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Page Chrome ── */
+.page-header {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--c-surface); border-bottom: 1px solid var(--c-surface-2);
+  padding: 0 24px; height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.page-header-title { font-size: 17px; font-weight: 700; }
+.badge {
+  font-size: 11px; font-weight: 600; color: var(--c-accent);
+  background: var(--c-accent-bg); border-radius: 6px;
+  padding: 3px 8px; margin-left: 10px;
+}
+.theme-btn {
+  background: var(--c-surface-2); border: none; border-radius: 20px;
+  padding: 7px 16px; font-size: 13px; font-weight: 600;
+  color: var(--c-text-pri); cursor: pointer; font-family: inherit;
+}
+.page-content { padding: 32px 24px 80px; max-width: 1060px; margin: 0 auto; }
+.section { margin-bottom: 56px; }
+.section-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
+.section-sub { font-size: 13px; color: var(--c-text-sec); margin-bottom: 24px; line-height: 1.6; }
+.divider { height: 1px; background: var(--c-surface-2); margin: 32px 0; }
+
+/* ── Tile Grid ── */
+.tile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.tile-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+@media (max-width: 700px) {
+  .tile-grid { grid-template-columns: 1fr; }
+  .tile-grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ── SENSOR TILE BASE (da tiles.css) ── */
+.tile {
+  background: var(--c-surface);
+  border-radius: var(--radius);
+  border: 1.5px solid var(--c-surface-3);
+  display: flex; align-items: center;
+  padding: 10px 12px;
+  min-height: 56px;
+  position: relative;
+  overflow: hidden;
+  -webkit-user-select: none; user-select: none;
+  transition: border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.tile .bubble {
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  margin-right: 10px;
+  color: var(--c-text-sec);
+  transition: color 0.2s ease;
+  font-size: 16px;
+  line-height: 1;
+}
+.tile .info {
+  display: flex; flex-direction: column;
+  min-width: 0; flex: 1;
+}
+.tile .name {
+  font-size: 11px; color: var(--c-text-sec);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  line-height: 1.2; margin-bottom: 2px;
+}
+.tile .val {
+  font-size: 14px; font-weight: 600; color: var(--c-text-pri);
+  line-height: 1.2; white-space: nowrap;
+}
+.tile .unit { font-size: 11px; color: var(--c-text-sec); margin-left: 2px; }
+
+/* ── SENSOR CONDITIONAL — token border colors ── */
+.tile.ct-warning  { border-color: var(--c-warning);      }
+.tile.ct-warning  .bubble { color: var(--c-warning); }
+
+.tile.ct-danger   { border-color: var(--c-danger);       }
+.tile.ct-danger   .bubble { color: var(--c-danger); }
+
+.tile.ct-on       { border-color: var(--c-on);           }
+.tile.ct-on       .bubble { color: var(--c-on); }
+
+.tile.ct-accent   { border-color: var(--c-accent);       }
+.tile.ct-accent   .bubble { color: var(--c-accent); }
+
+.tile.ct-alert    { border-color: var(--c-binary-alert); }
+.tile.ct-alert    .bubble { color: var(--c-binary-alert); }
+
+.tile.ct-neutral  { border-color: var(--c-text-sec);     }
+.tile.ct-neutral  .bubble { color: var(--c-text-sec); }
+
+/* ── HIDDEN STATE placeholder ── */
+.tile-hidden-placeholder {
+  border-radius: var(--radius);
+  border: 1.5px dashed var(--c-surface-3);
+  padding: 10px 12px;
+  min-height: 56px;
+  display: flex; align-items: center;
+  opacity: 0.4;
+}
+.tile-hidden-placeholder .phtext {
+  font-size: 11px; color: var(--c-text-sec); font-style: italic;
+}
+
+/* ── ANNOTATION ── */
+.annot {
+  background: rgba(33,150,243,0.08);
+  border: 1px dashed var(--c-accent);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px; color: var(--c-accent);
+  margin-top: 10px; line-height: 1.5;
+}
+.annot strong { color: #64b5f6; }
+.annot code { background: rgba(255,255,255,0.08); border-radius: 3px; padding: 1px 4px; font-size: 11px; }
+
+/* ── CONDITION BADGE ── */
+.cond-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  border-radius: 20px; padding: 3px 10px;
+  font-size: 11px; font-weight: 600; margin-bottom: 10px;
+}
+.cond-true  { background: rgba(76,175,80,0.15); color: var(--c-on); }
+.cond-false { background: var(--c-surface-2); color: var(--c-text-sec); }
+
+/* ── CONFIG UI MOCKUP ── */
+.config-panel {
+  background: var(--c-surface);
+  border-radius: 16px;
+  border: 1px solid var(--c-surface-2);
+  overflow: hidden;
+}
+.config-panel-header {
+  background: var(--c-surface-2);
+  padding: 12px 20px;
+  font-size: 13px; font-weight: 700; color: var(--c-text-pri);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.config-panel-body { padding: 20px; }
+
+/* Conditional sensor list item */
+.cond-list-item {
+  background: var(--c-surface-2);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 8px;
+}
+.cond-list-color {
+  width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+}
+.cond-list-info { flex: 1; min-width: 0; }
+.cond-list-name { font-size: 13px; font-weight: 600; color: var(--c-text-pri); }
+.cond-list-meta { font-size: 11px; color: var(--c-text-sec); margin-top: 2px; }
+.cond-list-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.btn-icon {
+  width: 28px; height: 28px; border-radius: 7px;
+  background: var(--c-surface-3); border: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 13px; color: var(--c-text-sec);
+  font-family: inherit;
+}
+.btn-add {
+  background: var(--c-accent-bg); border: 1px solid var(--c-accent);
+  color: var(--c-accent); border-radius: 8px; padding: 8px 16px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: inherit; width: 100%; margin-top: 8px;
+}
+
+/* ── EDITOR MODAL ── */
+.editor-modal {
+  background: var(--c-surface);
+  border: 1px solid var(--c-surface-2);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.editor-header {
+  background: var(--c-surface-2);
+  padding: 14px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.editor-header-title { font-size: 15px; font-weight: 700; color: var(--c-text-pri); }
+.editor-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+
+.field-row {
+  display: flex; align-items: center; gap: 10px;
+  padding-bottom: 12px; border-bottom: 1px solid var(--c-surface-2);
+}
+.field-row:last-child { border-bottom: none; padding-bottom: 0; }
+.field-label {
+  font-size: 12px; color: var(--c-text-sec); font-weight: 600;
+  min-width: 110px; flex-shrink: 0;
+}
+.field-val {
+  background: var(--c-surface-2); border-radius: 7px;
+  padding: 7px 12px; font-size: 13px; color: var(--c-text-pri);
+  flex: 1; border: 1px solid var(--c-surface-3);
+}
+.field-val.placeholder { color: var(--c-text-sec); font-style: italic; }
+
+/* Color token chips */
+.color-chips { display: flex; gap: 7px; flex-wrap: wrap; }
+.color-chip {
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 2px solid transparent; cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  flex-shrink: 0;
+}
+.color-chip.selected { border-color: var(--c-text-pri); transform: scale(1.15); }
+.color-chip-label { font-size: 10px; color: var(--c-text-sec); text-align: center; margin-top: 3px; }
+
+/* Condition logic toggle */
+.logic-toggle { display: flex; gap: 0; border-radius: 8px; overflow: hidden; border: 1px solid var(--c-surface-3); }
+.logic-opt {
+  padding: 6px 16px; font-size: 12px; font-weight: 700; cursor: pointer;
+  background: var(--c-surface-2); color: var(--c-text-sec);
+  border: none; font-family: inherit;
+  flex: 1; text-align: center;
+}
+.logic-opt.active { background: var(--c-accent); color: #fff; }
+
+/* Condition rule row */
+.cond-rule {
+  background: var(--c-surface-2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px;
+}
+.cond-rule-entity { font-size: 12px; color: var(--c-accent); font-family: monospace; flex: 1; }
+.cond-rule-op {
+  background: var(--c-surface-3); border-radius: 5px;
+  padding: 3px 8px; font-size: 11px; font-weight: 700; color: var(--c-text-sec);
+  flex-shrink: 0;
+}
+.cond-rule-val { font-size: 12px; color: var(--c-text-pri); font-weight: 600; }
+.cond-rule-del { width: 20px; height: 20px; border-radius: 4px; background: none; border: none; color: var(--c-danger); cursor: pointer; font-size: 14px; flex-shrink: 0; font-family: inherit; }
+
+.btn-add-cond {
+  background: none; border: 1px dashed var(--c-surface-3); border-radius: 7px;
+  padding: 7px; width: 100%; font-size: 12px; color: var(--c-text-sec);
+  cursor: pointer; font-family: inherit; margin-top: 4px;
+}
+
+.editor-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--c-surface-2);
+  display: flex; gap: 10px; justify-content: flex-end;
+}
+.btn-cancel {
+  background: var(--c-surface-2); border: none; border-radius: 8px;
+  padding: 8px 18px; font-size: 13px; font-weight: 600; color: var(--c-text-sec);
+  cursor: pointer; font-family: inherit;
+}
+.btn-save {
+  background: var(--c-accent); border: none; border-radius: 8px;
+  padding: 8px 20px; font-size: 13px; font-weight: 600; color: #fff;
+  cursor: pointer; font-family: inherit;
+}
+
+/* ── OVERVIEW CONTEXT SIMULATION ── */
+.overview-sim {
+  background: var(--c-bg);
+  border: 1px solid var(--c-surface-2);
+  border-radius: 16px;
+  padding: 20px;
+}
+.overview-sim-title {
+  font-size: 13px; font-weight: 700; color: var(--c-text-sec);
+  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 16px;
+}
+.sensor-2col { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+
+/* ── COLOR PICKER UI ── */
+.color-picker-row {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.color-picker-native {
+  width: 44px; height: 44px; border-radius: 10px;
+  border: 2px solid var(--c-surface-3); padding: 2px;
+  background: var(--c-surface-2); cursor: pointer;
+  flex-shrink: 0;
+  -webkit-appearance: none; appearance: none;
+}
+.color-picker-native::-webkit-color-swatch-wrapper { padding: 0; border-radius: 7px; overflow: hidden; }
+.color-picker-native::-webkit-color-swatch { border: none; border-radius: 7px; }
+.color-hex-input {
+  background: var(--c-surface-2); border: 1px solid var(--c-surface-3);
+  border-radius: 8px; padding: 8px 12px;
+  font-size: 13px; font-family: monospace; color: var(--c-text-pri);
+  width: 110px; flex-shrink: 0;
+}
+.color-preview-tile {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--c-surface-2); border-radius: 10px;
+  padding: 8px 12px; flex: 1; min-width: 0;
+  border: 1.5px solid #ff9800; /* live preview */
+  transition: border-color 0.15s ease;
+}
+.color-preview-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; background: #ff9800; }
+.color-preview-text { font-size: 12px; color: var(--c-text-pri); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Quick color suggestions */
+.quick-colors { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 10px; }
+.qc {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 2px solid transparent; cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+  position: relative;
+}
+.qc:hover { transform: scale(1.2); }
+.qc.selected { border-color: var(--c-text-pri); transform: scale(1.15); }
+.qc[title]::after {
+  content: attr(title);
+  position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
+  font-size: 9px; color: var(--c-text-sec); white-space: nowrap; pointer-events: none;
+}
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <div style="display:flex;align-items:center;">
+    <span class="page-header-title">Retro Panel</span>
+    <span class="badge">v2.9.26 — Conditional Sensor Mockup</span>
+  </div>
+  <button class="theme-btn" onclick="document.body.classList.toggle('theme-light')">Toggle Theme</button>
+</header>
+
+<main class="page-content">
+
+  <!-- ─────────────────────────────────────────
+       SEZIONE 1 — Il tile nel dashboard
+       ───────────────────────────────────────── -->
+  <section class="section">
+    <h2 class="section-title">Tile nel Dashboard — Condizione vera vs falsa</h2>
+    <p class="section-sub">
+      Il sensore condizionale è <strong>visivamente identico ai sensori normali</strong> (stessa struttura bubble + nome + valore).
+      La differenza è solo comportamentale: appare solo quando le condizioni sono soddisfatte.
+      Quando la condizione è falsa, il tile ha <code>display:none</code> e non occupa spazio nel layout.
+    </p>
+
+    <div class="tile-grid">
+
+      <!-- CONDIZIONE VERA — warning token -->
+      <div>
+        <div class="cond-badge cond-true">✓ Condizione vera → tile visibile</div>
+        <div class="tile ct-warning">
+          <div class="bubble">🗑</div>
+          <div class="info">
+            <span class="name">Raccolta Carta</span>
+            <span class="val">Domani</span>
+          </div>
+        </div>
+        <div class="annot">
+          <strong>border_color: warning</strong> → <code>var(--c-warning)</code> #ff9800.<br>
+          Bordo e icona arancione. Identico a un sensore, ma con bordo personalizzato.
+        </div>
+      </div>
+
+      <!-- CONDIZIONE FALSA — placeholder -->
+      <div>
+        <div class="cond-badge cond-false">✗ Condizione falsa → tile nascosto</div>
+        <div class="tile-hidden-placeholder">
+          <span class="phtext">[display:none — nessuno spazio occupato]</span>
+        </div>
+        <div class="annot">
+          Il tile non è nel DOM flow quando la condizione è falsa.
+          Nessun "buco" nel layout — gli altri tile riempiono lo spazio normalmente.
+        </div>
+      </div>
+
+      <!-- CONDIZIONE VERA — danger token -->
+      <div>
+        <div class="cond-badge cond-true">✓ porta_garage == "on"</div>
+        <div class="tile ct-danger">
+          <div class="bubble">🚪</div>
+          <div class="info">
+            <span class="name">Garage</span>
+            <span class="val">Aperto</span>
+          </div>
+        </div>
+        <div class="annot">
+          <strong>border_color: danger</strong> → <code>var(--c-danger)</code>.<br>
+          Usato per stati critici: porta aperta, allarme attivo, ecc.
+        </div>
+      </div>
+
+      <!-- CONDIZIONE VERA — on token -->
+      <div>
+        <div class="cond-badge cond-true">✓ temperatura_est > 30</div>
+        <div class="tile ct-on">
+          <div class="bubble">🌡</div>
+          <div class="info">
+            <span class="name">Temperatura Esterna</span>
+            <span class="val">32.4 <span class="unit">°C</span></span>
+          </div>
+        </div>
+        <div class="annot">
+          <strong>border_color: on</strong> → <code>var(--c-on)</code> verde.<br>
+          Mostra avviso caldo; scompare quando la temp scende sotto i 30°C.
+        </div>
+      </div>
+
+      <!-- CONDIZIONE VERA — accent token -->
+      <div>
+        <div class="cond-badge cond-true">✓ humidita_cantina > 75</div>
+        <div class="tile ct-accent">
+          <div class="bubble">💧</div>
+          <div class="info">
+            <span class="name">Umidità Cantina</span>
+            <span class="val">78 <span class="unit">%</span></span>
+          </div>
+        </div>
+        <div class="annot">
+          <strong>border_color: accent</strong> → <code>var(--c-accent)</code> blu.<br>
+          Informativo, senza urgenza.
+        </div>
+      </div>
+
+      <!-- CONDIZIONE VERA — alert token, condition OR -->
+      <div>
+        <div class="cond-badge cond-true">✓ OR: fumo = on OPPURE gas = on</div>
+        <div class="tile ct-alert">
+          <div class="bubble">🔥</div>
+          <div class="info">
+            <span class="name">Rilevato Pericolo</span>
+            <span class="val">Fumo</span>
+          </div>
+        </div>
+        <div class="annot">
+          <strong>border_color: alert</strong> → <code>var(--c-binary-alert)</code> arancione scuro.<br>
+          Condizione OR: appare se fumo <strong>oppure</strong> gas è attivo.
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─────────────────────────────────────────
+       SEZIONE 2 — Colore libero
+       ───────────────────────────────────────── -->
+  <section class="section">
+    <h2 class="section-title">Colore Bordo — Libero</h2>
+    <p class="section-sub">
+      L'utente sceglie qualsiasi colore hex. Il valore viene salvato come stringa esadecimale
+      e applicato inline nel tile: <code>tile.style.borderColor = cfg.border_color</code> e
+      <code>bubble.style.color = cfg.border_color</code>. Nessuna classe CSS predefinita.
+      Il colore è fisso per entrambi i temi — scelta consapevole dell'utente.
+    </p>
+
+    <!-- Color picker interattivo -->
+    <div style="background:var(--c-surface);border-radius:14px;padding:20px;margin-bottom:24px;">
+      <div style="font-size:12px;font-weight:700;color:var(--c-text-sec);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.06em;">
+        Prova il color picker
+      </div>
+
+      <div class="color-picker-row">
+        <input type="color" class="color-picker-native" id="demo-picker" value="#ff9800">
+        <input type="text" class="color-hex-input" id="demo-hex" value="#ff9800" maxlength="7" placeholder="#rrggbb">
+        <div class="color-preview-tile" id="demo-preview-tile">
+          <div class="color-preview-dot" id="demo-preview-dot"></div>
+          <span class="color-preview-text">Raccolta Carta · Domani</span>
+        </div>
+      </div>
+
+      <!-- Suggerimenti rapidi -->
+      <div style="margin-top:14px;">
+        <div style="font-size:11px;color:var(--c-text-sec);margin-bottom:8px;">Suggerimenti rapidi</div>
+        <div class="quick-colors" id="quick-colors">
+          <!-- reds -->
+          <div class="qc" style="background:#f44336;" title="Rosso"     data-color="#f44336"></div>
+          <div class="qc" style="background:#e91e63;" title="Rosa"      data-color="#e91e63"></div>
+          <!-- oranges -->
+          <div class="qc selected" style="background:#ff9800;" title="Arancione" data-color="#ff9800"></div>
+          <div class="qc" style="background:#FF6B00;" title="Arancione scuro" data-color="#FF6B00"></div>
+          <div class="qc" style="background:#FFB700;" title="Ambra"     data-color="#FFB700"></div>
+          <!-- yellows / greens -->
+          <div class="qc" style="background:#cddc39;" title="Lime"      data-color="#cddc39"></div>
+          <div class="qc" style="background:#4caf50;" title="Verde"     data-color="#4caf50"></div>
+          <div class="qc" style="background:#009688;" title="Teal"      data-color="#009688"></div>
+          <!-- blues -->
+          <div class="qc" style="background:#00bcd4;" title="Ciano"     data-color="#00bcd4"></div>
+          <div class="qc" style="background:#2196f3;" title="Blu"       data-color="#2196f3"></div>
+          <div class="qc" style="background:#3f51b5;" title="Indaco"    data-color="#3f51b5"></div>
+          <!-- purples -->
+          <div class="qc" style="background:#9c27b0;" title="Viola"     data-color="#9c27b0"></div>
+          <div class="qc" style="background:#673ab7;" title="Deep purple" data-color="#673ab7"></div>
+          <!-- neutrals -->
+          <div class="qc" style="background:#607d8b;" title="Grigio blu"  data-color="#607d8b"></div>
+          <div class="qc" style="background:#9e9e9e;" title="Grigio"      data-color="#9e9e9e"></div>
+          <div class="qc" style="background:#ffffff;border:2px solid #444;" title="Bianco" data-color="#ffffff"></div>
+        </div>
+      </div>
+
+      <!-- Preview live del tile -->
+      <div style="margin-top:20px;">
+        <div style="font-size:11px;color:var(--c-text-sec);margin-bottom:8px;">Preview tile</div>
+        <div class="tile" id="demo-tile" style="border-color:#ff9800;max-width:280px;">
+          <div class="bubble" id="demo-bubble" style="color:#ff9800;">🗑</div>
+          <div class="info">
+            <span class="name">Raccolta Carta</span>
+            <span class="val">Domani</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Griglia esempi con colori liberi -->
+    <div style="font-size:12px;font-weight:700;color:var(--c-text-sec);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.06em;">
+      Esempi con colori personalizzati
+    </div>
+    <div class="tile-grid-3">
+      <div class="tile" style="border-color:#e91e63;">
+        <div class="bubble" style="color:#e91e63;">🌡</div>
+        <div class="info"><span class="name">Temperatura Esterna</span><span class="val">34.2 <span class="unit">°C</span></span></div>
+      </div>
+      <div class="tile" style="border-color:#00bcd4;">
+        <div class="bubble" style="color:#00bcd4;">💧</div>
+        <div class="info"><span class="name">Umidità Cantina</span><span class="val">78 <span class="unit">%</span></span></div>
+      </div>
+      <div class="tile" style="border-color:#9c27b0;">
+        <div class="bubble" style="color:#9c27b0;">🔔</div>
+        <div class="info"><span class="name">Evento Calendario</span><span class="val">Oggi</span></div>
+      </div>
+      <div class="tile" style="border-color:#cddc39;">
+        <div class="bubble" style="color:#cddc39;">☀</div>
+        <div class="info"><span class="name">Indice UV</span><span class="val">Alto</span></div>
+      </div>
+      <div class="tile" style="border-color:#607d8b;">
+        <div class="bubble" style="color:#607d8b;">📦</div>
+        <div class="info"><span class="name">Raccolta Organico</span><span class="val">Dopodomani</span></div>
+      </div>
+      <div class="tile" style="border-color:#FFB700;">
+        <div class="bubble" style="color:#FFB700;">⚡</div>
+        <div class="info"><span class="name">Picco Rete</span><span class="val">3.2 <span class="unit">kW</span></span></div>
+      </div>
+    </div>
+
+    <div class="annot" style="margin-top:16px;">
+      <strong>Implementazione:</strong> <code>cfg.border_color</code> è una stringa hex (es. <code>#e91e63</code>).<br>
+      Applicazione inline: <code>tile.style.borderColor = cfg.border_color</code> e
+      <code>bubble.style.color = cfg.border_color</code>. Nessuna classe CSS dinamica necessaria.<br><br>
+      <strong>Config UI:</strong> <code>&lt;input type="color"&gt;</code> nativo (supportato iOS 12+)
+      sincronizzato con un campo testo hex. I "suggerimenti rapidi" sono chip pre-impostati
+      che popolano entrambi i campi — scorciatoia per i colori più comuni.
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─────────────────────────────────────────
+       SEZIONE 3 — Contesto Overview (dashboard)
+       ───────────────────────────────────────── -->
+  <section class="section">
+    <h2 class="section-title">Contesto Overview Dashboard</h2>
+    <p class="section-sub">
+      I sensori condizionali appaiono nella griglia sensori dell'Overview,
+      intercalati con gli altri tile normali. Quando la condizione è falsa
+      scompaiono senza lasciare spazio vuoto.
+    </p>
+
+    <!-- STATO A: 2 condizionali visibili -->
+    <div style="margin-bottom:20px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--c-text-sec);margin-bottom:10px;">
+        A — Condizione vera: 2 sensori condizionali visibili
+      </div>
+      <div class="overview-sim">
+        <div class="overview-sim-title">Overview</div>
+        <div class="sensor-2col">
+          <!-- Sensori normali -->
+          <div class="tile" style="border-color:var(--c-surface-3);">
+            <div class="bubble" style="font-size:14px;color:#34d399;">🌡</div>
+            <div class="info"><span class="name">Temperatura</span><span class="val">22.1 <span class="unit">°C</span></span></div>
+          </div>
+          <div class="tile" style="border-color:var(--c-surface-3);">
+            <div class="bubble" style="font-size:14px;color:#1e88e5;">💧</div>
+            <div class="info"><span class="name">Umidità</span><span class="val">58 <span class="unit">%</span></span></div>
+          </div>
+          <!-- Condizionale visibile 1 -->
+          <div class="tile ct-warning">
+            <div class="bubble">🗑</div>
+            <div class="info"><span class="name">Raccolta Carta</span><span class="val">Domani</span></div>
+          </div>
+          <!-- Sensore normale -->
+          <div class="tile" style="border-color:var(--c-surface-3);">
+            <div class="bubble" style="font-size:14px;color:#6b7280;">🔋</div>
+            <div class="info"><span class="name">Batteria Sensore</span><span class="val">87 <span class="unit">%</span></span></div>
+          </div>
+          <!-- Condizionale visibile 2 -->
+          <div class="tile ct-danger">
+            <div class="bubble">🚪</div>
+            <div class="info"><span class="name">Garage</span><span class="val">Aperto</span></div>
+          </div>
+          <div class="tile" style="border-color:var(--c-surface-3);">
+            <div class="bubble" style="font-size:14px;color:#34d399;">⚡</div>
+            <div class="info"><span class="name">Energia</span><span class="val">2.4 <span class="unit">kW</span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATO B: stessa overview, condizionali nascosti -->
+    <div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--c-text-sec);margin-bottom:10px;">
+        B — Stessa overview, condizione falsa: condizionali nascosti, layout compatto
+      </div>
+      <div class="overview-sim">
+        <div class="overview-sim-title">Overview</div>
+        <div class="sensor-2col">
+          <div class="tile" style="border-color:var(--c-surface-3);">
+            <div class="bubble" style="font-size:14px;color:#34d399;">🌡</div>
+            <div class="info"><span class="name">Temperatura</span><span class="val">22.1 <span class="unit">°C</span></span></div>
+          </div>
+          <div class="tile" style="border-color:var(--c-surface-3);">
+            <div class="bubble" style="font-size:14px;color:#1e88e5;">💧</div>
+            <div class="info"><span class="name">Umidità</span><span class="val">58 <span class="unit">%</span></span></div>
+          </div>
+          <!-- slot 3 e 5: i tile condizionali sono display:none — la griglia non lascia buchi -->
+          <div class="tile" style="border-color:var(--c-surface-3);">
+            <div class="bubble" style="font-size:14px;color:#6b7280;">🔋</div>
+            <div class="info"><span class="name">Batteria Sensore</span><span class="val">87 <span class="unit">%</span></span></div>
+          </div>
+          <div class="tile" style="border-color:var(--c-surface-3);">
+            <div class="bubble" style="font-size:14px;color:#34d399;">⚡</div>
+            <div class="info"><span class="name">Energia</span><span class="val">2.4 <span class="unit">kW</span></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="annot" style="margin-top:12px;">
+        I due tile condizionali (Raccolta Carta + Garage) sono spariti.
+        I tile rimanenti si ricompattano naturalmente — nessun buco nel layout.
+        Transizione istantanea via WebSocket senza reload.
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─────────────────────────────────────────
+       SEZIONE 4 — Config UI in /config
+       ───────────────────────────────────────── -->
+  <section class="section">
+    <h2 class="section-title">Config UI — Tab Overview in /config</h2>
+    <p class="section-sub">
+      La sezione "Sensori Condizionali" appare nella tab Overview, sotto gli elementi normali e la Energy Card.
+      Stesso pattern: card con lista + pulsante Aggiungi. Configurabile SOLO da Overview.
+    </p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;">
+      <!-- Left: la card nella lista -->
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--c-text-sec);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;">Lista sensori condizionali</div>
+        <div class="config-panel">
+          <div class="config-panel-header">
+            <span>Sensori Condizionali</span>
+            <span style="font-size:11px;color:var(--c-text-sec);">Overview only</span>
+          </div>
+          <div class="config-panel-body">
+
+            <div class="cond-list-item">
+              <div class="cond-list-color" style="background:var(--c-warning);"></div>
+              <div class="cond-list-info">
+                <div class="cond-list-name">🗑 Raccolta Carta</div>
+                <div class="cond-list-meta">sensor.raccolta_rifiuti · 2 condizioni AND</div>
+              </div>
+              <div class="cond-list-actions">
+                <button class="btn-icon" title="Modifica">✎</button>
+                <button class="btn-icon" title="Rimuovi" style="color:var(--c-danger);">✕</button>
+              </div>
+            </div>
+
+            <div class="cond-list-item">
+              <div class="cond-list-color" style="background:var(--c-danger);"></div>
+              <div class="cond-list-info">
+                <div class="cond-list-name">🚪 Garage Aperto</div>
+                <div class="cond-list-meta">binary_sensor.garage · 1 condizione</div>
+              </div>
+              <div class="cond-list-actions">
+                <button class="btn-icon" title="Modifica">✎</button>
+                <button class="btn-icon" title="Rimuovi" style="color:var(--c-danger);">✕</button>
+              </div>
+            </div>
+
+            <div class="cond-list-item">
+              <div class="cond-list-color" style="background:var(--c-binary-alert);"></div>
+              <div class="cond-list-info">
+                <div class="cond-list-name">🔥 Rilevato Pericolo</div>
+                <div class="cond-list-meta">binary_sensor.fumo · 2 condizioni OR</div>
+              </div>
+              <div class="cond-list-actions">
+                <button class="btn-icon" title="Modifica">✎</button>
+                <button class="btn-icon" title="Rimuovi" style="color:var(--c-danger);">✕</button>
+              </div>
+            </div>
+
+            <button class="btn-add">+ Aggiungi sensore condizionale</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: editor modal aperto -->
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--c-text-sec);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;">Editor — Esempio "Raccolta Carta"</div>
+        <div class="editor-modal">
+          <div class="editor-header">
+            <span class="editor-header-title">Sensore Condizionale</span>
+            <button class="btn-icon">✕</button>
+          </div>
+          <div class="editor-body">
+
+            <!-- Entità da mostrare -->
+            <div class="field-row">
+              <span class="field-label">Entità da mostrare</span>
+              <div class="field-val" style="color:var(--c-accent);font-family:monospace;font-size:12px;">sensor.raccolta_rifiuti</div>
+            </div>
+
+            <!-- Label -->
+            <div class="field-row">
+              <span class="field-label">Label (opzionale)</span>
+              <div class="field-val">Raccolta Carta</div>
+            </div>
+
+            <!-- Icona -->
+            <div class="field-row">
+              <span class="field-label">Icona MDI</span>
+              <div style="display:flex;align-items:center;gap:8px;flex:1;">
+                <div class="field-val" style="font-family:monospace;font-size:12px;">trash-can</div>
+                <span style="font-size:18px;">🗑</span>
+              </div>
+            </div>
+
+            <!-- Colore bordo — free color picker -->
+            <div class="field-row" style="align-items:flex-start;flex-direction:column;gap:8px;">
+              <span class="field-label">Colore bordo</span>
+              <div style="display:flex;align-items:center;gap:8px;width:100%;">
+                <input type="color" class="color-picker-native" id="editor-picker" value="#ff9800"
+                  style="width:40px;height:40px;">
+                <input type="text" class="color-hex-input" id="editor-hex" value="#ff9800"
+                  style="width:90px;">
+                <div style="display:flex;align-items:center;gap:6px;flex:1;background:var(--c-surface-3);
+                  border-radius:8px;padding:6px 10px;border:1.5px solid #ff9800;" id="editor-preview-row">
+                  <div style="width:12px;height:12px;border-radius:50%;background:#ff9800;flex-shrink:0;" id="editor-prev-dot"></div>
+                  <span style="font-size:11px;color:var(--c-text-pri);">Raccolta Carta · Domani</span>
+                </div>
+              </div>
+              <!-- Quick picks inline -->
+              <div style="display:flex;gap:6px;flex-wrap:wrap;padding-top:2px;">
+                <div class="qc selected" style="background:#ff9800;width:22px;height:22px;" title="Arancione" data-color="#ff9800" id="eq1"></div>
+                <div class="qc" style="background:#f44336;width:22px;height:22px;" title="Rosso"     data-color="#f44336" id="eq2"></div>
+                <div class="qc" style="background:#4caf50;width:22px;height:22px;" title="Verde"     data-color="#4caf50" id="eq3"></div>
+                <div class="qc" style="background:#2196f3;width:22px;height:22px;" title="Blu"       data-color="#2196f3" id="eq4"></div>
+                <div class="qc" style="background:#9c27b0;width:22px;height:22px;" title="Viola"     data-color="#9c27b0" id="eq5"></div>
+                <div class="qc" style="background:#00bcd4;width:22px;height:22px;" title="Ciano"     data-color="#00bcd4" id="eq6"></div>
+                <div class="qc" style="background:#FFB700;width:22px;height:22px;" title="Ambra"     data-color="#FFB700" id="eq7"></div>
+                <div class="qc" style="background:#607d8b;width:22px;height:22px;" title="Grigio"    data-color="#607d8b" id="eq8"></div>
+              </div>
+            </div>
+
+            <!-- Logica condizioni -->
+            <div class="field-row">
+              <span class="field-label">Logica condizioni</span>
+              <div class="logic-toggle">
+                <button class="logic-opt active">AND (tutte)</button>
+                <button class="logic-opt">OR (almeno una)</button>
+              </div>
+            </div>
+
+            <!-- Regole condizione -->
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--c-text-sec);margin-bottom:8px;">Condizioni</div>
+
+              <div class="cond-rule">
+                <span class="cond-rule-entity">sensor.raccolta_rifiuti</span>
+                <span class="cond-rule-op">eq</span>
+                <span class="cond-rule-val">"Domani"</span>
+                <button class="cond-rule-del">✕</button>
+              </div>
+
+              <div class="cond-rule">
+                <span class="cond-rule-entity">sensor.ora_del_giorno</span>
+                <span class="cond-rule-op">gte</span>
+                <span class="cond-rule-val">"18:00"</span>
+                <button class="cond-rule-del">✕</button>
+              </div>
+
+              <button class="btn-add-cond">+ Aggiungi condizione</button>
+
+              <div class="annot" style="margin-top:10px;">
+                Operatori disponibili:<br>
+                <strong>eq</strong> (=) · <strong>neq</strong> (≠) · <strong>contains</strong> (contiene)<br>
+                <strong>gt</strong> (&gt;) · <strong>lt</strong> (&lt;) · <strong>gte</strong> (≥) · <strong>lte</strong> (≤)<br><br>
+                gt/lt/gte/lte confrontano come float se entrambi numerici, altrimenti stringa.
+              </div>
+            </div>
+
+          </div>
+          <div class="editor-footer">
+            <button class="btn-cancel">Annulla</button>
+            <button class="btn-save">Salva</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─────────────────────────────────────────
+       SEZIONE 5 — Piano implementativo
+       ───────────────────────────────────────── -->
+  <section class="section">
+    <h2 class="section-title">Piano Implementativo</h2>
+    <p class="section-sub">File coinvolti. Pattern chiave: segue esattamente il modello EnergyFlow (nessun entity_id fisso, riceve full states map).</p>
+
+    <div style="background:var(--c-surface);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;">
+
+      <div style="display:flex;gap:12px;align-items:flex-start;padding-bottom:12px;border-bottom:1px solid var(--c-surface-2);">
+        <span style="background:rgba(33,150,243,0.2);color:var(--c-accent);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px;">NEW</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--c-text-pri);font-family:monospace;">app/static/js/components/conditional.js</div>
+          <div style="font-size:12px;color:var(--c-text-sec);margin-top:3px;">
+            <code>window.SensorConditionalComponent</code>. <code>updateTile(tile, allStates)</code>
+            riceve la mappa completa degli stati (come EnergyFlow) per valutare le condizioni su entità diverse.
+            <code>_evalConditions(rules, logic, allStates)</code> gestisce AND/OR con confronto stringa/float.
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;align-items:flex-start;padding-bottom:12px;border-bottom:1px solid var(--c-surface-2);">
+        <span style="background:rgba(255,152,0,0.2);color:var(--c-warning);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px;">MOD</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--c-text-pri);font-family:monospace;">app/config/loader.py</div>
+          <div style="font-size:12px;color:var(--c-text-sec);margin-top:3px;">
+            Nuova dataclass <code>ConditionalSensorConfig</code> + <code>ConditionalRule</code>.
+            Aggiunto a <code>SectionItem.type</code>. <code>all_entity_ids</code>
+            include <code>entity_id</code> + tutti gli <code>entity</code> delle regole condizione.
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;align-items:flex-start;padding-bottom:12px;border-bottom:1px solid var(--c-surface-2);">
+        <span style="background:rgba(255,152,0,0.2);color:var(--c-warning);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px;">MOD</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--c-text-pri);font-family:monospace;">app/api/panel_config.py</div>
+          <div style="font-size:12px;color:var(--c-text-sec);margin-top:3px;">
+            <code>_serialize_item()</code>: aggiunto branch per <code>type=="sensor_conditional"</code>.
+            Serializza entity_id, label, icon, border_color, condition_logic, conditions[].
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;align-items:flex-start;padding-bottom:12px;border-bottom:1px solid var(--c-surface-2);">
+        <span style="background:rgba(255,152,0,0.2);color:var(--c-warning);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px;">MOD</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--c-text-pri);font-family:monospace;">app/static/js/renderer.js</div>
+          <div style="font-size:12px;color:var(--c-text-sec);margin-top:3px;">
+            <code>'sensor_conditional'</code> in COMPONENT_MAP + COL_CLASS_MAP (<code>'tile-col-sensor'</code>).
+            In <code>_renderItem()</code>: branch tipo energy_flow — no entity_id, stored in
+            <code>AppState.conditionalTiles[]</code>.
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;align-items:flex-start;padding-bottom:12px;border-bottom:1px solid var(--c-surface-2);">
+        <span style="background:rgba(255,152,0,0.2);color:var(--c-warning);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px;">MOD</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--c-text-pri);font-family:monospace;">app/static/js/app.js</div>
+          <div style="font-size:12px;color:var(--c-text-sec);margin-top:3px;">
+            Aggiunto <code>AppState.conditionalTiles = []</code>. In <code>updateEntityState()</code>:
+            su ogni state_changed chiama <code>SensorConditionalComponent.updateTile(ct.tile, AppState.states)</code>
+            per tutti i conditional tile registrati.
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <span style="background:rgba(255,152,0,0.2);color:var(--c-warning);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px;">MOD</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--c-text-pri);font-family:monospace;">app/static/js/config.js + app/static/css/config.css</div>
+          <div style="font-size:12px;color:var(--c-text-sec);margin-top:3px;">
+            Card "Sensori Condizionali" nella tab Overview. Pulsante "+ Aggiungi",
+            lista item con edit/remove, editor modal con entity picker, label, icon picker,
+            palette 6 chip colori, toggle AND/OR, lista regole con operator dropdown.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<script>
+// Theme toggle
+document.querySelector('.theme-btn').addEventListener('click', function() {
+  document.body.classList.toggle('theme-light');
+});
+
+// ── DEMO PICKER (sezione 2) ──
+function applyDemoColor(hex) {
+  var picker = document.getElementById('demo-picker');
+  var hexInput = document.getElementById('demo-hex');
+  var previewTile = document.getElementById('demo-preview-tile');
+  var previewDot = document.getElementById('demo-preview-dot');
+  var demoTile = document.getElementById('demo-tile');
+  var demoBubble = document.getElementById('demo-bubble');
+
+  if (picker) picker.value = hex;
+  if (hexInput) hexInput.value = hex;
+  if (previewTile) previewTile.style.borderColor = hex;
+  if (previewDot) previewDot.style.background = hex;
+  if (demoTile) demoTile.style.borderColor = hex;
+  if (demoBubble) demoBubble.style.color = hex;
+
+  // Update quick-colors selected state
+  document.querySelectorAll('#quick-colors .qc').forEach(function(el) {
+    el.classList.toggle('selected', el.getAttribute('data-color') === hex);
+  });
+}
+
+var demoPicker = document.getElementById('demo-picker');
+if (demoPicker) {
+  demoPicker.addEventListener('input', function() { applyDemoColor(this.value); });
+}
+var demoHex = document.getElementById('demo-hex');
+if (demoHex) {
+  demoHex.addEventListener('input', function() {
+    var v = this.value;
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) { applyDemoColor(v); }
+  });
+}
+document.querySelectorAll('#quick-colors .qc').forEach(function(el) {
+  el.addEventListener('click', function() { applyDemoColor(this.getAttribute('data-color')); });
+});
+
+// ── EDITOR PICKER (sezione 4) ──
+function applyEditorColor(hex) {
+  var picker = document.getElementById('editor-picker');
+  var hexInput = document.getElementById('editor-hex');
+  var prevRow = document.getElementById('editor-preview-row');
+  var prevDot = document.getElementById('editor-prev-dot');
+
+  if (picker) picker.value = hex;
+  if (hexInput) hexInput.value = hex;
+  if (prevRow) prevRow.style.borderColor = hex;
+  if (prevDot) prevDot.style.background = hex;
+
+  ['eq1','eq2','eq3','eq4','eq5','eq6','eq7','eq8'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.toggle('selected', el.getAttribute('data-color') === hex);
+  });
+}
+
+var editorPicker = document.getElementById('editor-picker');
+if (editorPicker) {
+  editorPicker.addEventListener('input', function() { applyEditorColor(this.value); });
+}
+var editorHex = document.getElementById('editor-hex');
+if (editorHex) {
+  editorHex.addEventListener('input', function() {
+    var v = this.value;
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) { applyEditorColor(v); }
+  });
+}
+['eq1','eq2','eq3','eq4','eq5','eq6','eq7','eq8'].forEach(function(id) {
+  var el = document.getElementById(id);
+  if (el) {
+    el.addEventListener('click', function() { applyEditorColor(this.getAttribute('data-color')); });
+  }
+});
+</script>
+
+</body>
+</html>

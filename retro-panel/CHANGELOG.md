@@ -1,5 +1,40 @@
 # Retro Panel — Changelog
 
+## [2.9.26] — 2026-04-05
+
+### Added
+- **Config UI — Sensori Condizionali**: pulsante "+ Add Conditional Sensor" nella sezione Overview del pannello di configurazione (`/config`) — apre un editor modale con: selezione entità principale (via entity picker), etichetta personalizzabile, icona (via icon picker), colore bordo (color picker `<input type="color">` + campo hex), toggle AND/OR per `condition_logic`, lista regole condizione ciascuna con: pulsante selezione entità, operatore (`=`, `≠`, `>`, `<`, `≥`, `≤`, `contiene`), campo valore, rimozione
+- **Editor condizioni riutilizza entity picker esistente**: click su "Seleziona entità" nella regola apre il pannello picker standard con tutti i domini (sensor, binary_sensor, input_boolean, ecc.) — chiusura automatica e ritorno all'editor condizionale
+- **Sensore Condizionale (`sensor_conditional`)**: nuovo tipo di item per l'Overview — tile sensore visibile solo quando la/le condizioni configurate sono soddisfatte; invisibile (display:none, nessun gap) quando la condizione è falsa
+- **`conditional.js`**: componente IIFE `window.SensorConditionalComponent` — `createTile(cfg)` costruisce il tile con icona MDI + valore + label; `updateTile(tile, allStates)` valuta le condizioni sull'intera mappa stati e controlla la visibilità
+- **Condizioni composte AND / OR**: `condition_logic: "and"` (default) o `"or"` — operatori supportati: `eq`, `neq`, `gt`, `lt`, `gte`, `lte`, `contains`
+- **Colore bordo personalizzabile**: campo `border_color` (hex `#rrggbb`) applicato inline — `tile.style.borderColor`
+- **`ConditionalRule` + `ConditionalSensorConfig`** dataclass in `loader.py`
+- **`_parse_conditional_sensor()`** in `loader.py`: parsing e validazione item `sensor_conditional` da `entities.json`
+- **`AppState.conditionalTiles[]`** in `app.js`: array parallelo a `energyTiles` — tutti i tile condizionali vengono re-valutati ad ogni aggiornamento di stato WebSocket
+
+### Changed
+- `loader.py`: `SectionItem.type` ora accetta anche `"sensor_conditional"`; `all_entity_ids` include `entity_id` principale + tutti gli `entity` delle `conditions`
+- `panel_config.py`: `_serialize_item()` serializza item `sensor_conditional` → JSON con `conditions[]`
+- `panel_config_save.py`: `_parse_item()` deserializza e valida item `sensor_conditional` — valida ogni `entity` come `entity_id`, clampa `border_color` a 16 char, filtra `op` non validi
+- `renderer.js`: `sensor_conditional` aggiunto a `COMPONENT_MAP`, `COL_CLASS_MAP` (`tile-col-sensor`), `_initComponents()`; `_renderItem()` gestisce `sensor_conditional` come `energy_flow` (push in `appState.conditionalTiles`, `updateTile` con `allStates`)
+- `app.js`: `updateEntityState()` chiama `SensorConditionalComponent.updateTile` su tutti i `conditionalTiles` ad ogni cambio stato
+- `index.html`: aggiunto `conditional.js?v=2926`; tutti i cache buster aggiornati a `v=2926`
+- `config.yaml`: versione `2.9.25` → `2.9.26`
+
+## [2.9.25] — 2026-04-05
+
+### Added
+- **Cover tile (`cover_standard`)**: nuovo componente tapparelle/volets — pulsanti Apri/Stop/Chiudi inline, barra posizione con percentuale (0–100%), stati animati `opening`/`closing` con pulse arancione, `unavailable` con opacità ridotta
+- **`cover.js`**: componente IIFE, iOS 12+ safe, var-only, nessun framework — `createTile(entityConfig)` + `updateTile(tile, stateObj)`
+- **CSS tapparelle** in `tiles.css`: triple-lock 120px, `.cover-top`, `.cover-btns`, `.cover-btn`, `.cover-pos-wrap`, `.cover-bar-track/.cover-bar-fill`, `.s-open/.s-closed/.s-opening/.s-closing/.s-unavail`, animazione `cover-pulse` con `-webkit-` prefix
+
+### Changed
+- `loader.py`: `_compute_layout_type()` ora riconosce dominio `cover` → `"cover_standard"`
+- `renderer.js`: `cover_standard` aggiunto a `COMPONENT_MAP`, `COL_CLASS_MAP` (`tile-col-compact`), `_initComponents()`
+- `index.html`: aggiunto `cover.js?v=2925`; tutti i cache buster aggiornati a `v=2925`
+- `config.yaml`: versione `2.9.24` → `2.9.25`
+
 ## [2.9.24] — 2026-04-04
 
 ### Added

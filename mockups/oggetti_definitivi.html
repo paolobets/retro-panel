@@ -1,0 +1,1935 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Retro Panel — Light &amp; Switch Component Mockup v1.1</title>
+<style>
+/* ============================================================
+   Design System
+   ============================================================ */
+:root {
+  --color-bg:             #0f0f0f;
+  --color-surface:        #1a1a1a;
+  --color-surface-2:      #252525;
+  --color-text-primary:   #f0f0f0;
+  --color-text-secondary: #999999;
+  --color-accent:         #2196f3;
+  --color-accent-bg:      rgba(33,150,243,0.10);
+  --color-on:             #4caf50;
+  --color-warning:        #ff9800;
+  --color-danger:         #f44336;
+  --color-light-on:       #FFB700;
+  --color-binary-alert:   #FF6B00;
+  --color-temp-fill:      #ef6c00;
+  --color-humidity-fill:  #1e88e5;
+  --gap:                  12px;
+  --radius:               14px;
+  --radius-sm:            8px;
+  --font-size-label:      13px;
+}
+body.theme-light {
+  --color-bg:             #f0f2f5;
+  --color-surface:        #ffffff;
+  --color-surface-2:      #e8eaed;
+  --color-text-primary:   #111111;
+  --color-text-secondary: #555555;
+}
+
+/* ============================================================
+   Reset + Base
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { min-height: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Segoe UI",
+               Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+* { -webkit-tap-highlight-color: transparent; }
+
+/* ============================================================
+   Page Layout
+   ============================================================ */
+.page-header {
+  position: sticky; top: 0; z-index: 50;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-surface-2);
+  padding: 0 24px; height: 60px;
+  display: -webkit-flex; display: flex;
+  -webkit-align-items: center; align-items: center;
+  -webkit-justify-content: space-between; justify-content: space-between;
+}
+.page-header-title {
+  font-size: 16px; font-weight: 700; letter-spacing: -0.01em;
+}
+.page-header-badge {
+  margin-left: 10px; font-size: 11px; font-weight: 600;
+  background: var(--color-accent-bg); color: var(--color-accent);
+  border-radius: 20px; padding: 3px 10px;
+}
+.theme-toggle-btn {
+  font-size: 12px; font-weight: 600;
+  background: var(--color-surface-2); border: none;
+  color: var(--color-text-secondary); border-radius: 20px;
+  padding: 6px 14px; cursor: pointer; font-family: inherit;
+  touch-action: manipulation;
+}
+.page-content { max-width: 520px; margin: 0 auto; padding: 24px 16px 80px; }
+.section { margin-bottom: 40px; }
+.section-title {
+  font-size: 18px; font-weight: 700; letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+.section-subtitle {
+  font-size: 13px; color: var(--color-text-secondary); line-height: 1.5;
+  margin-bottom: 16px;
+}
+.section-divider { height: 1px; background: var(--color-surface-2); margin-bottom: 20px; }
+.variant-label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--color-text-secondary);
+  margin-bottom: 8px;
+}
+
+/* ============================================================
+   Tile Grid
+   ============================================================ */
+.tile-grid {
+  display: -webkit-flex; display: flex;
+  -webkit-flex-wrap: wrap; flex-wrap: wrap;
+}
+.tile-col {
+  width: 33.333%;
+  padding-right: 12px;
+  margin-bottom: 20px;
+}
+.tile-col:nth-child(3n) { padding-right: 0; }
+.tile-grid-2col {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--gap);
+  align-content: start;
+}
+
+/* ============================================================
+   Base Tile
+   ============================================================ */
+.tile {
+  position: relative;
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  border: 1.5px solid transparent;
+  padding: 12px;
+  overflow: hidden;
+  -webkit-user-select: none; user-select: none;
+  display: -webkit-flex; display: flex;
+  -webkit-flex-direction: column; flex-direction: column;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+.tile:active { transform: scale(0.97); }
+
+/* ============================================================
+   Toggle (pill iOS)
+   ============================================================ */
+.tile-toggle {
+  width: 38px; height: 22px; border-radius: 11px;
+  background: var(--color-surface-2);
+  position: relative; flex-shrink: 0;
+  transition: background-color 0.2s ease;
+}
+.tile-toggle-thumb {
+  position: absolute; top: 3px; left: 3px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  transition: transform 0.2s ease;
+}
+
+/* ============================================================
+   Light Tile — Stile C v1.0
+   ============================================================ */
+.light-tile {
+  height: 120px; min-height: 120px; max-height: 120px;
+  cursor: pointer;
+  -webkit-justify-content: space-between; justify-content: space-between;
+}
+
+/* Top row: icon + toggle */
+.light-top {
+  display: -webkit-flex; display: flex;
+  -webkit-align-items: flex-start; align-items: flex-start;
+  -webkit-justify-content: space-between; justify-content: space-between;
+}
+
+/* Icon: MDI lightbulb, fill:currentColor */
+.light-icon {
+  display: block; line-height: 1; flex-shrink: 0;
+  color: var(--color-text-secondary);   /* default: gray (OFF) */
+  transition: color 0.2s ease;
+}
+.state-on .light-icon { color: #FFB700; }  /* default ON: yellow */
+
+/* Bottom: value + label */
+.light-bottom {
+  display: -webkit-flex; display: flex;
+  -webkit-flex-direction: column; flex-direction: column;
+  padding-bottom: 2px;
+}
+.light-value {
+  font-size: 15px; font-weight: 700; line-height: 1;
+  margin-bottom: 3px; color: var(--color-text-primary);
+  min-height: 18px;  /* always reserve space even when empty */
+  font-variant-numeric: tabular-nums;
+}
+.light-label {
+  font-size: 12px; color: var(--color-text-secondary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+/* Color tint overlay (background fill) */
+.light-tint {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  border-radius: calc(var(--radius) - 2px);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.state-on .light-tint { opacity: 1; }
+
+/* ============================================================
+   Bottom Sheet
+   ============================================================ */
+.bs-overlay {
+  position: fixed; inset: 0; z-index: 190;
+  background: rgba(0,0,0,0.5);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+.bs-overlay.hidden { display: none; }
+
+.bottom-sheet {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+  background: var(--color-surface);
+  border-radius: 18px 18px 0 0;
+  padding: 0 0 32px;
+  max-height: 60vh;
+  overflow-y: auto;
+  box-shadow: 0 -4px 32px rgba(0,0,0,0.5);
+  transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+}
+.bottom-sheet.hidden { display: none; }
+
+.bs-header {
+  display: -webkit-flex; display: flex;
+  -webkit-align-items: center; align-items: center;
+  -webkit-justify-content: space-between; justify-content: space-between;
+  padding: 18px 20px 12px;
+  border-bottom: 1px solid var(--color-surface-2);
+}
+.bs-title { font-size: 15px; font-weight: 700; }
+.bs-close {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--color-surface-2); border: none;
+  display: -webkit-flex; display: flex;
+  -webkit-align-items: center; align-items: center;
+  -webkit-justify-content: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+  touch-action: manipulation; color: var(--color-text-secondary);
+  transition: background-color 0.15s ease;
+}
+.bs-close:active { background: var(--color-accent); color: #fff; }
+
+.bs-body { padding: 20px 20px 0; }
+.bs-section { margin-bottom: 22px; }
+.bs-section-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--color-text-secondary);
+  margin-bottom: 10px;
+}
+
+/* Slider */
+.bs-slider {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 10px; border-radius: 5px;
+  outline: none; border: none; cursor: pointer;
+  background: var(--color-surface-2);
+}
+.bs-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: #fff; border: 3px solid var(--color-accent);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  cursor: pointer;
+}
+/* Brightness slider: dark→light gradient */
+#bs-bri-slider {
+  background: linear-gradient(to right, #333, #FFB700);
+}
+/* Temperature slider: warm→cool gradient */
+#bs-temp-slider {
+  background: linear-gradient(to right, #ff8c00, #fff 50%, #b3d9ff);
+}
+/* Hue slider */
+#bs-hue-slider {
+  background: linear-gradient(to right,
+    hsl(0,100%,55%), hsl(30,100%,55%), hsl(60,100%,55%),
+    hsl(90,100%,55%), hsl(120,100%,55%), hsl(150,100%,55%),
+    hsl(180,100%,55%), hsl(210,100%,55%), hsl(240,100%,55%),
+    hsl(270,100%,55%), hsl(300,100%,55%), hsl(330,100%,55%),
+    hsl(360,100%,55%));
+}
+
+/* Swatch row */
+.bs-swatches {
+  display: -webkit-flex; display: flex;
+  -webkit-flex-wrap: wrap; flex-wrap: wrap;
+  margin-top: 14px;
+}
+.bs-swatch {
+  width: 38px; height: 38px; border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer; flex-shrink: 0;
+  margin-right: 10px; margin-bottom: 10px;
+  transition: border-color 0.15s ease, transform 0.1s ease;
+  touch-action: manipulation;
+}
+.bs-swatch:active { transform: scale(0.9); }
+.bs-swatch.selected { border-color: var(--color-text-primary); }
+
+/* Value display next to label */
+.bs-row {
+  display: -webkit-flex; display: flex;
+  -webkit-align-items: center; align-items: center;
+  -webkit-justify-content: space-between; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.bs-val {
+  font-size: 14px; font-weight: 700; color: var(--color-text-primary);
+  min-width: 44px; text-align: right;
+}
+
+/* ============================================================
+   Switch tile — stesse dimensioni della luce
+   ============================================================ */
+.switch-tile {
+  height: 120px; min-height: 120px; max-height: 120px;
+  cursor: pointer;
+  -webkit-justify-content: space-between; justify-content: space-between;
+}
+
+/* OFF: icona grigia, opacità ridotta */
+.switch-tile.state-off .switch-icon  { color: var(--color-text-secondary); }
+.switch-tile.state-off .switch-label { opacity: 0.6; }
+
+/* ON: icona verde accent */
+.switch-tile.state-on .switch-icon { color: var(--color-on); }
+
+.switch-top {
+  display: -webkit-flex; display: flex;
+  -webkit-align-items: flex-start; align-items: flex-start;
+  -webkit-justify-content: space-between; justify-content: space-between;
+}
+
+.switch-icon {
+  display: block; line-height: 1; flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.switch-bottom {
+  display: -webkit-flex; display: flex;
+  -webkit-flex-direction: column; flex-direction: column;
+  padding-bottom: 2px;
+}
+
+.switch-label {
+  font-size: 12px; color: var(--color-text-secondary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-weight: 500;
+  transition: opacity 0.2s ease;
+}
+
+/* ============================================================
+   Impl note footer
+   ============================================================ */
+.impl-footer {
+  margin-top: 40px; padding: 20px;
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  border-left: 3px solid var(--color-accent);
+}
+.impl-footer h3 {
+  font-size: 14px; font-weight: 700; margin-bottom: 12px;
+  color: var(--color-accent);
+}
+.impl-note { margin-bottom: 16px; }
+.impl-note-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.impl-note-body { font-size: 12px; color: var(--color-text-secondary); line-height: 1.6; }
+code { font-family: "SF Mono","Menlo","Consolas",monospace; font-size: 11px; background: var(--color-surface-2); padding: 1px 4px; border-radius: 3px; }
+
+/* ============================================================
+   Alarm tile
+   ============================================================ */
+.tile.alarm-tile {
+  cursor: default;
+  min-height: 240px;
+  padding: 18px;
+  grid-column: span 2;
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+.tile.alarm-tile:active { transform: none; }
+
+.alarm-tile.alarm-disarmed { border-color: var(--color-on); }
+.alarm-tile.alarm-armed    { border-color: var(--color-warning); }
+.alarm-tile.alarm-triggered {
+  border-color: var(--color-danger);
+  animation: alarm-pulse 1s ease-in-out infinite;
+}
+
+@keyframes alarm-pulse {
+  0%, 100% { background-color: var(--color-surface); }
+  50% { background-color: rgba(244,67,54,0.15); }
+}
+
+.alarm-state-text {
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.alarm-state-disarmed  { color: var(--color-on); }
+.alarm-state-armed     { color: var(--color-warning); }
+.alarm-state-triggered { color: var(--color-danger); }
+
+.alarm-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 12px;
+  align-items: start;
+}
+
+.alarm-left { display: flex; flex-direction: column; }
+
+.alarm-pin-display {
+  font-size: 22px;
+  letter-spacing: 0.35em;
+  color: var(--color-text-primary);
+  font-family: monospace;
+  min-height: 34px;
+  margin: 12px 0 8px;
+  background-color: var(--color-surface-2);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+}
+
+.alarm-error {
+  color: var(--color-danger);
+  font-size: 11px;
+  min-height: 16px;
+  margin-bottom: 8px;
+}
+
+.alarm-actions {
+  display: flex;
+  margin-top: 4px;
+}
+
+.alarm-btn {
+  flex: 1;
+  min-height: 48px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: inherit;
+  transition: opacity 0.15s ease;
+}
+
+.alarm-btn:active { opacity: 0.75; }
+.alarm-btn-arm-home  { background-color: var(--color-accent); color: #fff; }
+.alarm-btn-arm-away  { background-color: var(--color-accent); color: #fff; }
+.alarm-btn-disarm    { background-color: var(--color-accent); color: #fff; }
+.alarm-btn-disarm-danger { background-color: var(--color-accent); color: #fff; }
+
+.alarm-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.alarm-key {
+  background-color: var(--color-surface-2);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-size: 22px;
+  font-weight: 600;
+  min-height: 52px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 0.1s ease;
+  font-family: inherit;
+}
+
+.alarm-key:active { background-color: var(--color-accent); color: #fff; }
+
+.alarm-key.key-delete {
+  font-size: 16px;
+  color: var(--color-warning);
+}
+
+/* Triggered alarm big button */
+.alarm-triggered-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 72px;
+  border: none;
+  border-radius: var(--radius);
+  background-color: var(--color-danger);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: inherit;
+  margin-top: 12px;
+  touch-action: manipulation;
+  animation: triggered-btn-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes triggered-btn-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.75; transform: scale(0.985); }
+}
+
+/* ============================================================
+   Sensor Row Tiles — iOS Home Style
+   ============================================================ */
+.sensor-list-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.sensor-list-grid-1col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+.sensor-row-tile {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  background-color: var(--color-surface);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,255,255,0.07);
+  padding: 13px 16px;
+  min-height: 72px;
+  position: relative;
+  overflow: hidden;
+}
+.sensor-row-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.sensor-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.sensor-row-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+.sensor-row-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+/* Icon bubble colors */
+.sri-temp-warm   { background: rgba(239,108,0,0.18);  color: #ef6c00; }
+.sri-temp-cool   { background: rgba(30,136,229,0.18); color: #1e88e5; }
+.sri-humidity    { background: rgba(30,136,229,0.18); color: #29b6f6; }
+.sri-co2         { background: rgba(156,39,176,0.20); color: #ab47bc; }
+.sri-battery-low { background: rgba(244,67,54,0.18);  color: #ef5350; }
+.sri-energy      { background: rgba(33,150,243,0.18); color: #2196f3; }
+.sri-ok          { background: rgba(255,255,255,0.07); color: var(--color-text-secondary); }
+.sri-alert       { background: rgba(255,107,0,0.20);  color: #FF6B00; }
+.sri-presence    { background: rgba(76,175,80,0.20);  color: #4caf50; }
+.sri-critical    { background: rgba(244,67,54,0.25);  color: #f44336; }
+/* Value text colors */
+.srv-temp-warm { color: #ef6c00; }
+.srv-temp-cool { color: #1e88e5; }
+.srv-humid     { color: #29b6f6; }
+.srv-co2       { color: #ab47bc; }
+.srv-danger    { color: var(--color-danger); }
+.srv-accent    { color: var(--color-accent); }
+.srv-muted     { color: var(--color-text-secondary); }
+.srv-alert     { color: var(--color-binary-alert); }
+.srv-on        { color: var(--color-on); }
+/* Tile state modifiers */
+.sensor-row-tile.srt-alert { border-color: rgba(255,107,0,0.32); }
+.sensor-row-tile.srt-alert::before {
+  content: ''; position: absolute; inset: 0;
+  background: rgba(255,107,0,0.06); pointer-events: none; border-radius: inherit;
+}
+.sensor-row-tile.srt-presence { border-color: rgba(76,175,80,0.32); }
+.sensor-row-tile.srt-presence::before {
+  content: ''; position: absolute; inset: 0;
+  background: rgba(76,175,80,0.06); pointer-events: none; border-radius: inherit;
+}
+.sensor-row-tile.srt-critical { border-color: rgba(244,67,54,0.50); }
+.sensor-row-tile.srt-critical::before {
+  content: ''; position: absolute; inset: 0;
+  background: rgba(244,67,54,0.09); pointer-events: none; border-radius: inherit;
+  animation: critical-bg-pulse 1.4s ease-in-out infinite;
+}
+@keyframes critical-bg-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+.sensor-row-silence {
+  flex-shrink: 0;
+  padding: 5px 10px;
+  border: 1px solid rgba(244,67,54,0.40);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--color-danger);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-family: inherit;
+  cursor: pointer;
+  margin-left: auto;
+}
+</style>
+</head>
+<body class="theme-dark">
+
+<!-- ============================================================
+     HEADER
+     ============================================================ -->
+<header class="page-header">
+  <div style="display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;">
+    <span class="page-header-title">Retro Panel</span>
+    <span class="page-header-badge">Oggetti Definitivi v1.3 — Luce · Interruttore · Allarme · Sensore</span>
+  </div>
+  <button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()">Tema: Dark</button>
+</header>
+
+<main class="page-content">
+
+  <!-- ===========================================================
+       SEZIONE: LUCE SEMPLICE (solo on/off)
+       =========================================================== -->
+  <section class="section">
+    <h2 class="section-title">1a. Luce — Solo On/Off</h2>
+    <p class="section-subtitle">Icona lampadina MDI. ON = icona gialla, bordo giallo, tinta overlay. OFF = icona grigia, nessuna tinta. Nessun valore. Tap = toggle.</p>
+    <div class="section-divider"></div>
+    <div class="tile-grid">
+
+      <div class="tile-col">
+        <p class="variant-label">ON</p>
+        <div class="tile light-tile state-on" id="la-on" style="border-color:#FFB700;"
+             onclick="toggleSimple('la-on','la-off')">
+          <div class="light-tint" style="background:rgba(255,183,0,0.12);"></div>
+          <div class="light-top">
+            <span class="light-icon">
+              <!-- MDI lightbulb — path da mdi-icons.js del progetto -->
+              <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" style="fill:currentColor;display:block;">
+                <path d="M12,2A7,7 0 0,1 19,9C19,11.38 17.81,13.47 16,14.74V17A1,1 0 0,1 15,18H9A1,1 0 0,1 8,17V14.74C6.19,13.47 5,11.38 5,9A7,7 0 0,1 12,2M9,21V20H15V21A1,1 0 0,1 14,22H10A1,1 0 0,1 9,21M12,4A5,5 0 0,0 7,9C7,11.05 8.23,12.81 10,13.58V16H14V13.58C15.77,12.81 17,11.05 17,9A5,5 0 0,0 12,4Z"/>
+              </svg>
+            </span>
+            <div class="tile-toggle" id="la-on-tog" style="background:#FFB700;"><div class="tile-toggle-thumb" style="transform:translateX(16px);"></div></div>
+          </div>
+          <div class="light-bottom">
+            <div class="light-value"></div>
+            <div class="light-label">Ingresso</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tile-col">
+        <p class="variant-label">OFF</p>
+        <div class="tile light-tile state-off" id="la-off" style="border-color:transparent;"
+             onclick="toggleSimple('la-off','la-on')">
+          <div class="light-tint" style="background:rgba(255,183,0,0.12);"></div>
+          <div class="light-top">
+            <span class="light-icon">
+              <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" style="fill:currentColor;display:block;">
+                <path d="M12,2A7,7 0 0,1 19,9C19,11.38 17.81,13.47 16,14.74V17A1,1 0 0,1 15,18H9A1,1 0 0,1 8,17V14.74C6.19,13.47 5,11.38 5,9A7,7 0 0,1 12,2M9,21V20H15V21A1,1 0 0,1 14,22H10A1,1 0 0,1 9,21M12,4A5,5 0 0,0 7,9C7,11.05 8.23,12.81 10,13.58V16H14V13.58C15.77,12.81 17,11.05 17,9A5,5 0 0,0 12,4Z"/>
+              </svg>
+            </span>
+            <div class="tile-toggle" id="la-off-tog"><div class="tile-toggle-thumb"></div></div>
+          </div>
+          <div class="light-bottom">
+            <div class="light-value"></div>
+            <div class="light-label">Ingresso</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===========================================================
+       SEZIONE: LUCE CON DIMMER (brightness + color temperature)
+       =========================================================== -->
+  <section class="section">
+    <h2 class="section-title">1b. Luce — Dimmer + Temperatura colore</h2>
+    <p class="section-subtitle">Tile: bordo e tinta bg ereditano la temperatura colore (caldo/neutro/freddo). Icona gialla ON, grigia OFF. Badge = % luminosità. Tap = toggle. Long-press (500ms) = bottom sheet.</p>
+    <div class="section-divider"></div>
+    <div class="tile-grid">
+
+      <!-- B1: ON caldo 78% -->
+      <div class="tile-col">
+        <p class="variant-label">ON — caldo 78%</p>
+        <div class="tile light-tile state-on" id="lb1"
+             style="border-color:#FF8C00;"
+             onmousedown="lpStart('lb1','bs-dimmer')" onmouseup="lpEnd('lb1','bs-dimmer')" onmouseleave="lpCancel()"
+             ontouchstart="lpStart('lb1','bs-dimmer')" ontouchend="lpEnd('lb1','bs-dimmer')" ontouchcancel="lpCancel()">
+          <div class="light-tint" style="background:rgba(255,140,0,0.16);opacity:1;"></div>
+          <div class="light-top">
+            <span class="light-icon" style="color:#FF8C00;">
+              <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" style="fill:currentColor;display:block;">
+                <path d="M12,2A7,7 0 0,1 19,9C19,11.38 17.81,13.47 16,14.74V17A1,1 0 0,1 15,18H9A1,1 0 0,1 8,17V14.74C6.19,13.47 5,11.38 5,9A7,7 0 0,1 12,2M9,21V20H15V21A1,1 0 0,1 14,22H10A1,1 0 0,1 9,21M12,4A5,5 0 0,0 7,9C7,11.05 8.23,12.81 10,13.58V16H14V13.58C15.77,12.81 17,11.05 17,9A5,5 0 0,0 12,4Z"/>
+              </svg>
+            </span>
+            <div class="tile-toggle" style="background:#FF8C00;"><div class="tile-toggle-thumb" style="transform:translateX(16px);"></div></div>
+          </div>
+          <div class="light-bottom">
+            <div class="light-value" style="color:#FF8C00;">78%</div>
+            <div class="light-label">Soggiorno</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- B2: ON neutro 55% -->
+      <div class="tile-col">
+        <p class="variant-label">ON — neutro 55%</p>
+        <div class="tile light-tile state-on" id="lb2"
+             style="border-color:#FFB700;"
+             onmousedown="lpStart('lb2','bs-dimmer')" onmouseup="lpEnd('lb2','bs-dimmer')" onmouseleave="lpCancel()"
+             ontouchstart="lpStart('lb2','bs-dimmer')" ontouchend="lpEnd('lb2','bs-dimmer')" ontouchcancel="lpCancel()">
+          <div class="light-tint" style="background:rgba(255,183,0,0.13);opacity:1;"></div>
+          <div class="light-top">
+            <span class="light-icon" style="color:#FFB700;">
+              <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" style="fill:currentColor;display:block;">
+                <path d="M12,2A7,7 0 0,1 19,9C19,11.38 17.81,13.47 16,14.74V17A1,1 0 0,1 15,18H9A1,1 0 0,1 8,17V14.74C6.19,13.47 5,11.38 5,9A7,7 0 0,1 12,2M9,21V20H15V21A1,1 0 0,1 14,22H10A1,1 0 0,1 9,21M12,4A5,5 0 0,0 7,9C7,11.05 8.23,12.81 10,13.58V16H14V13.58C15.77,12.81 17,11.05 17,9A5,5 0 0,0 12,4Z"/>
+              </svg>
+            </span>
+            <div class="tile-toggle" style="background:#FFB700;"><div class="tile-toggle-thumb" style="transform:translateX(16px);"></div></div>
+          </div>
+          <div class="light-bottom">
+            <div class="light-value" style="color:#FFB700;">55%</div>
+            <div class="light-label">Cucina</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- B3: ON freddo 90% -->
+      <div class="tile-col">
+        <p class="variant-label">ON — freddo 90%</p>
+        <div class="tile light-tile state-on" id="lb3"
+             style="border-color:#89c4f4;"
+             onmousedown="lpStart('lb3','bs-dimmer')" onmouseup="lpEnd('lb3','bs-dimmer')" onmouseleave="lpCancel()"
+             ontouchstart="lpStart('lb3','bs-dimmer')" ontouchend="lpEnd('lb3','bs-dimmer')" ontouchcancel="lpCancel()">
+          <div class="light-tint" style="background:rgba(137,196,244,0.14);opacity:1;"></div>
+          <div class="light-top">
+            <span class="light-icon" style="color:#89c4f4;">
+              <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" style="fill:currentColor;display:block;">
+                <path d="M12,2A7,7 0 0,1 19,9C19,11.38 17.81,13.47 16,14.74V17A1,1 0 0,1 15,18H9A1,1 0 0,1 8,17V14.74C6.19,13.47 5,11.38 5,9A7,7 0 0,1 12,2M9,21V20H15V21A1,1 0 0,1 14,22H10A1,1 0 0,1 9,21M12,4A5,5 0 0,0 7,9C7,11.05 8.23,12.81 10,13.58V16H14V13.58C15.77,12.81 17,11.05 17,9A5,5 0 0,0 12,4Z"/>
+              </svg>
+            </span>
+            <div class="tile-toggle" style="background:#89c4f4;"><div class="tile-toggle-thumb" style="transform:translateX(16px);"></div></div>
+          </div>
+          <div class="light-bottom">
+            <div class="light-value" style="color:#89c4f4;">90%</div>
+            <div class="light-label">Studio</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- B4: OFF -->
+      <div class="tile-col">
+        <p class="variant-label">OFF</p>
+        <div class="tile light-tile state-off" id="lb4" style="border-color:transparent;"
+             onclick="tapToggleDimmer('lb4')">
+          <div class="light-tint" style="background:rgba(255,183,0,0.13);"></div>
+          <div class="light-top">
+            <span class="light-icon">
+              <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" style="fill:currentColor;display:block;">
+                <path d="M12,2A7,7 0 0,1 19,9C19,11.38 17.81,13.47 16,14.74V17A1,1 0 0,1 15,18H9A1,1 0 0,1 8,17V14.74C6.19,13.47 5,11.38 5,9A7,7 0 0,1 12,2M9,21V20H15V21A1,1 0 0,1 14,22H10A1,1 0 0,1 9,21M12,4A5,5 0 0,0 7,9C7,11.05 8.23,12.81 10,13.58V16H14V13.58C15.77,12.81 17,11.05 17,9A5,5 0 0,0 12,4Z"/>
+              </svg>
+            </span>
+            <div class="tile-toggle" id="lb4-tog"><div class="tile-toggle-thumb"></div></div>
+          </div>
+          <div class="light-bottom">
+            <div class="light-value"></div>
+            <div class="light-label">Camera</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===========================================================
+       SEZIONE: LUCE RGB (colore libero)
+       =========================================================== -->
+  <section class="section">
+    <h2 class="section-title">1c. Luce — RGB / Colore libero</h2>
+    <p class="section-subtitle">Stessa struttura del dimmer. Icona e bordo ereditano il colore scelto (nessun pallino). Tinta bg = colore scelto. Long-press = bottom sheet con hue bar + swatch.</p>
+    <div class="section-divider"></div>
+    <div class="tile-grid">
+
+      <!-- C1: viola 65% -->
+      <div class="tile-col">
+        <p class="variant-label">ON — viola 65%</p>
+        <div class="tile light-tile state-on" id="lc1"
+             style="border-color:#845EC2;"
+             onmousedown="lpStart('lc1','bs-color')" onmouseup="lpEnd('lc1','bs-color')" onmouseleave="lpCancel()"
+             ontouchstart="lpStart('lc1','bs-color')" ontouchend="lpEnd('lc1','bs-color')" ontouchcancel="lpCancel()">
+          <div class="light-tint" style="background:rgba(132,94,194,0.17);opacity:1;"></div>
+          <div class="light-top">
+            <span class="light-icon" style="color:#845EC2;">
+              <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" style="fill:currentColor;display:block;">
+                <path d="M12,2A7,7 0 0,1 19,9C19,11.38 17.81,13.47 16,14.74V17A1,1 0 0,1 15,18H9A1,1 0 0,1 8,17V14.74C6.19,13.47 5,11.38 5,9A7,7 0 0,1 12,2M9,21V20H15V21A1,1 0 0,1 14,22H10A1,1 0 0,1 9,21M12,4A5,5 0 0,0 7,9C7,11.05 8.23,12.81 10,13.58V16H14V13.58C15.77,12.81 17,11.05 17,9A5,5 0 0,0 12,4Z"/>
+              </svg>
+            </span>
+            <div class="tile-toggle" style="background:#845EC2;"><div class="tile-toggle-thumb" style="transform:translateX(16px);"></div></div>
+          </div>
+          <div class="light-bottom">
+            <div class="light-value" style="color:#845EC2;">65%</div>
+            <div class="light-label">Lampada studio</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C2: arancio 80% -->
+      <div class="tile-col">
+        <p class="variant-label">ON — arancio 80%</p>
+        <div class="tile light-tile state-on" id="lc2"
+             style="border-color:#FF6B00;"
+             onmousedown="lpStart('lc2','bs-color')" onmouseup="lpEnd('lc2','bs-color')" onmouseleave="lpCancel()"
+             ontouchstart="lpStart('lc2','bs-color')" ontouchend="lpEnd('lc2','bs-color')" ontouchcancel="lpCancel()">
+          <div class="light-tint" style="background:rgba(255,107,0,0.17);opacity:1;"></div>
+          <div class="light-top">
+            <span class="light-icon" style="color:#FF6B00;">
+              <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" style="fill:currentColor;display:block;">
+                <path d="M12,2A7,7 0 0,1 19,9C19,11.38 17.81,13.47 16,14.74V17A1,1 0 0,1 15,18H9A1,1 0 0,1 8,17V14.74C6.19,13.47 5,11.38 5,9A7,7 0 0,1 12,2M9,21V20H15V21A1,1 0 0,1 14,22H10A1,1 0 0,1 9,21M12,4A5,5 0 0,0 7,9C7,11.05 8.23,12.81 10,13.58V16H14V13.58C15.77,12.81 17,11.05 17,9A5,5 0 0,0 12,4Z"/>
+              </svg>
+            </span>
+            <div class="tile-toggle" style="background:#FF6B00;"><div class="tile-toggle-thumb" style="transform:translateX(16px);"></div></div>
+          </div>
+          <div class="light-bottom">
+            <div class="light-value" style="color:#FF6B00;">80%</div>
+            <div class="light-label">Strip LED</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C3: verde 45% -->
+      <div class="tile-col">
+        <p class="variant-label">ON — verde 45%</p>
+        <div class="tile light-tile state-on" id="lc3"
+             style="border-color:#4caf50;"
+             onmousedown="lpStart('lc3','bs-color')" onmouseup="lpEnd('lc3','bs-color')" onmouseleave="lpCancel()"
+             ontouchstart="lpStart('lc3','bs-color')" ontouchend="lpEnd('lc3','bs-color')" ontouchcancel="lpCancel()">
+          <div class="light-tint" style="background:rgba(76,175,80,0.15);opacity:1;"></div>
+          <div class="light-top">
+            <span class="light-icon" style="color:#4caf50;">
+              <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" style="fill:currentColor;display:block;">
+                <path d="M12,2A7,7 0 0,1 19,9C19,11.38 17.81,13.47 16,14.74V17A1,1 0 0,1 15,18H9A1,1 0 0,1 8,17V14.74C6.19,13.47 5,11.38 5,9A7,7 0 0,1 12,2M9,21V20H15V21A1,1 0 0,1 14,22H10A1,1 0 0,1 9,21M12,4A5,5 0 0,0 7,9C7,11.05 8.23,12.81 10,13.58V16H14V13.58C15.77,12.81 17,11.05 17,9A5,5 0 0,0 12,4Z"/>
+              </svg>
+            </span>
+            <div class="tile-toggle" style="background:#4caf50;"><div class="tile-toggle-thumb" style="transform:translateX(16px);"></div></div>
+          </div>
+          <div class="light-bottom">
+            <div class="light-value" style="color:#4caf50;">45%</div>
+            <div class="light-label">Neon gaming</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C4: OFF -->
+      <div class="tile-col">
+        <p class="variant-label">OFF</p>
+        <div class="tile light-tile state-off" id="lc4" style="border-color:transparent;"
+             onclick="tapToggleColor('lc4')">
+          <div class="light-tint" style="background:rgba(132,94,194,0.17);"></div>
+          <div class="light-top">
+            <span class="light-icon">
+              <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" style="fill:currentColor;display:block;">
+                <path d="M12,2A7,7 0 0,1 19,9C19,11.38 17.81,13.47 16,14.74V17A1,1 0 0,1 15,18H9A1,1 0 0,1 8,17V14.74C6.19,13.47 5,11.38 5,9A7,7 0 0,1 12,2M9,21V20H15V21A1,1 0 0,1 14,22H10A1,1 0 0,1 9,21M12,4A5,5 0 0,0 7,9C7,11.05 8.23,12.81 10,13.58V16H14V13.58C15.77,12.81 17,11.05 17,9A5,5 0 0,0 12,4Z"/>
+              </svg>
+            </span>
+            <div class="tile-toggle" id="lc4-tog"><div class="tile-toggle-thumb"></div></div>
+          </div>
+          <div class="light-bottom">
+            <div class="light-value"></div>
+            <div class="light-label">Lampada studio</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===========================================================
+       SEZIONE: INTERRUTTORE (SWITCH)
+       =========================================================== -->
+  <section class="section">
+    <h2 class="section-title">2. Interruttore (Switch)</h2>
+    <p class="section-subtitle">Stesse dimensioni della luce (120px fissi). Icona MDI <code>power</code> (⏻ — cerchio standard accensione, identico ai telecomandi). ON = icona verde, bordo verde, tinta bg verde. OFF = icona grigia, nessuna tinta. Nessuna scritta — il toggle pill comunica lo stato.</p>
+    <div class="section-divider"></div>
+    <div class="tile-grid">
+
+      <!-- ON -->
+      <div class="tile-col">
+        <p class="variant-label">ON</p>
+        <div class="tile switch-tile state-on" id="sw1"
+             style="border-color:var(--color-on);"
+             onclick="toggleSwitch('sw1')">
+          <div class="light-tint" style="background:rgba(76,175,80,0.12);opacity:1;"></div>
+          <div class="switch-top">
+            <span class="switch-icon" id="sw1-icon">
+              <!-- MDI power ⏻ -->
+              <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" style="fill:currentColor;display:block;">
+                <path d="M16.56,5.44L15.11,6.89C16.84,7.94 18,9.83 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12C6,9.83 7.16,7.94 8.89,6.88L7.44,5.44C5.36,6.88 4,9.28 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12C20,9.28 18.64,6.88 16.56,5.44M13,3H11V13H13V3Z"/>
+              </svg>
+            </span>
+            <div class="tile-toggle" id="sw1-tog" style="background:var(--color-on);">
+              <div class="tile-toggle-thumb" style="transform:translateX(16px);"></div>
+            </div>
+          </div>
+          <div class="switch-bottom">
+            <div class="switch-label">Presa TV</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OFF -->
+      <div class="tile-col">
+        <p class="variant-label">OFF</p>
+        <div class="tile switch-tile state-off" id="sw2"
+             style="border-color:transparent;"
+             onclick="toggleSwitch('sw2')">
+          <div class="light-tint" style="background:rgba(76,175,80,0.12);"></div>
+          <div class="switch-top">
+            <span class="switch-icon" id="sw2-icon">
+              <!-- MDI power ⏻ -->
+              <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" style="fill:currentColor;display:block;">
+                <path d="M16.56,5.44L15.11,6.89C16.84,7.94 18,9.83 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12C6,9.83 7.16,7.94 8.89,6.88L7.44,5.44C5.36,6.88 4,9.28 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12C20,9.28 18.64,6.88 16.56,5.44M13,3H11V13H13V3Z"/>
+              </svg>
+            </span>
+            <div class="tile-toggle" id="sw2-tog">
+              <div class="tile-toggle-thumb"></div>
+            </div>
+          </div>
+          <div class="switch-bottom">
+            <div class="switch-label">Presa TV</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ON — presa -->
+      <div class="tile-col">
+        <p class="variant-label">ON — presa</p>
+        <div class="tile switch-tile state-on" id="sw3"
+             style="border-color:var(--color-on);"
+             onclick="toggleSwitch('sw3')">
+          <div class="light-tint" style="background:rgba(76,175,80,0.12);opacity:1;"></div>
+          <div class="switch-top">
+            <span class="switch-icon" id="sw3-icon">
+              <!-- MDI power ⏻ -->
+              <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" style="fill:currentColor;display:block;">
+                <path d="M16.56,5.44L15.11,6.89C16.84,7.94 18,9.83 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12C6,9.83 7.16,7.94 8.89,6.88L7.44,5.44C5.36,6.88 4,9.28 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12C20,9.28 18.64,6.88 16.56,5.44M13,3H11V13H13V3Z"/>
+              </svg>
+            </span>
+            <div class="tile-toggle" id="sw3-tog" style="background:var(--color-on);">
+              <div class="tile-toggle-thumb" style="transform:translateX(16px);"></div>
+            </div>
+          </div>
+          <div class="switch-bottom">
+            <div class="switch-label">Lavatrice</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OFF — presa -->
+      <div class="tile-col">
+        <p class="variant-label">OFF — presa</p>
+        <div class="tile switch-tile state-off" id="sw4"
+             style="border-color:transparent;"
+             onclick="toggleSwitch('sw4')">
+          <div class="light-tint" style="background:rgba(76,175,80,0.12);"></div>
+          <div class="switch-top">
+            <span class="switch-icon" id="sw4-icon">
+              <!-- MDI power ⏻ -->
+              <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" style="fill:currentColor;display:block;">
+                <path d="M16.56,5.44L15.11,6.89C16.84,7.94 18,9.83 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12C6,9.83 7.16,7.94 8.89,6.88L7.44,5.44C5.36,6.88 4,9.28 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12C20,9.28 18.64,6.88 16.56,5.44M13,3H11V13H13V3Z"/>
+              </svg>
+            </span>
+            <div class="tile-toggle" id="sw4-tog">
+              <div class="tile-toggle-thumb"></div>
+            </div>
+          </div>
+          <div class="switch-bottom">
+            <div class="switch-label">Lavatrice</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===========================================================
+       SEZIONE: PANNELLO ALLARME
+       =========================================================== -->
+  <section class="section" id="section-alarm">
+  <h2 class="section-title">3. Pannello Allarme</h2>
+  <p class="section-subtitle">Due varianti full-width: Disarmato con tastierino, e Attivato/Triggered. Tile occupa l'intera larghezza (grid-column: span 2). PIN max 6 cifre, validazione min 4.</p>
+  <div class="section-divider"></div>
+
+  <div class="tile-grid-2col">
+
+    <!-- Alarm disarmed -->
+    <div class="tile alarm-tile alarm-disarmed" style="grid-column:span 2;">
+      <div class="tile-top">
+        <span class="tile-icon" style="color:var(--color-on);">&#128274;</span>
+        <span class="alarm-state-text alarm-state-disarmed">DISARMED</span>
+      </div>
+      <div class="alarm-inner">
+        <div class="alarm-left">
+          <span style="font-size:12px;color:var(--color-text-secondary);font-weight:500;">Inserisci PIN per armare</span>
+          <div class="alarm-pin-display" id="alarm-pin-a">&#160;</div>
+          <div class="alarm-error" id="alarm-error-a"></div>
+          <div class="alarm-actions">
+            <button class="alarm-btn alarm-btn-arm-home"
+                    onclick="alarmKey_arm('arm_home')">
+              Casa
+            </button>
+            <button class="alarm-btn alarm-btn-arm-away"
+                    onclick="alarmKey_arm('arm_away')"
+                    style="margin-left:8px;">
+              Fuori
+            </button>
+          </div>
+        </div>
+        <div class="alarm-keypad" id="alarm-keypad-a">
+          <button class="alarm-key" onclick="alarmKey('a','1')">1</button>
+          <button class="alarm-key" onclick="alarmKey('a','2')">2</button>
+          <button class="alarm-key" onclick="alarmKey('a','3')">3</button>
+          <button class="alarm-key" onclick="alarmKey('a','4')">4</button>
+          <button class="alarm-key" onclick="alarmKey('a','5')">5</button>
+          <button class="alarm-key" onclick="alarmKey('a','6')">6</button>
+          <button class="alarm-key" onclick="alarmKey('a','7')">7</button>
+          <button class="alarm-key" onclick="alarmKey('a','8')">8</button>
+          <button class="alarm-key" onclick="alarmKey('a','9')">9</button>
+          <button class="alarm-key key-delete" onclick="alarmKey('a','back')">&#9003;</button>
+          <button class="alarm-key" onclick="alarmKey('a','0')">0</button>
+          <button class="alarm-key" onclick="alarmKey('a','ok')"
+                  style="background-color:var(--color-on);color:#000;font-size:16px;">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alarm triggered -->
+    <div class="tile alarm-tile alarm-triggered" style="grid-column:span 2;">
+      <div class="tile-top">
+        <span class="tile-icon" style="color:var(--color-danger);">&#128680;</span>
+        <span class="alarm-state-text alarm-state-triggered">TRIGGERED</span>
+      </div>
+      <button class="alarm-triggered-btn" onclick="event.stopPropagation()">
+        &#128680; ALLARME ATTIVO
+      </button>
+      <div class="alarm-inner" style="margin-top:14px;">
+        <div class="alarm-left">
+          <span style="font-size:12px;color:var(--color-danger);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">
+            Inserisci PIN per disarmare
+          </span>
+          <div class="alarm-pin-display" id="alarm-pin-b">&#160;</div>
+          <div class="alarm-error" id="alarm-error-b"></div>
+          <div class="alarm-actions">
+            <button class="alarm-btn alarm-btn-disarm-danger"
+                    onclick="alarmKey_arm('disarm')">
+              Disarma
+            </button>
+          </div>
+        </div>
+        <div class="alarm-keypad">
+          <button class="alarm-key" onclick="alarmKey('b','1')">1</button>
+          <button class="alarm-key" onclick="alarmKey('b','2')">2</button>
+          <button class="alarm-key" onclick="alarmKey('b','3')">3</button>
+          <button class="alarm-key" onclick="alarmKey('b','4')">4</button>
+          <button class="alarm-key" onclick="alarmKey('b','5')">5</button>
+          <button class="alarm-key" onclick="alarmKey('b','6')">6</button>
+          <button class="alarm-key" onclick="alarmKey('b','7')">7</button>
+          <button class="alarm-key" onclick="alarmKey('b','8')">8</button>
+          <button class="alarm-key" onclick="alarmKey('b','9')">9</button>
+          <button class="alarm-key key-delete" onclick="alarmKey('b','back')">&#9003;</button>
+          <button class="alarm-key" onclick="alarmKey('b','0')">0</button>
+          <button class="alarm-key" onclick="alarmKey('b','ok')"
+                  style="background-color:var(--color-danger);color:#fff;font-size:16px;">OK</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+  <!-- ===========================================================
+       4. SENSORE — iOS Home Style
+       =========================================================== -->
+  <section class="section" id="section-sensor">
+    <h2 class="section-title">4. Sensore</h2>
+    <p class="section-subtitle">iOS Home App row style — icona pill a sinistra, nome sensore + valore a destra. Layout 2 colonne, altezza 72px. Stato neutro = grigio, attivo/alert = colore, critico = rosso pulsante.</p>
+    <div class="section-divider"></div>
+
+    <!-- A — Numerici -->
+    <h3 class="section-group-title">A — Sensori numerici</h3>
+    <div class="sensor-list-grid">
+
+      <div>
+        <p class="variant-label">A1) Temperatura — 22.4 °C (warm)</p>
+        <div class="sensor-row-tile">
+          <div class="sensor-row-icon sri-temp-warm">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="display:block;"><path d="M15,13V5A3,3 0 0,0 9,5V13A5,5 0 1,0 15,13M12,4A1,1 0 0,1 13,5V8H11V5A1,1 0 0,1 12,4Z"/></svg>
+          </div>
+          <div class="sensor-row-text">
+            <span class="sensor-row-name">Temperatura soggiorno</span>
+            <span class="sensor-row-value srv-temp-warm">22.4 °C</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p class="variant-label">A2) Temperatura — 14.2 °C (cool)</p>
+        <div class="sensor-row-tile">
+          <div class="sensor-row-icon sri-temp-cool">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="display:block;"><path d="M15,13V5A3,3 0 0,0 9,5V13A5,5 0 1,0 15,13M12,4A1,1 0 0,1 13,5V8H11V5A1,1 0 0,1 12,4Z"/></svg>
+          </div>
+          <div class="sensor-row-text">
+            <span class="sensor-row-name">Temperatura garage</span>
+            <span class="sensor-row-value srv-temp-cool">14.2 °C</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p class="variant-label">A3) Umidità — 78%</p>
+        <div class="sensor-row-tile">
+          <div class="sensor-row-icon sri-humidity">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="display:block;"><path d="M12,20A6,6 0 0,1 6,14C6,10 12,3.25 12,3.25C12,3.25 18,10 18,14A6,6 0 0,1 12,20Z"/></svg>
+          </div>
+          <div class="sensor-row-text">
+            <span class="sensor-row-name">Umidità bagno</span>
+            <span class="sensor-row-value srv-humid">78%</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p class="variant-label">A4) CO₂ — 1240 ppm (scarsa)</p>
+        <div class="sensor-row-tile">
+          <div class="sensor-row-icon sri-co2">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="display:block;">
+              <path d="M3 8 Q6 5.5 9 8 Q12 10.5 15 8 Q18 5.5 21 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M3 12 Q6 9.5 9 12 Q12 14.5 15 12 Q18 9.5 21 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M3 16 Q6 13.5 9 16 Q12 18.5 15 16 Q18 13.5 21 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="sensor-row-text">
+            <span class="sensor-row-name">Qualità aria — Scarsa</span>
+            <span class="sensor-row-value srv-co2">1240 ppm</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p class="variant-label">A5) Batteria — 23% (low)</p>
+        <div class="sensor-row-tile">
+          <div class="sensor-row-icon sri-battery-low">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="display:block;">
+              <rect x="2" y="8" width="17" height="8" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
+              <path d="M19 10.5v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <rect x="4" y="10" width="4" height="4" rx="0.5" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="sensor-row-text">
+            <span class="sensor-row-name">Sensore porta ingresso</span>
+            <span class="sensor-row-value srv-danger">23%</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p class="variant-label">A6) Consumo — 2.4 kW</p>
+        <div class="sensor-row-tile">
+          <div class="sensor-row-icon sri-energy">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="display:block;"><path d="M7,2V13H10V22L17,11H13L17,2H7Z"/></svg>
+          </div>
+          <div class="sensor-row-text">
+            <span class="sensor-row-name">Consumo istantaneo</span>
+            <span class="sensor-row-value srv-accent">2.4 kW</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /grid A -->
+
+    <!-- B — Binary OK -->
+    <h3 class="section-group-title">B — Binary sensor — stato OK</h3>
+    <div class="sensor-list-grid">
+
+      <div>
+        <p class="variant-label">B1) Porta — Chiusa</p>
+        <div class="sensor-row-tile">
+          <div class="sensor-row-icon sri-ok">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="display:block;"><path d="M8,3C6.89,3 6,3.89 6,5V21H18V5C18,3.89 17.1,3 16,3H8M16,19H8V5H16V19M13,11.5A1.5,1.5 0 0,0 11.5,13A1.5,1.5 0 0,0 13,14.5A1.5,1.5 0 0,0 14.5,13A1.5,1.5 0 0,0 13,11.5Z"/></svg>
+          </div>
+          <div class="sensor-row-text">
+            <span class="sensor-row-name">Porta ingresso</span>
+            <span class="sensor-row-value srv-muted">Chiusa</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p class="variant-label">B2) Finestra — Chiusa</p>
+        <div class="sensor-row-tile">
+          <div class="sensor-row-icon sri-ok">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="display:block;">
+              <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/>
+              <line x1="12" y1="3" x2="12" y2="21" stroke="currentColor" stroke-width="1.5"/>
+              <line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="sensor-row-text">
+            <span class="sensor-row-name">Finestra soggiorno</span>
+            <span class="sensor-row-value srv-muted">Chiusa</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p class="variant-label">B3) Movimento — Calmo</p>
+        <div class="sensor-row-tile">
+          <div class="sensor-row-icon sri-ok">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="display:block;">
+              <circle cx="7" cy="12" r="2.5"/>
+              <path d="M12 8.5 A5.5 5.5 0 0 1 12 15.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+              <path d="M15 6 A9 9 0 0 1 15 18" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="sensor-row-text">
+            <span class="sensor-row-name">Sensore corridoio</span>
+            <span class="sensor-row-value srv-muted">Calmo</span>
+          </div>
+        </div>
+      </div>
+
+      <div></div><!-- spacer griglia pari -->
+
+    </div><!-- /grid B -->
+
+    <!-- C — Binary ALERT -->
+    <h3 class="section-group-title">C — Binary sensor — stato alert</h3>
+    <div class="sensor-list-grid">
+
+      <div>
+        <p class="variant-label">C1) Porta — Aperta</p>
+        <div class="sensor-row-tile srt-alert">
+          <div class="sensor-row-icon sri-alert">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="display:block;"><path d="M8,3C6.89,3 6,3.89 6,5V21H18V5C18,3.89 17.1,3 16,3H8M16,19H8V5H16V19M13,11.5A1.5,1.5 0 0,0 11.5,13A1.5,1.5 0 0,0 13,14.5A1.5,1.5 0 0,0 14.5,13A1.5,1.5 0 0,0 13,11.5Z"/></svg>
+          </div>
+          <div class="sensor-row-text">
+            <span class="sensor-row-name">Porta ingresso</span>
+            <span class="sensor-row-value srv-alert">Aperta</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p class="variant-label">C2) Finestra — Aperta</p>
+        <div class="sensor-row-tile srt-alert">
+          <div class="sensor-row-icon sri-alert">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="display:block;">
+              <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/>
+              <line x1="12" y1="3" x2="12" y2="21" stroke="currentColor" stroke-width="1.5"/>
+              <line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="sensor-row-text">
+            <span class="sensor-row-name">Finestra soggiorno</span>
+            <span class="sensor-row-value srv-alert">Aperta</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p class="variant-label">C3) Movimento — Rilevato</p>
+        <div class="sensor-row-tile srt-alert">
+          <div class="sensor-row-icon sri-alert">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="display:block;">
+              <circle cx="7" cy="12" r="2.5"/>
+              <path d="M12 8.5 A5.5 5.5 0 0 1 12 15.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+              <path d="M15 6 A9 9 0 0 1 15 18" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="sensor-row-text">
+            <span class="sensor-row-name">Sensore corridoio</span>
+            <span class="sensor-row-value srv-alert">Rilevato</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p class="variant-label">C4) Presenza — In casa</p>
+        <div class="sensor-row-tile srt-presence">
+          <div class="sensor-row-icon sri-presence">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="display:block;"><path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/></svg>
+          </div>
+          <div class="sensor-row-text">
+            <span class="sensor-row-name">Paolo</span>
+            <span class="sensor-row-value srv-on">In casa</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /grid C -->
+
+    <!-- D — Alert critici -->
+    <h3 class="section-group-title">D — Alert critici</h3>
+    <div class="sensor-list-grid">
+
+      <div>
+        <p class="variant-label">D1) FUMO RILEVATO</p>
+        <div class="sensor-row-tile srt-critical">
+          <div class="sensor-row-icon sri-critical">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="display:block;">
+              <path d="M9 9.5 C9.2 8 10 7 9.5 5.5" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+              <path d="M12 8.5 C12.2 7 13 6 12.5 4.5" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+              <path d="M15 9.5 C14.8 8 14 7 14.5 5.5" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+              <rect x="3" y="13" width="18" height="7" rx="3.5" fill="currentColor"/>
+              <circle cx="12" cy="16.5" r="1.8" fill="#1a1a1a"/>
+            </svg>
+          </div>
+          <div class="sensor-row-text">
+            <span class="sensor-row-name">Rilevatore cucina</span>
+            <span class="sensor-row-value srv-danger">FUMO RILEVATO</span>
+          </div>
+          <button class="sensor-row-silence">Silenzio</button>
+        </div>
+      </div>
+
+      <div>
+        <p class="variant-label">D2) GAS RILEVATO</p>
+        <div class="sensor-row-tile srt-critical">
+          <div class="sensor-row-icon sri-critical">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="display:block;"><path d="M17.66,11.2C17.43,10.9 17.15,10.64 16.89,10.38C16.22,9.78 15.46,9.35 14.82,8.72C13.33,7.26 13,4.85 13.95,3C13,3.23 12.17,3.75 11.46,4.32C8.87,6.4 7.85,10.07 9.07,13.22C9.11,13.32 9.15,13.42 9.15,13.55C9.15,13.77 9,13.97 8.8,14.05C8.57,14.15 8.33,14.09 8.14,13.93C8.08,13.88 8.04,13.83 8,13.76C6.87,12.33 6.69,10.28 7.45,8.64C5.78,10 4.87,12.3 5,14.47C5.06,14.97 5.12,15.47 5.29,15.97C5.43,16.57 5.7,17.17 6,17.7C7.08,19.43 8.95,20.67 10.96,20.92C13.1,21.19 15.39,20.8 17.03,19.32C18.86,17.66 19.5,15 18.56,12.72L18.43,12.46C18.22,12 17.66,11.2 17.66,11.2Z"/></svg>
+          </div>
+          <div class="sensor-row-text">
+            <span class="sensor-row-name">Rilevatore caldaia</span>
+            <span class="sensor-row-value srv-danger">GAS RILEVATO</span>
+          </div>
+          <button class="sensor-row-silence">Silenzio</button>
+        </div>
+      </div>
+
+    </div><!-- /grid D -->
+
+  </section>
+
+  <!-- ===========================================================
+       Note implementative
+       =========================================================== -->
+  <div class="impl-footer">
+    <h3>Note di implementazione</h3>
+    <div class="impl-note">
+      <div class="impl-note-title">Icona</div>
+      <div class="impl-note-body">
+        MDI <code>lightbulb</code> — stesso path di <code>mdi-icons.js</code> del progetto.
+        Renderizzata come <code>&lt;svg fill:currentColor&gt;</code>, eredita il colore dal CSS.
+        OFF: <code>color: var(--color-text-secondary)</code>.
+        ON tipo A: <code>color: #FFB700</code>.
+        ON tipo B/C: <code>color: [colore temperatura/hue scelto]</code>.
+        Nessun pallino aggiuntivo.
+      </div>
+    </div>
+    <div class="impl-note">
+      <div class="impl-note-title">Tile — tinta background</div>
+      <div class="impl-note-body">
+        Un <code>&lt;div class="light-tint"&gt;</code> assoluto con <code>opacity:0</code> (OFF) / <code>opacity:1</code> (ON).
+        Il colore del background è <code>rgba([r],[g],[b], 0.12-0.17)</code> del colore scelto.
+        Tipo A: sempre rgba(255,183,0, 0.12). Tipo B: rgb del colore temperatura. Tipo C: rgb del colore hue.
+      </div>
+    </div>
+    <div class="impl-note">
+      <div class="impl-note-title">Valore (badge %)</div>
+      <div class="impl-note-body">
+        Tipo A: <code>.light-value</code> sempre vuoto (nessun valore).
+        Tipo B/C: mostra la percentuale luminosità (es. "78%"), stesso colore dell'icona.
+        OFF: <code>.light-value</code> vuoto in tutti i casi.
+      </div>
+    </div>
+    <div class="impl-note">
+      <div class="impl-note-title">Interazione</div>
+      <div class="impl-note-body">
+        Tipo A: <code>onclick</code> = toggle on/off. Long-press ignorato.
+        Tipo B/C: <code>onmousedown/ontouchstart</code> + <code>setTimeout(500)</code> = long-press apre bottom sheet.
+        <code>onmouseup/ontouchend</code> prima dei 500ms = tap breve = toggle.
+        <code>onmouseleave/ontouchcancel</code> = annulla long-press.
+      </div>
+    </div>
+    <div class="impl-note">
+      <div class="impl-note-title">Bottom sheet dimmer (Tipo B)</div>
+      <div class="impl-note-body">
+        Slider luminosità: gradient dark→yellow, range 1-100.
+        Slider temperatura: gradient caldo→freddo (2700K-6500K).
+        Cambio temperatura aggiorna colore icona, bordo, tinta bg in tempo reale.
+      </div>
+    </div>
+    <div class="impl-note">
+      <div class="impl-note-title">Bottom sheet colore (Tipo C)</div>
+      <div class="impl-note-body">
+        Slider luminosità: gradient dark→colore corrente.
+        Slider hue: gradient HSL 0→360°. Cambio hue aggiorna icona, bordo, tinta in tempo reale.
+        8 swatch preset per colori comuni.
+        Nessun pallino sulla tile — il colore è comunicato dall'icona e dalla tinta bg.
+      </div>
+    </div>
+    <div class="impl-note">
+      <div class="impl-note-title">Interruttore (Switch)</div>
+      <div class="impl-note-body">
+        Stessa struttura della luce Tipo A: <code>height:120px</code> fisso, same CSS.<br>
+        Icona MDI <code>power</code> (⏻) — stesso path per ON e OFF, solo il colore cambia (verde ON, grigio OFF).<br>
+        Usata sia per interruttori che per prese — il toggle pill comunica lo stato, l'icona è sempre il simbolo universale di accensione.<br>
+        ON: <code>border-color: var(--color-on)</code>, tinta <code>rgba(76,175,80,0.12)</code>, toggle verde.<br>
+        OFF: bordo trasparente, tinta <code>opacity:0</code>, icona grigia, toggle grigio.<br>
+        Nessun valore testuale — il pill toggle comunica lo stato.
+      </div>
+    </div>
+
+    <div class="impl-note" style="border-left-color:var(--color-warning);">
+      <div class="impl-note-title">iOS 12 compatibility</div>
+      <div class="impl-note-body">
+        No <code>?.</code> · No <code>??</code> · No ES modules · No flex gap · No dialog · No structuredClone · No .at()
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Bottom Sheet: Dimmer + Temperatura colore (Tipo B) -->
+<div class="bs-overlay hidden" id="bs-dimmer-overlay" onclick="closeBS('bs-dimmer')"></div>
+<div class="bottom-sheet hidden" id="bs-dimmer">
+  <div class="bs-header">
+    <span class="bs-title" id="bs-dimmer-title">Soggiorno</span>
+    <button class="bs-close" onclick="closeBS('bs-dimmer')" aria-label="Chiudi">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="3" x2="15" y2="15"/><line x1="15" y1="3" x2="3" y2="15"/>
+      </svg>
+    </button>
+  </div>
+  <div class="bs-body">
+    <div class="bs-section">
+      <div class="bs-row">
+        <span class="bs-section-label">Luminosità</span>
+        <span class="bs-val" id="bs-bri-val">78%</span>
+      </div>
+      <input type="range" class="bs-slider" id="bs-bri-slider" min="1" max="100" value="78"
+             oninput="bsUpdateBri(this.value)" onchange="bsUpdateBri(this.value)">
+    </div>
+    <div class="bs-section">
+      <div class="bs-row">
+        <span class="bs-section-label">Temperatura colore</span>
+        <span class="bs-val" id="bs-temp-val">3000K</span>
+      </div>
+      <input type="range" class="bs-slider" id="bs-temp-slider" min="2700" max="6500" step="100" value="3000"
+             oninput="bsUpdateTemp(this.value)" onchange="bsUpdateTemp(this.value)">
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Sheet: Colore RGB (Tipo C) -->
+<div class="bs-overlay hidden" id="bs-color-overlay" onclick="closeBS('bs-color')"></div>
+<div class="bottom-sheet hidden" id="bs-color">
+  <div class="bs-header">
+    <span class="bs-title" id="bs-color-title">Lampada studio</span>
+    <button class="bs-close" onclick="closeBS('bs-color')" aria-label="Chiudi">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="3" x2="15" y2="15"/><line x1="15" y1="3" x2="3" y2="15"/>
+      </svg>
+    </button>
+  </div>
+  <div class="bs-body">
+    <div class="bs-section">
+      <div class="bs-row">
+        <span class="bs-section-label">Luminosità</span>
+        <span class="bs-val" id="bs-cbri-val">65%</span>
+      </div>
+      <input type="range" class="bs-slider" id="bs-cbri-slider" min="1" max="100" value="65"
+             oninput="bsUpdateCBri(this.value)" onchange="bsUpdateCBri(this.value)">
+    </div>
+    <div class="bs-section">
+      <div class="bs-row">
+        <span class="bs-section-label">Colore</span>
+        <span class="bs-val" id="bs-hue-val" style="display:inline-block;width:22px;height:22px;border-radius:50%;background:hsl(270,80%,55%);border:2px solid rgba(255,255,255,0.3);vertical-align:middle;"></span>
+      </div>
+      <input type="range" class="bs-slider" id="bs-hue-slider" min="0" max="360" value="270"
+             oninput="bsUpdateHue(this.value)" onchange="bsUpdateHue(this.value)">
+    </div>
+    <div class="bs-section">
+      <div class="bs-section-label">Preimpostazioni</div>
+      <div class="bs-swatches">
+        <div class="bs-swatch" style="background:#fffaf0;" onclick="bsPickSwatch(this, 60, 'bianco caldo')" title="Bianco caldo"></div>
+        <div class="bs-swatch selected" style="background:#845EC2;" onclick="bsPickSwatch(this, 270, 'viola')" title="Viola"></div>
+        <div class="bs-swatch" style="background:#2196f3;" onclick="bsPickSwatch(this, 210, 'blu')" title="Blu"></div>
+        <div class="bs-swatch" style="background:#4caf50;" onclick="bsPickSwatch(this, 120, 'verde')" title="Verde"></div>
+        <div class="bs-swatch" style="background:#f44336;" onclick="bsPickSwatch(this, 0, 'rosso')" title="Rosso"></div>
+        <div class="bs-swatch" style="background:#ff9800;" onclick="bsPickSwatch(this, 30, 'arancio')" title="Arancio"></div>
+        <div class="bs-swatch" style="background:#e91e63;" onclick="bsPickSwatch(this, 330, 'rosa')" title="Rosa"></div>
+        <div class="bs-swatch" style="background:#00bcd4;" onclick="bsPickSwatch(this, 185, 'ciano')" title="Ciano"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT — No ES modules, iOS 12 safe
+     ============================================================ -->
+<script>
+(function () {
+  'use strict';
+
+  /* ---- Theme toggle ---- */
+  var isDark = true;
+  window.toggleTheme = function () {
+    isDark = !isDark;
+    document.body.className = isDark ? 'theme-dark' : 'theme-light';
+    document.getElementById('theme-toggle-btn').textContent = isDark ? 'Tema: Dark' : 'Tema: Light';
+  };
+
+  /* ================================================================
+     TIPO A — toggle semplice
+     ================================================================ */
+  window.toggleSimple = function (onId, offId) {
+    /* swap state-on / state-off su entrambe le tile collegate */
+    var onTile  = document.getElementById(onId);
+    var offTile = document.getElementById(offId);
+    if (!onTile || !offTile) { return; }
+    onTile.classList.remove('state-on');
+    onTile.classList.add('state-off');
+    onTile.style.borderColor = 'transparent';
+    var togOn = onTile.querySelector('.tile-toggle');
+    var thumbOn = togOn ? togOn.querySelector('.tile-toggle-thumb') : null;
+    if (togOn) { togOn.style.background = ''; }
+    if (thumbOn) { thumbOn.style.transform = ''; }
+
+    offTile.classList.remove('state-off');
+    offTile.classList.add('state-on');
+    offTile.style.borderColor = '#FFB700';
+    var togOff = offTile.querySelector('.tile-toggle');
+    var thumbOff = togOff ? togOff.querySelector('.tile-toggle-thumb') : null;
+    if (togOff) { togOff.style.background = '#FFB700'; }
+    if (thumbOff) { thumbOff.style.transform = 'translateX(16px)'; }
+  };
+
+  /* ================================================================
+     LONG-PRESS ENGINE (dimmer + color tiles)
+     ================================================================ */
+  var _lpTimer   = null;
+  var _lpTileId  = null;
+  var _lpSheetId = null;
+
+  window.lpStart = function (tileId, sheetId) {
+    _lpTileId  = tileId;
+    _lpSheetId = sheetId;
+    _lpTimer   = setTimeout(function () {
+      _lpTimer = null;
+      openBS(sheetId, tileId);
+    }, 500);
+  };
+
+  window.lpEnd = function (tileId, sheetId) {
+    if (_lpTimer !== null) {
+      clearTimeout(_lpTimer);
+      _lpTimer = null;
+      /* tap breve → toggle */
+      toggleDimmerRgb(tileId);
+    }
+    _lpTileId  = null;
+    _lpSheetId = null;
+  };
+
+  window.lpCancel = function () {
+    if (_lpTimer !== null) { clearTimeout(_lpTimer); _lpTimer = null; }
+    _lpTileId  = null;
+    _lpSheetId = null;
+  };
+
+  /* fallback onclick per tile OFF */
+  window.tapToggleDimmer = function (tileId) { toggleDimmerRgb(tileId); };
+  window.tapToggleColor  = function (tileId) { toggleDimmerRgb(tileId); };
+
+  function toggleDimmerRgb(tileId) {
+    var tile = document.getElementById(tileId);
+    if (!tile) { return; }
+    var isOn = tile.classList.contains('state-on');
+    var tog  = tile.querySelector('.tile-toggle');
+    var thumb = tog ? tog.querySelector('.tile-toggle-thumb') : null;
+    var valEl = tile.querySelector('.light-value');
+    /* stored color on dataset */
+    var col = tile.dataset.color || '#FFB700';
+
+    if (isOn) {
+      tile.classList.remove('state-on'); tile.classList.add('state-off');
+      tile.style.borderColor = 'transparent';
+      if (tog)   { tog.style.background = ''; }
+      if (thumb) { thumb.style.transform = ''; }
+      var icon = tile.querySelector('.light-icon');
+      if (icon)  { icon.style.color = ''; }
+      if (valEl) { valEl.textContent = ''; valEl.style.color = ''; }
+    } else {
+      tile.classList.remove('state-off'); tile.classList.add('state-on');
+      tile.style.borderColor = col;
+      if (tog)   { tog.style.background = col; }
+      if (thumb) { thumb.style.transform = 'translateX(16px)'; }
+      var icon2 = tile.querySelector('.light-icon');
+      if (icon2) { icon2.style.color = col; }
+      var savedPct = tile.dataset.pct || '100';
+      if (valEl) { valEl.textContent = savedPct + '%'; valEl.style.color = col; }
+    }
+  }
+
+  /* ================================================================
+     BOTTOM SHEET
+     ================================================================ */
+  var _activeSheet = null;
+  var _activeTile  = null;
+
+  function openBS(sheetId, tileId) {
+    _activeSheet = sheetId;
+    _activeTile  = tileId;
+    var sheet   = document.getElementById(sheetId);
+    var overlay = document.getElementById(sheetId + '-overlay');
+    var tile    = tileId ? document.getElementById(tileId) : null;
+    if (sheet)   { sheet.classList.remove('hidden'); }
+    if (overlay) { overlay.classList.remove('hidden'); }
+
+    /* populate title from tile label */
+    var titleEl = document.getElementById(sheetId + '-title');
+    if (titleEl && tile) {
+      var lbl = tile.querySelector('.light-label');
+      if (lbl) { titleEl.textContent = lbl.textContent; }
+    }
+
+    /* sync brightness slider */
+    if (sheetId === 'bs-dimmer') {
+      var briSlider = document.getElementById('bs-bri-slider');
+      var briVal    = document.getElementById('bs-bri-val');
+      if (tile && briSlider) {
+        var pct = parseInt(tile.dataset.pct || '78', 10);
+        briSlider.value = pct;
+        if (briVal) { briVal.textContent = pct + '%'; }
+      }
+      var tmpSlider = document.getElementById('bs-temp-slider');
+      var tmpVal    = document.getElementById('bs-temp-val');
+      if (tile && tmpSlider) {
+        var tmp = parseInt(tile.dataset.temp || '3000', 10);
+        tmpSlider.value = tmp;
+        if (tmpVal) { tmpVal.textContent = tmp + 'K'; }
+      }
+    }
+    if (sheetId === 'bs-color') {
+      var cBriSlider = document.getElementById('bs-cbri-slider');
+      var cBriVal    = document.getElementById('bs-cbri-val');
+      if (tile && cBriSlider) {
+        var cpct = parseInt(tile.dataset.pct || '65', 10);
+        cBriSlider.value = cpct;
+        if (cBriVal) { cBriVal.textContent = cpct + '%'; }
+      }
+      var hueSlider = document.getElementById('bs-hue-slider');
+      if (tile && hueSlider) {
+        var hue = parseInt(tile.dataset.hue || '270', 10);
+        hueSlider.value = hue;
+        refreshHueDot(hue);
+      }
+    }
+  }
+
+  window.closeBS = function (sheetId) {
+    var sheet   = document.getElementById(sheetId);
+    var overlay = document.getElementById(sheetId + '-overlay');
+    if (sheet)   { sheet.classList.add('hidden'); }
+    if (overlay) { overlay.classList.add('hidden'); }
+    _activeSheet = null;
+    _activeTile  = null;
+  };
+
+  /* ---- Dimmer sheet handlers ---- */
+  window.bsUpdateBri = function (v) {
+    var el = document.getElementById('bs-bri-val');
+    if (el) { el.textContent = v + '%'; }
+    var tile = _activeTile ? document.getElementById(_activeTile) : null;
+    if (tile) {
+      tile.dataset.pct = v;
+      var valEl = tile.querySelector('.light-value');
+      if (valEl) { valEl.textContent = v + '%'; }
+    }
+  };
+
+  window.bsUpdateTemp = function (v) {
+    var el = document.getElementById('bs-temp-val');
+    if (el) { el.textContent = v + 'K'; }
+    /* map temperature 2700-6500 → color */
+    var t   = Number(v);
+    var col = tempToColor(t);
+    var tile = _activeTile ? document.getElementById(_activeTile) : null;
+    if (tile) {
+      tile.dataset.temp  = v;
+      tile.dataset.color = col;
+      tile.style.borderColor = col;
+      var togEl = tile.querySelector('.tile-toggle');
+      if (togEl) { togEl.style.background = col; }
+      var iconEl = tile.querySelector('.light-icon');
+      if (iconEl) { iconEl.style.color = col; }
+      var valEl = tile.querySelector('.light-value');
+      if (valEl) { valEl.style.color = col; }
+      var tintEl = tile.querySelector('.light-tint');
+      if (tintEl) {
+        var rgb = hexToRgb(col);
+        if (rgb) { tintEl.style.background = 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',0.15)'; }
+      }
+    }
+  };
+
+  /* map color temp (K) → hex color */
+  function tempToColor(k) {
+    /* 2700K=warm orange, 3500K=amber, 4500K=white, 6500K=cool blue */
+    if (k <= 2700) { return '#FF8C00'; }
+    if (k <= 3200) { return '#FF9A30'; }
+    if (k <= 4000) { return '#FFB700'; }
+    if (k <= 5000) { return '#FFD77A'; }
+    if (k <= 5500) { return '#e8e8e8'; }
+    if (k <= 6000) { return '#c8deff'; }
+    return '#89c4f4';
+  }
+
+  /* ---- Color sheet handlers ---- */
+  window.bsUpdateCBri = function (v) {
+    var el = document.getElementById('bs-cbri-val');
+    if (el) { el.textContent = v + '%'; }
+    var tile = _activeTile ? document.getElementById(_activeTile) : null;
+    if (tile) {
+      tile.dataset.pct = v;
+      var valEl = tile.querySelector('.light-value');
+      if (valEl) { valEl.textContent = v + '%'; }
+    }
+  };
+
+  window.bsUpdateHue = function (v) {
+    refreshHueDot(v);
+    applyHueToTile(Number(v));
+  };
+
+  function refreshHueDot(v) {
+    var dot = document.getElementById('bs-hue-val');
+    if (dot) { dot.style.background = 'hsl(' + v + ',80%,55%)'; }
+  }
+
+  function applyHueToTile(hue) {
+    var col  = 'hsl(' + hue + ',80%,55%)';
+    var col2 = hslToHex(hue, 80, 55);
+    var tile = _activeTile ? document.getElementById(_activeTile) : null;
+    if (tile) {
+      tile.dataset.hue   = hue;
+      tile.dataset.color = col2;
+      tile.style.borderColor = col;
+      var togEl = tile.querySelector('.tile-toggle');
+      if (togEl) { togEl.style.background = col; }
+      var iconEl = tile.querySelector('.light-icon');
+      if (iconEl) { iconEl.style.color = col; }
+      var valEl = tile.querySelector('.light-value');
+      if (valEl) { valEl.style.color = col; }
+      var tintEl = tile.querySelector('.light-tint');
+      if (tintEl) { tintEl.style.background = 'hsla(' + hue + ',80%,55%,0.15)'; }
+    }
+  }
+
+  window.bsPickSwatch = function (el, hue, name) {
+    var swatches = el.parentNode.querySelectorAll('.bs-swatch');
+    for (var i = 0; i < swatches.length; i++) { swatches[i].classList.remove('selected'); }
+    el.classList.add('selected');
+    var hueSlider = document.getElementById('bs-hue-slider');
+    if (hueSlider) { hueSlider.value = hue; }
+    refreshHueDot(hue);
+    applyHueToTile(hue);
+  };
+
+  /* ================================================================
+     Utility — hex ↔ rgb, hsl → hex
+     ================================================================ */
+  function hexToRgb(hex) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : null;
+  }
+
+  function hslToHex(h, s, l) {
+    s /= 100; l /= 100;
+    var a = s * Math.min(l, 1 - l);
+    function f(n) {
+      var k = (n + h / 30) % 12;
+      var color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+      return Math.round(255 * color).toString(16).padStart(2, '0');
+    }
+    return '#' + f(0) + f(8) + f(4);
+  }
+
+  /* ================================================================
+     SWITCH — toggle
+     ================================================================ */
+  /* power ⏻ icon is static — only color changes with state */
+  window.toggleSwitch = function (id) {
+    var tile   = document.getElementById(id);
+    if (!tile) { return; }
+    var isOn   = tile.classList.contains('state-on');
+    var tog    = document.getElementById(id + '-tog');
+    var thumb  = tog ? tog.querySelector('.tile-toggle-thumb') : null;
+    var iconEl = document.getElementById(id + '-icon');
+    var tintEl = tile.querySelector('.light-tint');
+
+    if (isOn) {
+      tile.classList.remove('state-on'); tile.classList.add('state-off');
+      tile.style.borderColor = 'transparent';
+      if (tog)    { tog.style.background = ''; }
+      if (thumb)  { thumb.style.transform = ''; }
+      if (tintEl) { tintEl.style.opacity = '0'; }
+      if (iconEl) { iconEl.style.color = ''; }
+    } else {
+      tile.classList.remove('state-off'); tile.classList.add('state-on');
+      tile.style.borderColor = 'var(--color-on)';
+      if (tog)    { tog.style.background = 'var(--color-on)'; }
+      if (thumb)  { thumb.style.transform = 'translateX(16px)'; }
+      if (tintEl) { tintEl.style.opacity = '1'; }
+      if (iconEl) { iconEl.style.color = 'var(--color-on)'; }
+    }
+  };
+
+  /* ================================================================
+     Init — set dataset.color / dataset.pct / dataset.hue on each tile
+     ================================================================ */
+  /* Tipo B tiles */
+  var bTiles = [
+    { id: 'lb1', color: '#FF8C00', pct: '78', temp: '2700' },
+    { id: 'lb2', color: '#FFB700', pct: '55', temp: '4000' },
+    { id: 'lb3', color: '#89c4f4', pct: '90', temp: '6500' },
+    { id: 'lb4', color: '#FFB700', pct: '80', temp: '4000' }
+  ];
+  for (var bi = 0; bi < bTiles.length; bi++) {
+    var bt = document.getElementById(bTiles[bi].id);
+    if (bt) {
+      bt.dataset.color = bTiles[bi].color;
+      bt.dataset.pct   = bTiles[bi].pct;
+      bt.dataset.temp  = bTiles[bi].temp;
+    }
+  }
+  /* Tipo C tiles */
+  var cTiles = [
+    { id: 'lc1', color: '#845EC2', pct: '65', hue: '270' },
+    { id: 'lc2', color: '#FF6B00', pct: '80', hue: '23'  },
+    { id: 'lc3', color: '#4caf50', pct: '45', hue: '120' },
+    { id: 'lc4', color: '#845EC2', pct: '65', hue: '270' }
+  ];
+  for (var ci = 0; ci < cTiles.length; ci++) {
+    var ct = document.getElementById(cTiles[ci].id);
+    if (ct) {
+      ct.dataset.color = cTiles[ci].color;
+      ct.dataset.pct   = cTiles[ci].pct;
+      ct.dataset.hue   = cTiles[ci].hue;
+    }
+  }
+
+  var alarmPins = { a: '', b: '' };
+  var MAX_PIN = 6;
+
+  function renderPin(panel) {
+    var el = document.getElementById('alarm-pin-' + panel);
+    if (!el) { return; }
+    var pin = alarmPins[panel];
+    var display = '';
+    var i;
+    for (i = 0; i < pin.length; i++) {
+      display += '\u25CF';
+      if (i < pin.length - 1) { display += '\u00A0'; }
+    }
+    el.textContent = display || '\u00A0';
+  }
+
+  window.alarmKey = function (panel, key) {
+    var errorEl = document.getElementById('alarm-error-' + panel);
+    if (errorEl) { errorEl.textContent = ''; }
+
+    if (key === 'back') {
+      alarmPins[panel] = alarmPins[panel].slice(0, -1);
+    } else if (key === 'ok') {
+      if (alarmPins[panel].length < 4) {
+        if (errorEl) { errorEl.textContent = 'PIN troppo corto (min. 4 cifre)'; }
+        return;
+      }
+      if (errorEl) { errorEl.textContent = ''; }
+      alarmPins[panel] = '';
+    } else {
+      if (alarmPins[panel].length < MAX_PIN) {
+        alarmPins[panel] += key;
+      }
+    }
+    renderPin(panel);
+  };
+
+  window.alarmKey_arm = function (action) {
+    console.log('[alarm] action:', action);
+  };
+
+}());
+</script>
+
+
+</body>
+</html>

@@ -1297,3 +1297,161 @@ body.theme-light .s-pressure     { border-color: #475569; } body.theme-light .s-
 body.theme-light .s-physical     { border-color: #475569; } body.theme-light .s-physical     .bubble { color: #475569; }
 body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-generic      .bubble { color: #475569; }
 
+/* ============================================================
+   Cover / Tapparelle tile — v2.9.25
+   Fixed 120px, triple-lock height. iOS 12+ safe (no gap, no inset).
+   ============================================================ */
+.tile-cover {
+  height: 120px;
+  min-height: 120px;
+  max-height: 120px;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  padding: 12px;
+  border: 1.5px solid var(--c-surface-3);
+  border-radius: 14px;
+  background: var(--c-surface-1);
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  cursor: default;
+  -webkit-transition: border-color 0.2s;
+  transition: border-color 0.2s;
+  overflow: hidden;
+}
+
+/* top row: icon left, buttons right */
+.cover-top {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+}
+
+.cover-icon {
+  width: 28px;
+  height: 28px;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  color: var(--c-text-sec);
+  -webkit-transition: color 0.2s;
+  transition: color 0.2s;
+}
+
+/* button group */
+.cover-btns {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+}
+
+.cover-btn {
+  width: 30px;
+  height: 30px;
+  margin-left: 6px;
+  border-radius: 8px;
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-surface-3);
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-transition: background 0.15s;
+  transition: background 0.15s;
+  padding: 0;
+}
+
+.cover-btn:active {
+  background: var(--c-surface-3);
+}
+
+.cover-btn-open  { color: var(--c-on); }
+.cover-btn-stop  { color: var(--c-text-sec); }
+.cover-btn-close { color: var(--c-danger); }
+
+/* position bar */
+.cover-pos-wrap {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+}
+
+.cover-bar-track {
+  -webkit-flex: 1;
+  flex: 1;
+  height: 4px;
+  background: var(--c-surface-3);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-right: 6px;
+}
+
+.cover-bar-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 2px;
+  background: var(--c-on);
+  -webkit-transition: width 0.4s;
+  transition: width 0.4s;
+}
+
+.cover-pos-pct {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--c-text-sec);
+  min-width: 30px;
+  text-align: right;
+}
+
+/* label */
+.cover-label {
+  font-size: 12px;
+  color: var(--c-text-sec);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- State modifiers ---- */
+.tile-cover.s-open {
+  border-color: var(--c-on);
+}
+
+.tile-cover.s-closed {
+  border-color: var(--c-surface-3);
+}
+
+.tile-cover.s-opening,
+.tile-cover.s-closing {
+  border-color: var(--c-warning);
+  -webkit-animation: cover-pulse 1.2s ease-in-out infinite;
+          animation: cover-pulse 1.2s ease-in-out infinite;
+}
+
+.tile-cover.s-unavail {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+@-webkit-keyframes cover-pulse {
+  0%,100% { border-color: var(--c-warning); }
+  50%      { border-color: transparent; }
+}
+@keyframes cover-pulse {
+  0%,100% { border-color: var(--c-warning); }
+  50%      { border-color: transparent; }
+}
+

@@ -1,0 +1,1500 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retro Panel — Room Sections Concept</title>
+<style>
+/* ============================================================
+   Design System
+   ============================================================ */
+:root {
+  --color-bg:           #0f0f0f;
+  --color-surface:      #1a1a1a;
+  --color-surface-2:    #252525;
+  --color-surface-3:    #2e2e2e;
+  --color-text-primary: #f0f0f0;
+  --color-text-secondary:#999999;
+  --color-accent:       #2196f3;
+  --color-accent-bg:    rgba(33,150,243,0.12);
+  --color-on:           #4caf50;
+  --color-danger:       #f44336;
+  --color-warning:      #ff9800;
+  --color-light-on:     #FFB700;
+  --color-light-on-bg:  rgba(255,183,0,0.12);
+  --radius:             14px;
+  --radius-sm:          8px;
+  --gap:                12px;
+  --section-divider:    1px solid rgba(255,255,255,0.06);
+}
+body.theme-light {
+  --color-bg:           #f0f2f5;
+  --color-surface:      #ffffff;
+  --color-surface-2:    #e8eaed;
+  --color-surface-3:    #dde0e5;
+  --color-text-primary: #111111;
+  --color-text-secondary:#666666;
+  --section-divider:    1px solid rgba(0,0,0,0.08);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Segoe UI", Helvetica, Arial, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  transition: background .2s, color .2s;
+}
+* { -webkit-tap-highlight-color: transparent; }
+
+/* ============================================================
+   Top Bar
+   ============================================================ */
+.top-bar {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--color-surface);
+  border-bottom: var(--section-divider);
+  display: flex; align-items: center; gap: 0;
+  padding: 0 20px;
+  height: 56px;
+}
+.top-bar-title {
+  font-size: 13px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  margin-right: 20px;
+}
+.top-bar-title span { color: var(--color-accent); }
+.tab-bar {
+  display: flex; gap: 4px; flex: 1;
+}
+.tab-btn {
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: none;
+  background: none;
+  font-size: 13px; font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.tab-btn.active {
+  background: var(--color-accent-bg);
+  color: var(--color-accent);
+}
+.tab-btn:hover:not(.active) {
+  background: var(--color-surface-2);
+  color: var(--color-text-primary);
+}
+.theme-toggle {
+  margin-left: auto;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-surface-2);
+  background: none;
+  font-size: 12px; font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+  white-space: nowrap;
+}
+.theme-toggle:hover { border-color: var(--color-accent); color: var(--color-accent); }
+
+/* ============================================================
+   Screens
+   ============================================================ */
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ============================================================
+   SCREEN A — Room View
+   ============================================================ */
+.room-page {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 0 20px 40px;
+}
+.room-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 20px 0 16px;
+  border-bottom: var(--section-divider);
+  margin-bottom: 4px;
+}
+.room-back-btn {
+  width: 36px; height: 36px; border-radius: 10px;
+  border: 1px solid var(--color-surface-2);
+  background: none;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--color-text-secondary);
+  transition: border-color .15s, color .15s;
+}
+.room-back-btn:hover { border-color: var(--color-accent); color: var(--color-accent); }
+.room-title-area { flex: 1; }
+.room-title { font-size: 22px; font-weight: 700; letter-spacing: -.3px; }
+.room-subtitle { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
+
+/* Section within room */
+.room-section {
+  margin-top: 24px;
+}
+.room-section-header {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 12px;
+}
+.room-section-title {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+.room-section-count {
+  font-size: 10px; font-weight: 600;
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+  padding: 1px 7px; border-radius: 20px;
+}
+.room-section-line {
+  flex: 1; height: 1px;
+  background: var(--color-surface-2);
+}
+
+/* Tile grid — auto-fit, no fixed columns */
+.tile-grid-auto {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--gap);
+}
+
+/* ============================================================
+   Tiles (fedeli al design system)
+   ============================================================ */
+.tile {
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-2);
+  border-radius: var(--radius);
+  padding: 14px 14px 12px;
+  display: flex; flex-direction: column;
+  position: relative; overflow: hidden;
+  cursor: pointer;
+  transition: transform .12s, border-color .15s;
+  -webkit-user-select: none; user-select: none;
+}
+.tile:active { transform: scale(0.97); }
+
+/* Light tile */
+.tile.light-tile {
+  height: 120px;
+  justify-content: space-between;
+}
+.tile.light-tile.on {
+  background: var(--color-light-on-bg);
+  border-color: rgba(255,183,0,.4);
+}
+.tile.light-tile.on.rgb-purple {
+  background: rgba(180,80,255,.10);
+  border-color: rgba(180,80,255,.4);
+}
+.tile.light-tile.on.rgb-cool {
+  background: rgba(100,180,255,.10);
+  border-color: rgba(100,180,255,.4);
+}
+.tile-icon { font-size: 0; line-height: 1; margin-bottom: 4px; }
+.tile-label {
+  font-size: 13px; font-weight: 600;
+  color: var(--color-text-primary); line-height: 1.2;
+}
+.tile-label-sub {
+  font-size: 11px; color: var(--color-text-secondary); margin-top: 2px;
+}
+.tile-value {
+  font-size: 13px; font-weight: 700;
+  color: var(--color-light-on);
+  margin-top: auto;
+}
+.tile.light-tile.off .tile-icon { opacity: .3; }
+.tile.light-tile.off .tile-label { opacity: .5; }
+.tile.light-tile.off .tile-value { display: none; }
+.light-brightness-badge {
+  position: absolute; bottom: 10px; right: 10px;
+  font-size: 10px; font-weight: 700;
+  color: var(--color-light-on); opacity: .7;
+}
+.tile.light-tile.rgb-purple .tile-value { color: #b450ff; }
+.tile.light-tile.rgb-cool .tile-value { color: #64b4ff; }
+
+/* Sensor tile */
+.tile.sensor-tile {
+  min-height: 100px;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 4px;
+  cursor: default;
+}
+.sensor-icon-row {
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 2px;
+}
+.sensor-value-large {
+  font-size: 28px; font-weight: 800; line-height: 1;
+  letter-spacing: -.5px;
+  color: var(--color-text-primary);
+}
+.sensor-unit { font-size: 14px; font-weight: 600; opacity: .6; }
+.sensor-label-sm {
+  font-size: 11px; color: var(--color-text-secondary);
+}
+
+/* Climate tile */
+.tile.climate-tile {
+  min-height: 120px;
+}
+.climate-temp-row {
+  display: flex; align-items: baseline; gap: 4px;
+  margin-top: 4px;
+}
+.climate-current { font-size: 26px; font-weight: 800; letter-spacing: -.5px; }
+.climate-target { font-size: 13px; font-weight: 600; color: var(--color-accent); }
+.climate-mode-badge {
+  display: inline-block; margin-top: 6px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 20px;
+  background: var(--color-accent-bg); color: var(--color-accent);
+  letter-spacing: .04em;
+}
+.climate-mode-badge.heat {
+  background: rgba(255,152,0,.12); color: var(--color-warning);
+}
+
+/* Alarm tile */
+.tile.alarm-tile {
+  min-height: 100px;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  cursor: default;
+}
+.alarm-icon-col { flex-shrink: 0; }
+.alarm-text-col { flex: 1; }
+.alarm-label { font-size: 13px; font-weight: 600; }
+.alarm-state-badge {
+  display: inline-block; margin-top: 4px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 20px; letter-spacing: .06em;
+}
+.alarm-state-badge.disarmed {
+  background: rgba(76,175,80,.12); color: var(--color-on);
+}
+.alarm-state-badge.armed {
+  background: rgba(244,67,54,.12); color: var(--color-danger);
+}
+
+/* Cover tile */
+.tile.cover-tile { min-height: 100px; }
+.cover-bar-wrap {
+  flex: 1; display: flex; align-items: flex-end; gap: 2px;
+  margin-top: 8px;
+}
+.cover-bar {
+  flex: 1; border-radius: 3px 3px 0 0;
+  background: var(--color-accent);
+  opacity: .7;
+  transition: height .3s;
+}
+.cover-pct {
+  font-size: 11px; font-weight: 700;
+  color: var(--color-accent); margin-top: 4px;
+}
+
+/* ============================================================
+   SCREEN B — Config Editor
+   ============================================================ */
+.cfg-page {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 20px 20px 40px;
+}
+.cfg-room-header {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 20px;
+}
+.cfg-room-name {
+  font-size: 20px; font-weight: 700;
+}
+.cfg-room-subtitle {
+  font-size: 12px; color: var(--color-text-secondary); margin-top: 2px;
+}
+.cfg-badge {
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 700;
+  background: rgba(255,152,0,.12); color: var(--color-warning);
+  letter-spacing: .04em;
+}
+
+/* Two-column editor layout */
+.cfg-editor-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* ---- Left: Section Tree ---- */
+.cfg-section-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-2);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.cfg-panel-header {
+  padding: 12px 14px;
+  border-bottom: var(--section-divider);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.cfg-panel-title {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .06em;
+  color: var(--color-text-secondary);
+}
+.cfg-add-btn {
+  display: flex; align-items: center; gap: 4px;
+  padding: 5px 10px; border-radius: 8px;
+  border: 1px solid var(--color-accent);
+  background: var(--color-accent-bg);
+  font-size: 11px; font-weight: 700;
+  color: var(--color-accent);
+  cursor: pointer;
+  transition: background .15s;
+}
+.cfg-add-btn:hover { background: rgba(33,150,243,.2); }
+
+.cfg-sections-list { padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+
+.cfg-section-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background .12s;
+  border: 1px solid transparent;
+  position: relative;
+}
+.cfg-section-item:hover { background: var(--color-surface-2); }
+.cfg-section-item.active {
+  background: var(--color-accent-bg);
+  border-color: rgba(33,150,243,.3);
+}
+.drag-handle {
+  display: flex; flex-direction: column; gap: 2px;
+  cursor: grab; opacity: .35; flex-shrink: 0;
+}
+.drag-handle span {
+  display: block; width: 14px; height: 2px;
+  background: currentColor; border-radius: 2px;
+}
+.cfg-section-name {
+  flex: 1; font-size: 13px; font-weight: 600;
+  line-height: 1.2;
+  outline: none;
+  background: transparent;
+  border: none;
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+.cfg-section-name:focus {
+  background: var(--color-surface-2);
+  border-radius: 6px;
+  padding: 2px 6px;
+  cursor: text;
+}
+.cfg-section-count {
+  font-size: 10px; font-weight: 700;
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+  padding: 1px 6px; border-radius: 20px;
+  flex-shrink: 0;
+}
+.cfg-section-item.active .cfg-section-count {
+  background: var(--color-accent-bg);
+  color: var(--color-accent);
+}
+.section-move-btns {
+  display: flex; flex-direction: column; gap: 1px;
+  opacity: 0; transition: opacity .12s;
+}
+.cfg-section-item:hover .section-move-btns { opacity: 1; }
+.section-move-btn {
+  width: 18px; height: 16px; border-radius: 4px;
+  border: none; background: var(--color-surface-2);
+  color: var(--color-text-secondary); font-size: 10px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .1s;
+}
+.section-move-btn:hover { background: var(--color-surface-3); color: var(--color-text-primary); }
+.section-del-btn {
+  width: 22px; height: 22px; border-radius: 6px;
+  border: none; background: none;
+  color: var(--color-text-secondary); font-size: 13px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity .12s, background .1s;
+}
+.cfg-section-item:hover .section-del-btn { opacity: 1; }
+.section-del-btn:hover { background: rgba(244,67,54,.12); color: var(--color-danger); }
+
+/* ---- Right: Section Detail ---- */
+.cfg-detail-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-2);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.cfg-detail-empty {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+.cfg-detail-empty svg { opacity: .2; margin-bottom: 10px; }
+
+.cfg-detail-header {
+  padding: 12px 16px;
+  border-bottom: var(--section-divider);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.cfg-detail-section-name {
+  font-size: 15px; font-weight: 700;
+}
+.cfg-detail-section-sub {
+  font-size: 11px; color: var(--color-text-secondary); margin-top: 1px;
+}
+
+.cfg-entity-list { padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+
+.cfg-entity-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: var(--color-surface-2);
+  transition: border-color .12s;
+}
+.cfg-entity-row:hover { border-color: var(--color-surface-3); }
+.cfg-entity-domain-badge {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .04em;
+  padding: 2px 6px; border-radius: 6px;
+  background: var(--color-surface-3);
+  color: var(--color-text-secondary);
+  flex-shrink: 0; white-space: nowrap;
+}
+.cfg-entity-domain-badge.light { background: rgba(255,183,0,.15); color: var(--color-light-on); }
+.cfg-entity-domain-badge.sensor { background: rgba(33,150,243,.15); color: var(--color-accent); }
+.cfg-entity-domain-badge.climate { background: rgba(255,152,0,.15); color: var(--color-warning); }
+.cfg-entity-domain-badge.alarm { background: rgba(244,67,54,.15); color: var(--color-danger); }
+.cfg-entity-domain-badge.cover { background: rgba(76,175,80,.15); color: var(--color-on); }
+.cfg-entity-domain-badge.binary_sensor { background: rgba(255,107,0,.15); color: #FF6B00; }
+
+.cfg-entity-label-input {
+  flex: 1; font-size: 13px; font-weight: 600;
+  background: transparent; border: none; border-radius: 6px;
+  color: var(--color-text-primary); outline: none;
+  padding: 2px 4px;
+}
+.cfg-entity-label-input:focus {
+  background: var(--color-surface-3);
+}
+.cfg-entity-id {
+  font-size: 10px; color: var(--color-text-secondary);
+  margin-top: 1px;
+}
+.cfg-entity-actions {
+  display: flex; align-items: center; gap: 4px; flex-shrink: 0;
+}
+.cfg-entity-btn {
+  width: 26px; height: 26px; border-radius: 7px;
+  border: none; background: var(--color-surface-3);
+  color: var(--color-text-secondary); font-size: 12px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .1s, color .1s;
+}
+.cfg-entity-btn:hover { background: var(--color-surface-3); }
+.cfg-entity-btn.vis-btn.hidden { color: rgba(255,255,255,.2); }
+.cfg-entity-btn.del-btn:hover { background: rgba(244,67,54,.12); color: var(--color-danger); }
+
+.cfg-detail-footer {
+  padding: 10px 12px;
+  border-top: var(--section-divider);
+  display: flex; gap: 8px;
+}
+.cfg-secondary-btn {
+  padding: 7px 14px; border-radius: 9px;
+  border: 1px solid var(--color-surface-2);
+  background: none;
+  font-size: 12px; font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.cfg-secondary-btn:hover { border-color: var(--color-accent); color: var(--color-accent); }
+
+/* ============================================================
+   Live Preview
+   ============================================================ */
+.cfg-preview-section {
+  margin-top: 20px;
+}
+.cfg-preview-header {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+}
+.cfg-preview-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--color-text-secondary);
+}
+.live-badge {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 20px;
+  background: rgba(76,175,80,.12); color: var(--color-on);
+  letter-spacing: .06em;
+  animation: live-pulse 2s ease-in-out infinite;
+}
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
+}
+.cfg-preview-box {
+  background: var(--color-bg);
+  border: 1px solid var(--color-surface-2);
+  border-radius: var(--radius);
+  padding: 16px;
+  min-height: 80px;
+}
+.preview-room-section { margin-bottom: 16px; }
+.preview-room-section:last-child { margin-bottom: 0; }
+.preview-section-title {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--color-text-secondary);
+  margin-bottom: 8px;
+}
+.preview-tiles-row {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.preview-tile-chip {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px; border-radius: 8px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-2);
+  font-size: 11px; font-weight: 600;
+  color: var(--color-text-primary);
+  opacity: 1; transition: opacity .2s;
+}
+.preview-tile-chip.hidden { opacity: .3; text-decoration: line-through; }
+.preview-tile-chip .chip-domain {
+  font-size: 9px; padding: 1px 5px; border-radius: 4px;
+  background: var(--color-surface-2); color: var(--color-text-secondary);
+}
+.preview-empty-section {
+  font-size: 11px; color: var(--color-text-secondary); opacity: .5;
+  font-style: italic;
+}
+
+/* ============================================================
+   Entity Picker Modal
+   ============================================================ */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.7);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity .2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal-box {
+  background: var(--color-surface);
+  border-radius: 16px;
+  border: 1px solid var(--color-surface-2);
+  width: 420px; max-height: 480px;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  transform: scale(.95) translateY(8px);
+  transition: transform .2s;
+  box-shadow: 0 24px 64px rgba(0,0,0,.5);
+}
+.modal-overlay.open .modal-box { transform: scale(1) translateY(0); }
+.modal-header {
+  padding: 16px 16px 12px;
+  border-bottom: var(--section-divider);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-title { font-size: 15px; font-weight: 700; }
+.modal-close-btn {
+  width: 28px; height: 28px; border-radius: 8px;
+  border: none; background: var(--color-surface-2);
+  color: var(--color-text-secondary); font-size: 16px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .1s;
+}
+.modal-close-btn:hover { background: var(--color-surface-3); }
+.modal-search {
+  padding: 10px 16px;
+  border-bottom: var(--section-divider);
+}
+.modal-search input {
+  width: 100%; padding: 8px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--color-surface-2);
+  background: var(--color-surface-2);
+  color: var(--color-text-primary);
+  font-size: 13px; outline: none;
+  transition: border-color .15s;
+}
+.modal-search input:focus { border-color: var(--color-accent); }
+.modal-entity-list { overflow-y: auto; padding: 8px; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.modal-entity-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background .12s, border-color .12s;
+}
+.modal-entity-item:hover { background: var(--color-surface-2); }
+.modal-entity-item.selected {
+  background: var(--color-accent-bg);
+  border-color: rgba(33,150,243,.3);
+}
+.modal-entity-name { font-size: 13px; font-weight: 600; flex: 1; }
+.modal-entity-id { font-size: 10px; color: var(--color-text-secondary); }
+.modal-footer {
+  padding: 10px 16px;
+  border-top: var(--section-divider);
+  display: flex; justify-content: flex-end; gap: 8px;
+}
+.modal-confirm-btn {
+  padding: 8px 18px; border-radius: 9px;
+  border: none;
+  background: var(--color-accent);
+  color: #fff; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: opacity .15s;
+}
+.modal-confirm-btn:hover { opacity: .85; }
+.modal-cancel-btn {
+  padding: 8px 18px; border-radius: 9px;
+  border: 1px solid var(--color-surface-2);
+  background: none;
+  color: var(--color-text-secondary); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: border-color .15s, color .15s;
+}
+.modal-cancel-btn:hover { border-color: var(--color-text-secondary); color: var(--color-text-primary); }
+
+/* ============================================================
+   Save bar
+   ============================================================ */
+.cfg-save-bar {
+  position: sticky; bottom: 0;
+  background: var(--color-surface);
+  border-top: var(--section-divider);
+  padding: 12px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 24px;
+}
+.cfg-save-info { font-size: 12px; color: var(--color-text-secondary); }
+.cfg-save-btn {
+  padding: 9px 24px; border-radius: 10px;
+  border: none;
+  background: var(--color-accent);
+  color: #fff; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: opacity .15s;
+}
+.cfg-save-btn:hover { opacity: .85; }
+.cfg-save-btn.saved {
+  background: var(--color-on);
+}
+
+/* Animations */
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-in { animation: fadeInDown .18s ease forwards; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-surface-2); border-radius: 8px; }
+</style>
+</head>
+<body class="theme-dark">
+
+<!-- ============================================================
+     TOP BAR
+     ============================================================ -->
+<div class="top-bar">
+  <div class="top-bar-title">Retro <span>Panel</span></div>
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showScreen('screen-view')">Room View</button>
+    <button class="tab-btn" onclick="showScreen('screen-cfg')">Config Editor</button>
+  </div>
+  <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()">☀ Light</button>
+</div>
+
+<!-- ============================================================
+     SCREEN A: ROOM VIEW
+     ============================================================ -->
+<div id="screen-view" class="screen active">
+<div class="room-page">
+
+  <div class="room-header">
+    <button class="room-back-btn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </button>
+    <div class="room-title-area">
+      <div class="room-title">Living Room</div>
+      <div class="room-subtitle">3 sezioni · 8 entità attive</div>
+    </div>
+  </div>
+
+  <!-- ── Section: LUCI ── -->
+  <div class="room-section">
+    <div class="room-section-header">
+      <div class="room-section-title">Luci</div>
+      <div class="room-section-count">4</div>
+      <div class="room-section-line"></div>
+    </div>
+    <div class="tile-grid-auto">
+
+      <!-- Luce on + dimmer -->
+      <div class="tile light-tile on">
+        <div class="tile-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#FFB700">
+            <path d="M12,2A7,7 0 0,1 19,9C19,11.38 17.81,13.47 16,14.74V17A1,1 0 0,1 15,18H9A1,1 0 0,1 8,17V14.74C6.19,13.47 5,11.38 5,9A7,7 0 0,1 12,2M9,21V20H15V21A1,1 0 0,1 14,22H10A1,1 0 0,1 9,21M12,4A5,5 0 0,0 7,9C7,11.05 8.23,12.81 10,13.58V16H14V13.58C15.77,12.81 17,11.05 17,9A5,5 0 0,0 12,4Z"/>
+          </svg>
+        </div>
+        <div class="tile-label">Divano</div>
+        <div class="tile-value">78%</div>
+        <div class="light-brightness-badge">78%</div>
+      </div>
+
+      <!-- Luce on + colore RGB warm white -->
+      <div class="tile light-tile on">
+        <div class="tile-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#FFB700">
+            <path d="M12,2A7,7 0 0,1 19,9C19,11.38 17.81,13.47 16,14.74V17A1,1 0 0,1 15,18H9A1,1 0 0,1 8,17V14.74C6.19,13.47 5,11.38 5,9A7,7 0 0,1 12,2M9,21V20H15V21A1,1 0 0,1 14,22H10A1,1 0 0,1 9,21M12,4A5,5 0 0,0 7,9C7,11.05 8.23,12.81 10,13.58V16H14V13.58C15.77,12.81 17,11.05 17,9A5,5 0 0,0 12,4Z"/>
+          </svg>
+        </div>
+        <div class="tile-label">Soffitto</div>
+        <div class="tile-value">100%</div>
+        <div class="light-brightness-badge">100%</div>
+      </div>
+
+      <!-- Luce off -->
+      <div class="tile light-tile off">
+        <div class="tile-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="var(--color-text-secondary)">
+            <path d="M12,2A7,7 0 0,1 19,9C19,11.38 17.81,13.47 16,14.74V17A1,1 0 0,1 15,18H9A1,1 0 0,1 8,17V14.74C6.19,13.47 5,11.38 5,9A7,7 0 0,1 12,2M9,21V20H15V21A1,1 0 0,1 14,22H10A1,1 0 0,1 9,21M12,4A5,5 0 0,0 7,9C7,11.05 8.23,12.81 10,13.58V16H14V13.58C15.77,12.81 17,11.05 17,9A5,5 0 0,0 12,4Z"/>
+          </svg>
+        </div>
+        <div class="tile-label">Lampada TV</div>
+        <div class="tile-value"></div>
+      </div>
+
+      <!-- Luce on colore viola -->
+      <div class="tile light-tile on rgb-purple">
+        <div class="tile-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#b450ff">
+            <path d="M12,2A7,7 0 0,1 19,9C19,11.38 17.81,13.47 16,14.74V17A1,1 0 0,1 15,18H9A1,1 0 0,1 8,17V14.74C6.19,13.47 5,11.38 5,9A7,7 0 0,1 12,2M9,21V20H15V21A1,1 0 0,1 14,22H10A1,1 0 0,1 9,21M12,4A5,5 0 0,0 7,9C7,11.05 8.23,12.81 10,13.58V16H14V13.58C15.77,12.81 17,11.05 17,9A5,5 0 0,0 12,4Z"/>
+          </svg>
+        </div>
+        <div class="tile-label">Striscia LED</div>
+        <div class="tile-value" style="color:#b450ff">45%</div>
+        <div class="light-brightness-badge" style="color:#b450ff">45%</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Section: CLIMA ── -->
+  <div class="room-section">
+    <div class="room-section-header">
+      <div class="room-section-title">Clima</div>
+      <div class="room-section-count">2</div>
+      <div class="room-section-line"></div>
+    </div>
+    <div class="tile-grid-auto">
+
+      <!-- Sensore temperatura -->
+      <div class="tile sensor-tile">
+        <div class="sensor-icon-row">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--color-warning)">
+            <path d="M15,13V5A3,3 0 0,0 9,5V13A5,5 0 1,0 15,13M12,4A1,1 0 0,1 13,5V8H11V5A1,1 0 0,1 12,4Z"/>
+          </svg>
+          <span style="font-size:10px;color:var(--color-text-secondary);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Temperatura</span>
+        </div>
+        <div class="sensor-value-large">22.4<span class="sensor-unit">°C</span></div>
+        <div class="sensor-label-sm">Soggiorno · Aggiornato ora</div>
+      </div>
+
+      <!-- Climate termostato -->
+      <div class="tile climate-tile">
+        <div class="tile-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--color-warning)">
+            <path d="M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z"/>
+          </svg>
+        </div>
+        <div class="tile-label">Termostato</div>
+        <div class="climate-temp-row">
+          <span class="climate-current" style="color:var(--color-warning)">21°</span>
+          <span class="climate-target">→ 22°</span>
+        </div>
+        <div class="climate-mode-badge heat">Riscaldamento</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Section: SICUREZZA ── -->
+  <div class="room-section">
+    <div class="room-section-header">
+      <div class="room-section-title">Sicurezza</div>
+      <div class="room-section-count">2</div>
+      <div class="room-section-line"></div>
+    </div>
+    <div class="tile-grid-auto">
+
+      <!-- Sensore porta -->
+      <div class="tile sensor-tile">
+        <div class="sensor-icon-row">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--color-on)">
+            <path d="M8,3C6.89,3 6,3.89 6,5V21H18V5C18,3.89 17.1,3 16,3H8M16,19H8V5H16V19M13,11.5A1.5,1.5 0 0,0 11.5,13A1.5,1.5 0 0,0 13,14.5A1.5,1.5 0 0,0 14.5,13A1.5,1.5 0 0,0 13,11.5Z"/>
+          </svg>
+          <span style="font-size:10px;color:var(--color-text-secondary);font-weight:700;text-transform:uppercase;letter-spacing:.05em">Porta</span>
+        </div>
+        <div class="sensor-value-large" style="font-size:18px;color:var(--color-on)">Chiusa</div>
+        <div class="sensor-label-sm">Ingresso principale</div>
+      </div>
+
+      <!-- Allarme -->
+      <div class="tile alarm-tile" style="grid-column: span 2;">
+        <div class="alarm-icon-col">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="var(--color-on)">
+            <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,5A3,3 0 0,1 15,8A3,3 0 0,1 12,11A3,3 0 0,1 9,8A3,3 0 0,1 12,5M17.13,17C15.92,18.85 14.11,20.24 12,20.92C9.89,20.24 8.08,18.85 6.87,17C6.53,16.5 6.24,16 6,15.47C6,13.82 8.71,12.47 12,12.47C15.29,12.47 18,13.79 18,15.47C17.76,16 17.47,16.5 17.13,17Z"/>
+          </svg>
+        </div>
+        <div class="alarm-text-col">
+          <div class="alarm-label">Allarme Casa</div>
+          <div class="alarm-state-badge disarmed">Disarmato</div>
+        </div>
+        <div style="font-size:11px;color:var(--color-text-secondary);text-align:right">
+          <div>Ultima modifica</div>
+          <div style="font-weight:700;color:var(--color-text-primary)">22:14</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /room-page -->
+</div>
+
+<!-- ============================================================
+     SCREEN B: CONFIG EDITOR
+     ============================================================ -->
+<div id="screen-cfg" class="screen">
+<div class="cfg-page">
+
+  <div class="cfg-room-header">
+    <div>
+      <div class="cfg-room-name">Living Room</div>
+      <div class="cfg-room-subtitle">Editor sezioni — trascina le sezioni per riordinarle, rinomina con click</div>
+    </div>
+    <div class="cfg-badge">MODIFICA IN CORSO</div>
+  </div>
+
+  <div class="cfg-editor-layout">
+
+    <!-- LEFT: Section tree -->
+    <div>
+      <div class="cfg-section-panel">
+        <div class="cfg-panel-header">
+          <div class="cfg-panel-title">Sezioni</div>
+          <button class="cfg-add-btn" onclick="addSection()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
+            </svg>
+            Sezione
+          </button>
+        </div>
+        <div class="cfg-sections-list" id="sections-list"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Section detail -->
+    <div id="detail-panel">
+      <div class="cfg-detail-panel">
+        <div class="cfg-detail-empty">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" style="display:block;margin:0 auto 8px">
+            <path d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z"/>
+          </svg>
+          Seleziona una sezione per modificarla
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Live Preview -->
+  <div class="cfg-preview-section">
+    <div class="cfg-preview-header">
+      <div class="cfg-preview-label">Anteprima Room</div>
+      <div class="live-badge">● LIVE</div>
+    </div>
+    <div class="cfg-preview-box" id="live-preview"></div>
+  </div>
+
+</div>
+
+<!-- Save bar -->
+<div class="cfg-save-bar">
+  <div class="cfg-save-info" id="save-info">Modifiche non salvate</div>
+  <button class="cfg-save-btn" id="save-btn" onclick="saveConfig()">Salva configurazione</button>
+</div>
+
+</div><!-- /screen-cfg -->
+
+<!-- ============================================================
+     ENTITY PICKER MODAL
+     ============================================================ -->
+<div class="modal-overlay" id="entity-modal" onclick="closeModalOnBackdrop(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">Aggiungi entità</div>
+      <button class="modal-close-btn" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-search">
+      <input type="text" placeholder="Cerca entità..." id="modal-search-input" oninput="filterModal()">
+    </div>
+    <div class="modal-entity-list" id="modal-entity-list"></div>
+    <div class="modal-footer">
+      <button class="modal-cancel-btn" onclick="closeModal()">Annulla</button>
+      <button class="modal-confirm-btn" onclick="confirmModal()">Aggiungi</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+(function () {
+  'use strict';
+
+  /* ============================================================
+     Theme
+  */
+  var isDark = true;
+  window.toggleTheme = function () {
+    isDark = !isDark;
+    document.body.className = isDark ? 'theme-dark' : 'theme-light';
+    document.getElementById('theme-btn').textContent = isDark ? '☀ Light' : '🌙 Dark';
+  };
+
+  /* ============================================================
+     Tab navigation
+  */
+  window.showScreen = function (id) {
+    var screens = document.querySelectorAll('.screen');
+    var tabs = document.querySelectorAll('.tab-btn');
+    for (var i = 0; i < screens.length; i++) {
+      screens[i].classList.remove('active');
+    }
+    document.getElementById(id).classList.add('active');
+
+    var map = { 'screen-view': 0, 'screen-cfg': 1 };
+    for (var j = 0; j < tabs.length; j++) {
+      tabs[j].classList.toggle('active', j === map[id]);
+    }
+  };
+
+  /* ============================================================
+     STATE
+  */
+  var state = {
+    sections: [
+      {
+        id: 's1', name: 'Luci',
+        items: [
+          { id: 'e1', entity_id: 'light.divano',    label: 'Divano',      domain: 'light',   hidden: false },
+          { id: 'e2', entity_id: 'light.soffitto',  label: 'Soffitto',    domain: 'light',   hidden: false },
+          { id: 'e3', entity_id: 'light.lampada_tv',label: 'Lampada TV',  domain: 'light',   hidden: false },
+          { id: 'e4', entity_id: 'light.led_strip', label: 'Striscia LED',domain: 'light',   hidden: false }
+        ]
+      },
+      {
+        id: 's2', name: 'Clima',
+        items: [
+          { id: 'e5', entity_id: 'sensor.temp_living',   label: 'Temperatura', domain: 'sensor',  hidden: false },
+          { id: 'e6', entity_id: 'climate.termostato',   label: 'Termostato',  domain: 'climate', hidden: false }
+        ]
+      },
+      {
+        id: 's3', name: 'Sicurezza',
+        items: [
+          { id: 'e7', entity_id: 'binary_sensor.porta',  label: 'Porta',       domain: 'binary_sensor', hidden: false },
+          { id: 'e8', entity_id: 'alarm_control_panel.casa', label: 'Allarme Casa', domain: 'alarm', hidden: false }
+        ]
+      }
+    ],
+    activeSectionId: null,
+    sectionCounter: 4,
+    entityCounter: 9
+  };
+
+  var AVAILABLE_ENTITIES = [
+    { entity_id: 'light.cucina',          label: 'Luce cucina',       domain: 'light' },
+    { entity_id: 'switch.ventilatore',    label: 'Ventilatore',       domain: 'switch' },
+    { entity_id: 'sensor.humidity',       label: 'Umidità',           domain: 'sensor' },
+    { entity_id: 'cover.tapparella',      label: 'Tapparella',        domain: 'cover' },
+    { entity_id: 'light.ingresso',        label: 'Luce ingresso',     domain: 'light' },
+    { entity_id: 'sensor.co2',            label: 'CO₂',               domain: 'sensor' },
+    { entity_id: 'binary_sensor.finestra',label: 'Finestra',          domain: 'binary_sensor' },
+    { entity_id: 'switch.presa_smart',    label: 'Presa smart',       domain: 'switch' }
+  ];
+
+  var modalSelectedIds = [];
+  var modalTargetSectionId = null;
+
+  /* ============================================================
+     Render sections list (left panel)
+  */
+  function renderSectionsList() {
+    var list = document.getElementById('sections-list');
+    list.innerHTML = '';
+    for (var i = 0; i < state.sections.length; i++) {
+      list.appendChild(makeSectionItem(state.sections[i], i));
+    }
+  }
+
+  function makeSectionItem(section, idx) {
+    var item = document.createElement('div');
+    item.className = 'cfg-section-item' + (section.id === state.activeSectionId ? ' active' : '');
+    item.setAttribute('data-id', section.id);
+
+    var handle = document.createElement('div');
+    handle.className = 'drag-handle';
+    handle.innerHTML = '<span></span><span></span><span></span>';
+    item.appendChild(handle);
+
+    var name = document.createElement('input');
+    name.type = 'text';
+    name.className = 'cfg-section-name';
+    name.value = section.name;
+    name.setAttribute('data-id', section.id);
+    name.addEventListener('change', function () {
+      var sid = this.getAttribute('data-id');
+      var s = findSection(sid);
+      if (s) { s.name = this.value; }
+      renderPreview();
+    });
+    name.addEventListener('click', function (e) {
+      e.stopPropagation();
+      selectSection(this.getAttribute('data-id'));
+    });
+    item.appendChild(name);
+
+    var count = document.createElement('div');
+    count.className = 'cfg-section-count';
+    count.textContent = section.items.length;
+    item.appendChild(count);
+
+    var moveBtns = document.createElement('div');
+    moveBtns.className = 'section-move-btns';
+    var up = document.createElement('button');
+    up.className = 'section-move-btn'; up.textContent = '▲';
+    up.disabled = idx === 0;
+    (function(sid){ up.addEventListener('click', function(e){ e.stopPropagation(); moveSection(sid, -1); }); })(section.id);
+    var dn = document.createElement('button');
+    dn.className = 'section-move-btn'; dn.textContent = '▼';
+    dn.disabled = idx === state.sections.length - 1;
+    (function(sid){ dn.addEventListener('click', function(e){ e.stopPropagation(); moveSection(sid, 1); }); })(section.id);
+    moveBtns.appendChild(up);
+    moveBtns.appendChild(dn);
+    item.appendChild(moveBtns);
+
+    var del = document.createElement('button');
+    del.className = 'section-del-btn';
+    del.innerHTML = '×';
+    (function(sid){ del.addEventListener('click', function(e){ e.stopPropagation(); deleteSection(sid); }); })(section.id);
+    item.appendChild(del);
+
+    (function(sid){ item.addEventListener('click', function(){ selectSection(sid); }); })(section.id);
+
+    return item;
+  }
+
+  function selectSection(sectionId) {
+    state.activeSectionId = sectionId;
+    renderSectionsList();
+    renderDetail();
+  }
+
+  /* ============================================================
+     Render detail (right panel)
+  */
+  function renderDetail() {
+    var panel = document.getElementById('detail-panel');
+    var section = findSection(state.activeSectionId);
+    if (!section) {
+      panel.innerHTML = '<div class="cfg-detail-panel"><div class="cfg-detail-empty">' +
+        '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" style="display:block;margin:0 auto 8px;opacity:.2"><path d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z"/></svg>' +
+        'Seleziona una sezione per modificarla</div></div>';
+      return;
+    }
+
+    var box = document.createElement('div');
+    box.className = 'cfg-detail-panel';
+
+    var header = document.createElement('div');
+    header.className = 'cfg-detail-header';
+    header.innerHTML = '<div><div class="cfg-detail-section-name">' + escHtml(section.name) + '</div>' +
+      '<div class="cfg-detail-section-sub">' + section.items.length + ' entit&agrave;</div></div>';
+    box.appendChild(header);
+
+    var list = document.createElement('div');
+    list.className = 'cfg-entity-list';
+    for (var i = 0; i < section.items.length; i++) {
+      list.appendChild(makeEntityRow(section, section.items[i], i));
+    }
+    if (section.items.length === 0) {
+      var empty = document.createElement('div');
+      empty.style.cssText = 'padding:24px;text-align:center;color:var(--color-text-secondary);font-size:13px';
+      empty.textContent = 'Nessuna entità. Aggiungi entità dalla Home Assistant.';
+      list.appendChild(empty);
+    }
+    box.appendChild(list);
+
+    var footer = document.createElement('div');
+    footer.className = 'cfg-detail-footer';
+    var addBtn = document.createElement('button');
+    addBtn.className = 'cfg-add-btn';
+    addBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/></svg> Aggiungi entità';
+    (function(sid){ addBtn.addEventListener('click', function(){ openModal(sid); }); })(section.id);
+    footer.appendChild(addBtn);
+    box.appendChild(footer);
+
+    panel.innerHTML = '';
+    panel.appendChild(box);
+  }
+
+  function makeEntityRow(section, item, idx) {
+    var row = document.createElement('div');
+    row.className = 'cfg-entity-row animate-in';
+
+    var badge = document.createElement('div');
+    badge.className = 'cfg-entity-domain-badge ' + item.domain;
+    badge.textContent = item.domain;
+    row.appendChild(badge);
+
+    var textCol = document.createElement('div');
+    textCol.style.flex = '1';
+    var labelInput = document.createElement('input');
+    labelInput.type = 'text';
+    labelInput.className = 'cfg-entity-label-input';
+    labelInput.value = item.label;
+    (function(it){ labelInput.addEventListener('change', function(){ it.label = this.value; renderPreview(); }); })(item);
+    textCol.appendChild(labelInput);
+    var idDiv = document.createElement('div');
+    idDiv.className = 'cfg-entity-id';
+    idDiv.textContent = item.entity_id;
+    textCol.appendChild(idDiv);
+    row.appendChild(textCol);
+
+    var actions = document.createElement('div');
+    actions.className = 'cfg-entity-actions';
+
+    // Move up
+    var upBtn = document.createElement('button');
+    upBtn.className = 'cfg-entity-btn';
+    upBtn.title = 'Su';
+    upBtn.innerHTML = '▲';
+    upBtn.disabled = idx === 0;
+    (function(s, it){ upBtn.addEventListener('click', function(){ moveItem(s, it.id, -1); }); })(section, item);
+    actions.appendChild(upBtn);
+
+    // Move down
+    var dnBtn = document.createElement('button');
+    dnBtn.className = 'cfg-entity-btn';
+    dnBtn.title = 'Giù';
+    dnBtn.innerHTML = '▼';
+    dnBtn.disabled = idx === section.items.length - 1;
+    (function(s, it){ dnBtn.addEventListener('click', function(){ moveItem(s, it.id, 1); }); })(section, item);
+    actions.appendChild(dnBtn);
+
+    // Visibility
+    var visBtn = document.createElement('button');
+    visBtn.className = 'cfg-entity-btn vis-btn' + (item.hidden ? ' hidden' : '');
+    visBtn.title = item.hidden ? 'Mostra' : 'Nascondi';
+    visBtn.innerHTML = item.hidden
+      ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M11.83,9L15,12.16C15,12.11 15,12.05 15,12A3,3 0 0,0 12,9C11.94,9 11.89,9 11.83,9M7.53,9.8L9.08,11.35C9.03,11.56 9,11.77 9,12A3,3 0 0,0 12,15C12.22,15 12.44,14.97 12.65,14.92L14.2,16.47C13.53,16.8 12.79,17 12,17A5,5 0 0,1 7,12C7,11.21 7.2,10.47 7.53,9.8M2,4.27L4.28,6.55L4.73,7C3.08,8.3 1.78,10 1,12C2.73,16.39 7,19.5 12,19.5C13.55,19.5 15.03,19.2 16.38,18.66L16.81,19.08L19.73,22L21,20.73L3.27,3M12,7A5,5 0 0,1 17,12C17,12.64 16.87,13.26 16.64,13.82L19.57,16.75C21.07,15.5 22.27,13.86 23,12C21.27,7.61 17,4.5 12,4.5C10.6,4.5 9.26,4.75 8,5.2L10.17,7.35C10.74,7.13 11.35,7 12,7Z"/></svg>'
+      : '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z"/></svg>';
+    (function(it){ visBtn.addEventListener('click', function(){ it.hidden = !it.hidden; renderDetail(); renderPreview(); }); })(item);
+    actions.appendChild(visBtn);
+
+    // Delete
+    var delBtn = document.createElement('button');
+    delBtn.className = 'cfg-entity-btn del-btn';
+    delBtn.title = 'Rimuovi';
+    delBtn.innerHTML = '×';
+    (function(s, it){ delBtn.addEventListener('click', function(){ removeItem(s, it.id); }); })(section, item);
+    actions.appendChild(delBtn);
+
+    row.appendChild(actions);
+    return row;
+  }
+
+  /* ============================================================
+     Section operations
+  */
+  window.addSection = function () {
+    var newSection = {
+      id: 's' + (state.sectionCounter++),
+      name: 'Nuova sezione ' + state.sections.length,
+      items: []
+    };
+    state.sections.push(newSection);
+    renderSectionsList();
+    renderPreview();
+    selectSection(newSection.id);
+  };
+
+  function deleteSection(sectionId) {
+    state.sections = state.sections.filter(function(s){ return s.id !== sectionId; });
+    if (state.activeSectionId === sectionId) {
+      state.activeSectionId = state.sections.length ? state.sections[0].id : null;
+    }
+    renderSectionsList();
+    renderDetail();
+    renderPreview();
+  }
+
+  function moveSection(sectionId, delta) {
+    var idx = findSectionIdx(sectionId);
+    if (idx < 0) { return; }
+    var newIdx = idx + delta;
+    if (newIdx < 0 || newIdx >= state.sections.length) { return; }
+    var tmp = state.sections[idx];
+    state.sections[idx] = state.sections[newIdx];
+    state.sections[newIdx] = tmp;
+    renderSectionsList();
+    renderPreview();
+  }
+
+  function moveItem(section, itemId, delta) {
+    var idx = -1;
+    for (var i = 0; i < section.items.length; i++) {
+      if (section.items[i].id === itemId) { idx = i; break; }
+    }
+    if (idx < 0) { return; }
+    var newIdx = idx + delta;
+    if (newIdx < 0 || newIdx >= section.items.length) { return; }
+    var tmp = section.items[idx];
+    section.items[idx] = section.items[newIdx];
+    section.items[newIdx] = tmp;
+    renderDetail();
+    renderPreview();
+  }
+
+  function removeItem(section, itemId) {
+    section.items = section.items.filter(function(it){ return it.id !== itemId; });
+    renderSectionsList();
+    renderDetail();
+    renderPreview();
+  }
+
+  /* ============================================================
+     Live Preview
+  */
+  function renderPreview() {
+    var box = document.getElementById('live-preview');
+    if (!box) { return; }
+    if (state.sections.length === 0) {
+      box.innerHTML = '<div style="text-align:center;color:var(--color-text-secondary);font-size:12px;padding:16px">Nessuna sezione configurata</div>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < state.sections.length; i++) {
+      var s = state.sections[i];
+      html += '<div class="preview-room-section">';
+      html += '<div class="preview-section-title">' + escHtml(s.name) + ' <span style="opacity:.5">(' + s.items.length + ')</span></div>';
+      if (s.items.length === 0) {
+        html += '<div class="preview-empty-section">Nessuna entità</div>';
+      } else {
+        html += '<div class="preview-tiles-row">';
+        for (var j = 0; j < s.items.length; j++) {
+          var it = s.items[j];
+          html += '<div class="preview-tile-chip' + (it.hidden ? ' hidden' : '') + '">';
+          html += '<span class="chip-domain">' + escHtml(it.domain) + '</span>';
+          html += escHtml(it.label);
+          html += '</div>';
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+    box.innerHTML = html;
+  }
+
+  /* ============================================================
+     Modal
+  */
+  window.openModal = function (sectionId) {
+    modalTargetSectionId = sectionId;
+    modalSelectedIds = [];
+    renderModalList(AVAILABLE_ENTITIES);
+    document.getElementById('modal-search-input').value = '';
+    document.getElementById('entity-modal').classList.add('open');
+  };
+
+  window.closeModal = function () {
+    document.getElementById('entity-modal').classList.remove('open');
+    modalTargetSectionId = null;
+    modalSelectedIds = [];
+  };
+
+  window.closeModalOnBackdrop = function (e) {
+    if (e.target === document.getElementById('entity-modal')) { closeModal(); }
+  };
+
+  window.filterModal = function () {
+    var q = document.getElementById('modal-search-input').value.toLowerCase();
+    var filtered = AVAILABLE_ENTITIES.filter(function(e) {
+      return e.label.toLowerCase().indexOf(q) >= 0 || e.entity_id.toLowerCase().indexOf(q) >= 0;
+    });
+    renderModalList(filtered);
+  };
+
+  function renderModalList(entities) {
+    var list = document.getElementById('modal-entity-list');
+    list.innerHTML = '';
+    for (var i = 0; i < entities.length; i++) {
+      list.appendChild(makeModalItem(entities[i]));
+    }
+  }
+
+  function makeModalItem(entity) {
+    var row = document.createElement('div');
+    var isSelected = modalSelectedIds.indexOf(entity.entity_id) >= 0;
+    row.className = 'modal-entity-item' + (isSelected ? ' selected' : '');
+
+    var badge = document.createElement('div');
+    badge.className = 'cfg-entity-domain-badge ' + entity.domain;
+    badge.textContent = entity.domain;
+    row.appendChild(badge);
+
+    var text = document.createElement('div');
+    text.style.flex = '1';
+    var nameEl = document.createElement('div');
+    nameEl.className = 'modal-entity-name';
+    nameEl.textContent = entity.label;
+    var idEl = document.createElement('div');
+    idEl.className = 'modal-entity-id';
+    idEl.textContent = entity.entity_id;
+    text.appendChild(nameEl);
+    text.appendChild(idEl);
+    row.appendChild(text);
+
+    if (isSelected) {
+      var check = document.createElement('div');
+      check.style.cssText = 'color:var(--color-accent);font-size:16px';
+      check.textContent = '✓';
+      row.appendChild(check);
+    }
+
+    (function(eid){ row.addEventListener('click', function(){
+      var idx = modalSelectedIds.indexOf(eid);
+      if (idx >= 0) { modalSelectedIds.splice(idx, 1); }
+      else { modalSelectedIds.push(eid); }
+      window.filterModal();
+    }); })(entity.entity_id);
+
+    return row;
+  }
+
+  window.confirmModal = function () {
+    var section = findSection(modalTargetSectionId);
+    if (!section) { closeModal(); return; }
+    for (var i = 0; i < modalSelectedIds.length; i++) {
+      var eid = modalSelectedIds[i];
+      var found = null;
+      for (var j = 0; j < AVAILABLE_ENTITIES.length; j++) {
+        if (AVAILABLE_ENTITIES[j].entity_id === eid) { found = AVAILABLE_ENTITIES[j]; break; }
+      }
+      if (found) {
+        section.items.push({
+          id: 'e' + (state.entityCounter++),
+          entity_id: found.entity_id,
+          label: found.label,
+          domain: found.domain,
+          hidden: false
+        });
+      }
+    }
+    closeModal();
+    renderSectionsList();
+    renderDetail();
+    renderPreview();
+  };
+
+  /* ============================================================
+     Save (mock)
+  */
+  window.saveConfig = function () {
+    var btn = document.getElementById('save-btn');
+    var info = document.getElementById('save-info');
+    btn.disabled = true;
+    btn.textContent = 'Salvataggio...';
+    setTimeout(function () {
+      btn.classList.add('saved');
+      btn.textContent = 'Salvato ✓';
+      info.textContent = 'Configurazione salvata — ' + new Date().toLocaleTimeString('it-IT');
+      setTimeout(function () {
+        btn.classList.remove('saved');
+        btn.textContent = 'Salva configurazione';
+        btn.disabled = false;
+      }, 2000);
+    }, 700);
+  };
+
+  /* ============================================================
+     Helpers
+  */
+  function findSection(id) {
+    for (var i = 0; i < state.sections.length; i++) {
+      if (state.sections[i].id === id) { return state.sections[i]; }
+    }
+    return null;
+  }
+  function findSectionIdx(id) {
+    for (var i = 0; i < state.sections.length; i++) {
+      if (state.sections[i].id === id) { return i; }
+    }
+    return -1;
+  }
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  /* ============================================================
+     Init
+  */
+  renderSectionsList();
+  renderDetail();
+  renderPreview();
+
+}());
+</script>
+</body>
+</html>

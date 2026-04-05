@@ -33,6 +33,7 @@
     states: {},
     tileMap: {},
     energyTiles: [],
+    conditionalTiles: [],
     wsConnected: false,
     sidebarCollapsed: false,
     activeSectionId: 'overview',
@@ -112,6 +113,15 @@
           entityId === cfg.grid_export) {
         try { window.EnergyFlowComponent.updateTile(et.tile, AppState.states); }
         catch (err) { console.error('[app] EnergyFlow updateTile failed:', err); }
+      }
+    }
+
+    // Conditional sensor tiles — re-evaluate whenever any state changes
+    if (AppState.conditionalTiles.length && window.SensorConditionalComponent) {
+      for (var k = 0; k < AppState.conditionalTiles.length; k++) {
+        var ct = AppState.conditionalTiles[k];
+        try { window.SensorConditionalComponent.updateTile(ct.tile, AppState.states); }
+        catch (err) { console.error('[app] ConditionalSensor updateTile failed:', err); }
       }
     }
 

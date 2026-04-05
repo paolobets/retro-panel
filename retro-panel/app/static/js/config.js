@@ -61,6 +61,15 @@
   var energyContext = null;   // 'overview' | 'room'
   var energyItemIdx = null;   // index in the target items array (null = new)
   var wizardStep    = 0;
+
+  // Conditional sensor editor state
+  var conditionalCtx     = null;  // 'ov-section'
+  var conditionalItemIdx = null;  // null = new, number = editing index
+  var conditionalDraft   = null;  // draft object being edited
+  var _condRulePickIdx   = -1;    // -1 = picking main entity, >=0 = picking rule entity
+
+  // Generic entity picker callback (overrides default add-to-context behavior)
+  var _entityPickerCallback = null;
   var wizardValues  = {
     'ef-solar': '', 'ef-home': '', 'ef-batt-soc': '',
     'ef-batt-charge': '', 'ef-batt-discharge': '',
@@ -422,6 +431,10 @@
             if (it.type === 'energy_flow') {
               return '<div class="preview-tile-chip"><span class="chip-domain">\u26a1</span>Power Flow</div>';
             }
+            if (it.type === 'sensor_conditional') {
+              var condBorder = it.border_color ? ' style="border-color:' + esc(it.border_color) + ';"' : '';
+              return '<div class="preview-tile-chip"' + condBorder + '><span class="chip-domain">\u2753</span>' + esc(it.label || it.entity_id || 'Cond.') + '</div>';
+            }
             var domain = it.entity_id ? it.entity_id.split('.')[0] : '';
             return '<div class="preview-tile-chip"><span class="chip-domain">' + esc(domain) + '</span>' + esc(it.label || it.entity_id || '') + '</div>';
           }).join('') + '</div>';
@@ -439,7 +452,7 @@
     }
     container.innerHTML = sections.map(function(sec) {
       var isActive = sec.id === editingOvSectionId;
-      var count = (sec.items || []).filter(function(it) { return it.type === 'entity'; }).length;
+      var count = (sec.items || []).filter(function(it) { return it.type === 'entity' || it.type === 'sensor_conditional'; }).length;
       return '<div class="section-row' + (isActive ? ' section-row--active' : '') + '" data-id="' + esc(sec.id) + '">'
         + '<span class="section-row-drag">&#9776;</span>'
         + '<div class="section-row-info">'
@@ -520,6 +533,19 @@
           </div>
         </div>`;
       }
+      if (item.type === 'sensor_conditional') {
+        const condLabel = item.label || item.entity_id || 'Sensore Condizionale';
+        const condCount = (item.conditions || []).length;
+        const borderDot = item.border_color ? `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${esc(item.border_color)};margin-right:5px;"></span>` : '';
+        return `<div class="selected-row" data-idx="${i}" data-ctx="${esc(context)}">
+          <span class="item-drag-handle">&#9776;</span>
+          <span class="selected-id">${borderDot}&#10067; ${esc(condLabel)}<small style="color:var(--c-text-sec);margin-left:6px;">${condCount} cond.</small></span>
+          <div class="selected-actions">
+            <button class="edit-conditional-btn action-btn-sm" type="button" data-idx="${i}" data-ctx="${esc(context)}">Edit</button>
+            <button class="remove-btn" type="button" data-idx="${i}" data-ctx="${esc(context)}">&#10005;</button>
+          </div>
+        </div>`;
+      }
       const domain = item.entity_id ? item.entity_id.split('.')[0] : '';
       const showVisualBtn = domain === 'sensor' || domain === 'binary_sensor' || domain === 'light';
       const vtLabel = showVisualBtn ? _getVisualTypeLabel(item.visual_type || '', domain) : '';
@@ -559,6 +585,10 @@
 
     container.querySelectorAll('.edit-energy-btn').forEach(btn => {
       btn.addEventListener('click', () => openEnergyEditor(btn.getAttribute('data-ctx'), parseInt(btn.getAttribute('data-idx'), 10)));
+    });
+
+    container.querySelectorAll('.edit-conditional-btn').forEach(btn => {
+      btn.addEventListener('click', () => openConditionalEditor(btn.getAttribute('data-ctx'), parseInt(btn.getAttribute('data-idx'), 10)));
     });
 
     container.querySelectorAll('.item-label-input').forEach(input => {
@@ -2427,6 +2457,13 @@
   }
 
   function addEntityToContext(entityId, friendlyName) {
+    // Conditional editor intercepts entity picks via callback
+    if (_entityPickerCallback) {
+      var cb = _entityPickerCallback;
+      _entityPickerCallback = null;
+      cb(entityId, friendlyName);
+      return;
+    }
     var items = contextItems();
     if (!items) { return; }
     if (isEntityInContext(entityId)) { return; }
@@ -2764,9 +2801,276 @@
     refreshItemsList(energyContext === 'ov-section' ? 'ov-section' : 'section');
   }
 
+  // ── Conditional Sensor Editor ─────────────────────────────────────────────
+
+  function openConditionalEditor(ctx, itemIdx) {
+    conditionalCtx     = ctx || 'ov-section';
+    conditionalItemIdx = (itemIdx !== undefined && itemIdx !== null && !isNaN(itemIdx)) ? itemIdx : null;
+
+    var items = getItemsForContext(conditionalCtx);
+    var existing = (conditionalItemIdx !== null && items) ? items[conditionalItemIdx] : null;
+
+    conditionalDraft = {
+      entity_id:       (existing && existing.entity_id)       || '',
+      label:           (existing && existing.label)           || '',
+      icon:            (existing && existing.icon)            || '',
+      border_color:    (existing && existing.border_color)    || '#4caf50',
+      condition_logic: (existing && existing.condition_logic) || 'and',
+      conditions:      (existing && existing.conditions)
+        ? existing.conditions.map(function(r) { return { entity: r.entity, op: r.op, value: r.value }; })
+        : [],
+    };
+
+    showOverlay('conditional-editor');
+    renderConditionalEditor();
+  }
+
+  function renderConditionalEditor() {
+    var body = document.getElementById('cond-editor-body');
+    if (!body || !conditionalDraft) { return; }
+
+    var d = conditionalDraft;
+    var entityLabel = d.entity_id
+      ? '<span class="cond-entity-id">' + esc(d.entity_id) + '</span>'
+      : '<em style="color:var(--c-text-sec)">Nessuna entità selezionata</em>';
+
+    var rulesHtml = '';
+    for (var ri = 0; ri < d.conditions.length; ri++) {
+      var rule = d.conditions[ri];
+      var ops = ['eq','neq','gt','lt','gte','lte','contains'];
+      var opLabels = { eq:'=', neq:'\u2260', gt:'>', lt:'<', gte:'\u2265', lte:'\u2264', contains:'contiene' };
+      var opOptions = ops.map(function(o) {
+        return '<option value="' + o + '"' + (rule.op === o ? ' selected' : '') + '>' + opLabels[o] + '</option>';
+      }).join('');
+      rulesHtml += '<div class="cond-rule-row" data-rule-idx="' + ri + '">'
+        + '<button class="cond-rule-entity-btn action-btn-sm" type="button" data-rule-idx="' + ri + '">'
+        + (rule.entity ? esc(rule.entity) : 'Seleziona entità…')
+        + '</button>'
+        + '<select class="cond-rule-op field-input" data-rule-idx="' + ri + '" style="width:80px;">' + opOptions + '</select>'
+        + '<input class="cond-rule-value field-input" type="text" placeholder="valore" value="' + esc(rule.value) + '" data-rule-idx="' + ri + '" style="flex:1;min-width:60px;">'
+        + '<button class="cond-rule-remove remove-btn" type="button" data-rule-idx="' + ri + '">&#10005;</button>'
+        + '</div>';
+    }
+
+    var iconPreview = window.RP_MDI ? window.RP_MDI(d.icon || 'help-circle', 20) : (d.icon || '—');
+    var safeColor = d.border_color || '#4caf50';
+
+    body.innerHTML = ''
+      + '<div class="field-group" style="margin-bottom:16px;">'
+        + '<div class="field-row">'
+          + '<label class="field-label">Entità da mostrare</label>'
+          + '<div class="cond-entity-pick-row">'
+            + entityLabel
+            + '<button id="cond-pick-entity-btn" class="action-btn-sm" type="button" style="margin-left:8px;">Cambia</button>'
+          + '</div>'
+        + '</div>'
+        + '<div class="field-row">'
+          + '<label class="field-label">Etichetta</label>'
+          + '<input id="cond-label-input" type="text" class="field-input" maxlength="64" autocomplete="off" placeholder="Nome personalizzato…" value="' + esc(d.label) + '">'
+        + '</div>'
+        + '<div class="field-row">'
+          + '<label class="field-label">Icona</label>'
+          + '<button id="cond-icon-btn" type="button" class="icon-picker-btn">'
+            + '<span class="icon-picker-btn-icon" style="width:20px;height:20px;">' + iconPreview + '</span>'
+            + '<span id="cond-icon-name" class="icon-picker-btn-label">' + esc(d.icon || '—') + '</span>'
+            + '<span class="icon-picker-chevron">&#8964;</span>'
+          + '</button>'
+        + '</div>'
+        + '<div class="field-row">'
+          + '<label class="field-label">Colore bordo</label>'
+          + '<div class="cond-color-row">'
+            + '<input id="cond-color-picker" type="color" class="cond-color-input" value="' + esc(safeColor) + '">'
+            + '<input id="cond-color-hex" type="text" class="field-input" maxlength="7" placeholder="#4caf50" value="' + esc(safeColor) + '" style="width:90px;">'
+          + '</div>'
+        + '</div>'
+      + '</div>'
+      + '<div class="cond-conditions-header">'
+        + '<span class="sections-col-label">Condizioni</span>'
+        + '<div class="cond-logic-toggle">'
+          + '<button id="cond-logic-and" type="button" class="cond-logic-btn' + (d.condition_logic !== 'or' ? ' active' : '') + '">AND</button>'
+          + '<button id="cond-logic-or" type="button" class="cond-logic-btn' + (d.condition_logic === 'or' ? ' active' : '') + '">OR</button>'
+        + '</div>'
+      + '</div>'
+      + '<p class="cfg-hint" style="margin-bottom:8px;" id="cond-logic-hint">'
+        + (d.condition_logic === 'or'
+            ? 'OR: il tile appare se ALMENO UNA condizione è vera'
+            : 'AND: il tile appare solo se TUTTE le condizioni sono vere')
+      + '</p>'
+      + '<div id="cond-rules-list">' + (rulesHtml || '<p class="cfg-placeholder">Nessuna condizione. Aggiungi almeno una.</p>') + '</div>'
+      + '<button id="cond-add-rule-btn" type="button" class="action-btn-sm" style="margin-top:8px;">+ Aggiungi condizione</button>';
+
+    // ── Wire up handlers ──
+
+    var pickEntityBtn = document.getElementById('cond-pick-entity-btn');
+    if (pickEntityBtn) {
+      pickEntityBtn.addEventListener('click', function() {
+        _entityPickerCallback = function(entityId, friendlyName) {
+          conditionalDraft.entity_id = entityId;
+          if (!conditionalDraft.label) { conditionalDraft.label = friendlyName || ''; }
+          hideOverlay();
+          showOverlay('conditional-editor');
+          renderConditionalEditor();
+        };
+        searchText = '';
+        filterDomain = '';
+        var searchEl = document.getElementById('search-input');
+        if (searchEl) { searchEl.value = ''; }
+        var filterBtns = document.querySelectorAll('.filter-btn');
+        filterBtns.forEach(function(b) { b.classList.toggle('active', b.getAttribute('data-domain') === ''); });
+        showOverlay('entity-picker');
+        renderEntityList();
+        if (searchEl) { setTimeout(function() { searchEl.focus(); }, 100); }
+      });
+    }
+
+    var labelInput = document.getElementById('cond-label-input');
+    if (labelInput) {
+      labelInput.addEventListener('input', function() { conditionalDraft.label = this.value; });
+    }
+
+    var iconBtn = document.getElementById('cond-icon-btn');
+    if (iconBtn) {
+      iconBtn.addEventListener('click', function() {
+        openIconPickerModal(conditionalDraft.icon || 'help-circle', function(iconName) {
+          conditionalDraft.icon = iconName;
+          hideOverlay();
+          showOverlay('conditional-editor');
+          renderConditionalEditor();
+        });
+      });
+    }
+
+    var colorPicker = document.getElementById('cond-color-picker');
+    var colorHex    = document.getElementById('cond-color-hex');
+    if (colorPicker) {
+      colorPicker.addEventListener('input', function() {
+        conditionalDraft.border_color = this.value;
+        if (colorHex) { colorHex.value = this.value; }
+      });
+    }
+    if (colorHex) {
+      colorHex.addEventListener('change', function() {
+        var val = this.value.trim();
+        if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+          conditionalDraft.border_color = val;
+          if (colorPicker) { colorPicker.value = val; }
+        }
+      });
+    }
+
+    var andBtn = document.getElementById('cond-logic-and');
+    var orBtn  = document.getElementById('cond-logic-or');
+    if (andBtn) {
+      andBtn.addEventListener('click', function() {
+        conditionalDraft.condition_logic = 'and';
+        renderConditionalEditor();
+      });
+    }
+    if (orBtn) {
+      orBtn.addEventListener('click', function() {
+        conditionalDraft.condition_logic = 'or';
+        renderConditionalEditor();
+      });
+    }
+
+    var addRuleBtn = document.getElementById('cond-add-rule-btn');
+    if (addRuleBtn) {
+      addRuleBtn.addEventListener('click', function() {
+        conditionalDraft.conditions.push({ entity: '', op: 'eq', value: '' });
+        renderConditionalEditor();
+      });
+    }
+
+    // Rule row handlers
+    var rulesList = document.getElementById('cond-rules-list');
+    if (rulesList) {
+      rulesList.querySelectorAll('.cond-rule-entity-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var rIdx = parseInt(this.getAttribute('data-rule-idx'), 10);
+          _entityPickerCallback = function(entityId) {
+            conditionalDraft.conditions[rIdx].entity = entityId;
+            hideOverlay();
+            showOverlay('conditional-editor');
+            renderConditionalEditor();
+          };
+          searchText = '';
+          filterDomain = '';
+          var searchEl = document.getElementById('search-input');
+          if (searchEl) { searchEl.value = ''; }
+          var filterBtns = document.querySelectorAll('.filter-btn');
+          filterBtns.forEach(function(b) { b.classList.toggle('active', b.getAttribute('data-domain') === ''); });
+          showOverlay('entity-picker');
+          renderEntityList();
+          if (searchEl) { setTimeout(function() { searchEl.focus(); }, 100); }
+        });
+      });
+
+      rulesList.querySelectorAll('.cond-rule-op').forEach(function(sel) {
+        sel.addEventListener('change', function() {
+          var rIdx = parseInt(this.getAttribute('data-rule-idx'), 10);
+          conditionalDraft.conditions[rIdx].op = this.value;
+        });
+      });
+
+      rulesList.querySelectorAll('.cond-rule-value').forEach(function(inp) {
+        inp.addEventListener('input', function() {
+          var rIdx = parseInt(this.getAttribute('data-rule-idx'), 10);
+          conditionalDraft.conditions[rIdx].value = this.value;
+        });
+      });
+
+      rulesList.querySelectorAll('.cond-rule-remove').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var rIdx = parseInt(this.getAttribute('data-rule-idx'), 10);
+          conditionalDraft.conditions.splice(rIdx, 1);
+          renderConditionalEditor();
+        });
+      });
+    }
+  }
+
+  function commitConditionalSensor() {
+    if (!conditionalDraft || !conditionalDraft.entity_id) {
+      var body = document.getElementById('cond-editor-body');
+      if (body) {
+        var err = body.querySelector('#cond-entity-error');
+        if (!err) {
+          err = document.createElement('p');
+          err.id = 'cond-entity-error';
+          err.style.cssText = 'color:var(--c-danger);margin:4px 0;font-size:13px;';
+          err.textContent = 'Seleziona l\'entità da mostrare prima di confermare.';
+          var firstRow = body.querySelector('.field-row');
+          if (firstRow) { firstRow.parentNode.insertBefore(err, firstRow.parentNode.firstChild); }
+        }
+      }
+      return;
+    }
+
+    var csItem = {
+      type:            'sensor_conditional',
+      entity_id:       conditionalDraft.entity_id,
+      label:           conditionalDraft.label || '',
+      icon:            conditionalDraft.icon  || '',
+      border_color:    conditionalDraft.border_color || '',
+      condition_logic: conditionalDraft.condition_logic || 'and',
+      conditions:      (conditionalDraft.conditions || []).filter(function(r) { return r.entity; }),
+    };
+
+    var items = getItemsForContext(conditionalCtx);
+    if (conditionalItemIdx !== null && items) {
+      items[conditionalItemIdx] = csItem;
+    } else if (items) {
+      items.push(csItem);
+    }
+
+    markDirty();
+    hideOverlay();
+    refreshItemsList(conditionalCtx);
+  }
+
   // ── Overlay management ─────────────────────────────────────────────────────
 
-  var OVERLAYS = ['entity-picker', 'sensor-picker', 'scenario-picker', 'energy-editor', 'camera-picker', 'alarm-entity-picker', 'alarm-sensor-picker', 'visual-type-picker', 'icon-picker-modal'];
+  var OVERLAYS = ['entity-picker', 'sensor-picker', 'scenario-picker', 'energy-editor', 'conditional-editor', 'camera-picker', 'alarm-entity-picker', 'alarm-sensor-picker', 'visual-type-picker', 'icon-picker-modal'];
 
   function showOverlay(id) {
     for (var i = 0; i < OVERLAYS.length; i++) {
@@ -3059,6 +3363,24 @@
     var ovAddEnergyBtn = qs('ov-add-energy-btn');
     if (ovAddEnergyBtn) {
       ovAddEnergyBtn.addEventListener('click', function() { openEnergyEditor('ov-section', null); });
+    }
+
+    var ovAddConditionalBtn = qs('ov-add-conditional-btn');
+    if (ovAddConditionalBtn) {
+      ovAddConditionalBtn.addEventListener('click', function() { openConditionalEditor('ov-section', null); });
+    }
+
+    var condCancelBtn = qs('cond-cancel-btn');
+    if (condCancelBtn) {
+      condCancelBtn.addEventListener('click', function() {
+        _entityPickerCallback = null;
+        hideOverlay();
+      });
+    }
+
+    var condConfirmBtn = qs('cond-confirm-btn');
+    if (condConfirmBtn) {
+      condConfirmBtn.addEventListener('click', commitConditionalSensor);
     }
 
     // ── Scenarios sections ─────────────────────────────────────────────────

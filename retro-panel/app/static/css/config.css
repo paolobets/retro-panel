@@ -2049,3 +2049,107 @@ body {
   padding: 0 0 16px;
 }
 
+/* ============================================================
+   Conditional Sensor Editor — v2.9.26
+   ============================================================ */
+
+#conditional-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+#cond-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--c-surface-3);
+  background: var(--c-surface-1);
+  flex-shrink: 0;
+}
+
+#cond-editor-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.cond-entity-pick-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cond-entity-id {
+  font-family: monospace;
+  font-size: 13px;
+  color: var(--c-text-pri);
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-surface-3);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+.cond-conditions-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.cond-logic-toggle {
+  display: flex;
+  gap: 4px;
+}
+
+.cond-logic-btn {
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--c-surface-3);
+  background: var(--c-surface-2);
+  color: var(--c-text-sec);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cond-logic-btn.active {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+  color: #fff;
+}
+
+.cond-rule-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.cond-rule-entity-btn {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cond-color-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cond-color-input {
+  width: 40px;
+  height: 32px;
+  border: 1px solid var(--c-surface-3);
+  border-radius: 6px;
+  padding: 2px;
+  cursor: pointer;
+  background: var(--c-surface-2);
+}
+

@@ -166,11 +166,31 @@ class EnergyFlowConfig:
 
 
 @dataclass
+class ConditionalRule:
+    """A single condition rule for a ConditionalSensorConfig."""
+    entity: str
+    op: str   # eq | neq | gt | lt | gte | lte | contains
+    value: str
+
+
+@dataclass
+class ConditionalSensorConfig:
+    """A sensor tile shown only when one or more conditions are met."""
+    entity_id: str
+    label: str = ""
+    icon: str = ""
+    border_color: str = ""          # hex color, e.g. "#ff5733"
+    condition_logic: str = "and"    # "and" | "or"
+    conditions: List[ConditionalRule] = field(default_factory=list)
+
+
+@dataclass
 class SectionItem:
-    """A single item in any section: entity tile or energy flow card."""
-    type: str  # "entity" | "energy_flow"
+    """A single item in any section: entity tile, energy flow card, or conditional sensor."""
+    type: str  # "entity" | "energy_flow" | "sensor_conditional"
     entity_config: Optional[EntityConfig] = None
     energy_flow: Optional[EnergyFlowConfig] = None
+    conditional_sensor: Optional[ConditionalSensorConfig] = None
 
 
 @dataclass
@@ -314,6 +334,11 @@ class PanelConfig:
                             ef.battery_charge_power, ef.battery_discharge_power,
                             ef.grid_import, ef.grid_export):
                     _add(eid)
+            elif item.type == "sensor_conditional" and item.conditional_sensor is not None:
+                cs = item.conditional_sensor
+                _add(cs.entity_id)
+                for rule in cs.conditions:
+                    _add(rule.entity)
 
         for hs in self.header_sensors:
             _add(hs.entity_id)
@@ -366,6 +391,8 @@ def _compute_layout_type(entity_id: str, device_class: str, visual_type: str) ->
         return "light_standard"
     if domain in ("switch", "input_boolean"):
         return "switch"
+    if domain == "cover":
+        return "cover_standard"
     if domain == "sensor":
         dc = (device_class or "").lower()
         _map = {
@@ -504,6 +531,42 @@ def _parse_energy_flow(raw: dict) -> EnergyFlowConfig:
     )
 
 
+_VALID_COND_OPS = {"eq", "neq", "gt", "lt", "gte", "lte", "contains"}
+
+
+def _parse_conditional_sensor(raw: dict) -> ConditionalSensorConfig:
+    """Parse a sensor_conditional item from config JSON."""
+    entity_id = str(raw.get("entity_id") or "").strip()
+    if not entity_id:
+        raise ValueError("sensor_conditional missing entity_id")
+    label = str(raw.get("label") or "").strip()
+    icon = str(raw.get("icon") or "").strip()
+    border_color = str(raw.get("border_color") or "").strip()
+    condition_logic = str(raw.get("condition_logic") or "and").strip().lower()
+    if condition_logic not in ("and", "or"):
+        condition_logic = "and"
+    conditions: list[ConditionalRule] = []
+    for rule_raw in (raw.get("conditions") or []):
+        if not isinstance(rule_raw, dict):
+            continue
+        rule_entity = str(rule_raw.get("entity") or "").strip()
+        rule_op = str(rule_raw.get("op") or "eq").strip().lower()
+        rule_value = str(rule_raw.get("value") or "").strip()
+        if not rule_entity:
+            continue
+        if rule_op not in _VALID_COND_OPS:
+            rule_op = "eq"
+        conditions.append(ConditionalRule(entity=rule_entity, op=rule_op, value=rule_value))
+    return ConditionalSensorConfig(
+        entity_id=entity_id,
+        label=label,
+        icon=icon,
+        border_color=border_color,
+        condition_logic=condition_logic,
+        conditions=conditions,
+    )
+
+
 def _parse_section_item(raw: dict, idx: int, context: str) -> Optional[SectionItem]:
     """Parse a single item dict. Returns None on unknown/invalid type."""
     item_type = str(raw.get("type") or "entity").strip()
@@ -517,6 +580,13 @@ def _parse_section_item(raw: dict, idx: int, context: str) -> Optional[SectionIt
     elif item_type == "energy_flow":
         ef = _parse_energy_flow(raw)
         return SectionItem(type="energy_flow", energy_flow=ef)
+    elif item_type == "sensor_conditional":
+        try:
+            cs = _parse_conditional_sensor(raw)
+            return SectionItem(type="sensor_conditional", conditional_sensor=cs)
+        except ValueError as exc:
+            logger.warning("%s item %d invalid sensor_conditional, skipping: %s", context, idx, exc)
+            return None
     else:
         logger.warning("%s item %d has unknown type %r, skipping", context, idx, item_type)
         return None

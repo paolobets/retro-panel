@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Icon Picker v2 — Mockup</title>
+<style>
+  :root {
+    --c-bg:         #0d0d0d;
+    --c-surface:    #1a1a1a;
+    --c-surface-2:  #2a2a2a;
+    --c-surface-3:  #333;
+    --c-text-pri:   #f0f0f0;
+    --c-text-sec:   #888;
+    --c-accent:     #2196f3;
+    --c-accent-bg:  rgba(33,150,243,0.12);
+    --c-danger:     #f44336;
+    --radius-sm:    6px;
+    --radius:       10px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--c-bg);
+    color: var(--c-text-pri);
+    font-size: 14px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  /* ── Demo stage ── */
+  .demo-stage {
+    display: flex;
+    gap: 32px;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 1100px;
+  }
+  .demo-sidebar {
+    width: 240px;
+    flex-shrink: 0;
+  }
+  .demo-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--c-text-sec);
+    margin-bottom: 16px;
+  }
+  .demo-note {
+    font-size: 12px;
+    color: var(--c-text-sec);
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+  .demo-trigger {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--c-surface);
+    border: 1px solid var(--c-surface-2);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    cursor: pointer;
+    color: var(--c-text-pri);
+    font-size: 14px;
+    width: 100%;
+    transition: border-color 0.15s;
+  }
+  .demo-trigger:hover { border-color: var(--c-accent); }
+  .demo-trigger svg { flex-shrink: 0; }
+  .demo-trigger-name { flex: 1; text-align: left; color: var(--c-text-sec); font-size: 13px; }
+  .demo-trigger-chevron { color: var(--c-text-sec); font-size: 12px; }
+  .demo-picker-wrap { flex: 1; }
+
+  /* ── Picker modal ── */
+  .picker {
+    background: var(--c-surface);
+    border: 1px solid var(--c-surface-2);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    height: 600px;
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+  }
+
+  /* Header */
+  .picker-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--c-surface-2);
+    flex-shrink: 0;
+  }
+  .picker-title {
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .picker-cancel {
+    background: none;
+    border: none;
+    color: var(--c-accent);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+  .picker-cancel:hover { background: var(--c-accent-bg); }
+
+  /* Search */
+  .picker-search-wrap {
+    padding: 12px 16px 8px;
+    flex-shrink: 0;
+  }
+  .picker-search {
+    width: 100%;
+    background: var(--c-bg);
+    border: 1px solid var(--c-surface-2);
+    border-radius: var(--radius-sm);
+    color: var(--c-text-pri);
+    padding: 9px 12px 9px 36px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+  .picker-search:focus { border-color: var(--c-accent); }
+  .picker-search::placeholder { color: var(--c-text-sec); }
+  .search-icon-wrap {
+    position: relative;
+  }
+  .search-icon-svg {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--c-text-sec);
+    pointer-events: none;
+  }
+
+  /* Recent */
+  .picker-recent {
+    padding: 6px 16px 4px;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--c-surface-2);
+  }
+  .picker-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--c-text-sec);
+    margin-bottom: 8px;
+  }
+  .recent-row {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    padding-bottom: 8px;
+  }
+  .recent-item {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    border: 1px solid transparent;
+    color: var(--c-text-sec);
+    transition: background 0.1s, color 0.1s, border-color 0.1s;
+  }
+  .recent-item:hover {
+    background: var(--c-surface-2);
+    color: var(--c-text-pri);
+  }
+  .recent-item.selected {
+    background: var(--c-accent-bg);
+    border-color: var(--c-accent);
+    color: var(--c-accent);
+  }
+  .picker-empty-recent {
+    font-size: 12px;
+    color: var(--c-text-sec);
+    font-style: italic;
+    padding-bottom: 8px;
+  }
+
+  /* Grid */
+  .picker-grid-wrap {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 12px 16px;
+  }
+  .picker-grid-wrap::-webkit-scrollbar { width: 6px; }
+  .picker-grid-wrap::-webkit-scrollbar-track { background: transparent; }
+  .picker-grid-wrap::-webkit-scrollbar-thumb { background: var(--c-surface-3); border-radius: 3px; }
+
+  .picker-results-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--c-text-sec);
+    margin-bottom: 8px;
+    padding: 0 4px;
+  }
+  .picker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    gap: 4px;
+  }
+  .grid-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 4px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    border: 1px solid transparent;
+    color: var(--c-text-sec);
+    transition: background 0.1s, color 0.1s, border-color 0.1s;
+    min-width: 0;
+  }
+  .grid-item:hover {
+    background: var(--c-surface-2);
+    color: var(--c-text-pri);
+  }
+  .grid-item.selected {
+    background: var(--c-accent-bg);
+    border-color: var(--c-accent);
+    color: var(--c-accent);
+  }
+  .grid-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+  .grid-label {
+    font-size: 9px;
+    text-align: center;
+    word-break: break-all;
+    line-height: 1.2;
+    max-width: 68px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+  }
+  .picker-empty {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--c-text-sec);
+  }
+  .picker-empty-icon { font-size: 32px; margin-bottom: 12px; }
+  .picker-empty-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .picker-empty-hint { font-size: 12px; }
+
+  /* Count badge */
+  .picker-count {
+    font-size: 11px;
+    color: var(--c-text-sec);
+    padding: 2px 16px 6px;
+    flex-shrink: 0;
+  }
+
+  /* Selection feedback */
+  .selection-banner {
+    background: var(--c-accent);
+    color: #fff;
+    text-align: center;
+    padding: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 0 0 var(--radius) var(--radius);
+    flex-shrink: 0;
+    display: none;
+  }
+  .selection-banner.visible { display: block; }
+
+  /* Tabs for demo states */
+  .demo-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .demo-tab {
+    background: var(--c-surface);
+    border: 1px solid var(--c-surface-2);
+    border-radius: 20px;
+    color: var(--c-text-sec);
+    font-size: 12px;
+    padding: 5px 14px;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+  }
+  .demo-tab.active {
+    background: var(--c-accent);
+    border-color: var(--c-accent);
+    color: #fff;
+  }
+</style>
+</head>
+<body>
+
+<div class="demo-stage">
+
+  <!-- Left: controls -->
+  <div class="demo-sidebar">
+    <div class="demo-title">Icon Picker v2 — Mockup</div>
+    <div class="demo-note">
+      Simula il picker con <strong>7.000+</strong> icone MDI.<br><br>
+      Clicca un'icona nella griglia per selezionarla — viene aggiunta ai <em>Recently used</em>.
+    </div>
+
+    <div class="demo-title" style="margin-top:20px;">Stato demo</div>
+    <div class="demo-tabs">
+      <button class="demo-tab active" onclick="setDemoState('empty')">Vuoto (no recent)</button>
+      <button class="demo-tab" onclick="setDemoState('with-recent')">Con recent</button>
+      <button class="demo-tab" onclick="setDemoState('searching')">Ricerca attiva</button>
+    </div>
+
+    <div class="demo-title" style="margin-top:16px;">Icona selezionata</div>
+    <button class="demo-trigger" id="trigger-btn">
+      <span id="trigger-icon">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" style="color:#888">
+          <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/>
+        </svg>
+      </span>
+      <span class="demo-trigger-name" id="trigger-name">circle</span>
+      <span class="demo-trigger-chevron">&#8964;</span>
+    </button>
+
+    <div class="demo-note" style="margin-top:20px; font-size:11px;">
+      <strong>Nota:</strong> il mockup usa le 40 icone reali già in mdi-icons.js + nomi generati per simulare i 7.000. La ricerca funziona su tutti i nomi.
+    </div>
+  </div>
+
+  <!-- Right: picker -->
+  <div class="demo-picker-wrap">
+    <div class="picker" id="picker">
+
+      <!-- Header -->
+      <div class="picker-header">
+        <button class="picker-cancel" onclick="clearSelection()">Cancel</button>
+        <span class="picker-title">Select Icon</span>
+        <div style="width:60px"></div>
+      </div>
+
+      <!-- Search -->
+      <div class="picker-search-wrap">
+        <div class="search-icon-wrap">
+          <svg class="search-icon-svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/>
+          </svg>
+          <input
+            type="text"
+            class="picker-search"
+            id="search-input"
+            placeholder="Search 7,000+ icons…"
+            autocomplete="off"
+            spellcheck="false"
+            oninput="onSearch(this.value)"
+          >
+        </div>
+      </div>
+
+      <!-- Recently used -->
+      <div class="picker-recent" id="recent-section">
+        <div class="picker-section-label">Recently used</div>
+        <div id="recent-row" class="recent-row">
+          <span class="picker-empty-recent">No recently used icons yet.</span>
+        </div>
+      </div>
+
+      <!-- Count -->
+      <div class="picker-count" id="results-count"></div>
+
+      <!-- Grid -->
+      <div class="picker-grid-wrap" id="grid-wrap">
+        <div class="picker-grid" id="icon-grid"></div>
+        <div id="empty-state" class="picker-empty" style="display:none">
+          <div class="picker-empty-icon">🔍</div>
+          <div class="picker-empty-title">No icons found</div>
+          <div class="picker-empty-hint">Try a different search term</div>
+        </div>
+      </div>
+
+      <!-- Selection banner -->
+      <div class="selection-banner" id="selection-banner"></div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Real MDI paths (subset from mdi-icons.js) ──────────────────────────────
+var REAL_ICONS = {
+  'lightbulb': 'M12,2A7,7 0 0,1 19,9C19,11.38 17.81,13.47 16,14.74V17A1,1 0 0,1 15,18H9A1,1 0 0,1 8,17V14.74C6.19,13.47 5,11.38 5,9A7,7 0 0,1 12,2M9,21V20H15V21A1,1 0 0,1 14,22H10A1,1 0 0,1 9,21M12,4A5,5 0 0,0 7,9C7,11.05 8.23,12.81 10,13.58V16H14V13.58C15.77,12.81 17,11.05 17,9A5,5 0 0,0 12,4Z',
+  'toggle-switch': 'M17,7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7M17,15A3,3 0 0,1 14,12A3,3 0 0,1 17,9A3,3 0 0,1 20,12A3,3 0 0,1 17,15Z',
+  'power': 'M16.56,5.44L15.11,6.89C16.84,7.94 18,9.83 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12C6,9.83 7.16,7.94 8.89,6.88L7.44,5.44C5.36,6.88 4,9.28 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12C20,9.28 18.64,6.88 16.56,5.44M13,3H11V13H13V3Z',
+  'thermometer': 'M15,13V5A3,3 0 0,0 9,5V13A5,5 0 1,0 15,13M12,4A1,1 0 0,1 13,5V8H11V5A1,1 0 0,1 12,4Z',
+  'water': 'M12,20A6,6 0 0,1 6,14C6,10 12,3.25 12,3.25C12,3.25 18,10 18,14A6,6 0 0,1 12,20Z',
+  'door': 'M8,3C6.89,3 6,3.89 6,5V21H18V5C18,3.89 17.11,3 16,3H8M8,5H16V19H8V5M13,11A1,1 0 0,0 12,12A1,1 0 0,0 13,13A1,1 0 0,0 14,12A1,1 0 0,0 13,11Z',
+  'camera': 'M4,4H7L9,2H15L17,4H20A2,2 0 0,1 22,6V18A2,2 0 0,1 20,20H4A2,2 0 0,1 2,18V6A2,2 0 0,1 4,4M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9Z',
+  'bell': 'M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1 10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.1 14,4.19 14,4.29C16.97,5.17 19,7.9 19,11V17L21,19M14,21A2,2 0 0,1 12,23A2,2 0 0,1 10,21',
+  'home': 'M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z',
+  'sofa': 'M21,9H17V7A2,2 0 0,0 15,5H9A2,2 0 0,0 7,7V9H3A1,1 0 0,0 2,10V17A1,1 0 0,0 3,18H4V19A1,1 0 0,0 5,20H7A1,1 0 0,0 8,19V18H16V19A1,1 0 0,0 17,20H19A1,1 0 0,0 20,19V18H21A1,1 0 0,0 22,17V10A1,1 0 0,0 21,9M9,7H15V9H9V7M4,16V12H8A2,2 0 0,1 10,14V16H4M12,16V14A2,2 0 0,1 14,12H20V16H12Z',
+  'bed': 'M1,4V6H3V19H5V17H19V19H21V6H23V4H1M5,15V11H11V15H5M13,15V11H19V15H13Z',
+  'shower': 'M12,1C10.5,1 9,2.5 9,4C9,5.5 10,6.57 11,6.9V10H13V6.9C14,6.57 15,5.5 15,4C15,2.5 13.5,1 12,1M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3M9.63,10.08L7.5,12.21C6.17,11.33 4.45,11.5 3.35,12.6C2.2,13.72 2.2,15.57 3.35,16.68L7.79,12.24C8.55,13 8.71,14.12 8.2,15.04L6.3,18H8.58L10.33,15.04C11.33,13.29 11,11.17 9.63,10.08M16.5,14H14.5C13.5,14 12.66,14.5 12.2,15.29L10,21H12L13.5,17H14L12.5,21H14.5L16,17H16.5L15,21H17L18.8,15.29C19.34,14.5 18.5,14 17.5,14H16.5Z',
+  'tree': 'M11,21V16.74C10.53,16.91 10.03,17 9.5,17C7,17 5,15 5,12.5C5,11.23 5.5,10.09 6.36,9.27C6.13,8.73 6,8.13 6,7.5C6,5 8,3 10.5,3C11.46,3 12.35,3.3 13.08,3.82C13.6,3.31 14.26,3 15,3C16.66,3 18,4.34 18,6C18,6.34 17.94,6.67 17.84,6.97C18.53,7.74 19,8.76 19,9.9C19,12.17 17.21,14 15,14C14.69,14 14.39,13.96 14.1,13.89V21H11Z',
+  'lock': 'M12,17A2,2 0 0,0 14,15C14,13.89 13.1,13 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10C4,8.89 4.9,8 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z',
+  'fan': 'M12,11A1,1 0 0,0 11,12A1,1 0 0,0 12,13A1,1 0 0,0 13,12A1,1 0 0,0 12,11M12.5,2C17,2 17.11,5.57 14.75,6.75C13.76,7.24 13.43,8.37 13.74,9.25C14.5,8.59 15.5,8.2 16.5,8.2C19,8.2 21,10.2 21,12.7C21,17.16 17.5,17.31 16.25,14.93C15.74,13.95 14.61,13.6 13.72,13.93C14.39,14.68 14.79,15.68 14.79,16.7C14.79,19.17 12.79,21.17 10.32,21.17C5.86,21.17 5.71,17.67 8.07,16.42C9.07,15.91 9.41,14.78 9.09,13.89C8.34,14.56 7.34,14.95 6.32,14.95C3.85,14.95 1.85,12.95 1.85,10.5C1.85,6 5.35,5.89 6.58,8.25C7.09,9.25 8.22,9.59 9.11,9.27C8.44,8.53 8.04,7.5 8.04,6.5C8.04,4.03 10.04,2.03 12.5,2Z',
+  'palette': 'M12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2C17.5,2 22,6 22,11A6,6 0 0,1 16,17H14.2C13.9,17 13.7,17.2 13.7,17.5C13.7,17.6 13.8,17.7 13.8,17.8C14.2,18.3 14.4,18.9 14.4,19.5C14.3,20.9 13.3,22 12,22M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C12.3,20 12.5,19.8 12.5,19.5C12.5,19.3 12.4,19.2 12.4,19.1C12,18.6 11.8,18 11.8,17.5C11.8,16.2 12.8,15 14.2,15H16A4,4 0 0,0 20,11C20,7.1 16.4,4 12,4M6.5,10A1.5,1.5 0 0,1 8,11.5A1.5,1.5 0 0,1 6.5,13A1.5,1.5 0 0,1 5,11.5A1.5,1.5 0 0,1 6.5,10M9.5,6A1.5,1.5 0 0,1 11,7.5A1.5,1.5 0 0,1 9.5,9A1.5,1.5 0 0,1 8,7.5A1.5,1.5 0 0,1 9.5,6M14.5,6A1.5,1.5 0 0,1 16,7.5A1.5,1.5 0 0,1 14.5,9A1.5,1.5 0 0,1 13,7.5A1.5,1.5 0 0,1 14.5,6M17.5,10A1.5,1.5 0 0,1 19,11.5A1.5,1.5 0 0,1 17.5,13A1.5,1.5 0 0,1 16,11.5A1.5,1.5 0 0,1 17.5,10Z',
+  'cog': 'M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z',
+  'eye': 'M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z',
+  'account': 'M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z',
+  'fire': 'M17.66,11.2C17.43,10.9 17.15,10.64 16.89,10.38C16.22,9.78 15.46,9.35 14.82,8.72C13.33,7.26 13,4.85 13.95,3C13,3.23 12.17,3.75 11.46,4.32C8.87,6.4 7.85,10.07 9.07,13.22C9.11,13.32 9.15,13.42 9.15,13.55C9.15,13.77 9,13.97 8.8,14.05C8.57,14.15 8.33,14.09 8.14,13.93C8.08,13.88 8.04,13.83 8,13.76C6.87,12.33 6.69,10.28 7.45,8.64C5.78,10 4.87,12.3 5,14.47C5.06,14.97 5.12,15.47 5.29,15.97C5.43,16.57 5.7,17.17 6,17.7C7.08,19.43 8.95,20.67 10.96,20.92C13.1,21.19 15.39,20.8 17.03,19.32C18.86,17.66 19.5,15 18.56,12.72L18.43,12.46C18.22,12 17.66,11.2 17.66,11.2Z',
+  'snowflake': 'M22,11H17.83L21.07,7.76L19.66,6.34L15,11H13V9L17.66,4.34L16.24,2.93L13,6.17V2H11V6.17L7.76,2.93L6.34,4.34L11,9V11H9L4.34,6.34L2.93,7.76L6.17,11H2V13H6.17L2.93,16.24L4.34,17.66L9,13H11V15L6.34,19.66L7.76,21.07L11,17.83V22H13V17.83L16.24,21.07L17.66,19.66L13,15V13H15L19.66,17.66L21.07,16.24L17.83,13H22V11Z',
+  'shield-home': 'M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1Z',
+  'circle': 'M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z',
+  'television': 'M21,3H3C1.89,3 1,3.89 1,5V17A2,2 0 0,0 3,19H8V21H16V19H21A2,2 0 0,0 23,17V5C23,3.89 22.1,3 21,3M21,17H3V5H21V17Z',
+  'white-balance-sunny': 'M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,2L14.39,5.42C13.65,5.15 12.84,5 12,5C11.16,5 10.35,5.15 9.61,5.42L12,2M3.34,7L7.5,6.65C6.9,7.16 6.36,7.78 5.94,8.5C5.5,9.24 5.25,10 5.11,10.79L3.34,7M3.36,17L5.12,13.23C5.26,14 5.53,14.78 5.95,15.5C6.37,16.24 6.91,16.86 7.5,17.37L3.36,17M20.65,7L18.88,10.79C18.74,10 18.47,9.23 18.05,8.5C17.63,7.78 17.1,7.15 16.5,6.64L20.65,7M20.64,17L16.5,17.36C17.09,16.85 17.62,16.22 18.04,15.5C18.46,14.77 18.73,14 18.87,13.21L20.64,17M12,22L9.59,18.56C10.33,18.83 11.14,19 12,19C12.82,19 13.63,18.83 14.37,18.56L12,22Z',
+  'lightning-bolt': 'M7,2V13H10V22L17,10H13L17,2H7Z',
+  'volume-high': 'M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.84 14,18.7V20.77C18,19.86 21,16.28 21,12C21,7.72 18,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16C15.5,15.29 16.5,13.76 16.5,12M3,9V15H7L12,20V4L7,9H3Z',
+  'motion-sensor': 'M4,4A2,2 0 0,0 2,6A2,2 0 0,0 4,8A2,2 0 0,0 6,6A2,2 0 0,0 4,4M20,4A2,2 0 0,0 18,6A2,2 0 0,0 20,8A2,2 0 0,0 22,6A2,2 0 0,0 20,4M4,18A2,2 0 0,0 2,20A2,2 0 0,0 4,22A2,2 0 0,0 6,20A2,2 0 0,0 4,18M20,18A2,2 0 0,0 18,20A2,2 0 0,0 20,22A2,2 0 0,0 22,20A2,2 0 0,0 20,18M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z',
+};
+
+// ── Generate simulated full icon list (real names + plausible MDI names) ───
+var EXTRA_NAMES = [
+  'ab-testing','access-point','account-box','account-check','account-circle',
+  'account-group','account-heart','account-key','account-lock','account-minus',
+  'account-multiple','account-network','account-off','account-plus','account-search',
+  'account-star','account-supervisor','account-tie','airplane','alarm',
+  'alarm-check','alarm-off','album','alert','alert-box','alert-circle',
+  'alert-decagram','alert-octagon','alert-rhombus','alpha',
+  'ambulance','anchor','android','angle-acute','angle-obtuse','animation',
+  'antenna','apple','application','archive','arrow-all',
+  'arrow-bottom-left','arrow-bottom-right','arrow-collapse','arrow-down',
+  'arrow-expand','arrow-left','arrow-right','arrow-top-left','arrow-top-right',
+  'arrow-up','aspect-ratio','asterisk','at','atom',
+  'audio-video','augmented-reality','auto-fix','autorenew','av-timer',
+  'baby','baby-carriage','backburger','backspace','backup-restore',
+  'badminton','balloon','bandage','bank','bank-transfer',
+  'bar-chart','barcode','baseball','basket','basketball',
+  'battery-10','battery-20','battery-30','battery-40','battery-50',
+  'battery-60','battery-70','battery-80','battery-90','battery-alert',
+  'battery-charging','battery-high','battery-low','battery-medium','battery-off',
+  'beach','bicycle','bike','billboard','binoculars',
+  'bird','blender','block-helper','bluetooth','boat',
+  'book','book-open','bookmark','boom-gate','border-all',
+  'bottle-wine','bowling','box','briefcase','broadcast',
+  'brush','bug','building','bulletin-board','bus',
+  'cached','calculator','calendar','calendar-check','calendar-month',
+  'call-made','call-merge','call-missed','call-received','call-split',
+  'candycane','car','car-electric','car-key','car-wash',
+  'card-account','cards','cart','cash','cast',
+  'castle','cat','cellphone','chart-bar','chart-line',
+  'chart-pie','check','check-all','check-bold','checkbox-marked',
+  'chevron-double-down','chevron-double-left','chevron-double-right','chevron-double-up',
+  'chevron-down','chevron-left','chevron-right','chevron-up',
+  'chip','church','city','city-variant','clipboard',
+  'clock','clock-alert','clock-check','clock-in','clock-out',
+  'close','close-box','close-circle','close-network','cloud',
+  'cloud-check','cloud-download','cloud-lock','cloud-off','cloud-print',
+  'cloud-sync','cloud-upload','code-braces','code-tags','coffee',
+  'cog-box','cog-outline','cog-transfer','collapse-all','color-helper',
+  'comma','comment','comment-alert','comment-check','compass',
+  'computer','connection','console','content-copy','content-cut',
+  'content-duplicate','content-paste','content-save','contrast','cookie',
+  'cpu-64-bit','crane','credit-card','crop','crosshairs',
+  'crown','cube','cube-outline','currency-eur','currency-usd',
+  'cursor-default','cursor-pointer','database','database-check','database-lock',
+  'debug-step-into','delta','desk-lamp','desktop-classic','developer-board',
+  'devices','dialpad','diamond','directions','disc',
+  'dishwasher','dns','dog','dots-grid','dots-horizontal',
+  'dots-vertical','download','draw','drone','drop-circle',
+  'dump-truck','ear','earth','earth-off','egg',
+  'electric-switch','elevator','email','email-check','email-lock',
+  'email-mark-as-unread','email-off','email-open','email-plus','email-send',
+  'emoticon','emoticon-cool','emoticon-dead','emoticon-excited','emoticon-happy',
+  'emoticon-neutral','emoticon-sad','engine','engine-off','equalizer',
+  'ev-station','excavator','expand-all','export','face-recognition',
+  'factory','family-tree','fast-forward','fax','ferry',
+  'file','file-check','file-cloud','file-code','file-document',
+  'file-excel','file-find','file-image','file-key','file-lock',
+  'file-music','file-pdf','file-plus','file-remove','file-restore',
+  'film','filter','filter-minus','filter-plus','filter-remove',
+  'fingerprint','flag','flag-checkered','flag-minus','flag-plus',
+  'flask','flip-to-back','flip-to-front','floor-lamp','flower',
+  'folder','folder-account','folder-check','folder-download','folder-heart',
+  'folder-home','folder-key','folder-lock','folder-move','folder-network',
+  'folder-open','folder-plus','folder-remove','folder-search','folder-star',
+  'food','food-apple','food-fork-drink','food-off','food-variant',
+  'football','format-align-center','format-bold','format-color-fill','format-italic',
+  'format-list-bulleted','format-list-checks','format-list-numbered','format-quote-close',
+  'forum','forward','fridge','fuel','fullscreen',
+  'fullscreen-exit','function','gamepad','garage','garage-open',
+  'gas-cylinder','gas-station','gauge','gift','git',
+  'glass-cocktail','glass-mug','glasses','globe-light','golf',
+  'google','google-assistant','google-chrome','google-cloud','google-home',
+  'graph','grid','grid-large','grid-off','group',
+  'guitar','handshake','hard-hat','harddisk','hardware-chip',
+  'headphones','headset','heart','heart-broken','heart-circle',
+  'heart-half','heart-minus','heart-off','heart-plus','heart-pulse',
+  'helicopter','help','help-box','help-circle','hexagon',
+  'history','home-account','home-alert','home-automation','home-city',
+  'home-currency','home-flood','home-heart','home-lock','home-minus',
+  'home-modern','home-plus','home-remove','home-thermometer','home-variant',
+  'horse','hospital','hospital-building','hospital-marker','hot-tub',
+  'hours-24','human','human-female','human-male','human-male-female',
+  'hydro-power','image','image-area','image-filter','image-multiple',
+  'image-search','import','inbox','information','information-outline',
+  'instagram','ip-network','island','kettle','key',
+  'key-chain','key-change','key-minus','key-plus','key-remove',
+  'key-wireless','keyboard','knob','ladder','lan',
+  'laptop-chromebook','latitude','layers','leaf','led-off',
+  'led-on','library','lightbulb-auto','lightbulb-cfl','lightbulb-group',
+  'lightbulb-multiple','lightbulb-off','lightbulb-on','link','link-off',
+  'linux','list-status','loading','location-enter','location-exit',
+  'map','map-clock','map-marker','map-marker-check','map-marker-minus',
+  'map-marker-off','map-marker-plus','map-marker-remove','map-marker-star','map-plus',
+  'math-compass','matrix','memory','menu','message',
+  'message-alert','message-check','message-lock','message-plus','message-processing',
+  'microphone','microphone-off','microscope','minus','minus-box',
+  'minus-circle','monitor','monitor-multiple','moon-full','moon-new',
+  'moped','motorbike','mouse','movie','movie-open',
+  'muffin','music','music-note','music-off','navigation',
+  'nfc','nintendo-switch','note','note-alert','note-check',
+  'note-multiple','note-off','note-plus','note-remove','note-search',
+  'nuclear','numeric','nut','octagon','office-building',
+  'oil','oil-temperature','omega','open-in-app','open-in-new',
+  'package','package-down','package-up','package-variant','page-first',
+  'page-last','page-next','page-previous','paperclip','parking',
+  'paw','paw-off','pen','phone','phone-alert',
+  'phone-check','phone-classic','phone-hangup','phone-in-talk','phone-lock',
+  'phone-minus','phone-missed','phone-off','phone-outgoing','phone-plus',
+  'picture-in-picture','pier','pin','pine-tree','pipe',
+  'pipe-wrench','pistol','pizza','play','play-box',
+  'play-circle','plus','plus-box','plus-circle','podcast',
+  'pot','power-cycle','power-off','power-on','power-plug-off',
+  'power-settings','power-sleep','power-socket','power-socket-au','power-socket-eu',
+  'printer','projector','propane-tank','pump','push-lock',
+  'puzzle','qrcode','qrcode-scan','racing-helmet','radar',
+  'radiator','radio','radio-tower','radiobox-blank','radiobox-marked',
+  'railway-bridge','receipt','record-circle','recycle','refresh',
+  'refresh-auto','refresh-circle','remote','remote-tv','repeat',
+  'restart','road','robot','rocket','router',
+  'router-network','router-wireless','rowing','rss','ruler',
+  'run','safe','scale-balance','scanner','schedule',
+  'script','security','security-network','seed','select',
+  'send','server','server-minus','server-network','server-off',
+  'server-plus','server-remove','share','share-variant','shield',
+  'shield-check','shield-key','shield-lock','shield-off','shield-plus',
+  'ship-wheel','signal','signal-4g','signal-5g','signal-cellular',
+  'signal-off','signal-variant','sim','skip-backward','skip-forward',
+  'sleep','smoke-detector','soccer','sofa-outline','solar-panel',
+  'sort','sort-alphabetical','sort-numeric','sort-reverse','speaker',
+  'speedometer','sprinkler','square','stairs','star',
+  'star-circle','star-half','star-minus','star-off','star-plus',
+  'steam','step-backward','step-forward','sticker','stop',
+  'stop-circle','store','stove','surfing','swap-horizontal',
+  'swap-vertical','sync-alert','table','table-chair','tag-faces',
+  'tape-measure','target','taxi','tennis','text',
+  'theater','ticket','timer','timer-off','toggle-switch-off-outline',
+  'toggle-switch-outline','toolbox','tools','toothbrush','translate',
+  'trash-can','tray','trophy','truck','truck-delivery',
+  'truck-fast','tune','tv-box','umbrella','undo',
+  'update','upload','usb','valve','video',
+  'view-dashboard','view-grid','view-list','violin','virtual-reality',
+  'volleyball','vpn','walk','wallet','washing-machine',
+  'watch','waves','weather-cloudy','weather-fog','weather-hail',
+  'weather-hurricane','weather-lightning','weather-night','weather-partly-cloudy',
+  'weather-pouring','weather-rainy','weather-snowy','weather-sunny','weather-windy',
+  'web','web-box','weight','wifi','wifi-off',
+  'wind-turbine','window-close','window-maximize','window-minimize','window-open',
+  'window-shutter','wrench','youtube','zig-zag','zip-box',
+];
+
+// Build full icon list: real ones first, then extras
+var ALL_ICONS = [];
+Object.keys(REAL_ICONS).forEach(function(name) {
+  ALL_ICONS.push({ name: name, path: REAL_ICONS[name] });
+});
+EXTRA_NAMES.forEach(function(name) {
+  if (!REAL_ICONS[name]) {
+    ALL_ICONS.push({ name: name, path: null });
+  }
+});
+
+// Sort alphabetically
+ALL_ICONS.sort(function(a, b) { return a.name.localeCompare(b.name); });
+
+var TOTAL_REAL = ALL_ICONS.length;
+
+// ── State ──────────────────────────────────────────────────────────────────
+var selectedIcon = 'circle';
+var recentIcons = [];
+var LS_KEY = 'rp_icon_picker_recent';
+
+function loadRecent() {
+  try {
+    var s = localStorage.getItem(LS_KEY);
+    recentIcons = s ? JSON.parse(s) : [];
+  } catch(e) { recentIcons = []; }
+}
+function saveRecent() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(recentIcons)); } catch(e) {}
+}
+function addRecent(name) {
+  recentIcons = recentIcons.filter(function(n){ return n !== name; });
+  recentIcons.unshift(name);
+  if (recentIcons.length > 20) recentIcons = recentIcons.slice(0, 20);
+  saveRecent();
+}
+
+// ── SVG rendering ──────────────────────────────────────────────────────────
+function svgIcon(path, size) {
+  size = size || 24;
+  if (!path) {
+    // Placeholder for icons without real path
+    return '<svg viewBox="0 0 24 24" width="' + size + '" height="' + size + '" fill="currentColor">'
+      + '<rect x="3" y="3" width="18" height="18" rx="3" opacity="0.25"/>'
+      + '</svg>';
+  }
+  return '<svg viewBox="0 0 24 24" width="' + size + '" height="' + size + '" fill="currentColor">'
+    + '<path d="' + path + '"/></svg>';
+}
+
+// ── Render recent ──────────────────────────────────────────────────────────
+function renderRecent() {
+  var row = document.getElementById('recent-row');
+  var section = document.getElementById('recent-section');
+  if (recentIcons.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = '';
+  row.innerHTML = recentIcons.map(function(name) {
+    var path = REAL_ICONS[name] || null;
+    var isSel = name === selectedIcon;
+    return '<div class="recent-item' + (isSel ? ' selected' : '') + '" '
+      + 'onclick="pickIcon(\'' + name + '\')" title="' + name + '">'
+      + svgIcon(path, 22) + '</div>';
+  }).join('');
+}
+
+// ── Render grid ────────────────────────────────────────────────────────────
+var currentQuery = '';
+
+function renderGrid(query) {
+  currentQuery = query || '';
+  var grid = document.getElementById('icon-grid');
+  var empty = document.getElementById('empty-state');
+  var count = document.getElementById('results-count');
+
+  var filtered = currentQuery
+    ? ALL_ICONS.filter(function(ic) { return ic.name.indexOf(currentQuery) !== -1; })
+    : ALL_ICONS;
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '';
+    empty.style.display = '';
+    count.textContent = '';
+    return;
+  }
+  empty.style.display = 'none';
+
+  // Show count
+  if (currentQuery) {
+    count.textContent = filtered.length + ' result' + (filtered.length === 1 ? '' : 's');
+  } else {
+    count.textContent = TOTAL_REAL + ' icons (simulating ' + (7000).toLocaleString() + '+ MDI)';
+  }
+
+  grid.innerHTML = filtered.map(function(ic) {
+    var isSel = ic.name === selectedIcon;
+    return '<div class="grid-item' + (isSel ? ' selected' : '') + '" '
+      + 'onclick="pickIcon(\'' + ic.name + '\')" title="' + ic.name + '">'
+      + '<div class="grid-icon">' + svgIcon(ic.path, 26) + '</div>'
+      + '<div class="grid-label">' + ic.name + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+// ── Pick icon ──────────────────────────────────────────────────────────────
+function pickIcon(name) {
+  selectedIcon = name;
+  addRecent(name);
+
+  // Update trigger button
+  var path = REAL_ICONS[name] || null;
+  document.getElementById('trigger-icon').innerHTML = svgIcon(path, 22);
+  document.getElementById('trigger-name').textContent = name;
+
+  // Show banner
+  var banner = document.getElementById('selection-banner');
+  banner.textContent = '✓ "' + name + '" selected';
+  banner.classList.add('visible');
+  clearTimeout(banner._t);
+  banner._t = setTimeout(function() { banner.classList.remove('visible'); }, 2000);
+
+  // Re-render
+  renderRecent();
+  renderGrid(currentQuery);
+}
+
+// ── Search ─────────────────────────────────────────────────────────────────
+var searchTimer = null;
+function onSearch(val) {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(function() { renderGrid(val.toLowerCase().trim()); }, 80);
+}
+
+// ── Clear selection ────────────────────────────────────────────────────────
+function clearSelection() {
+  document.getElementById('search-input').value = '';
+  renderGrid('');
+}
+
+// ── Demo states ────────────────────────────────────────────────────────────
+function setDemoState(state) {
+  document.querySelectorAll('.demo-tab').forEach(function(t) { t.classList.remove('active'); });
+  event.target.classList.add('active');
+
+  var searchEl = document.getElementById('search-input');
+
+  if (state === 'empty') {
+    recentIcons = [];
+    searchEl.value = '';
+    renderRecent();
+    renderGrid('');
+  } else if (state === 'with-recent') {
+    recentIcons = ['home','lightbulb','thermometer','lock','camera','fan','palette','cog','bell','account'];
+    searchEl.value = '';
+    saveRecent();
+    renderRecent();
+    renderGrid('');
+  } else if (state === 'searching') {
+    recentIcons = ['home','lightbulb'];
+    searchEl.value = 'light';
+    saveRecent();
+    renderRecent();
+    renderGrid('light');
+    searchEl.focus();
+  }
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+loadRecent();
+renderRecent();
+renderGrid('');
+
+// Auto-focus search
+document.getElementById('search-input').focus();
+</script>
+</body>
+</html>

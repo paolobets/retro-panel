@@ -110,7 +110,7 @@ Retro Panel is a lightweight Home Assistant control panel optimized for:
 5. WebSocket bridge: Server-side token storage, scalable
 6. layout_type system: Backend-computed entity type, frontend-rendered component
 
-**Current Features** (v2.9.24, 2026-04-04):
+**Current Features** (v2.9.26, 2026-04-04):
 - Light, Switch, Sensor (9 variants), Binary Sensor (9 variants), Alarm, Camera, Scenario, Energy Flow
 - Two-URL architecture: `/` (dashboard) and `/config` (admin)
 - Bottom sheet for light controls (brightness/color temperature/hue)
@@ -250,10 +250,10 @@ This documentation is the single source of truth for Retro Panel development. It
 
 If something is unclear or missing, it should be documented here.
 
-**Document Version**: 2.9.24
+**Document Version**: 2.9.26
 **Last Updated**: 2026-04-04
 **Total Words**: 50,000+
-**Coverage**: v2.9.24 features and architecture
+**Coverage**: v2.9.26 features and architecture
 
 ---
 

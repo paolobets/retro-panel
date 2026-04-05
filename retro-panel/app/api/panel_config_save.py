@@ -72,6 +72,33 @@ def _parse_item(raw: dict, idx: int, context: str) -> dict:
                     raise ValueError(f"energy_flow.{f}: {exc}") from exc
             item[f] = val
         return item
+    elif item_type == "sensor_conditional":
+        entity_id = _validate_entity_id(raw.get("entity_id") or "")
+        item = {
+            "type": "sensor_conditional",
+            "entity_id": entity_id,
+            "label": str(raw.get("label") or "")[:_MAX_LABEL],
+            "icon": str(raw.get("icon") or "")[:_MAX_ICON],
+            "border_color": str(raw.get("border_color") or "")[:16],
+            "condition_logic": "and" if str(raw.get("condition_logic") or "and") != "or" else "or",
+            "conditions": [],
+        }
+        for rule in (raw.get("conditions") or []):
+            if not isinstance(rule, dict):
+                continue
+            rule_entity = str(rule.get("entity") or "").strip()
+            rule_op = str(rule.get("op") or "eq").strip().lower()
+            rule_value = str(rule.get("value") or "").strip()
+            if not rule_entity:
+                continue
+            try:
+                rule_entity = _validate_entity_id(rule_entity)
+            except ValueError:
+                continue
+            if rule_op not in ("eq", "neq", "gt", "lt", "gte", "lte", "contains"):
+                rule_op = "eq"
+            item["conditions"].append({"entity": rule_entity, "op": rule_op, "value": rule_value})
+        return item
     else:
         raise ValueError(f"Unknown item type: {item_type!r}")
 

@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retro Panel — v2.9.25 Cover Tile Mockup</title>
+<style>
+/* ── Design Tokens (identical to retro-panel/app/static/css/tokens.css) ── */
+:root {
+  --c-bg:           #0f0f0f;
+  --c-surface:      #1a1a1a;
+  --c-surface-2:    #252525;
+  --c-surface-3:    #2e2e2e;
+  --c-text-pri:     #f0f0f0;
+  --c-text-sec:     #999999;
+  --c-accent:       #2196f3;
+  --c-accent-bg:    rgba(33,150,243,0.10);
+  --c-on:           #4caf50;
+  --c-danger:       #f44336;
+  --c-warning:      #ff9800;
+  --c-light-on:     #FFB700;
+  --c-binary-alert: #FF6B00;
+  --radius:         14px;
+  --radius-sm:      8px;
+}
+body.theme-light {
+  --c-bg:        #f0f2f5;
+  --c-surface:   #ffffff;
+  --c-surface-2: #e8eaed;
+  --c-surface-3: #dde0e5;
+  --c-text-pri:  #111111;
+  --c-text-sec:  #555555;
+}
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--c-bg);
+  color: var(--c-text-pri);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Page Chrome ── */
+.page-header {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-surface-2);
+  padding: 0 24px; height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.page-header-title { font-size: 17px; font-weight: 700; }
+.badge {
+  font-size: 11px; font-weight: 600; color: var(--c-accent);
+  background: var(--c-accent-bg); border-radius: 6px;
+  padding: 3px 8px; margin-left: 10px;
+}
+.theme-btn {
+  background: var(--c-surface-2); border: none; border-radius: 20px;
+  padding: 7px 16px; font-size: 13px; font-weight: 600;
+  color: var(--c-text-pri); cursor: pointer; font-family: inherit;
+}
+.page-content { padding: 32px 24px 80px; max-width: 960px; margin: 0 auto; }
+
+.section { margin-bottom: 56px; }
+.section-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
+.section-sub { font-size: 13px; color: var(--c-text-sec); margin-bottom: 24px; }
+.variant-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--c-text-sec); margin-bottom: 10px;
+}
+
+/* ── Tile Grid ── */
+.tile-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+@media (max-width: 700px) { .tile-grid { grid-template-columns: repeat(2, 1fr); } }
+
+/* ── BASE TILE (mirrors retro-panel tiles.css) ── */
+.tile {
+  background: var(--c-surface);
+  border-radius: var(--radius);
+  border: 1.5px solid transparent;
+  padding: 12px;
+  position: relative;
+  overflow: hidden;
+  -webkit-user-select: none; user-select: none;
+  touch-action: manipulation;
+  display: flex; flex-direction: column; justify-content: space-between;
+  transition: border-color 0.2s ease, opacity 0.2s ease;
+  cursor: pointer;
+}
+.tile:active { transform: scale(0.97); }
+
+/* ── COVER TILE ── */
+.tile-cover {
+  height: 120px;
+  min-height: 120px;
+  max-height: 120px;
+}
+
+/* Cover states */
+.tile-cover.s-open    { border-color: var(--c-on); }
+.tile-cover.s-closed  { border-color: var(--c-surface-3); }
+.tile-cover.s-opening { border-color: var(--c-warning); animation: cover-pulse 1.2s ease-in-out infinite; }
+.tile-cover.s-closing { border-color: var(--c-warning); animation: cover-pulse 1.2s ease-in-out infinite; }
+.tile-cover.s-unavail { opacity: 0.45; pointer-events: none; border-color: var(--c-surface-3); }
+
+@keyframes cover-pulse {
+  0%,100% { border-color: var(--c-warning); }
+  50%      { border-color: rgba(255,152,0,0.3); }
+}
+
+/* Cover icon color per state */
+.tile-cover.s-open   .cover-icon { color: var(--c-on); }
+.tile-cover.s-closed .cover-icon { color: var(--c-text-sec); }
+.tile-cover.s-opening .cover-icon,
+.tile-cover.s-closing .cover-icon { color: var(--c-warning); }
+.tile-cover.s-unavail .cover-icon { color: var(--c-text-sec); }
+
+/* Cover tile row: icon + buttons */
+.cover-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.cover-icon {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--c-text-sec);
+  transition: color 0.2s ease;
+  flex-shrink: 0;
+}
+.cover-icon svg { display: block; }
+
+/* Action buttons: ▲ ■ ▼ */
+.cover-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cover-btn {
+  width: 28px; height: 28px;
+  border-radius: 7px;
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-surface-3);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, transform 0.1s ease;
+  color: var(--c-text-sec);
+  font-size: 13px;
+  font-weight: 700;
+}
+.cover-btn:active { transform: scale(0.9); background: var(--c-surface-3); }
+.cover-btn.btn-open  { color: var(--c-on); }
+.cover-btn.btn-stop  { color: var(--c-text-sec); font-size: 10px; }
+.cover-btn.btn-close { color: var(--c-danger); }
+
+/* Position bar */
+.cover-pos-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cover-bar-track {
+  flex: 1;
+  height: 4px;
+  background: var(--c-surface-3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.cover-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--c-on);
+  transition: width 0.3s ease;
+}
+.tile-cover.s-closed  .cover-bar-fill { background: var(--c-surface-3); }
+.tile-cover.s-opening .cover-bar-fill,
+.tile-cover.s-closing .cover-bar-fill { background: var(--c-warning); }
+.cover-pos-pct {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--c-text-sec);
+  width: 30px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Label */
+.cover-label {
+  font-size: 12px;
+  color: var(--c-text-sec);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+/* ── ANNOTATION HELPER ── */
+.annot {
+  background: rgba(33,150,243,0.12);
+  border: 1px dashed var(--c-accent);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--c-accent);
+  margin-top: 12px;
+  line-height: 1.5;
+}
+.annot strong { color: #64b5f6; }
+
+/* ── DIVIDER ── */
+.divider { height: 1px; background: var(--c-surface-2); margin: 32px 0; }
+
+/* ── LAYOUT CONTEXT ── */
+.context-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--c-text-sec);
+  margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+}
+.context-label::before {
+  content: '';
+  display: block; width: 3px; height: 14px;
+  background: var(--c-accent); border-radius: 2px;
+}
+
+/* ── DASHBOARD CONTEXT SIMULATION ── */
+.dashboard-sim {
+  background: var(--c-bg);
+  border-radius: 16px;
+  border: 1px solid var(--c-surface-2);
+  padding: 16px;
+}
+.dashboard-sim-header {
+  font-size: 13px; font-weight: 600; color: var(--c-text-sec);
+  margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.06em;
+}
+
+/* ── SVG ICON HELPER ── */
+.icon-svg { fill: currentColor; }
+
+/* ── STATE CHIP ── */
+.state-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--c-surface-2);
+  border-radius: 20px; padding: 3px 10px;
+  font-size: 11px; font-weight: 600; color: var(--c-text-sec);
+  margin-bottom: 12px;
+}
+.state-chip.chip-open   { background: rgba(76,175,80,0.15); color: var(--c-on); }
+.state-chip.chip-closed { background: var(--c-surface-2); color: var(--c-text-sec); }
+.state-chip.chip-moving { background: rgba(255,152,0,0.15); color: var(--c-warning); }
+.state-chip.chip-unavail { background: var(--c-surface-2); color: var(--c-danger); opacity: 0.7; }
+.state-chip-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor;
+}
+
+/* ── POSITION VARIANT TABLE ── */
+.pos-table { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.pos-row { display: flex; align-items: center; gap: 10px; }
+.pos-row-label { font-size: 12px; color: var(--c-text-sec); width: 50px; flex-shrink: 0; }
+.pos-row-bar { flex: 1; height: 6px; background: var(--c-surface-3); border-radius: 3px; overflow: hidden; }
+.pos-row-fill { height: 100%; border-radius: 3px; background: var(--c-on); }
+.pos-row-pct { font-size: 12px; font-weight: 600; color: var(--c-text-pri); width: 32px; text-align: right; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <div style="display:flex;align-items:center;">
+    <span class="page-header-title">Retro Panel</span>
+    <span class="badge">v2.9.25 — Cover Tile Mockup</span>
+  </div>
+  <button class="theme-btn" onclick="document.body.classList.toggle('theme-light')">Toggle Theme</button>
+</header>
+
+<main class="page-content">
+
+  <!-- ─────────────────────────────────────────
+       SEZIONE 1 — Stati del tile
+       ───────────────────────────────────────── -->
+  <section class="section">
+    <h2 class="section-title">Cover Tile — Stati</h2>
+    <p class="section-sub">
+      Il tile cover ha la stessa dimensione del tile switch (120px, compatto).
+      Struttura: icona + 3 pulsanti azione in alto · barra posizione al centro · label in basso.
+    </p>
+
+    <div class="tile-grid">
+
+      <!-- OPEN -->
+      <div>
+        <div class="state-chip chip-open"><span class="state-chip-dot"></span> open — 100%</div>
+        <div class="tile tile-cover s-open">
+          <div class="cover-top">
+            <div class="cover-icon">
+              <!-- window-blinds MDI icon -->
+              <svg width="24" height="24" viewBox="0 0 24 24" class="icon-svg">
+                <path d="M3 3h18v2H3zm0 4h18v2H3zm0 4h18v2H3zm0 4h18v2H3zm0 4h18v2H3z"/>
+              </svg>
+            </div>
+            <div class="cover-btns">
+              <button class="cover-btn btn-open" title="Apri">▲</button>
+              <button class="cover-btn btn-stop" title="Stop">■</button>
+              <button class="cover-btn btn-close" title="Chiudi">▼</button>
+            </div>
+          </div>
+          <div class="cover-pos-wrap">
+            <div class="cover-bar-track"><div class="cover-bar-fill" style="width:100%"></div></div>
+            <span class="cover-pos-pct">100%</span>
+          </div>
+          <span class="cover-label">Tapparella Salotto</span>
+        </div>
+        <div class="annot">
+          <strong>Bordo verde</strong> — stato "open".<br>
+          Icona e barra in <strong>var(--c-on)</strong>.
+        </div>
+      </div>
+
+      <!-- CLOSED -->
+      <div>
+        <div class="state-chip chip-closed"><span class="state-chip-dot"></span> closed — 0%</div>
+        <div class="tile tile-cover s-closed">
+          <div class="cover-top">
+            <div class="cover-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" class="icon-svg">
+                <path d="M3 3h18v2H3zm0 4h18v2H3zm0 4h18v2H3zm0 4h18v2H3zm0 4h18v2H3z"/>
+              </svg>
+            </div>
+            <div class="cover-btns">
+              <button class="cover-btn btn-open" title="Apri">▲</button>
+              <button class="cover-btn btn-stop" title="Stop">■</button>
+              <button class="cover-btn btn-close" title="Chiudi">▼</button>
+            </div>
+          </div>
+          <div class="cover-pos-wrap">
+            <div class="cover-bar-track"><div class="cover-bar-fill" style="width:0%"></div></div>
+            <span class="cover-pos-pct">0%</span>
+          </div>
+          <span class="cover-label">Tapparella Cucina</span>
+        </div>
+        <div class="annot">
+          <strong>Bordo grigio</strong> — stato "closed".<br>
+          Barra vuota, icona <strong>var(--c-text-sec)</strong>.
+        </div>
+      </div>
+
+      <!-- PARTIAL (65%) -->
+      <div>
+        <div class="state-chip chip-open"><span class="state-chip-dot"></span> open — 65%</div>
+        <div class="tile tile-cover s-open">
+          <div class="cover-top">
+            <div class="cover-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" class="icon-svg">
+                <path d="M3 3h18v2H3zm0 4h18v2H3zm0 4h18v2H3zm0 4h18v2H3zm0 4h18v2H3z"/>
+              </svg>
+            </div>
+            <div class="cover-btns">
+              <button class="cover-btn btn-open" title="Apri">▲</button>
+              <button class="cover-btn btn-stop" title="Stop">■</button>
+              <button class="cover-btn btn-close" title="Chiudi">▼</button>
+            </div>
+          </div>
+          <div class="cover-pos-wrap">
+            <div class="cover-bar-track"><div class="cover-bar-fill" style="width:65%"></div></div>
+            <span class="cover-pos-pct">65%</span>
+          </div>
+          <span class="cover-label">Tapparella Camera</span>
+        </div>
+        <div class="annot">
+          Posizione parziale: <strong>current_position</strong> da attributi HA.<br>
+          Barra proporzionale alla posizione.
+        </div>
+      </div>
+
+      <!-- OPENING (animato) -->
+      <div>
+        <div class="state-chip chip-moving"><span class="state-chip-dot"></span> opening…</div>
+        <div class="tile tile-cover s-opening">
+          <div class="cover-top">
+            <div class="cover-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" class="icon-svg">
+                <path d="M3 3h18v2H3zm0 4h18v2H3zm0 4h18v2H3zm0 4h18v2H3zm0 4h18v2H3z"/>
+              </svg>
+            </div>
+            <div class="cover-btns">
+              <button class="cover-btn btn-open" title="Apri">▲</button>
+              <button class="cover-btn btn-stop" title="Stop">■</button>
+              <button class="cover-btn btn-close" title="Chiudi">▼</button>
+            </div>
+          </div>
+          <div class="cover-pos-wrap">
+            <div class="cover-bar-track"><div class="cover-bar-fill" style="width:40%"></div></div>
+            <span class="cover-pos-pct">40%</span>
+          </div>
+          <span class="cover-label">Tapparella Studio</span>
+        </div>
+        <div class="annot">
+          <strong>Bordo arancione pulsante</strong> — stato "opening".<br>
+          Animazione pulse sul bordo. Stesso per "closing".
+        </div>
+      </div>
+
+      <!-- CLOSING -->
+      <div>
+        <div class="state-chip chip-moving"><span class="state-chip-dot"></span> closing…</div>
+        <div class="tile tile-cover s-closing">
+          <div class="cover-top">
+            <div class="cover-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" class="icon-svg">
+                <path d="M3 3h18v2H3zm0 4h18v2H3zm0 4h18v2H3zm0 4h18v2H3zm0 4h18v2H3z"/>
+              </svg>
+            </div>
+            <div class="cover-btns">
+              <button class="cover-btn btn-open" title="Apri">▲</button>
+              <button class="cover-btn btn-stop" title="Stop">■</button>
+              <button class="cover-btn btn-close" title="Chiudi">▼</button>
+            </div>
+          </div>
+          <div class="cover-pos-wrap">
+            <div class="cover-bar-track"><div class="cover-bar-fill" style="width:70%"></div></div>
+            <span class="cover-pos-pct">70%</span>
+          </div>
+          <span class="cover-label">Tapparella Ingresso</span>
+        </div>
+        <div class="annot">
+          Stesso stile di "opening" — utente capisce subito che è in movimento.
+        </div>
+      </div>
+
+      <!-- UNAVAILABLE -->
+      <div>
+        <div class="state-chip chip-unavail"><span class="state-chip-dot"></span> unavailable</div>
+        <div class="tile tile-cover s-unavail">
+          <div class="cover-top">
+            <div class="cover-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" class="icon-svg">
+                <path d="M3 3h18v2H3zm0 4h18v2H3zm0 4h18v2H3zm0 4h18v2H3zm0 4h18v2H3z"/>
+              </svg>
+            </div>
+            <div class="cover-btns">
+              <button class="cover-btn btn-open">▲</button>
+              <button class="cover-btn btn-stop">■</button>
+              <button class="cover-btn btn-close">▼</button>
+            </div>
+          </div>
+          <div class="cover-pos-wrap">
+            <div class="cover-bar-track"><div class="cover-bar-fill" style="width:0%"></div></div>
+            <span class="cover-pos-pct">—</span>
+          </div>
+          <span class="cover-label">Tapparella Garage</span>
+        </div>
+        <div class="annot">
+          Opacità 0.45, <strong>pointer-events: none</strong>. Pulsanti disabilitati visivamente.
+        </div>
+      </div>
+
+    </div><!-- /tile-grid -->
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─────────────────────────────────────────
+       SEZIONE 2 — Contesto dashboard (mix tiles)
+       ───────────────────────────────────────── -->
+  <section class="section">
+    <h2 class="section-title">Contesto Dashboard</h2>
+    <p class="section-sub">
+      Come appare il tile cover accanto ad altri tile nella griglia normale.
+      Stessa altezza di switch/light (120px), 3 colonne su tablet.
+    </p>
+
+    <div class="dashboard-sim">
+      <div class="dashboard-sim-header">Soggiorno</div>
+      <div class="tile-grid">
+
+        <!-- Light tile reference -->
+        <div class="tile" style="height:120px;border-color:var(--c-light-on);">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <span style="font-size:22px;color:var(--c-light-on);">☀</span>
+            <div style="width:36px;height:20px;border-radius:10px;background:var(--c-light-on);position:relative;">
+              <div style="position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:#fff;"></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--c-text-pri);">On</div>
+            <div style="font-size:12px;color:var(--c-text-sec);">Luce Salotto</div>
+          </div>
+        </div>
+
+        <!-- Cover tile (open) -->
+        <div class="tile tile-cover s-open">
+          <div class="cover-top">
+            <div class="cover-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" class="icon-svg">
+                <path d="M3 3h18v2H3zm0 4h18v2H3zm0 4h18v2H3zm0 4h18v2H3zm0 4h18v2H3z"/>
+              </svg>
+            </div>
+            <div class="cover-btns">
+              <button class="cover-btn btn-open">▲</button>
+              <button class="cover-btn btn-stop">■</button>
+              <button class="cover-btn btn-close">▼</button>
+            </div>
+          </div>
+          <div class="cover-pos-wrap">
+            <div class="cover-bar-track"><div class="cover-bar-fill" style="width:100%"></div></div>
+            <span class="cover-pos-pct">100%</span>
+          </div>
+          <span class="cover-label">Tapparella</span>
+        </div>
+
+        <!-- Switch tile reference -->
+        <div class="tile" style="height:120px;border-color:var(--c-surface-3);">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <span style="font-size:22px;color:var(--c-text-sec);">⏻</span>
+            <div style="width:36px;height:20px;border-radius:10px;background:var(--c-surface-3);position:relative;">
+              <div style="position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;"></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--c-text-sec);">Off</div>
+            <div style="font-size:12px;color:var(--c-text-sec);">Ventilatore</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─────────────────────────────────────────
+       SEZIONE 3 — Barra posizione dettaglio
+       ───────────────────────────────────────── -->
+  <section class="section">
+    <h2 class="section-title">Barra Posizione — Dettaglio</h2>
+    <p class="section-sub">
+      La barra mostra <code>attributes.current_position</code> da HA (0–100%).
+      Il tile cover NON ha bottom-sheet — le 3 azioni sono inline nel tile stesso.
+    </p>
+
+    <div class="pos-table">
+      <div class="pos-row">
+        <span class="pos-row-label">0%</span>
+        <div class="pos-row-bar"><div class="pos-row-fill" style="width:0%;background:var(--c-surface-3);"></div></div>
+        <span class="pos-row-pct">Chiusa</span>
+      </div>
+      <div class="pos-row">
+        <span class="pos-row-label">25%</span>
+        <div class="pos-row-bar"><div class="pos-row-fill" style="width:25%;"></div></div>
+        <span class="pos-row-pct">25%</span>
+      </div>
+      <div class="pos-row">
+        <span class="pos-row-label">50%</span>
+        <div class="pos-row-bar"><div class="pos-row-fill" style="width:50%;"></div></div>
+        <span class="pos-row-pct">50%</span>
+      </div>
+      <div class="pos-row">
+        <span class="pos-row-label">75%</span>
+        <div class="pos-row-bar"><div class="pos-row-fill" style="width:75%;"></div></div>
+        <span class="pos-row-pct">75%</span>
+      </div>
+      <div class="pos-row">
+        <span class="pos-row-label">100%</span>
+        <div class="pos-row-bar"><div class="pos-row-fill" style="width:100%;"></div></div>
+        <span class="pos-row-pct">Aperta</span>
+      </div>
+    </div>
+
+    <div class="annot" style="margin-top:20px;">
+      <strong>Nota implementazione:</strong> la barra posizione è opzionale runtime — se HA non restituisce
+      <code>current_position</code> negli attributi (alcuni cover lo omettono), la barra è nascosta e viene mostrato solo lo stato testuale (open/closed).
+      <br><br>
+      <strong>set_cover_position:</strong> non è esposto nel tile (nessun slider inline per mantenere il tile compatto).
+      Può essere aggiunto in v2.9.27+ se richiesto.
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─────────────────────────────────────────
+       SEZIONE 4 — File da modificare
+       ───────────────────────────────────────── -->
+  <section class="section">
+    <h2 class="section-title">Piano Implementativo</h2>
+    <p class="section-sub">File coinvolti e modifiche richieste.</p>
+
+    <div style="background:var(--c-surface);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;">
+
+      <div style="display:flex;gap:12px;align-items:flex-start;padding-bottom:12px;border-bottom:1px solid var(--c-surface-2);">
+        <span style="background:rgba(33,150,243,0.2);color:var(--c-accent);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px;">NEW</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--c-text-pri);font-family:monospace;">app/static/js/components/cover.js</div>
+          <div style="font-size:12px;color:var(--c-text-sec);margin-top:3px;">
+            Nuovo componente IIFE. <code>createTile(cfg)</code> + <code>updateTile(tile, stateObj)</code>.
+            Service calls: open_cover / close_cover / stop_cover.
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;align-items:flex-start;padding-bottom:12px;border-bottom:1px solid var(--c-surface-2);">
+        <span style="background:rgba(255,152,0,0.2);color:var(--c-warning);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px;">MOD</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--c-text-pri);font-family:monospace;">app/config/loader.py</div>
+          <div style="font-size:12px;color:var(--c-text-sec);margin-top:3px;">
+            In <code>_compute_layout_type()</code>: aggiungi <code>if domain == "cover": return "cover_standard"</code>.
+            Nessun'altra modifica — all_entity_ids gestisce cover automaticamente.
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;align-items:flex-start;padding-bottom:12px;border-bottom:1px solid var(--c-surface-2);">
+        <span style="background:rgba(255,152,0,0.2);color:var(--c-warning);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px;">MOD</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--c-text-pri);font-family:monospace;">app/static/js/renderer.js</div>
+          <div style="font-size:12px;color:var(--c-text-sec);margin-top:3px;">
+            Aggiungi <code>'cover_standard'</code> a COMPONENT_MAP, _initComponents(), e COL_CLASS_MAP
+            (valore: <code>'tile-col-compact'</code> — stessa larghezza di switch).
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;align-items:flex-start;padding-bottom:12px;border-bottom:1px solid var(--c-surface-2);">
+        <span style="background:rgba(255,152,0,0.2);color:var(--c-warning);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px;">MOD</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--c-text-pri);font-family:monospace;">app/static/css/tiles.css</div>
+          <div style="font-size:12px;color:var(--c-text-sec);margin-top:3px;">
+            Aggiungi: <code>.tile-cover</code> (height:120px), <code>.s-open</code>, <code>.s-closed</code>,
+            <code>.s-opening</code>/<code>.s-closing</code> con animazione pulse, <code>.cover-btn</code>,
+            <code>.cover-bar-track</code>/<code>.cover-bar-fill</code>.
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <span style="background:rgba(76,175,80,0.2);color:var(--c-on);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px;">OK</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--c-text-pri);font-family:monospace;">app/api/panel_service.py</div>
+          <div style="font-size:12px;color:var(--c-text-sec);margin-top:3px;">
+            Già completo — <code>"cover"</code> è già in <code>_ALLOWED_DOMAINS</code>
+            con <code>open_cover</code>, <code>close_cover</code>, <code>stop_cover</code>, <code>set_cover_position</code>.
+            Nessuna modifica necessaria.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<script>
+// Theme persistence
+document.querySelector('.theme-btn').addEventListener('click', function() {
+  document.body.classList.toggle('theme-light');
+});
+</script>
+
+</body>
+</html>
