@@ -408,69 +408,103 @@ Retro Panel follows semantic versioning (MAJOR.MINOR.PATCH):
 
 **Status**: PLANNED
 
-**Release Goal**: Nuovo tipo di tile che appare nell'overview (o in una room) **solo quando una condizione su un'entità HA è vera**. Permette di mostrare informazioni contestuali che emergono solo quando rilevanti — es. "Carta domani" solo il giorno prima della raccolta.
+**Release Goal**: Nuovo tipo di tile disponibile **solo in Overview** che appare nel dashboard **esclusivamente quando le condizioni definite dall'utente sono soddisfatte**. Comportamento visivo identico ai sensori esistenti — la novità è interamente nella logica di visibilità condizionale. Se ne possono creare più di uno.
 
 ### Concept
 
-Un sensore condizionale è un tile invisibile per default che diventa visibile in tempo reale (via WebSocket) quando la condizione definita dall'utente è soddisfatta. Mostra il valore del sensore monitorato con icona e colore bordo personalizzati.
+Un sensore condizionale è un tile invisibile per default che emerge in tempo reale (via WebSocket) quando le condizioni configurate sono vere. Questo permette di rendere il dashboard contestuale: informazioni che compaiono solo quando servono, senza dover agire manualmente.
 
 **Esempio d'uso**:
-- `condition_entity: sensor.raccolta_rifiuti` + `condition_value: "Domani"` → mostra il nome del rifiuto e l'icona cestino
-- `condition_entity: binary_sensor.porta_garage` + `condition_value: "on"` → mostra "Garage aperto" in rosso
-- `condition_entity: sensor.temperatura_est` + `condition_operator: "gt"` + `condition_value: "28"` → mostra avviso caldo
+- Sensore raccolta rifiuti carta: appare solo la sera prima della raccolta
+- Sensore porta garage: appare (in rosso) solo quando la porta è aperta
+- Sensore temperatura esterna: appare solo quando supera i 30°C
+- Avviso umidità cantina: appare solo se il sensore supera la soglia critica
+
+### Posizione nel pannello — solo Overview
+
+Il sensore condizionale è configurabile e visibile solo nella sezione Overview, analogamente alla Energy Card. Non è disponibile nelle Room. L'utente lo aggiunge dalla tab Overview in `/config` tramite una card dedicata "Sensori Condizionali", separata dalla lista entità normali. Può crearne quanti ne vuole.
+
+### Comportamento visivo
+
+Il tile condizionale è **visivamente identico** ai sensori esistenti (`sensor_generic`, `sensor_temperature`, ecc.) — stessa dimensione, stessa struttura (bolla icona + nome + valore + unità). La differenza rispetto a un sensore normale è solo che:
+- di default è `display:none` e non occupa spazio nel layout
+- quando le condizioni diventano vere, appare nel flusso come qualsiasi altro tile
+- l'utente può personalizzare icona e colore bordo/bolla (token semantico)
 
 ### Schema configurazione
 
 ```yaml
 layout_type: sensor_conditional
-entity_id: sensor.raccolta_rifiuti       # entità di cui mostrare il valore
-condition_entity: sensor.raccolta_rifiuti # entità su cui valutare la condizione (può coincidere)
-condition_operator: eq                    # eq | neq | gt | lt | gte | lte | contains
-condition_value: "Domani"                 # valore stringa o numero da confrontare
-label: "Raccolta carta"                   # label tile (opzionale — fallback a friendly_name)
-icon: "trash-can"                         # icona MDI (opzionale — fallback a icona HA)
-border_color: warning                     # token semantico colore bordo (vedi sotto)
+entity_id: sensor.raccolta_rifiuti        # entità di cui mostrare il valore e il nome
+label: "Raccolta carta"                   # label tile (opzionale — fallback a friendly_name HA)
+icon: "trash-can"                         # icona MDI (opzionale — fallback a icona HA o domain default)
+border_color: warning                     # token semantico colore bordo + icona (vedi tabella)
+condition_logic: and                      # "and" | "or" — come combinare le regole
+conditions:
+  - entity: sensor.raccolta_rifiuti       # entità su cui valutare la condizione
+    op: eq                                # eq | neq | gt | lt | gte | lte | contains
+    value: "Domani"
+  - entity: sensor.ora_del_giorno         # seconda condizione (opzionale, N condizioni supportate)
+    op: gte
+    value: "18:00"
 ```
+
+Con `condition_logic: and` entrambe le condizioni devono essere vere.
+Con `condition_logic: or` basta che una sia vera.
 
 ### Sistema colori bordo
 
-Il campo `border_color` accetta un **token semantico** che viene risolto a variabile CSS dal tema corrente.
-I token disponibili corrispondono ai token già definiti in `tokens.css`:
+Il campo `border_color` accetta un **token semantico** risolto a variabile CSS dal tema corrente.
+Il token si applica sia al `border-color` del tile che al colore della bolla icona.
 
-| Token | CSS var | Valore dark | Valore light | Uso tipico |
-|-------|---------|-------------|--------------|------------|
-| `accent` | `--c-accent` | `#2196f3` | `#2196f3` | info, neutra |
-| `on` | `--c-on` | `#4caf50` | `#4caf50` | condizione positiva |
-| `warning` | `--c-warning` | `#ff9800` | `#ff9800` | attenzione |
-| `danger` | `--c-danger` | `#f44336` | `#f44336` | emergenza, rosso |
+| Token | CSS var | Dark | Light | Uso tipico |
+|-------|---------|------|-------|------------|
+| `accent` | `--c-accent` | `#2196f3` | `#2196f3` | informativo, neutro |
+| `on` | `--c-on` | `#4caf50` | `#4caf50` | condizione positiva, ok |
+| `warning` | `--c-warning` | `#ff9800` | `#ff9800` | attenzione, promemoria |
+| `danger` | `--c-danger` | `#f44336` | `#f44336` | emergenza, critico |
 | `alert` | `--c-binary-alert` | `#FF6B00` | `#FF6B00` | allerta arancione |
-| `neutral` | `--c-text-sec` | `#999999` | `#555555` | generico, si adatta al tema |
+| `neutral` | `--c-text-sec` | `#999` | `#555` | generico, si adatta al tema |
 
-Il tile usa il token per `border-color` e per il colore dell'icona/bolla — **nessun hardcode di hex**, tutto via variabili CSS: funziona correttamente su tema dark, light e auto senza CSS aggiuntivo.
+**Nessun hex hardcoded** — tutto tramite variabili CSS: funziona su dark, light e auto senza CSS aggiuntivo.
 
 ### Comportamento runtime
 
-- **Visibilità reattiva**: il tile è sempre nel DOM ma con `display:none`; ogni aggiornamento WebSocket (`state_changed`) ricalcola la condizione e mostra/nasconde il tile immediatamente
-- **Nessun reload**: la comparsa/scomparsa è istantanea senza ricaricare la pagina
-- **Confronto**: il `condition_operator` confronta sempre come stringa (`eq`, `neq`, `contains`) oppure come float se entrambi i valori sono numerici (`gt`, `lt`, `gte`, `lte`)
-- **Condizione non soddisfatta**: tile nascosto, nessuno spazio occupato nel layout (rimosso dal flusso con `display:none`)
+- **Visibilità reattiva**: il tile è sempre nel DOM ma con `display:none`; ogni `state_changed` WebSocket ricalcola tutte le condizioni e mostra/nasconde il tile senza reload
+- **Condizioni composte**: `_evalConditions(rules, logic, allStates)` valuta tutte le regole e applica AND/OR
+- **Confronto**: stringa per `eq`/`neq`/`contains`; float per `gt`/`lt`/`gte`/`lte` (se entrambi i valori sono numerici, altrimenti stringa)
+- **Nessuno spazio se nascosto**: `display:none` rimuove il tile dal flusso CSS — non lascia buchi nel layout
 
 ### Implementazione
 
 **Backend** (`loader.py`):
-- Nuovo tipo `ConditionalSensorConfig` con campi `condition_entity`, `condition_operator`, `condition_value`, `icon`, `border_color`
+- Nuova dataclass `ConditionalSensorConfig(entity_id, label, icon, border_color, condition_logic, conditions[])`
+- `conditions` è una lista di `ConditionalRule(entity, op, value)`
 - `layout_type = 'sensor_conditional'`
-- `all_entity_ids` include sia `entity_id` che `condition_entity` (entrambi devono ricevere aggiornamenti WS)
+- `all_entity_ids` include `entity_id` + tutti gli `entity` delle regole condizione
+- `_parse_overview()` gestisce i `sensor_conditional` come oggetti separati dalla lista entità normali
 
 **Frontend** (`sensor_conditional.js`):
-- `createTile(cfg)`: crea tile con classe CSS `tile-sensor-conditional`, nascosto di default
-- `updateTile(tile, stateObj, allStates)`: riceve tutti gli stati, evalua la condizione, mostra/nasconde
-- `_evalCondition(condState, operator, value)`: logica di confronto string/numeric
-- Colore bordo: `tile.style.borderColor = 'var(--c-' + cfg.border_color + ')'`
+- `createTile(cfg)`: tile con classi `tile tile-sensor tile-sensor-conditional`, nascosto di default
+- Colori applicati inline: `tile.style.borderColor = 'var(--c-' + cfg.border_color + ')'`
+- `updateTile(tile, stateObj, allStates)`: 
+  1. aggiorna il valore visualizzato (stato dell'`entity_id`)
+  2. ricalcola le condizioni su `allStates` e fa toggle `display:none` / `display:''`
+- `_evalConditions(conditions, logic, allStates)`: valuta tutte le regole con AND/OR
+- Importato e registrato in `COMPONENT_MAP` come tutti gli altri componenti
 
-**Config `/config`**:
-- Aggiungibile da picker entità (filtra tutti i domini sensor/binary_sensor)
-- Form dedicato con: entity picker per condizione, operator dropdown, value input, icon picker, color picker (palette 6 token)
+**Config `/config` — tab Overview**:
+- Nuova card "Sensori Condizionali" separata dalla lista entità (come la card Energy)
+- Pulsante "+ Aggiungi sensore condizionale" apre un form/modal con:
+  - Entity picker (tutti i domini sensor/binary_sensor/input_*)
+  - Campo label (placeholder = friendly_name)
+  - Icon picker MDI
+  - Palette colori (6 token come chip colorate)
+  - Logica condizione: toggle AND/OR
+  - Lista regole condizione: ogni regola ha entity picker + operator dropdown + value input
+  - Pulsante "+ Aggiungi condizione" per aggiungere regole
+- Ogni sensore condizionale nella lista ha pulsante modifica ✎ e rimuovi ✕
+- Anteprima inline che mostra come apparirà il tile
 
 ---
 
