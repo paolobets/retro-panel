@@ -1,10 +1,9 @@
 # Retro Panel — Changelog
 
-## [2.9.26] — 2026-04-05
+## [2.9.27] — 2026-04-05
 
 ### Added
 - **Ricerca icone in italiano**: l'icon picker ora comprende termini in italiano (es. "carta", "umido", "tapparella", "energia", "solare") — `_IT_EN_MAP` in `config.js` mappa ~100 termini italiani ai corrispondenti frammenti di nome MDI; `_expandQuery()` espande la query con tutti i termini inglesi associati prima di filtrare i 7.447 icone disponibili
-- **Bug fix — icon picker chiudeva l'editor condizionale**: selezione di un'icona nell'editor sensore condizionale non chiude più la modale di configurazione — risolto con `setTimeout(..., 0)` che rimanda `showOverlay('conditional-editor')` al tick successivo, dopo che l'icon picker termina il suo `hideOverlay()` sincrono
 - **Config UI — Sensori Condizionali**: pulsante "+ Add Conditional Sensor" nella sezione Overview del pannello di configurazione (`/config`) — apre un editor modale con: selezione entità principale (via entity picker), etichetta personalizzabile, icona (via icon picker), colore bordo (color picker `<input type="color">` + campo hex), toggle AND/OR per `condition_logic`, lista regole condizione ciascuna con: pulsante selezione entità, operatore (`=`, `≠`, `>`, `<`, `≥`, `≤`, `contiene`), campo valore, rimozione
 - **Editor condizioni riutilizza entity picker esistente**: click su "Seleziona entità" nella regola apre il pannello picker standard con tutti i domini (sensor, binary_sensor, input_boolean, ecc.) — chiusura automatica e ritorno all'editor condizionale
 - **Sensore Condizionale (`sensor_conditional`)**: nuovo tipo di item per l'Overview — tile sensore visibile solo quando la/le condizioni configurate sono soddisfatte; invisibile (display:none, nessun gap) quando la condizione è falsa
@@ -15,14 +14,17 @@
 - **`_parse_conditional_sensor()`** in `loader.py`: parsing e validazione item `sensor_conditional` da `entities.json`
 - **`AppState.conditionalTiles[]`** in `app.js`: array parallelo a `energyTiles` — tutti i tile condizionali vengono re-valutati ad ogni aggiornamento di stato WebSocket
 
+### Fixed
+- **Icon picker chiudeva l'editor condizionale**: selezione di un'icona nell'editor sensore condizionale non chiude più la modale di configurazione — risolto con `setTimeout(..., 0)` che rimanda `showOverlay('conditional-editor')` al tick successivo, dopo che l'icon picker termina il suo `hideOverlay()` sincrono
+
 ### Changed
 - `loader.py`: `SectionItem.type` ora accetta anche `"sensor_conditional"`; `all_entity_ids` include `entity_id` principale + tutti gli `entity` delle `conditions`
 - `panel_config.py`: `_serialize_item()` serializza item `sensor_conditional` → JSON con `conditions[]`
 - `panel_config_save.py`: `_parse_item()` deserializza e valida item `sensor_conditional` — valida ogni `entity` come `entity_id`, clampa `border_color` a 16 char, filtra `op` non validi
 - `renderer.js`: `sensor_conditional` aggiunto a `COMPONENT_MAP`, `COL_CLASS_MAP` (`tile-col-sensor`), `_initComponents()`; `_renderItem()` gestisce `sensor_conditional` come `energy_flow` (push in `appState.conditionalTiles`, `updateTile` con `allStates`)
 - `app.js`: `updateEntityState()` chiama `SensorConditionalComponent.updateTile` su tutti i `conditionalTiles` ad ogni cambio stato
-- `index.html`: aggiunto `conditional.js?v=2926`; tutti i cache buster aggiornati a `v=2926`
-- `config.yaml`: versione `2.9.25` → `2.9.26`
+- `index.html`: aggiunto `conditional.js?v=2927`; tutti i cache buster aggiornati a `v=2927`
+- `config.yaml`: versione `2.9.26` → `2.9.27`
 
 ## [2.9.25] — 2026-04-05
 
