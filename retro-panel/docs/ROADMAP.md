@@ -374,17 +374,209 @@ Retro Panel follows semantic versioning (MAJOR.MINOR.PATCH):
 
 ---
 
-## v3.0+ (Long-term Vision)
+## v2.9.25 — Cover / Tapparelle Tile (Planned)
 
-**Planned Features**:
-- [ ] Plugin system for custom entity types
-- [ ] Theme customization UI
-- [ ] Offline-first design with local cache
-- [ ] Multi-user access control
-- [ ] Entity history and charts
-- [ ] Custom automations and scenes
-- [ ] Voice control integration
-- [ ] Mobile app (native iOS/Android)
+**Status**: PLANNED — next patch
+
+**Release Goal**: Aggiungere supporto per entità `cover.*` (tapparelle, tende, porte garage). Tipo di entità tra i più comuni nelle case italiane, attualmente non supportato.
+
+### Specifiche
+
+**Tile**:
+- Tre pulsanti: ▲ Apri / ■ Stop / ▼ Chiudi — chiamate `cover.open_cover`, `cover.stop_cover`, `cover.close_cover`
+- Progress bar orizzontale che mostra `attributes.current_position` (0–100 %)
+- Stato visivo: `is-open` (verde), `is-closed` (grigio), `is-opening`/`is-closing` (animazione freccia)
+- Stato `unavailable` gestito come tutti gli altri tile
+
+**Backend**:
+- Nuovo `layout_type`: `cover`
+- `_parse_layout_type()` in `loader.py`: dominio `cover` → `cover`
+- Whitelist service call: `cover.open_cover`, `cover.stop_cover`, `cover.close_cover`, `cover.set_cover_position`
+
+**Frontend**:
+- Nuovo componente `cover.js` (IIFE, var-only, iOS 12 safe)
+- `COMPONENT_MAP['cover']` in `renderer.js`
+- CSS in `tiles.css`: progress bar posizione, stati animati apertura/chiusura
+
+**Config**:
+- Aggiungibile da picker entità nella tab Overview e Rooms
+- Nessuna configurazione aggiuntiva richiesta (funziona out-of-the-box)
+
+---
+
+## v2.9.26 — Sensore Condizionale (Planned)
+
+**Status**: PLANNED
+
+**Release Goal**: Nuovo tipo di tile che appare nell'overview (o in una room) **solo quando una condizione su un'entità HA è vera**. Permette di mostrare informazioni contestuali che emergono solo quando rilevanti — es. "Carta domani" solo il giorno prima della raccolta.
+
+### Concept
+
+Un sensore condizionale è un tile invisibile per default che diventa visibile in tempo reale (via WebSocket) quando la condizione definita dall'utente è soddisfatta. Mostra il valore del sensore monitorato con icona e colore bordo personalizzati.
+
+**Esempio d'uso**:
+- `condition_entity: sensor.raccolta_rifiuti` + `condition_value: "Domani"` → mostra il nome del rifiuto e l'icona cestino
+- `condition_entity: binary_sensor.porta_garage` + `condition_value: "on"` → mostra "Garage aperto" in rosso
+- `condition_entity: sensor.temperatura_est` + `condition_operator: "gt"` + `condition_value: "28"` → mostra avviso caldo
+
+### Schema configurazione
+
+```yaml
+layout_type: sensor_conditional
+entity_id: sensor.raccolta_rifiuti       # entità di cui mostrare il valore
+condition_entity: sensor.raccolta_rifiuti # entità su cui valutare la condizione (può coincidere)
+condition_operator: eq                    # eq | neq | gt | lt | gte | lte | contains
+condition_value: "Domani"                 # valore stringa o numero da confrontare
+label: "Raccolta carta"                   # label tile (opzionale — fallback a friendly_name)
+icon: "trash-can"                         # icona MDI (opzionale — fallback a icona HA)
+border_color: warning                     # token semantico colore bordo (vedi sotto)
+```
+
+### Sistema colori bordo
+
+Il campo `border_color` accetta un **token semantico** che viene risolto a variabile CSS dal tema corrente.
+I token disponibili corrispondono ai token già definiti in `tokens.css`:
+
+| Token | CSS var | Valore dark | Valore light | Uso tipico |
+|-------|---------|-------------|--------------|------------|
+| `accent` | `--c-accent` | `#2196f3` | `#2196f3` | info, neutra |
+| `on` | `--c-on` | `#4caf50` | `#4caf50` | condizione positiva |
+| `warning` | `--c-warning` | `#ff9800` | `#ff9800` | attenzione |
+| `danger` | `--c-danger` | `#f44336` | `#f44336` | emergenza, rosso |
+| `alert` | `--c-binary-alert` | `#FF6B00` | `#FF6B00` | allerta arancione |
+| `neutral` | `--c-text-sec` | `#999999` | `#555555` | generico, si adatta al tema |
+
+Il tile usa il token per `border-color` e per il colore dell'icona/bolla — **nessun hardcode di hex**, tutto via variabili CSS: funziona correttamente su tema dark, light e auto senza CSS aggiuntivo.
+
+### Comportamento runtime
+
+- **Visibilità reattiva**: il tile è sempre nel DOM ma con `display:none`; ogni aggiornamento WebSocket (`state_changed`) ricalcola la condizione e mostra/nasconde il tile immediatamente
+- **Nessun reload**: la comparsa/scomparsa è istantanea senza ricaricare la pagina
+- **Confronto**: il `condition_operator` confronta sempre come stringa (`eq`, `neq`, `contains`) oppure come float se entrambi i valori sono numerici (`gt`, `lt`, `gte`, `lte`)
+- **Condizione non soddisfatta**: tile nascosto, nessuno spazio occupato nel layout (rimosso dal flusso con `display:none`)
+
+### Implementazione
+
+**Backend** (`loader.py`):
+- Nuovo tipo `ConditionalSensorConfig` con campi `condition_entity`, `condition_operator`, `condition_value`, `icon`, `border_color`
+- `layout_type = 'sensor_conditional'`
+- `all_entity_ids` include sia `entity_id` che `condition_entity` (entrambi devono ricevere aggiornamenti WS)
+
+**Frontend** (`sensor_conditional.js`):
+- `createTile(cfg)`: crea tile con classe CSS `tile-sensor-conditional`, nascosto di default
+- `updateTile(tile, stateObj, allStates)`: riceve tutti gli stati, evalua la condizione, mostra/nasconde
+- `_evalCondition(condState, operator, value)`: logica di confronto string/numeric
+- Colore bordo: `tile.style.borderColor = 'var(--c-' + cfg.border_color + ')'`
+
+**Config `/config`**:
+- Aggiungibile da picker entità (filtra tutti i domini sensor/binary_sensor)
+- Form dedicato con: entity picker per condizione, operator dropdown, value input, icon picker, color picker (palette 6 token)
+
+---
+
+## v2.9.27 — Climate / Termostato Tile (Planned)
+
+**Status**: PLANNED
+
+**Release Goal**: Supporto per entità `climate.*` — termostati, split, caldaie. Molto comune nelle abitazioni.
+
+### Specifiche
+
+**Tile**:
+- Temperatura attuale (grande, `current_temperature`)
+- Set point target (`temperature`) con pulsanti − / + (step 0.5°C)
+- Badge modalità: `heat` / `cool` / `auto` / `off`
+- Stato visivo: caldo (arancione), freddo (blu), auto (verde), off (grigio)
+
+**Bottom sheet** (tap su tile):
+- Slider temperatura set point (range da `min_temp` a `max_temp` di HA)
+- Chip modalità selezionabili (solo quelle supportate da `hvac_modes`)
+- Pulsante Off
+
+**Backend**:
+- Nuovo `layout_type`: `climate`
+- Whitelist: `climate.set_temperature`, `climate.set_hvac_mode`, `climate.turn_off`
+
+---
+
+## v2.10 — Kiosk UX (Planned)
+
+**Status**: PLANNED — minor version
+
+**Release Goal**: Tre miglioramenti UX specifici per display wall-mounted e tablet always-on.
+
+### v2.10.1 — Screensaver / Screen Timeout
+
+- Dopo N minuti di inattività (nessun tap/click): l'overlay screensaver copre il pannello con sfondo nero e orologio digitale centrato
+- Qualsiasi tap rimuove lo screensaver immediatamente
+- N configurabile in `/config` (default 5 min, disabilitabile)
+- Implementazione puramente client-side (CSS overlay + JS `setTimeout` reset su `touchstart`/`mousedown`)
+- Nessuna interazione con HA, nessuna modifica backend
+
+### v2.10.2 — Badge "N accesi" in sidebar rooms
+
+- Ogni voce room nella sidebar mostra un badge numerico piccolo (es. `3`) quando almeno un'entità della room è nello stato `on`/`open`/`armed`
+- Il badge scompare quando tutto è off/closed/disarmed
+- Aggiornato in tempo reale via WebSocket (zero polling)
+- Colore: `--c-warning` se almeno una entità è in stato alert, `--c-on` altrimenti
+
+### v2.10.3 — Toast notifiche state change
+
+- Popup toast in basso a destra (3 s, poi svanisce) per eventi configurati dall'utente
+- Esempi: "Porta ingresso aperta", "Allarme inserito", "Garage aperto"
+- L'utente seleziona in `/config` quali entità generano toast e per quale transizione di stato
+- Colori: `--c-danger` per alert, `--c-on` per positive, `--c-text-sec` per neutral
+- Massimo 3 toast sovrapposti; i più vecchi scivolano fuori
+
+---
+
+## v3.0 — Theme UI + Assistente Vocale (Long-term)
+
+**Status**: LONG-TERM — nessuna data
+
+**Release Goal**: Due feature di valore per gli utenti più avanzati, che non rientrano nella filosofia "kiosk minimalista" ma aggiungono personalizzazione e accessibilità.
+
+### v3.0.1 — Theme Customization UI
+
+- Pagina `/config` → tab "Tema": palette colori per `--c-accent`, `--c-on`, `--c-danger`, `--c-warning`
+- Color picker inline (nessuna dipendenza esterna, SVG wheel o palette 12 colori predefiniti)
+- Anteprima live del cambio tema
+- Salvato come overrides CSS in `entities.json`, applicato server-side via `<style>` inline
+
+### v3.0.2 — Gestione Notifiche
+
+Centro notifiche integrato nel dashboard per aggregare e visualizzare eventi importanti da HA.
+
+**Notification Center** (overlay laterale o drawer):
+- Icona campanella nell'header con badge numerico (N notifiche non lette)
+- Tap sull'icona apre un panel laterale con lista notifiche in ordine cronologico
+- Ogni notifica: icona entità + titolo + stato + timestamp relativo ("3 min fa")
+- Swipe / pulsante ✕ per segnare come letta e rimuovere dalla lista
+
+**Sorgenti notifiche**:
+- Entità marcate come "alert" in `/config` (stessa lista dei toast v2.10.3)
+- HA `persistent_notification.*` forwarded via WebSocket
+- Transizioni di stato critiche (allarme armato/scattato, porta aperta da > N minuti)
+
+**Configurazione in `/config`**:
+- Tab "Notifiche": lista regole — ogni regola ha: entità, condizione trigger, messaggio custom, livello (info/warning/danger), se genera anche toast o solo si accumula nel center
+- Max 50 notifiche in storia; le più vecchie vengono eliminate automaticamente
+
+**Persistenza**:
+- Le notifiche sono accumulate in memoria (non persistite su disco) — si azzerano al riavvio del pannello
+- Opzionale (v3.0.x): persistenza in `entities.json` con TTL configurabile
+
+**Backend**:
+- Nuovo evento WebSocket `rp_notification` emesso dal server quando una regola scatta
+- `notification_engine.py`: valuta le regole su ogni `state_changed` da HA, emette eventi al frontend
+
+### v3.0.3 — Assistente Vocale (Wake Word locale)
+
+- Integrazione con [Piper](https://github.com/rhasspy/piper) o HA Assist via WebSocket
+- Wake word rilevabile lato HA (non nel browser — troppo pesante per iOS 12)
+- Dashboard mostra overlay "In ascolto…" quando HA segnala intent attivo
+- Comandi: accendere/spegnere entità, impostare temperature, attivare scenari
+- Richiede HA 2024.x+ con Assist pipeline configurata
 
 ---
 

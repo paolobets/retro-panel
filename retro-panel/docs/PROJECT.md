@@ -314,15 +314,37 @@ Iterative improvements to the alarm tile, energy card, and camera grid:
 - Fix critico: whitelist service call ora usa `all_entity_ids` (include alarm panel)
 - UX: gerarchia status bar, chip WCAG 52px, hint dinamico armo
 
-### v3.0+ (Planned)
+### v2.9.25 — Cover / Tapparelle Tile (Planned)
 
-- Plugin system for custom entity types
-- Custom theme UI
-- History charts and sparklines
-- Offline-first with local cache
+- Tile `cover.*`: pulsanti Apri/Stop/Chiudi + progress bar posizione
+- Stati animati opening/closing, unavailable handling
+
+### v2.9.26 — Sensore Condizionale (Planned)
+
+- Nuovo `layout_type: sensor_conditional`: tile visibile solo quando una condizione su un'altra entità è vera
+- Condizione configurabile: operatori `eq / neq / gt / lt / gte / lte / contains`
+- Icona MDI e colore bordo personalizzabili via token semantici (`accent / on / warning / danger / alert / neutral`)
+- Visibilità reattiva in tempo reale via WebSocket, senza reload
+
+### v2.9.27 — Climate / Termostato Tile (Planned)
+
+- Tile `climate.*`: temperatura attuale + set point + badge modalità
+- Bottom sheet per cambio temperature e modalità HVAC
+
+### v2.10 — Kiosk UX (Planned)
+
+- Screensaver: overlay nero + orologio dopo N minuti di inattività
+- Badge "N accesi" nella sidebar per ogni room
+- Toast notifiche per transizioni di stato configurate
+
+### v3.0 — Theme UI + Notifiche + Assistente Vocale (Long-term)
+
+- Theme customization UI: palette colori modificabile da `/config`
+- Notification center: campanella con badge, drawer lista notifiche, regole di trigger configurabili
+- Assistente vocale: integrazione HA Assist, overlay "In ascolto", comandi entità/scenari/temperature
 
 ---
 
 **Document Version**: 2.9.24
-**Last Updated**: 2026-04-04
-**Status**: v2.9.20 RELEASED
+**Last Updated**: 2026-04-05
+**Status**: v2.9.24 RELEASED — roadmap aggiornata v2.9.25–v3.0
