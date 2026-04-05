@@ -47,11 +47,14 @@ Retro Panel is a lightweight, always-on control panel designed to work flawlessl
 
 | Entity | What you can do |
 |--------|----------------|
-| `light` | Toggle on/off · Long-press for brightness slider |
+| `light` | Toggle on/off · Long-press for brightness/color slider |
 | `switch` | Toggle on/off |
-| `sensor` | Read-only value with unit |
-| `binary_sensor` | Open/Closed, Motion/Clear, Home/Away, Wet/Dry… |
-| `alarm_control_panel` | PIN keypad · Arm Home · Arm Away · Disarm |
+| `sensor` | Read-only value with unit (temperature, humidity, CO₂, energy, battery…) |
+| `binary_sensor` | Open/Closed, Motion/Clear, Home/Away, Wet/Dry, Smoke, Lock… |
+| `alarm_control_panel` | PIN keypad · Arm Home/Away/Night · Disarm · Zone sensors |
+| `camera` | Snapshot grid · Tap for fullscreen MJPEG stream (falls back to polling) |
+| `scene` / `script` | One-tap trigger buttons in Scenarios section |
+| `energy_flow` | Power dashboard with solar/battery/grid/home metrics |
 
 ---
 
@@ -183,7 +186,13 @@ If you access Home Assistant from outside your network:
 |---------|--------|---------|
 | **v2.0** | Released | Full frontend/backend refactor, layout_type system, two-URL architecture |
 | **v2.9** | Released | Energy Card v2, Camera grid+lightbox, Alarm tile full redesign, Security hardening |
-| **v2.9.14** | **Current** | Alarm UX: status hierarchy, WCAG touch targets, direct arm without code |
+| **v2.9.14** | Released | Alarm UX: status hierarchy, WCAG touch targets, direct arm without code |
+| **v2.9.15–19** | Released | Light theme toggle: full fix cycle (FOUC, bleed, persistence, CSS variables) |
+| **v2.9.20** | Released | Per-device theme toggle button in dashboard header |
+| **v2.9.21** | Released | Camera grid 2-col mobile, pagination, hide toggle, faster refresh |
+| **v2.9.22** | Released | Drag-and-drop navigation order in /config |
+| **v2.9.23** | Released | Fix camera hidden: markDirty, preview badge, loader default |
+| **v2.9.24** | **Current** | Camera lightbox MJPEG live streaming with snapshot fallback |
 | **v3.0** | Planned | Plugin system, custom themes, history charts, offline-first |
 
 ---

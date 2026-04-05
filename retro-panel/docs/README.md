@@ -110,15 +110,19 @@ Retro Panel is a lightweight Home Assistant control panel optimized for:
 5. WebSocket bridge: Server-side token storage, scalable
 6. layout_type system: Backend-computed entity type, frontend-rendered component
 
-**v2.0 Features** (Released 2026-03-27):
-- Light, Switch, Sensor (9 variants), Binary Sensor (3 variants), Alarm, Camera, Scenario, Energy Flow
+**Current Features** (v2.9.24, 2026-04-04):
+- Light, Switch, Sensor (9 variants), Binary Sensor (9 variants), Alarm, Camera, Scenario, Energy Flow
 - Two-URL architecture: `/` (dashboard) and `/config` (admin)
-- Bottom sheet for light controls (brightness/color temperature)
-- Room-based organization with sections
-- 4 configuration tabs: Overview, Rooms, Scenarios, Cameras
-- layout_type system for dynamic entity rendering
+- Bottom sheet for light controls (brightness/color temperature/hue)
+- Room-based organization with sections; drag-and-drop nav order
+- 5 configuration tabs: Overview, Rooms, Scenarios, Cameras, Alarms
+- layout_type system for dynamic entity rendering (15+ types)
 - Triple-lock tile dimensions (immutable heights)
 - iOS 12+ compatible CSS (no gap/inset/100dvh)
+- Camera MJPEG live streaming in lightbox with snapshot fallback
+- Per-device theme toggle (dark/light/auto) in dashboard header
+- IP whitelist, CSP hardening, rate limiting, alarm brute-force protection
+- Direct port 7654 for legacy devices that cannot authenticate via HA Ingress
 
 **Success Metrics**:
 - Page load < 2 seconds on 4G
@@ -246,10 +250,10 @@ This documentation is the single source of truth for Retro Panel development. It
 
 If something is unclear or missing, it should be documented here.
 
-**Document Version**: 2.0
-**Last Updated**: 2026-03-27
+**Document Version**: 2.9.24
+**Last Updated**: 2026-04-04
 **Total Words**: 50,000+
-**Coverage**: 100% of v2.0 features and architecture
+**Coverage**: v2.9.24 features and architecture
 
 ---
 

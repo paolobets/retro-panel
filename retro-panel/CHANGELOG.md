@@ -1,5 +1,84 @@
 # Retro Panel — Changelog
 
+## [2.9.24] — 2026-04-04
+
+### Added
+- **Camera lightbox — MJPEG live streaming**: tap su tile telecamera ora tenta prima lo stream MJPEG (`api/camera-proxy-stream/{entity_id}`); se HA restituisce 404 o nessun frame arriva entro 5 s, cade automaticamente a snapshot polling
+- **Badge modalità lightbox**: punto verde + "Live Streaming" in modalità MJPEG; punto ambra + "Snapshot • Xs" in modalità fallback — indica chiaramente la qualità del feed
+- **Backend endpoint `GET /api/camera-proxy-stream/{entity_id}`**: tunnel trasparente del flusso `multipart/x-mixed-replace` da HA via `web.StreamResponse` con `aiohttp.ClientTimeout(total=None, sock_read=30)`
+- **`ha_client.get_camera_stream_request()`**: metodo che restituisce la `ClientRequest` MJPEG per pipe asincrona al browser
+
+### Changed
+- `camera.js`: `_openLightbox` imposta `img.src = 'api/camera-proxy-stream/...'` e avvia un timeout di sicurezza da 5 s; `_closeLightbox` azzera `img.src = ''` per abortire il flusso MJPEG e liberare risorse
+
+### Fixed
+- Chiusura lightbox ora interrompe affidabilmente la connessione MJPEG su iOS 12 (impostando `src` a stringa vuota prima di rimuovere l'overlay)
+
+## [2.9.23] — 2026-04-04
+
+### Fixed
+- **Camera hidden toggle — config non si salvava**: `markDirty()` mancava in tutti gli handler della sezione telecamere (toggle visibilità, title input, refresh input, pulsante rimuovi) — il pulsante Salva non si attivava mai
+- **Camera hidden — dashboard non aggiornato**: conseguenza diretta del punto precedente; il flag `hidden` non veniva mai scritto in `entities.json`, quindi il renderer del dashboard continuava a mostrare le telecamere nascoste
+- **Preview sezione telecamere**: `renderCamerasPreview()` ora mostra le chip con testo barrato + opacità ridotta per le telecamere nascoste, e un badge "N nascosta/e" sul contatore totale
+- **Contatore sezioni telecamere**: `renderCamSectionsList()` mostra il conteggio come "X visibili (N nascoste)" invece di contare tutte le voci
+- **Loader default `refresh_interval`**: cambiato da 10 s a 3 s in `_parse_camera_section()` per allinearlo al comportamento del frontend
+
+### Tests
+- `test_invalid_refresh_interval_falls_back_to_default`: aggiornato da `== 10` a `== 3`
+
+## [2.9.22] — 2026-04-04
+
+### Added
+- **Navigazione — drag-and-drop order in /config**: le voci della barra laterale (Overview, Rooms, Scenarios, Cameras, Allarme) sono ora riordinabili trascinando le righe nella scheda Settings; l'ordine viene salvato in `entities.json` e riflesso immediatamente nella sidebar del dashboard
+
+### Changed
+- `entities.json` ora persiste il campo `nav_order` (array di nomi di sezione) accanto agli altri dati di configurazione
+- `server.py`: `POST /api/config` deserializza e salva `nav_order`; `GET /api/panel-config` lo esporta al frontend
+- `app.js`: costruisce la sidebar in base all'ordine ricevuto dall'API invece dell'ordine hardcoded
+
+## [2.9.21] — 2026-04-04
+
+### Added
+- **Camera grid — 2 colonne su mobile**: griglia telecamere ora usa 4 colonne su tablet/desktop e 2 colonne su schermi ≤ 600 px
+- **Camera pagination**: sezioni telecamere con più di 4 elementi mostrano frecce prev/next per navigare le pagine — evita scroll verticale su kiosk wall-mounted
+- **Camera hide toggle in /config**: ogni voce telecamera nella lista di configurazione ha un toggle "Visibile" per nascondere il feed dal dashboard senza rimuovere la configurazione
+- **Camera faster refresh**: intervallo predefinito ridotto da 10 s a 3 s per snapshot più reattivi
+
+## [2.9.20] — 2026-04-03
+
+### Added
+- **Theme toggle nel header del dashboard**: pulsante sole/luna nell'header permette di cambiare tema (dark/light/auto) direttamente dalla vista kiosk, senza accedere a `/config`
+
+### Changed
+- Tema selezionato dall'utente persistito in `localStorage` e applicato all'avvio
+
+## [2.9.19] — 2026-04-03
+
+### Fixed
+- **Light theme — variabili CSS non applicate**: il blocco `--color-*` alias era definito in `:root` anziché in `body`; le regole `body.theme-light` non sovrascrivevano correttamente i token — spostato in `body` in `config.css`
+
+## [2.9.18] — 2026-04-03
+
+### Fixed
+- **Light theme — FOUC in config.html**: tema iniettato lato server nell'attributo `class` di `<html>` in entrambi `index.html` e `config.html`; elimina il flash di sfondo scuro alla prima paint prima che JS applichi la classe
+
+## [2.9.17] — 2026-04-03
+
+### Fixed
+- **Light theme — causa radice**: `element.className = 'theme-light'` sovrascriveva tutte le classi esistenti invece di aggiungere solo il tema; sostituito con `classList.remove/add`; tema ora persistito correttamente in `localStorage`
+
+## [2.9.16] — 2026-04-03
+
+### Fixed
+- **Light theme FOUC**: flash di sfondo scuro (`#111`) visibile per ~200 ms all'avvio su light theme; aggiunto `<style>` inline in `<head>` che applica `background` prima del parsing CSS
+- **HTML background bleed**: `<html>` non ereditava il colore di sfondo del tema — aggiunta regola CSS `html { background: var(--c-bg) }`
+
+## [2.9.15] — 2026-04-03
+
+### Fixed
+- **Light theme — bug di rendering**: colori testo e bordi non si aggiornавano correttamente al cambio tema; fix variabili CSS e selettori theme-light
+- **Whitelist HA translations**: aggiunto prefisso `input_boolean.*` alla whitelist dei service call per supportare toggle HA translation entities
+
 ## [2.9.14] — 2026-04-03
 
 ### Changed

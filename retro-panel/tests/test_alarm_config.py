@@ -27,21 +27,6 @@ def _options(tmp_path: Path, ha_token: str = "tok") -> Path:
     return p
 
 
-def test_alarm_empty_by_default(tmp_path, monkeypatch):
-    """No alarms key → empty list."""
-    _write_entities(tmp_path, {"version": 5, "overview": {"sections": []}})
-    _options(tmp_path)
-    monkeypatch.setenv("SUPERVISOR_TOKEN", "tok")
-    import app.config.loader as loader
-    monkeypatch.setattr(loader, "_resolve_config_path", lambda: tmp_path / "options.json")
-    import unittest.mock as mock
-    with mock.patch.object(Path, "exists", return_value=True), \
-         mock.patch.object(Path, "read_text", side_effect=lambda **kw:
-             (tmp_path / "entities.json").read_text(**kw)
-             if "entities" in str(Path.cwd()) + "data/entities" else
-             (tmp_path / "options.json").read_text(**kw)):
-        pass  # just import check
-
 
 def test_alarm_config_parsing():
     """AlarmConfig and AlarmSensorConfig are properly instantiated."""
