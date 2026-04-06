@@ -1988,7 +1988,7 @@
         var eid = this.getAttribute('data-id');
         var name = this.getAttribute('data-name');
         var title = name || eid.split('.')[1] || eid;
-        var icon = eid.startsWith('scene.') ? '\uD83C\uDF1F' : eid.startsWith('automation.') ? '\u26A1' : '\uD83C\uDFAD';
+        var icon = eid.startsWith('scene.') ? 'palette' : eid.startsWith('automation.') ? 'lightning-bolt' : 'script-text';
         var sec = activeScSectionObj();
         if (sec) { sec.items.push({ entity_id: eid, title: title, icon: icon }); }
         renderScenarioPickerList();

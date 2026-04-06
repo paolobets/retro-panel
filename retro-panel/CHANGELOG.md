@@ -1,5 +1,14 @@
 # Retro Panel — Changelog
 
+## [2.9.32] — 2026-04-06
+
+### Changed
+- **Scenario tile — redesign completo**: layout allineato a switch/light — triple-lock 120px, MDI icon in alto a sinistra (28px), badge dominio in alto a destra ("Scena" / "Script" / "Automazione"), label in basso; flash verde al tap via tint overlay + colore icona
+- **Icone default scenari**: da emoji testuali (🎭⭐⚡) a nomi MDI — `palette` (scene), `script-text` (script), `lightning-bolt` (automation); supporto icon picker MDI per configurazione futura
+- **Servizio per automazioni**: `automation.trigger` (era `turn_on` per tutti i domini)
+- **Grid scenari**: i tile ora usano `.tile-col-compact` (3 per riga tablet, 2 su phone, 4 su landscape) invece di colonne custom non allineate
+- **CSS**: rimosso `.scenario-icon/.scenario-title/.scenario-domain`; aggiunto `.scenario-badge` (chip bordo accent); rimossa animazione `scenario-activate` (sostituita da tint overlay)
+
 ## [2.9.31] — 2026-04-06
 
 ### Fixed

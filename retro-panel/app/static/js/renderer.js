@@ -403,13 +403,11 @@ window.RP_Renderer = (function () {
       if (items[i].hidden) { continue; }
       try {
         if (!window.ScenarioComponent) { continue; }
-        var tile;
-        if (window.ScenarioComponent.createTile) {
-          tile = window.ScenarioComponent.createTile(items[i]);
-        } else {
-          tile = window.ScenarioComponent.createCard(items[i]);
-        }
-        grid.appendChild(tile);
+        var tile = window.ScenarioComponent.createTile(items[i]);
+        /* wrap in compact column — same as switch/light tiles */
+        var col = window.RP_DOM.createElement('div', 'tile-col-compact');
+        col.appendChild(tile);
+        grid.appendChild(col);
       } catch (err) {
         console.error('[renderer] scenario tile failed:', err);
       }
