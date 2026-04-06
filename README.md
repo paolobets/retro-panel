@@ -24,199 +24,239 @@
 
 ---
 
-**A touch-optimized kiosk dashboard for Home Assistant, built for legacy and older devices.**
+> **A touch-optimized, kiosk-ready Home Assistant dashboard built for iOS 12+,
+> old Android tablets, and resource-constrained devices.**
+> Real-time updates via WebSocket. Zero build dependencies. Works where Lovelace doesn't.
 
-Give a second life to an old iPad, Android tablet, Kindle Fire, or any device
-that no longer receives OS updates and struggles with the standard Lovelace interface.
-Retro Panel is a lightweight, always-on control panel designed to work flawlessly on
-**legacy browsers and older devices**, without requiring any modern JavaScript features.
+Give a second life to that old iPad, Fire tablet, or wall-mounted Android that struggles
+with the standard Home Assistant interface. Retro Panel is a lightweight always-on control
+panel designed from the ground up for **legacy browsers and older hardware** — no transpilation,
+no frameworks, no `const`, no arrow functions.
 
 ---
 
-## Features
+## Dashboard
 
-- **Works on old devices** — legacy browsers and older devices that no longer receive OS updates
-- **Real-time updates** — WebSocket-powered, with REST fallback if WS drops
-- **Touch-optimized** — 56px+ tap targets, zero tap delay, immediate visual feedback
-- **Secure** — HA token stays on the server, never reaches the browser
-- **Kiosk ready** — "Add to Home Screen" on iOS for full-screen, no browser chrome
-- **Configurable grid** — 2, 3 or 4 columns, optional manual tile positioning
-- **Themes** — dark, light, or auto (follows device preference)
+<img src="docs/assets/dashboard-overview.svg" alt="Retro Panel dashboard overview" width="100%"/>
 
-### Supported entity types
+The panel is split into a collapsible **sidebar** (navigation sections) and a **content area**
+with a fixed-height tile grid. A live **clock**, connection **status dot** and **theme toggle**
+sit in the header. Everything works at 120 px tile height with no layout shift.
 
-| Entity | What you can do |
-|--------|----------------|
-| `light` | Toggle on/off · Long-press for brightness/color slider |
-| `switch` | Toggle on/off |
-| `sensor` | Read-only value with unit (temperature, humidity, CO₂, energy, battery…) |
-| `binary_sensor` | Open/Closed, Motion/Clear, Home/Away, Wet/Dry, Smoke, Lock… |
-| `alarm_control_panel` | PIN keypad · Arm Home/Away/Night · Disarm · Zone sensors |
-| `camera` | Snapshot grid · Tap for fullscreen MJPEG stream (falls back to polling) |
-| `scene` / `script` | One-tap trigger buttons in Scenarios section |
-| `energy_flow` | Power dashboard with solar/battery/grid/home metrics |
+---
+
+## Lights & Switches
+
+<img src="docs/assets/tiles-light-switch.svg" alt="Light and switch tiles" width="100%"/>
+
+| Action | Result |
+|--------|--------|
+| Tap light | Toggle on/off (optimistic, immediate feedback) |
+| Long-press light (500 ms) | Bottom sheet: brightness · colour temperature · hue |
+| Tap switch / input_boolean | Toggle on/off |
+
+---
+
+## Sensors
+
+<img src="docs/assets/tiles-sensors.svg" alt="Sensor tiles" width="100%"/>
+
+Read-only tiles that display the current value and unit. Icon and visual style adapt
+automatically to the device class: `temperature` · `humidity` · `co2` · `battery` ·
+`power` · `energy` · `pressure` · `illuminance` · and any generic sensor.
+
+---
+
+## Binary sensors & Scenarios
+
+<img src="docs/assets/tiles-binary-scenario.svg" alt="Binary sensor and scenario tiles" width="100%"/>
+
+**Binary sensors** show a state-driven icon (open/closed, detected/clear, armed/ok…).
+An **orange pulsing border** signals an active alert.
+
+**Scenario tiles** (scene · script · automation) trigger with a single tap.
+Each tile shows a **domain badge**, a configurable **MDI icon** and an optional **border colour**.
+
+---
+
+## Configuration UI
+
+<img src="docs/assets/config-ui.svg" alt="Configuration UI" width="100%"/>
+
+Access the admin panel at `http://[HA-IP]:7654/config`. Five tabs cover everything:
+
+| Tab | What you configure |
+|-----|--------------------|
+| **Overview** | Main home screen entities · Power flow card · Navigation order |
+| **Rooms** | Rooms with sections · Import from HA Areas · Per-entity icon and label |
+| **Scenarios** | Scene/script/automation groups · MDI icon per item · Border colour per item |
+| **Cameras** | Camera feeds · Per-camera refresh interval · Hide/show |
+| **Alarms** | Alarm panels · Zone sensors per panel |
+
+The icon picker includes **7 400+ MDI icons** with Italian-language search
+("tapparella", "umido", "riscaldamento"…).
+
+---
+
+## Energy flow card
+
+Live power-flow visualisation mapping up to 7 sensor entities:
+
+```
+  ☀ Solare     🔋 Batteria (85%)     🏠 Casa
+  2.4 kW  ──→──  +0.8 kW  ──────→──  1.6 kW
+                     │  ↑↓
+                 ⚡ Rete  0.0 kW
+```
+
+Animated arrows reflect live energy direction. Tested with ZCS Azzurro · SMA · Fronius · Huawei SUN2000.
+
+---
+
+## All supported entity types
+
+| Entity | Layout type | What you can do |
+|--------|-------------|-----------------|
+| `light` | `light` | Toggle · brightness · colour temperature · hue |
+| `switch` · `input_boolean` | `switch` | Toggle on/off |
+| `sensor` (various device classes) | `sensor_*` | Read-only value + unit |
+| `binary_sensor` (door/window/motion/smoke/lock…) | `binary_*` | State display + alert pulse |
+| `cover` | `cover_standard` | Toggle open/close · position bar |
+| `alarm_control_panel` | `alarm` | PIN keypad · Arm Home/Away/Night · zone sensors |
+| `camera` | `camera` | MJPEG live stream · snapshot fallback · lightbox |
+| `scene` · `script` · `automation` | `scenario` | Tap-to-activate · custom icon/colour |
+| _(virtual)_ | `energy_flow` | Solar/battery/grid/home power card |
+| _(virtual)_ | `sensor_conditional` | Conditional state card (AND/OR logic) |
+
+---
+
+## Alarm panel
+
+```
+  DISARMATO — scegli modalità          ARMATO FUORI
+  ┌──────────────────────────┐         ┌────────────────────────┐
+  │ Allarme Casa             │         │ Allarme Casa           │
+  │ DISARMATO                │         │ ARMATO — Fuori         │
+  │                          │         │                        │
+  │ [Casa]  [Fuori]  [Notte] │         │      [ Disarma ]       │
+  │                          │         │                        │
+  │  1   2   3               │         │  ● Porta ingresso      │
+  │  4   5   6  [ Arma ]     │         │  ○ Finestra soggiorno  │
+  └──────────────────────────┘         └────────────────────────┘
+```
+
+PIN keypad appears only when required. Zone sensors are listed per panel.
+The PIN is never stored — sent to HA and cleared immediately.
+
+---
+
+## Camera grid & lightbox
+
+Cameras are displayed in a responsive grid. Tap any camera to open a full-screen
+MJPEG lightbox. Snapshot polling is used as automatic fallback when MJPEG is unavailable.
+Each camera has a configurable per-item refresh interval.
 
 ---
 
 ## Installation
 
-### Step 1 — Add this repository to Home Assistant
-
-In Home Assistant, go to:
+### Add this repository to Home Assistant
 
 **Settings → Add-ons → Add-on Store → ⋮ (top right) → Repositories**
-
-Add the following URL:
 
 ```
 https://github.com/paolobets/retro-panel
 ```
 
-### Step 2 — Install the add-on
+Refresh the store, find **Retro Panel**, click **Install**.
 
-Refresh the Add-on Store page. **Retro Panel** will appear. Click it, then
-click **Install**.
+### Configure
 
-### Step 3 — Configure
+Go to the **Configuration** tab and fill in:
 
-Go to the **Configuration** tab and fill in at minimum:
+| Option | Description | Default |
+|--------|-------------|---------|
+| `ha_url` | HA instance URL | `http://homeassistant:8123` |
+| `ha_token` | Long-Lived Access Token _(leave empty on HA OS/Supervised)_ | auto |
+| `panel_title` | Title shown in the header | `Home` |
+| `theme` | `dark` · `light` · `auto` | `dark` |
+| `refresh_interval` | REST fallback poll in seconds (5–300) | `30` |
 
-- **HA URL** — your Home Assistant URL (e.g. `http://192.168.1.10:8123`)
-- **HA Token** — a Long-Lived Access Token (create one in your HA profile)
-- **Entities** — the list of entities to show on the panel
+### Start
 
-See [DOCS.md](DOCS.md) for a full configuration reference and examples.
-
-### Step 4 — Start and open
-
-Click **Start**, then **Open Web UI**. The panel is accessible via HA Ingress
-— no port forwarding needed.
+Click **Start**, then **Open Web UI**. The dashboard is at `/`, the admin at `/config`.
 
 ---
 
-## Configuration example
+## iOS kiosk setup
+
+1. Open **Safari** → `http://[HA-IP]:7654`
+2. **Share → Add to Home Screen → Add**
+3. Open the icon → full-screen, no browser chrome
+
+**Hide the HA sidebar** using [kiosk-mode](https://github.com/NemesisRE/kiosk-mode) (HACS):
 
 ```yaml
-ha_url: http://192.168.1.10:8123
-ha_token: eyJ0eXAiOiJKV1Q...   # create in HA Profile
-panel_title: Casa
-columns: 3
-theme: dark
-refresh_interval: 30
-entities:
-  - entity_id: light.soggiorno
-    label: Soggiorno
-  - entity_id: light.cucina
-    label: Cucina
-  - entity_id: switch.ventilatore
-    label: Ventilatore
-  - entity_id: sensor.temperatura_soggiorno
-    label: Temperatura
-  - entity_id: binary_sensor.porta_ingresso
-    label: Porta Ingresso
-  - entity_id: alarm_control_panel.allarme_casa
-    label: Allarme
-```
-
----
-
-## Architecture
-
-```
-Old tablet (legacy browser / Android)
-  ↓  HTTPS via HA Ingress (auth handled by Supervisor)
-Home Assistant Supervisor
-  ↓  HTTP internal
-Retro Panel — Python 3.11 + aiohttp (port 7654)
-  ├── Serves static HTML / CSS / ES2017 JS
-  ├── Proxies HA REST API  (token stays server-side)
-  └── Bridges HA WebSocket → browser WebSocket
-        (1 HA connection, fan-out to N browser clients)
+kiosk_mode:
+  hide_sidebar: '[[[ location.href.includes("hassio/ingress") ]]]'
+  hide_header:  '[[[ location.href.includes("hassio/ingress") ]]]'
 ```
 
 ---
 
 ## Security
 
-Retro Panel is designed with a layered security model. The following setup is recommended:
+| Layer | Mechanism |
+|-------|-----------|
+| Network | Cloudflare Tunnel or WireGuard VPN (avoid direct port forwarding) |
+| Authentication | HA Ingress — requires a valid HA session |
+| Token isolation | Long-Lived Access Token stored server-side, never sent to the browser |
+| Service whitelist | All service calls validated against a hard-coded allowlist |
+| Rate limiting | Brute-force protection on alarm PIN and config endpoints |
 
-### Backend token (required)
-
-Create a dedicated Home Assistant user for the add-on backend — do **not** use your personal account:
-
-1. In HA: **Settings → People → Add Person** — name it e.g. `Retro Panel`, enable **Allow login**.
-2. Set the **Administrator** role.
-3. Log in as that user, go to **Profile → Long-Lived Access Tokens → Create Token**.
-4. Copy the token and set it as `ha_token` in the add-on configuration.
-
-The token is stored server-side and **never sent to the browser**.
-
-### Kiosk tablet user (recommended)
-
-Use a **separate, non-admin** HA account for the tablet:
-
-1. Create a new HA user (e.g. `Tablet`) without the Administrator role.
-2. On the tablet, log in to Home Assistant with that account.
-3. The tablet user can view and control entities, but cannot access add-on administration.
-4. Keep the tablet on your **local network only** — do not expose it directly to the internet.
-
-### External access
-
-If you access Home Assistant from outside your network:
-
-- Use **Cloudflare Tunnel** or a **VPN** (e.g. WireGuard built into HA) — avoid direct port forwarding.
-- Enable **Multi-Factor Authentication (2FA)** for all admin accounts: **Settings → People → [user] → Multi-factor Authentication**.
-- The add-on API is only accessible through HA Ingress — it is not reachable without a valid HA session.
-
-### Summary
-
-| Layer | Mechanism | Who configures it |
-|-------|-----------|-------------------|
-| Network | Cloudflare Tunnel or VPN | You (router/HA) |
-| Authentication | HA Ingress (session required) | HA (automatic) |
-| Admin protection | 2FA for admin accounts | You (HA settings) |
-| Token isolation | LLAT stays server-side | Add-on (by design) |
-| Kiosk isolation | Non-admin local-only user | You (HA settings) |
+Use a **dedicated, non-admin** HA account for the kiosk tablet.
+Enable **2FA** on all administrator accounts.
 
 ---
 
-## Roadmap
+## Requirements
 
-| Version | Status | Content |
-|---------|--------|---------|
-| **v2.0** | Released | Full frontend/backend refactor, layout_type system, two-URL architecture |
-| **v2.9** | Released | Energy Card v2, Camera grid+lightbox, Alarm tile full redesign, Security hardening |
-| **v2.9.14** | Released | Alarm UX: status hierarchy, WCAG touch targets, direct arm without code |
-| **v2.9.15–19** | Released | Light theme toggle: full fix cycle (FOUC, bleed, persistence, CSS variables) |
-| **v2.9.20** | Released | Per-device theme toggle button in dashboard header |
-| **v2.9.21** | Released | Camera grid 2-col mobile, pagination, hide toggle, faster refresh |
-| **v2.9.22** | Released | Drag-and-drop navigation order in /config |
-| **v2.9.23** | Released | Fix camera hidden: markDirty, preview badge, loader default |
-| **v2.9.24** | **Current** | Camera lightbox MJPEG live streaming with snapshot fallback |
-| **v3.0** | Planned | Plugin system, custom themes, history charts, offline-first |
+| | Minimum |
+|-|---------|
+| Home Assistant | 2023.1 (OS or Supervised) |
+| Architecture | aarch64 · amd64 · armhf · armv7 |
+| Browser | iOS 12+ Safari · Chrome 70+ · Firefox 65+ · Android WebView |
+| Host RAM | ~50 MB RSS (Raspberry Pi 3B+ compatible) |
 
 ---
 
 ## Documentation
 
-Full documentation is in [`DOCS.md`](DOCS.md):
+| Document | Contents |
+|----------|----------|
+| [`retro-panel/DOCS.md`](retro-panel/DOCS.md) | User guide: entity reference, alarm, light controls, troubleshooting |
+| [`retro-panel/docs/INSTALLATION.md`](retro-panel/docs/INSTALLATION.md) | Detailed install guide: SSH, Samba, Ingress, kiosk setup |
+| [`retro-panel/docs/ARCHITECTURE.md`](retro-panel/docs/ARCHITECTURE.md) | System design, data flow, security model, browser compatibility |
+| [`retro-panel/docs/API.md`](retro-panel/docs/API.md) | Backend REST endpoints and WebSocket protocol |
+| [`retro-panel/docs/DEVELOPMENT.md`](retro-panel/docs/DEVELOPMENT.md) | Developer guide: local setup, adding entity types, iOS 12 rules |
+| [`retro-panel/docs/TESTING.md`](retro-panel/docs/TESTING.md) | Test procedures and security tests |
+| [`retro-panel/CHANGELOG.md`](retro-panel/CHANGELOG.md) | Full version history |
+| [`retro-panel/docs/ROADMAP.md`](retro-panel/docs/ROADMAP.md) | Planned features and release schedule |
 
-- Step-by-step configuration
-- Entity fields reference
-- Icon reference
-- Alarm PIN usage
-- Kiosk mode / Add to Home Screen
-- Troubleshooting
+---
 
-Technical documentation is in [`docs/`](docs/):
+## Roadmap
 
-| File | Purpose |
-|------|---------|
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design, data flows, security model |
-| [API.md](docs/API.md) | Backend endpoints and WebSocket protocol |
-| [DEVELOPMENT.md](docs/DEVELOPMENT.md) | Developer guide, adding entity types |
-| [TESTING.md](docs/TESTING.md) | Test procedures and security tests |
-| [AUDIT_REPORT.md](docs/AUDIT_REPORT.md) | Security audit report (v1.0.1) |
+| Version | Status | Highlights |
+|---------|--------|------------|
+| **v2.0** | Released | Full refactor · layout_type system · two-URL architecture |
+| **v2.9** | Released | Energy card · camera grid/lightbox · alarm redesign · security hardening |
+| **v2.9.20** | Released | Per-device theme toggle (dark/light/auto) |
+| **v2.9.26** | Released | MDI icon picker (7 400+ icons) with Italian-language search |
+| **v2.9.28** | Released | Conditional sensor tile with AND/OR logic |
+| **v2.9.32** | Released | Scenario tile redesign: MDI icons, domain badge, colour border |
+| **v2.9.34** | **Current** | Per-item icon + colour picker for scenarios in `/config` |
+| **v3.0** | Planned | Plugin system · custom themes · history charts · offline-first |
 
 ---
 

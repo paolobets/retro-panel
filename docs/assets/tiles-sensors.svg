@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="200" viewBox="0 0 700 200">
+  <rect width="700" height="200" fill="#0f0f0f" rx="12"/>
+  <text x="20" y="26" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="12" fill="#888" font-weight="600" letter-spacing="0.8">SENSORS</text>
+
+  <!-- Temperature -->
+  <rect x="12" y="36" width="118" height="110" fill="#1a1a1a" rx="14" stroke="#2a2a2a" stroke-width="1.5"/>
+  <text x="28" y="62" font-size="22" fill="#ef6c00">🌡</text>
+  <text x="71" y="95" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="20" fill="#f0f0f0" text-anchor="middle" font-weight="700">21.4°</text>
+  <text x="71" y="112" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="10" fill="#888" text-anchor="middle">Celsius</text>
+  <text x="28" y="130" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="12" fill="#f0f0f0" font-weight="600">Temperatura</text>
+  <text x="71" y="165" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="9" fill="#666" text-anchor="middle">temperature</text>
+
+  <!-- Humidity -->
+  <rect x="142" y="36" width="118" height="110" fill="#1a1a1a" rx="14" stroke="#2a2a2a" stroke-width="1.5"/>
+  <text x="158" y="62" font-size="22" fill="#1e88e5">💧</text>
+  <text x="201" y="95" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="20" fill="#f0f0f0" text-anchor="middle" font-weight="700">62%</text>
+  <text x="201" y="112" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="10" fill="#888" text-anchor="middle">Humidity</text>
+  <text x="158" y="130" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="12" fill="#f0f0f0" font-weight="600">Umidità</text>
+  <text x="201" y="165" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="9" fill="#666" text-anchor="middle">humidity</text>
+
+  <!-- CO2 -->
+  <rect x="272" y="36" width="118" height="110" fill="#1a1a1a" rx="14" stroke="#2a2a2a" stroke-width="1.5"/>
+  <text x="288" y="62" font-size="22" fill="#ab47bc">🌫</text>
+  <text x="331" y="95" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="18" fill="#f0f0f0" text-anchor="middle" font-weight="700">850</text>
+  <text x="331" y="112" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="10" fill="#888" text-anchor="middle">ppm</text>
+  <text x="288" y="130" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="12" fill="#f0f0f0" font-weight="600">CO₂ Studio</text>
+  <text x="331" y="165" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="9" fill="#666" text-anchor="middle">carbon_dioxide</text>
+
+  <!-- Battery with bar -->
+  <rect x="402" y="36" width="118" height="110" fill="#1a1a1a" rx="14" stroke="#2a2a2a" stroke-width="1.5"/>
+  <text x="418" y="62" font-size="22" fill="#4caf50">🔋</text>
+  <text x="461" y="90" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="20" fill="#4caf50" text-anchor="middle" font-weight="700">85%</text>
+  <!-- battery fill bar -->
+  <rect x="418" y="98" width="86" height="7" fill="#252525" rx="3.5"/>
+  <rect x="418" y="98" width="73" height="7" fill="#4caf50" rx="3.5"/>
+  <text x="418" y="130" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="12" fill="#f0f0f0" font-weight="600">Sensore porta</text>
+  <text x="461" y="165" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="9" fill="#666" text-anchor="middle">battery</text>
+
+  <!-- Power/energy -->
+  <rect x="532" y="36" width="118" height="110" fill="#1a1a1a" rx="14" stroke="#2a2a2a" stroke-width="1.5"/>
+  <text x="548" y="62" font-size="22" fill="#FFB700">⚡</text>
+  <text x="591" y="95" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="18" fill="#f0f0f0" text-anchor="middle" font-weight="700">2.4</text>
+  <text x="591" y="112" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="10" fill="#888" text-anchor="middle">kW</text>
+  <text x="548" y="130" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="12" fill="#f0f0f0" font-weight="600">Fotovoltaico</text>
+  <text x="591" y="165" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="9" fill="#666" text-anchor="middle">power / energy</text>
+</svg>

@@ -1,283 +1,271 @@
-# Retro Panel — Documentation
+# Retro Panel — User Guide
 
-Retro Panel is a lightweight kiosk dashboard for Home Assistant, designed for **wall-mounted tablets and always-on displays**. It targets iOS 12+ WKWebView and older browser environments where JavaScript must use only var, no const/let/arrow functions.
-
----
-
-## Prerequisites
-
-Before starting, create a **Long-Lived Access Token** in Home Assistant:
-
-1. In Home Assistant, click your profile picture (bottom-left).
-2. Scroll to **Long-Lived Access Tokens**.
-3. Click **Create Token**, give it a name (e.g. `retro-panel`).
-4. **Copy the token immediately** — it is shown only once.
+Retro Panel is a lightweight kiosk dashboard for Home Assistant, designed for **wall-mounted
+tablets and always-on displays**. Optimised for iOS 12+ and older devices.
 
 ---
 
-## Add-on configuration (HA config tab)
+## Quick start
 
-After installing the add-on, go to the **Configuration** tab and fill in:
+### 1. Configure the add-on
+
+Go to the **Configuration** tab in the add-on page:
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| **HA URL** | Your HA instance URL | `http://homeassistant:8123` |
-| **HA Token** | Long-lived access token | auto (SUPERVISOR_TOKEN) |
-| **Panel Title** | Title shown in the header | `Home` |
-| **Theme** | `dark`, `light`, or `auto` | `dark` |
-| **Refresh Interval** | REST fallback poll in seconds (5–300) | `30` |
+| `ha_url` | Your HA instance URL (e.g. `http://192.168.1.10:8123`) | `http://homeassistant:8123` |
+| `ha_token` | Long-Lived Access Token _(leave empty to use Supervisor token)_ | auto |
+| `panel_title` | Title shown in the dashboard header | `Home` |
+| `theme` | `dark`, `light`, or `auto` (follows device OS preference) | `dark` |
+| `refresh_interval` | REST fallback poll interval in seconds (5–300) | `30` |
 
-> **Tip:** Leave **HA Token** empty — the add-on automatically uses the
-> Supervisor token. Only fill it in if you run the add-on outside Supervisor.
+> **Tip:** Leave `ha_token` empty on Home Assistant OS/Supervised — the add-on automatically
+> uses the Supervisor token. Only fill it in if you run the add-on outside Supervisor.
+
+**Creating a Long-Lived Access Token** (only if needed):
+1. In HA click your profile picture (bottom-left).
+2. Scroll to **Long-Lived Access Tokens** → **Create Token**.
+3. Name it (e.g. `retro-panel`) and copy it — it is shown only once.
 
 ---
 
-## Interface overview
+### 2. Start and open
 
-The panel is split into three areas:
+Click **Start**, wait for the green indicator, then click **Open Web UI**.
+The panel is served at `http://[HA-IP]:7654` via HA Ingress.
+
+---
+
+### 3. Configure your dashboard
+
+Navigate to **`http://[HA-IP]:7654/config`** to open the admin configuration page.
+Use the 5 tabs to set up your dashboard:
+
+| Tab | Purpose |
+|-----|---------|
+| **Overview** | Main home screen: add entities, power flow card, set navigation order |
+| **Rooms** | Create rooms (or import from HA Areas), add entities per section |
+| **Scenarios** | Add scenes/scripts/automations, set icon and border colour per item |
+| **Cameras** | Add camera feeds, set per-camera refresh interval |
+| **Alarms** | Add alarm panels, assign zone sensors per panel |
+
+Click **Save** when done — the dashboard at `/` updates immediately.
+
+---
+
+## Dashboard layout
 
 ```
-┌──────────┬──────────────────────────────────┐
-│          │  Header: title · date · clock     │
-│ Sidebar  │                                   │
-│ Settings │                                   │
-│ ─────── │        Content area               │
-│ Overview │   (entity grid / rooms / cameras) │
-│ 🏠 Room 1│                                   │
-│ 🛋 Room 2│                                   │
-│ 🎬 Scenarios                                 │
-│ 📹 Cameras                                   │
-└──────────┴──────────────────────────────────┘
+┌─ RETRO PANEL ──────────────── 09:41  ● ─┐
+│                                          │
+│  Overview   ┌──────┐ ┌──────┐ ┌──────┐  │
+│  ─────────  │ 󰔄 ON │ │ 󰒓 OFF│ │21.4°C│  │
+│  🏠 Casa    │Soggi.│ │Pompa │ │Temp. │  │
+│  🛋 Salotto │      │ │      │ │      │  │
+│  🎬 Scene   └──────┘ └──────┘ └──────┘  │
+│  📹 Camera  ┌──────┐ ┌──────┐           │
+│  🔔 Allarme │ 85%  │ │2.4kW │           │
+│             │Batt. │ │Solar │           │
+│             └──────┘ └──────┘           │
+└──────────────────────────────────────────┘
 ```
 
-### Sidebar
-
-The collapsible left sidebar contains:
-
-- **⚙ Settings** — opens the configuration page (only at `/config` URL).
-- **Overview** — the main home screen with your most important devices.
-- **Rooms** — one entry per configured room/area (hidden rooms are not listed).
-- **Scenarios** — scenes and scripts to activate with a single tap.
-- **Cameras** — camera feeds for monitoring.
-
-Tap the ☰ button at the top to collapse the sidebar (icon-only mode) or expand it (icon + label mode).
-
-### Header
-
-The header displays:
-- Panel title (configured in the HA config tab).
-- Current date and live clock (updates every minute).
-- Connection status dot (green = live WebSocket, grey = polling).
-
----
-
-## Two URLs
-
-Retro Panel uses two distinct URLs:
-
-### Dashboard (`/`)
-
-**Read-only kiosk view** — displays your home automation entities in a clean grid.
-
-- No settings visible in sidebar
-- Cannot be edited or configured
-- Perfect for wall-mounted tablets and IoT devices
-- Full-screen optimized
-
-Access via:
-- HA Ingress: Click **Open Web UI** next to Retro Panel add-on
-- Direct: `http://[HA-IP]:7654/`
-
-### Config UI (`/config`)
-
-**Admin configuration interface** — manage entities, rooms, scenarios, and cameras.
-
-- Full settings UI with 4 tabs
-- Can edit and save configuration
-- Password/token protected by HA Ingress
-- Opened separately from the kiosk display
-
-Access via:
-- Direct link: `http://[HA-IP]:7654/config`
-- In add-on page: Click the link icon to open Web UI, then navigate to `/config`
-
----
-
-## Settings page
-
-Tap **⚙ Settings** in the sidebar to open the configuration page (only at `/config`).
-It has four tabs:
-
-### Overview tab
-
-Entities shown on the main home screen. These are your most important devices — the ones you interact with most.
-
-- **+ Add Entities** — opens a searchable entity picker. Filter by domain (Lights, Switches, Sensors, Binary, Alarm). Select one or more, then tap **Done**.
-- **+ Add Power Flow Card** — opens a 5-step wizard to map your energy sensors (Solar, Battery SOC, Battery Power, Grid, Home) to a live power-flow card.
-- Use ↑ ↓ arrows to reorder items. Use ✕ to remove.
-
-### Rooms tab
-
-Each room appears as a navigation item in the sidebar.
-
-- **+ Add Room** — create a blank room and give it a title and icon.
-- **↻ Import from HA Areas** — automatically creates one room per HA area (duplicates are skipped). Room names and icons are inferred from area names.
-- **Visibility toggle** — show/hide a room in the sidebar without deleting it.
-- **Edit** — open the room editor to add entities, change title/icon, or delete the room.
-
-#### Room editor
-
-Inside a room, tap **Edit** to open its editor:
-
-- Change the room **title** and **icon** (emoji mapped from a list: Home, Living room, Bedroom, etc.).
-- **+ Add Entities** — same entity picker as the Overview tab, scoped to this room.
-- Use ↑ ↓ / ✕ to reorder or remove entities.
-- **Delete this room** — removes the room and all its entities.
-
-> **Note:** Importing from HA Areas creates empty rooms — you need to add entities to each room manually. This is intentional: area entities in HA include helper entities, media players, and buttons that are not useful in a kiosk dashboard.
-
-### Scenarios tab
-
-Scenes and scripts that can be activated with a single tap.
-
-- **+ Add Scenario** — opens a searchable picker for `scene.*`, `script.*`, and `automation.*` entities.
-- Tap a scenario card in the panel to activate it (calls `scene.turn_on`, `script.turn_on`, or `automation.trigger`). Visual feedback is shown for 1 second after activation.
-- Use ↑ ↓ / ✕ to reorder or remove.
-
-### Cameras tab
-
-Camera feeds for monitoring and security.
-
-- **+ Add Camera** — opens a searchable picker for `camera.*` entities.
-- Each camera displays a live feed (MJPEG stream).
-- Use ↑ ↓ to reorder. Use ✕ to remove.
-- Tap refresh icon to update the feed manually.
+- **Sidebar** — tap ☰ to collapse to icons only
+- **Header** — title · date · live clock · connection dot (green = WebSocket, grey = REST polling)
+- **Tiles** — fixed 120 px height; icon top-left, state/value top-right, label bottom
 
 ---
 
 ## Supported entity types
 
-| Domain | Layout Type | Features |
-|--------|------------|----------|
-| `light` | `light` | Toggle on/off · brightness slider (bottom sheet) · color temperature |
-| `switch` | `switch` | Toggle on/off |
-| `input_boolean` | `switch` | Toggle on/off |
-| `sensor` (temperature) | `sensor_temperature` | Read-only temperature display |
-| `sensor` (humidity) | `sensor_humidity` | Read-only humidity display |
-| `sensor` (CO₂) | `sensor_co2` | Read-only CO₂ display |
-| `sensor` (battery) | `sensor_battery` | Read-only battery percentage |
-| `sensor` (energy/power) | `sensor_energy` | Read-only power/energy display |
-| `sensor` (other) | `sensor_generic` | Read-only value with unit |
-| `binary_sensor` (door/window) | `binary_door` | Open/Closed status |
-| `binary_sensor` (motion/occupancy) | `binary_motion` | Motion detected indicator |
-| `binary_sensor` (other) | `binary_standard` | On/Off status |
-| `alarm_control_panel` | `alarm` | PIN keypad · Arm Home · Arm Away · Disarm |
-| `camera` | `camera` | MJPEG live stream |
-| `scene` / `script` / `automation` | `scenario` | Tap-to-activate |
-| (Energy flow card) | `energy_flow` | Solar/Battery/Grid/Home power visualization |
+### Lights (`light`)
+
+Tap → toggle on/off.
+Long-press (hold ~500 ms) → bottom sheet with **brightness slider**, **colour temperature**
+and **hue picker** (shown only for attributes supported by the device).
+
+The brightness percentage appears as a circular arc bubble in the top-right corner.
 
 ---
 
-## Power Flow Card
+### Switches & input booleans (`switch`, `input_boolean`)
 
-The Power Flow Card visualises your home energy flow in real time:
+Tap → toggle on/off. Border turns green when ON.
+Supports any MDI icon, configurable in `/config`.
+
+---
+
+### Sensors (`sensor`)
+
+Read-only display of the current value and unit.
+The visual style and icon adapt to the device class automatically:
+
+| Device class | Display |
+|-------------|---------|
+| `temperature` | °C / °F value with thermometer icon |
+| `humidity` | % value with droplet icon |
+| `co2` / `carbon_dioxide` | ppm value with air quality icon |
+| `battery` | % value with fill-level bar |
+| `energy` / `power` | kW / kWh value |
+| `pressure` / `illuminance` / others | value + unit |
+
+---
+
+### Binary sensors (`binary_sensor`)
+
+State-driven icon that changes between active and inactive appearances.
+An orange pulsing border indicates an active alert.
+
+| Device class | Active state | Inactive state |
+|-------------|-------------|----------------|
+| `door` / `window` | APERTO | CHIUSO |
+| `motion` / `occupancy` | RILEVATO | CHIARO |
+| `smoke` / `gas` | ALLARME | OK |
+| `moisture` | BAGNATO | ASCIUTTO |
+| `vibration` | VIBRAZIONE | OK |
+| `lock` | APERTO | CHIUSO |
+| `presence` | IN CASA | ASSENTE |
+
+---
+
+### Covers (`cover`)
+
+Tap → toggle open/close. A position bar shows the current position percentage
+when the `current_position` attribute is available.
+
+---
+
+### Conditional sensor
+
+A sensor tile that shows a custom state or label only when defined conditions are met.
+Useful for alerts, reminders and state-dependent readouts.
+
+Configure in the `/config` → Rooms or Overview editor:
+- **Icon** and **border colour** — visual identity when active
+- **Conditions** — entity, operator (`=` `≠` `contains` `>` `<`), value
+- **Condition logic** — AND (all must match) or OR (any must match)
+
+---
+
+### Scenarios (`scene`, `script`, `automation`)
+
+Each scenario appears as a tap-to-activate tile with:
+- A **domain badge** (`[Scena]` / `[Script]` / `[Automazione]`)
+- A **custom MDI icon** (configurable per item in `/config`)
+- A **custom border colour** (configurable per item in `/config`)
+
+Tap → brief green flash for 1.5 seconds, then returns to idle.
+Service called: `scene.turn_on` · `script.turn_on` · `automation.trigger`
+
+---
+
+### Energy flow card
+
+Visualises home energy flow in real time using up to 7 sensor entities:
 
 ```
-  ☀ Solar  →  🔋 Battery  →  🏠 Home
-                  ↑↓
-              ⚡ Grid
+  ☀ Solare  ──→──  🔋 Batteria (85%)  ──→──  🏠 Casa
+                         │  ↑↓
+                     ⚡ Rete
 ```
 
-To configure it:
+Animated arrows reflect live energy direction. Configure in **Settings → Overview** →
+**+ Add Power Flow Card**, then step through the 7-sensor wizard.
 
-1. In **Settings → Overview** (or inside a Room), tap **+ Add Power Flow Card**.
-2. Step through the 7-screen wizard:
-   - **Step 1 — Solar** — production power sensor (W). Positive = producing.
-   - **Step 2 — Home** — total home consumption (W).
-   - **Step 3 — Battery SOC** — state of charge (%). Range 0–100.
-   - **Step 4 — Battery Charge** — charging power (W). Positive = charging.
-   - **Step 5 — Battery Discharge** — discharge power (W). Positive = discharging.
-   - **Step 6 — Grid Import** — power drawn from grid (W). Positive = importing.
-   - **Step 7 — Grid Export** — power fed to grid (W). Positive = exporting.
-3. Use the 🔍 button on each step to search sensors by entity_id or friendly name.
-4. Tap **Confirm** when done.
-
-Arrows animate based on the direction of energy flow. If a sensor is not configured (left empty), that branch is greyed out.
-
-> Compatible inverters tested: ZCS Azzurro, SMA, Fronius, Huawei SUN2000.
+Compatible inverters tested: ZCS Azzurro · SMA · Fronius · Huawei SUN2000.
 
 ---
 
-## Alarm panel
+### Alarm panel (`alarm_control_panel`)
 
-The alarm tile shows the arming mode chips and a PIN keypad when needed.
+```
+  DISARMED                    ARMED AWAY
+  ┌──────────────────────┐    ┌──────────────────────┐
+  │ Allarme Casa         │    │ Allarme Casa         │
+  │ DISARMATO            │    │ ARMATO — Fuori       │
+  │                      │    │                      │
+  │ [Casa] [Fuori][Notte]│    │     [ Disarma ]      │
+  │  1  2  3             │    │  ● Porta ingresso    │
+  │  4  5  6  [ Arma ]   │    │  ○ Finestra          │
+  └──────────────────────┘    └──────────────────────┘
+```
 
-**Arming (disarmed state):**
-1. Tap one of the mode chips: **Casa**, **Fuori**, or **Notte**.
-2. If your alarm requires a code to arm, enter the PIN and tap **Arma**.
-3. If no code is required, tapping the chip arms immediately — no PIN needed.
+- PIN keypad shown only when required by the alarm entity
+- Zone sensors (binary_sensor) listed per alarm panel
+- **Arm without code**: tap the mode chip → arms immediately
+- **Arm with code**: tap mode chip → enter PIN → tap **Arma**
+- **Disarm**: tap **Disarma** (optionally enter PIN first)
 
-**Disarming (armed state):**
-1. If no code is required, tap **Disarma** directly.
-2. If a code is required, enter the PIN and tap **Disarma**.
+The PIN is never stored — sent directly to HA and cleared immediately after each action.
 
-The alarm status bar shows the entity name at the top and the current state (DISARMATO / ARMATO / INSERIMENTO… / ALLARME!) below it. When armed, a sub-label shows the active mode (e.g. "Modalità: Casa").
-
-The PIN is never stored — it is sent directly to HA and immediately cleared after each action.
-
-> Configure alarm entities in the **Settings → Alarms** tab in the config UI. You can add multiple alarm panels and associate zone sensors (binary_sensor) to each one.
-
----
-
-## Light controls
-
-When you tap a light tile, it toggles on/off instantly. For brightness and color control:
-
-1. **Long-press** (hold for ~500ms) the light tile.
-2. A bottom sheet slides up from the bottom of the screen.
-3. Use the **brightness slider** to adjust brightness.
-4. Use the **color temperature slider** to adjust warm/cool tone (if supported).
-5. Use the **color picker** for hue selection (if supported).
-6. Tap outside the sheet or the X button to close.
+Configure alarm entities in **Settings → Alarms** tab. You can add multiple alarm panels
+and assign zone sensors to each one.
 
 ---
 
-## Nascondere la UI di Home Assistant (Kiosk)
+### Cameras (`camera`)
 
-Retro Panel non gestisce la visibilità della barra laterale di HA.
-Per nascondere sidebar e header di HA su un tablet a muro, usa
-[kiosk-mode](https://github.com/NemesisRE/kiosk-mode) (installabile via HACS).
+- Live MJPEG stream when the camera supports it; automatic snapshot fallback otherwise
+- Configurable per-camera refresh interval (for snapshot polling)
+- Tap any camera card → fullscreen lightbox with MJPEG stream
 
-Una volta installato, apri la dashboard HA in modalità modifica (icona ✏️), poi seleziona
-**⋮ → Modifica dashboard → Modifica configurazione raw**, e aggiungi all'inizio del file YAML:
+---
+
+## Light controls (bottom sheet)
+
+1. **Long-press** a light tile (hold ~500 ms without moving).
+2. A sheet slides up from the bottom.
+3. Available controls depend on the device:
+
+| Control | Shown when |
+|---------|------------|
+| Brightness slider | `brightness` attribute present |
+| Colour temperature | `color_temp` attribute present |
+| Colour / hue picker | `hs_color` attribute present |
+
+Tap outside the sheet or the × button to close.
+
+---
+
+## iOS kiosk setup (Add to Home Screen)
+
+1. Open **Safari** and navigate to `http://[HA-IP]:7654`
+2. Tap the **Share** button → **Add to Home Screen** → **Add**
+3. Open the new icon from your Home Screen
+
+The panel launches full-screen with no browser chrome, perfect for wall mounts.
+
+**Hide the HA sidebar and header** using [kiosk-mode](https://github.com/NemesisRE/kiosk-mode)
+(installable via HACS). Add to your HA dashboard YAML:
 
 ```yaml
 kiosk_mode:
   hide_sidebar: '[[[ location.href.includes("hassio/ingress") ]]]'
-  hide_header: '[[[ location.href.includes("hassio/ingress") ]]]'
+  hide_header:  '[[[ location.href.includes("hassio/ingress") ]]]'
 ```
 
-Questo nasconde sidebar e header HA **solo quando sei all'interno di una pagina ingress**,
-lasciando la UI di HA normale su tutte le altre voci del menu.
+---
+
+## Two URLs
+
+| URL | Purpose |
+|-----|---------|
+| `http://[HA-IP]:7654/` | **Dashboard** — read-only kiosk for the wall tablet |
+| `http://[HA-IP]:7654/config` | **Config UI** — admin interface, requires HA session |
+
+The config UI is also accessible via HA Ingress (`/hassio/ingress/retro_panel/config`).
 
 ---
 
-## Opening the panel
+## Real-time updates
 
-After starting the add-on, click **Open Web UI** (the link icon next to the add-on name in the HA sidebar). The panel URL is served via HA Ingress — no extra port forwarding is needed.
+Retro Panel maintains a WebSocket connection to Home Assistant and pushes state changes to all
+connected browsers in real time. If the WebSocket drops, the panel:
+1. Shows a **reconnecting banner** at the top
+2. Retries with exponential backoff: 1 s → 2 s → 4 s → 8 s → 16 s → 30 s
+3. Falls back to **REST polling** every `refresh_interval` seconds in the meantime
 
-To open on a tablet:
-1. On the tablet, navigate to `http://[HA-IP]:8123`.
-2. Log in with a HA user account.
-3. Retro Panel should appear in the left sidebar.
-
----
-
-## Network and WebSocket
-
-Retro Panel maintains a WebSocket connection to Home Assistant and broadcasts state changes to all connected browsers in real time. If the WebSocket drops, the panel retries with exponential backoff (1s → 2s → 4s → 8s → 16s → 30s) and falls back to REST polling in the meantime.
-
-A **reconnecting banner** appears at the top when the connection is lost and disappears automatically on reconnect.
+The banner disappears automatically on reconnect.
 
 ---
 
@@ -285,48 +273,49 @@ A **reconnecting banner** appears at the top when the connection is lost and dis
 
 ### Panel shows "Failed to load"
 
-- Check the **Log** tab. The most common causes are an incorrect `ha_url` or an invalid / expired `ha_token`.
-- Test the token: `curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:8123/api/`
+1. Check the **Log** tab — look for connection or token errors.
+2. Verify `ha_url` (use `http://homeassistant:8123` or the HA IP address, not HTTPS).
+3. Test the token: `curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:8123/api/`
+4. Restart the add-on.
 
 ### Tiles not updating in real time
 
-- The WebSocket to HA may be blocked by a firewall or proxy.
+- The WebSocket may be blocked by a firewall or proxy.
 - Check the Log tab for `HA WebSocket auth failed` or `HA WebSocket disconnected`.
-- REST polling (every `refresh_interval` seconds) keeps states updated even without WebSocket.
+- REST polling keeps states updated even without WebSocket.
 
-### "Import from HA Areas" returns no rooms
+### "Import from HA Areas" returns nothing
 
-- Make sure your entities are assigned to areas in **Settings → Areas**.
-- If HA has no areas configured, import will return an empty list.
-- You can always add rooms manually with **+ Add Room**.
+- Make sure entities are assigned to areas in **Settings → Areas**.
+- If no areas are configured, import returns an empty list — add rooms manually.
 
 ### Alarm PIN not working
 
 - Verify your alarm is configured with a PIN in HA.
 - Check the HA logbook for the service call result.
-- Make sure `alarm_control_panel` is in the allowed service domains (it is allowed by default).
 
 ### Brightness slider does not appear
 
-- Long-press the light tile and hold for at least 500 ms without moving your finger. A short tap toggles; a long hold shows the bottom sheet.
+- Long-press and **hold for at least 500 ms** without moving your finger.
+  A short tap toggles; a held press shows the bottom sheet.
 
 ### Entity shows "N/A"
 
-- The entity_id exists in your configuration but was not found in HA (offline, removed, or misspelled). Check in **Settings → Devices & Services → Entities**.
+- The entity_id is in your config but not found in HA (offline, removed, or misspelled).
+  Check in **Settings → Devices & Services → Entities**.
 
 ### Settings page: "Failed to load entities"
 
-- The add-on cannot reach the HA REST API. Check `ha_url` and token in the Configuration tab.
+- The add-on cannot reach the HA REST API. Check `ha_url` and token.
 - On large HA instances (>1000 entities), the first load may take a few seconds.
 
 ---
 
 ## Support
 
-- **GitHub Issues:** `https://github.com/paolobets/retro-panel/issues`
-- **Home Assistant Community:** search "Retro Panel" in the Add-ons category
+- **GitHub Issues:** https://github.com/paolobets/retro-panel/issues
+- **GitHub Discussions:** https://github.com/paolobets/retro-panel/discussions
 
 ---
 
-**Document Version**: 2.9.14
-**Last Updated**: 2026-04-03
+**Version**: 2.9.34 · **Last updated**: 2026-04-06
