@@ -1,5 +1,15 @@
 # Retro Panel — Changelog
 
+## [2.9.31] — 2026-04-06
+
+### Fixed
+- **Scenari — automazioni mancanti**: `cfgFetchScenarios()` in `config-api.js` ora include `?domain=automation` oltre a `scene` e `script` — le automazioni compaiono nel picker degli scenari
+- **Backend picker** `picker_entities.py`: aggiunto `"automation"` a `_ALLOWED_DOMAINS` — la richiesta `GET /api/picker/entities?domain=automation` non ritorna più 400
+- **Backend service** `panel_service.py`: aggiunto `"automation"` a `_ALLOWED_DOMAINS` e `_ALLOWED_SERVICES` con servizi `trigger`, `turn_on`, `turn_off` — il pulsante scenario può ora attivare un'automazione senza essere bloccato dalla whitelist
+
+### Changed
+- Icona default automazione nel picker: ⚡ (era 🎭 come gli script)
+
 ## [2.9.30] — 2026-04-06
 
 ### Changed

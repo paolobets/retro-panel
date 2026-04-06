@@ -32,12 +32,13 @@ function cfgFetchSensors() {
 }
 
 function cfgFetchScenarios() {
-  // Fetch scenes and scripts for the scenario picker
+  // Fetch scenes, scripts and automations for the scenario picker
   return Promise.all([
     fetch('api/picker/entities?domain=scene').then(function (r) { return r.ok ? r.json() : []; }),
     fetch('api/picker/entities?domain=script').then(function (r) { return r.ok ? r.json() : []; }),
+    fetch('api/picker/entities?domain=automation').then(function (r) { return r.ok ? r.json() : []; }),
   ]).then(function (results) {
-    return (results[0] || []).concat(results[1] || []);
+    return (results[0] || []).concat(results[1] || []).concat(results[2] || []);
   });
 }
 

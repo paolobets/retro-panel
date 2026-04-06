@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 _ALLOWED_DOMAINS = frozenset({
     "light", "switch", "sensor", "binary_sensor", "alarm_control_panel",
-    "scene", "script", "camera",
+    "scene", "script", "automation", "camera",
 })
 
 

@@ -31,7 +31,7 @@
 
   var allEntities  = [];   // from /api/entities
   var allSensors   = [];   // from /api/entities?domain=sensor
-  var allScenarios = [];   // scenes + scripts
+  var allScenarios = [];   // scenes + scripts + automations
   var haAreaMap    = {};   // area_id -> [entity_id, ...] from /api/ha-areas
 
   // Entity picker state
@@ -1943,7 +1943,7 @@
     if (!container) { return; }
 
     if (allScenarios.length === 0) {
-      container.innerHTML = '<p class="cfg-placeholder">Loading scenes and scripts\u2026</p>';
+      container.innerHTML = '<p class="cfg-placeholder">Caricamento scene, script e automazioni\u2026</p>';
       return;
     }
 
@@ -1988,7 +1988,7 @@
         var eid = this.getAttribute('data-id');
         var name = this.getAttribute('data-name');
         var title = name || eid.split('.')[1] || eid;
-        var icon = eid.startsWith('scene.') ? '\uD83C\uDF1F' : '\uD83C\uDFAD';
+        var icon = eid.startsWith('scene.') ? '\uD83C\uDF1F' : eid.startsWith('automation.') ? '\u26A1' : '\uD83C\uDFAD';
         var sec = activeScSectionObj();
         if (sec) { sec.items.push({ entity_id: eid, title: title, icon: icon }); }
         renderScenarioPickerList();
