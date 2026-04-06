@@ -1,5 +1,11 @@
 # Retro Panel — Changelog
 
+## [2.9.34] — 2026-04-06
+
+### Fixed
+- **Scenari — colore bordo non persistito**: al caricamento della config, `border_color` non veniva copiato nello `state` locale — tutti gli oggetti perdevano il colore al salvataggio successivo; ora `border_color` è incluso nel mapping degli item scenario durante l'init
+- **Icona default scenario in config**: rimosso il fallback emoji 🎭 — ora default a stringa vuota così il tile usa il fallback MDI per dominio (palette/script-text/lightning-bolt)
+
 ## [2.9.33] — 2026-04-05
 
 ### Added

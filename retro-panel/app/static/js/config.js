@@ -3462,7 +3462,7 @@
             id:    sec.id    || genSecId(),
             title: sec.title || '',
             items: (sec.items || []).map(function(sc) {
-              return { entity_id: sc.entity_id, title: sc.title || '', icon: sc.icon || '\uD83C\uDFAD' };
+              return { entity_id: sc.entity_id, title: sc.title || '', icon: sc.icon || '', border_color: sc.border_color || '' };
             }),
           };
         });
