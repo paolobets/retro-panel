@@ -78,21 +78,22 @@ window.SensorConditionalComponent = (function () {
     /* Store cfg on tile for use in updateTile */
     tile._conditionalCfg = cfg;
 
-    /* custom border color from config */
-    if (cfg.border_color) {
-      tile.style.borderColor = cfg.border_color;
-    }
-
-    /* bubble (value) */
+    /* bubble (icon) */
     var bubble = DOM.createElement('div', 'bubble');
     bubble.innerHTML = FMT.getIcon(icon, 20, entity_id);
 
-    /* info: value + label */
-    var info    = DOM.createElement('div', 'sensor-info');
-    var valueEl = DOM.createElement('span', 'sensor-value', '—');
-    var labelEl = DOM.createElement('span', 'sensor-label', label);
-    info.appendChild(valueEl);
+    /* custom border + bubble icon color — mirrors .s-* pattern */
+    if (cfg.border_color) {
+      tile.style.borderColor = cfg.border_color;
+      bubble.style.color     = cfg.border_color;
+    }
+
+    /* info: label on top, value below — same structure as .tile-sensor */
+    var info    = DOM.createElement('div', 'info');
+    var labelEl = DOM.createElement('span', 'name', label);
+    var valueEl = DOM.createElement('span', 'val', '—');
     info.appendChild(labelEl);
+    info.appendChild(valueEl);
 
     tile.appendChild(bubble);
     tile.appendChild(info);
@@ -122,7 +123,7 @@ window.SensorConditionalComponent = (function () {
 
     /* Update displayed value from tile's own entity */
     var stateObj = states[entity_id];
-    var valueEl  = tile.querySelector('.sensor-value');
+    var valueEl  = tile.querySelector('.val');
     if (!stateObj || !valueEl) { return; }
 
     var state  = stateObj.state;

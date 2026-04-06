@@ -1,5 +1,11 @@
 # Retro Panel — Changelog
 
+## [2.9.29] — 2026-04-06
+
+### Fixed
+- **Sensore Condizionale — layout tile**: usava classi `.sensor-info/.sensor-value/.sensor-label` non presenti in `tiles.css` — il nome e il valore si concatenavano inline senza struttura. Ora usa le stesse classi dei sensori standard: `.info` (colonna), `.name` (label in alto, 11px muted), `.val` (valore in basso, 14px bold)
+- **Sensore Condizionale — colore icona**: `bubble.style.color` ora riceve lo stesso `border_color` del tile, allineato al pattern `.s-*` degli altri sensori
+
 ## [2.9.28] — 2026-04-06
 
 ### Fixed
