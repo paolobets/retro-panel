@@ -1295,6 +1295,13 @@ body {
   border-radius: var(--radius-sm);
 }
 
+/* ---- Divisore tra blocchi nella stessa tab ---- */
+.cfg-section-divider {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: 24px 0 20px;
+}
+
 /* ---- Navigation Order card ---- */
 .cfg-nav-order-wrap {
   background: var(--color-surface);

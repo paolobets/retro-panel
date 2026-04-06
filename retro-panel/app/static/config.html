@@ -7,8 +7,8 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Retro Panel — Settings</title>
-  <link rel="stylesheet" href="static/css/tokens.css?v=2929">
-  <link rel="stylesheet" href="static/css/config.css?v=2929">
+  <link rel="stylesheet" href="static/css/tokens.css?v=2930">
+  <link rel="stylesheet" href="static/css/config.css?v=2930">
 </head>
 <body class="theme-dark">
   <script>try{var _t=localStorage.getItem('rp_theme');if(_t==='light'||_t==='dark'||_t==='auto'){document.body.className='theme-'+_t;}}catch(e){}</script>
@@ -37,20 +37,32 @@
          ══════════════════════════════════════════════ -->
     <section id="tab-overview" class="cfg-section">
 
+  <!-- Navigation Order — prima sezione -->
+  <div class="section-header">
+    <h2 class="section-title">Ordine navigazione</h2>
+  </div>
+  <p class="cfg-hint">Trascina le sezioni per cambiare l'ordine nella barra di navigazione. Overview è sempre in prima posizione.</p>
+  <div class="cfg-nav-order-wrap">
+    <div id="nav-order-list" class="nav-order-list"></div>
+  </div>
+
+  <hr class="cfg-section-divider">
+
+  <!-- Overview content -->
   <div class="section-header">
     <h2 class="section-title">Overview</h2>
   </div>
-  <p class="cfg-hint">Organise your home screen into named sections. Add entities to each section.</p>
+  <p class="cfg-hint">Organizza la schermata principale in sezioni. Aggiungi entità a ciascuna sezione.</p>
 
   <div class="field-group" style="margin-bottom:12px;">
     <div class="field-row">
-      <label class="field-label" for="overview-title-input">Section name</label>
+      <label class="field-label" for="overview-title-input">Nome sezione</label>
       <input id="overview-title-input" type="text" class="field-input"
         maxlength="32" autocomplete="off" autocorrect="off"
         autocapitalize="words" spellcheck="false" placeholder="Overview">
     </div>
     <div class="field-row">
-      <label class="field-label">Icon</label>
+      <label class="field-label">Icona</label>
       <input id="overview-icon-value" type="hidden" value="home">
       <button id="overview-icon-btn" type="button" class="icon-picker-btn">
         <span id="overview-icon-preview" class="icon-picker-btn-icon"></span>
@@ -58,15 +70,6 @@
         <span class="icon-picker-chevron" aria-hidden="true">&#8964;</span>
       </button>
     </div>
-  </div>
-
-  <!-- Navigation Order -->
-  <div class="cfg-nav-order-wrap">
-    <div class="cfg-nav-order-header">
-      <span class="cfg-nav-order-title">Navigation Order</span>
-      <span class="cfg-nav-order-hint">Drag to reorder. Overview is always first.</span>
-    </div>
-    <div id="nav-order-list" class="nav-order-list"></div>
   </div>
 
   <!-- Editor + Preview side by side (same as room-editor-body) -->
@@ -680,8 +683,8 @@
     </div>
   </section>
 
-  <script src="static/js/mdi-icons.js?v=2929"></script>
-  <script src="static/js/config-api.js?v=2929"></script>
-  <script src="static/js/config.js?v=2929"></script>
+  <script src="static/js/mdi-icons.js?v=2930"></script>
+  <script src="static/js/config-api.js?v=2930"></script>
+  <script src="static/js/config.js?v=2930"></script>
 </body>
 </html>

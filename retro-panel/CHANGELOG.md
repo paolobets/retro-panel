@@ -1,5 +1,12 @@
 # Retro Panel — Changelog
 
+## [2.9.30] — 2026-04-06
+
+### Changed
+- **Tab Overview — struttura riorganizzata**: "Ordine navigazione" spostato in prima posizione con proprio titolo e hint descrittivo; sezione "Overview" (nome, icona, editor entità, preview) segue sotto separata da un divisore `<hr>`
+- Rimosso l'header inline `.cfg-nav-order-header` (titolo e hint ora gestiti dai tag `<h2>` e `<p class="cfg-hint">` della pagina, coerente con le altre sezioni)
+- Microcopy italianizzato: "Section name" → "Nome sezione", "Icon" → "Icona", hint aggiornati
+
 ## [2.9.29] — 2026-04-06
 
 ### Fixed
