@@ -249,10 +249,12 @@ async def save_config(request: web.Request) -> web.Response:
                 return web.json_response(
                     {"error": f"scenario section [{sec_id}]: {exc}"}, status=400
                 )
+            raw_color = str(sc.get("border_color") or "").strip()[:16]
             items.append({
                 "entity_id": eid,
                 "title": str(sc.get("title") or "").strip()[:_MAX_TITLE],
-                "icon": str(sc.get("icon") or "\U0001F3AD").strip()[:_MAX_ICON],
+                "icon": str(sc.get("icon") or "").strip()[:_MAX_ICON],
+                "border_color": raw_color,
             })
         scenario_sections.append({"id": sec_id, "title": sec_title, "items": items})
 

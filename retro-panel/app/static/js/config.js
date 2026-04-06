@@ -1904,20 +1904,72 @@
       return;
     }
 
+    var RP_MDI = window.RP_MDI;
     container.innerHTML = items.map(function(sc, i) {
-      return '<div class="selected-row" data-idx="' + i + '">'
+      var domain      = (sc.entity_id || '').split('.')[0];
+      var DOMAIN_ICON = { scene: 'palette', script: 'script-text', automation: 'lightning-bolt' };
+      var iconName    = sc.icon || DOMAIN_ICON[domain] || 'play';
+      var iconSvg     = RP_MDI ? RP_MDI(iconName, 18) : '';
+      var color       = sc.border_color || '';
+      var colorStyle  = color ? 'background:' + color + ';border-color:' + color + ';' : '';
+      return '<div class="selected-row sc-item-row" data-idx="' + i + '">'
         + '<span class="item-drag-handle">&#9776;</span>'
-        + '<span class="scenario-row-icon">' + esc(sc.icon || '') + '</span>'
+        + '<button class="sc-icon-btn action-btn-icon" type="button" data-idx="' + i + '" title="Cambia icona"'
+        +   (color ? ' style="color:' + color + ';"' : '') + '>' + iconSvg + '</button>'
         + '<div class="scenario-row-info">'
-        + '<span class="scenario-row-title">' + esc(sc.title) + '</span>'
-        + '<span class="scenario-row-id">' + esc(sc.entity_id) + '</span>'
+        +   '<span class="scenario-row-title">' + esc(sc.title) + '</span>'
+        +   '<span class="scenario-row-id">' + esc(sc.entity_id) + '</span>'
         + '</div>'
-        + '<div class="selected-actions">'
-        + '<button class="remove-btn sc-item-remove-btn" type="button" data-idx="' + i + '">\u2715</button>'
+        + '<div class="sc-item-controls">'
+        +   '<input class="sc-color-input" type="color" data-idx="' + i + '" value="' + esc(color || '#4caf50') + '" title="Colore bordo">'
+        +   '<button class="sc-color-clear-btn action-btn-icon" type="button" data-idx="' + i + '" title="Rimuovi colore"'
+        +     (color ? '' : ' style="opacity:0.3;"') + '>\u2715</button>'
+        +   '<button class="remove-btn sc-item-remove-btn" type="button" data-idx="' + i + '">\u2715</button>'
         + '</div></div>';
     }).join('');
 
     initItemDragDrop(container, 'sc-section', items);
+
+    /* Icon picker per riga */
+    container.querySelectorAll('.sc-icon-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var idx = parseInt(btn.getAttribute('data-idx'), 10);
+        var sc  = activeScItems()[idx];
+        var domain      = (sc.entity_id || '').split('.')[0];
+        var DOMAIN_ICON = { scene: 'palette', script: 'script-text', automation: 'lightning-bolt' };
+        openIconPickerModal(sc.icon || DOMAIN_ICON[domain] || 'play', function(iconName) {
+          sc.icon = iconName;
+          markDirty();
+          setTimeout(function() { renderScSectionItemsList(); }, 0);
+        });
+      });
+    });
+
+    /* Color input per riga */
+    container.querySelectorAll('.sc-color-input').forEach(function(inp) {
+      inp.addEventListener('input', function() {
+        var idx = parseInt(inp.getAttribute('data-idx'), 10);
+        activeScItems()[idx].border_color = inp.value;
+        markDirty();
+        renderScenariosPreview();
+        /* aggiorna colore icon btn inline senza re-render */
+        var row = inp.closest('.sc-item-row');
+        if (row) {
+          var iconBtn = row.querySelector('.sc-icon-btn');
+          if (iconBtn) { iconBtn.style.color = inp.value; }
+        }
+      });
+    });
+
+    /* Clear color per riga */
+    container.querySelectorAll('.sc-color-clear-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var idx = parseInt(btn.getAttribute('data-idx'), 10);
+        activeScItems()[idx].border_color = '';
+        markDirty();
+        renderScSectionItemsList();
+      });
+    });
 
     container.querySelectorAll('.sc-item-remove-btn').forEach(function(btn) {
       btn.addEventListener('click', function() {

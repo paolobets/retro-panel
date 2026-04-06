@@ -45,10 +45,11 @@ window.ScenarioComponent = (function () {
     var DOM = window.RP_DOM;
     var FMT = window.RP_FMT;
 
-    var entity_id = entityConfig.entity_id;
-    var domain    = entity_id.split('.')[0];
-    var label     = entityConfig.label || entityConfig.title || entity_id.split('.').pop();
-    var iconName  = entityConfig.icon || DOMAIN_ICON[domain] || 'play';
+    var entity_id   = entityConfig.entity_id;
+    var domain      = entity_id.split('.')[0];
+    var label       = entityConfig.label || entityConfig.title || entity_id.split('.').pop();
+    var iconName    = entityConfig.icon || DOMAIN_ICON[domain] || 'play';
+    var borderColor = entityConfig.border_color || '';
 
     /* root tile — same triple-lock as switch */
     var tile = DOM.createElement('div', 'tile tile-scenario');
@@ -67,6 +68,12 @@ window.ScenarioComponent = (function () {
     var top    = DOM.createElement('div', 'tile-top');
     var iconEl = DOM.createElement('span', 'tile-icon');
     iconEl.innerHTML = FMT.getIcon(iconName, 28, entity_id);
+
+    /* apply border color */
+    if (borderColor) {
+      tile.style.borderColor = borderColor;
+      iconEl.style.color     = borderColor;
+    }
 
     var badge = DOM.createElement('span', 'scenario-badge');
     badge.textContent = DOMAIN_LABEL[domain] || domain;

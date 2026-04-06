@@ -230,7 +230,8 @@ class ScenarioConfig:
     """A scene or script that can be activated from the Scenarios section."""
     entity_id: str
     title: str
-    icon: str = "\U0001f3ad"  # 🎭
+    icon: str = ""
+    border_color: str = ""
 
 
 @dataclass
@@ -647,7 +648,8 @@ def _parse_scenario(raw: dict) -> Optional[ScenarioConfig]:
     return ScenarioConfig(
         entity_id=eid,
         title=str(raw.get("title") or eid.split(".")[-1].replace("_", " ").title()).strip(),
-        icon=str(raw.get("icon") or "\U0001f3ad").strip(),
+        icon=str(raw.get("icon") or "").strip(),
+        border_color=str(raw.get("border_color") or "").strip()[:16],
     )
 
 

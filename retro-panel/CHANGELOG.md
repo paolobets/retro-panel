@@ -1,5 +1,14 @@
 # Retro Panel — Changelog
 
+## [2.9.33] — 2026-04-05
+
+### Added
+- **Scenari — icona e colore bordo per-item**: ogni scenario/script/automazione nella sezione Config ha ora un pulsante icona (MDI, apre icon picker) e un color picker per il bordo; i valori vengono salvati nei campi `icon` e `border_color` di `ScenarioConfig` e applicati al tile nella dashboard (bordo colorato + icona colorata)
+- **Backend**: `ScenarioConfig.border_color` ora incluso nella serializzazione `GET /api/panel-config` e nel salvataggio `POST /api/panel-config`; default icona cambiato da emoji a stringa MDI vuota
+
+### Changed
+- **Config UI — scenario rows**: ogni riga mostra pulsante icona (SVG MDI 18px), info (titolo + entity_id), input colore, pulsante clear colore, pulsante rimozione; layout flex allineato
+
 ## [2.9.32] — 2026-04-06
 
 ### Changed

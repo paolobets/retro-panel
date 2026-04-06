@@ -1433,9 +1433,57 @@ body {
 }
 
 /* ---- Scenario list rows ---- */
-.scenario-row-icon {
-  font-size: 22px;
+.action-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-surface-3);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--color-text-primary);
+  padding: 0;
+  transition: background 0.15s;
+}
+.action-btn-icon:hover { background: var(--color-surface-3); }
+.action-btn-icon svg { display: block; }
+
+.sc-item-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.sc-color-input {
+  width: 32px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid var(--color-surface-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+
+.sc-color-clear-btn {
+  font-size: 12px;
+  line-height: 1;
+  padding: 0 6px;
+  height: 32px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-surface-3);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.sc-color-clear-btn:hover { color: var(--color-text-primary); background: var(--color-surface-3); }
+
+.sc-item-remove-btn {
+  font-size: 14px;
 }
 
 .scenario-row-info {

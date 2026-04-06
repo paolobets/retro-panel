@@ -109,7 +109,7 @@ async def get_panel_config(request: web.Request) -> web.Response:
                 "id": sec.id,
                 "title": sec.title,
                 "items": [
-                    {"entity_id": s.entity_id, "title": s.title, "icon": s.icon}
+                    {"entity_id": s.entity_id, "title": s.title, "icon": s.icon, "border_color": s.border_color}
                     for s in sec.items
                 ],
             }
