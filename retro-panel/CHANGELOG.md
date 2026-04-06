@@ -1,5 +1,20 @@
 # Retro Panel — Changelog
 
+## [2.9.28] — 2026-04-06
+
+### Fixed
+- **Condizioni case-insensitive**: `_evalRule` in `conditional.js` ora confronta `eq`/`neq`/`contains` dopo `.toLowerCase()` su entrambi i lati — `"on"` matcha `"On"`, `"aperto"` matcha `"Aperto"`, ecc.
+- **Validazione condizioni incomplete**: `commitConditionalSensor()` ora rifiuta il salvataggio se una condizione ha entità selezionata ma valore vuoto, con messaggio inline esplicito
+
+### Changed
+- **Righe condizione — grid layout**: `.cond-rule-row` passa da `flex-wrap:wrap` a `grid-template-columns: 1fr 68px minmax(72px,1fr) 28px` — ogni regola rimane su una sola riga, operatore e valore sempre allineati
+- **Segmented control AND/OR**: i pulsanti AND/OR condividono bordo e border-radius → aspetto "tab" più compatto e riconoscibile
+- **Separatore visivo** tra sezione proprietà (entità/icona/colore) e sezione condizioni (`<hr class="cond-section-divider">`)
+- **Hint AND/OR**: testo più conciso — "Tutte le condizioni devono essere vere" / "Basta che una condizione sia vera"
+- **Titolo overlay**: rimosso ❓ ridondante
+- **Tooltip entity button**: `title=` con entity ID completo sul pulsante entità di ogni regola — leggibile al hover senza espandere la colonna
+- **Label sezione condizioni**: "Condizioni" → "Condizioni di visibilità" — più descrittivo del contesto
+
 ## [2.9.27] — 2026-04-05
 
 ### Added

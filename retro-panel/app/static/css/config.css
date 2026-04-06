@@ -2093,48 +2093,64 @@ body {
   padding: 4px 8px;
 }
 
+.cond-section-divider {
+  border: none;
+  border-top: 1px solid var(--c-surface-3);
+  margin: 16px 0 14px;
+}
+
 .cond-conditions-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
+/* Segmented control AND/OR */
 .cond-logic-toggle {
   display: flex;
-  gap: 4px;
+  border: 1px solid var(--c-surface-3);
+  border-radius: 6px;
+  overflow: hidden;
+  gap: 0;
 }
 
 .cond-logic-btn {
-  padding: 4px 12px;
-  border-radius: 6px;
-  border: 1px solid var(--c-surface-3);
+  padding: 3px 14px;
+  border: none;
+  border-right: 1px solid var(--c-surface-3);
   background: var(--c-surface-2);
   color: var(--c-text-sec);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.cond-logic-btn:last-child {
+  border-right: none;
 }
 
 .cond-logic-btn.active {
   background: var(--c-accent);
-  border-color: var(--c-accent);
   color: #fff;
 }
 
+/* Grid layout — una riga per condizione, nessun wrap */
 .cond-rule-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 68px minmax(72px, 1fr) 28px;
+  gap: 4px;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 8px;
-  flex-wrap: wrap;
+  margin-bottom: 4px;
 }
 
 .cond-rule-entity-btn {
-  max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-align: left;
+  min-width: 0;
 }
 
 .cond-color-row {

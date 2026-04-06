@@ -24,9 +24,11 @@ window.SensorConditionalComponent = (function () {
     var ruleVal  = String(rule.value || '');
     var op = rule.op;
 
-    if (op === 'eq')       { return rawState === ruleVal; }
-    if (op === 'neq')      { return rawState !== ruleVal; }
-    if (op === 'contains') { return rawState.indexOf(ruleVal) !== -1; }
+    var stateLC = rawState.toLowerCase();
+    var valLC   = ruleVal.toLowerCase();
+    if (op === 'eq')       { return stateLC === valLC; }
+    if (op === 'neq')      { return stateLC !== valLC; }
+    if (op === 'contains') { return stateLC.indexOf(valLC) !== -1; }
 
     /* Numeric comparisons */
     var numState = parseFloat(rawState);

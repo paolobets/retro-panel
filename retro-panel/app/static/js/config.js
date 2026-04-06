@@ -3014,12 +3014,14 @@
       var opOptions = ops.map(function(o) {
         return '<option value="' + o + '"' + (rule.op === o ? ' selected' : '') + '>' + opLabels[o] + '</option>';
       }).join('');
+      var ruleEntityLabel = rule.entity ? esc(rule.entity) : 'Seleziona entità…';
+      var ruleTitle = rule.entity ? ' title="' + esc(rule.entity) + '"' : '';
       rulesHtml += '<div class="cond-rule-row" data-rule-idx="' + ri + '">'
-        + '<button class="cond-rule-entity-btn action-btn-sm" type="button" data-rule-idx="' + ri + '">'
-        + (rule.entity ? esc(rule.entity) : 'Seleziona entità…')
+        + '<button class="cond-rule-entity-btn action-btn-sm" type="button" data-rule-idx="' + ri + '"' + ruleTitle + '>'
+        + ruleEntityLabel
         + '</button>'
-        + '<select class="cond-rule-op field-input" data-rule-idx="' + ri + '" style="width:80px;">' + opOptions + '</select>'
-        + '<input class="cond-rule-value field-input" type="text" placeholder="valore" value="' + esc(rule.value) + '" data-rule-idx="' + ri + '" style="flex:1;min-width:60px;">'
+        + '<select class="cond-rule-op field-input" data-rule-idx="' + ri + '">' + opOptions + '</select>'
+        + '<input class="cond-rule-value field-input" type="text" placeholder="valore" value="' + esc(rule.value) + '" data-rule-idx="' + ri + '">'
         + '<button class="cond-rule-remove remove-btn" type="button" data-rule-idx="' + ri + '">&#10005;</button>'
         + '</div>';
     }
@@ -3056,8 +3058,9 @@
           + '</div>'
         + '</div>'
       + '</div>'
+      + '<hr class="cond-section-divider">'
       + '<div class="cond-conditions-header">'
-        + '<span class="sections-col-label">Condizioni</span>'
+        + '<span class="sections-col-label">Condizioni di visibilità</span>'
         + '<div class="cond-logic-toggle">'
           + '<button id="cond-logic-and" type="button" class="cond-logic-btn' + (d.condition_logic !== 'or' ? ' active' : '') + '">AND</button>'
           + '<button id="cond-logic-or" type="button" class="cond-logic-btn' + (d.condition_logic === 'or' ? ' active' : '') + '">OR</button>'
@@ -3065,11 +3068,11 @@
       + '</div>'
       + '<p class="cfg-hint" style="margin-bottom:8px;" id="cond-logic-hint">'
         + (d.condition_logic === 'or'
-            ? 'OR: il tile appare se ALMENO UNA condizione è vera'
-            : 'AND: il tile appare solo se TUTTE le condizioni sono vere')
+            ? 'Basta che una condizione sia vera per mostrare il tile.'
+            : 'Tutte le condizioni devono essere vere per mostrare il tile.')
       + '</p>'
-      + '<div id="cond-rules-list">' + (rulesHtml || '<p class="cfg-placeholder">Nessuna condizione. Aggiungi almeno una.</p>') + '</div>'
-      + '<button id="cond-add-rule-btn" type="button" class="action-btn-sm" style="margin-top:8px;">+ Aggiungi condizione</button>';
+      + '<div id="cond-rules-list">' + (rulesHtml || '<p class="cfg-placeholder">Nessuna condizione aggiunta. Aggiungi almeno una regola.</p>') + '</div>'
+      + '<button id="cond-add-rule-btn" type="button" class="action-btn-sm" style="margin-top:6px;">+ Aggiungi condizione</button>';
 
     // ── Wire up handlers ──
 
@@ -3221,6 +3224,24 @@
       return;
     }
 
+    var validConditions = (conditionalDraft.conditions || []).filter(function(r) { return r.entity; });
+    var incompleteConditions = validConditions.filter(function(r) { return !r.value && r.op !== 'neq'; });
+    if (incompleteConditions.length > 0) {
+      var body2 = document.getElementById('cond-editor-body');
+      if (body2) {
+        var rulesList = body2.querySelector('#cond-rules-list');
+        var existingErr2 = body2.querySelector('#cond-rules-error');
+        if (!existingErr2 && rulesList) {
+          var err2 = document.createElement('p');
+          err2.id = 'cond-rules-error';
+          err2.style.cssText = 'color:var(--c-danger);margin:4px 0 0;font-size:13px;';
+          err2.textContent = 'Alcune condizioni non hanno un valore. Compilale o rimuovile.';
+          rulesList.parentNode.insertBefore(err2, rulesList.nextSibling);
+        }
+      }
+      return;
+    }
+
     var csItem = {
       type:            'sensor_conditional',
       entity_id:       conditionalDraft.entity_id,
@@ -3228,7 +3249,7 @@
       icon:            conditionalDraft.icon  || '',
       border_color:    conditionalDraft.border_color || '',
       condition_logic: conditionalDraft.condition_logic || 'and',
-      conditions:      (conditionalDraft.conditions || []).filter(function(r) { return r.entity; }),
+      conditions:      validConditions,
     };
 
     var items = getItemsForContext(conditionalCtx);
