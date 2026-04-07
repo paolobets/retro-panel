@@ -15,9 +15,10 @@
    * @param {function(string, object): void} onStateChanged
    * @param {function(): void} onConnect
    * @param {function(): void} onDisconnect
+   * @param {function(object): void} [onNotification] — optional; called with notification object on rp_notification messages
    * @returns {{ close: function(): void }}
    */
-  function connectWS(onStateChanged, onConnect, onDisconnect) {
+  function connectWS(onStateChanged, onConnect, onDisconnect, onNotification) {
     var ws = null;
     var attempt = 0;
     var stopped = false;
@@ -57,6 +58,10 @@
         }
         if (msg.type === 'state_changed' && msg.entity_id && msg.new_state) {
           onStateChanged(msg.entity_id, msg.new_state);
+        } else if (msg.type === 'rp_notification' && msg.notification) {
+          if (typeof onNotification === 'function') {
+            onNotification(msg.notification);
+          }
         }
       };
 
