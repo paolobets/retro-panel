@@ -18,6 +18,7 @@ _HLS_TOKEN_TTL = 240.0
 _hls_token_cache: dict = {}
 
 _CAMERA_ENTITY_RE = re.compile(r"^camera\.[a-z0-9_]+$")
+_HLS_TAIL_RE = re.compile(r"^[a-zA-Z0-9_/\-]+\.(m3u8|ts)$")
 
 
 def _validate_camera(request: web.Request, entity_id: str):
@@ -191,6 +192,11 @@ async def get_camera_hls_proxy(request: web.Request) -> web.Response:
     """
     entity_id: str = request.match_info["entity_id"]
     tail: str = request.match_info["tail"]
+
+    # Block path traversal and non-HLS file requests
+    if ".." in tail or not _HLS_TAIL_RE.match(tail):
+        return web.Response(status=400, text="Invalid HLS path")
+
     try:
         ha_client = _validate_camera(request, entity_id)
     except web.HTTPException as exc:
