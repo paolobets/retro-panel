@@ -93,7 +93,9 @@
 
     var titleEl = DOM.qs('#panel-title');
     if (titleEl) {
-      titleEl.innerHTML = 'Retro <span style="color:var(--c-accent)">PANEL</span>';
+      var versionStr = config.version ? 'v' + config.version : '';
+      titleEl.innerHTML = 'Retro <span style="color:var(--c-accent)">PANEL</span>' +
+        (versionStr ? '<span id="panel-version">' + versionStr + '</span>' : '');
     }
     document.title = config.title || 'Retro Panel';
     // Reload gesture: long-press title to force hard reload

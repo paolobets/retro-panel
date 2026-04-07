@@ -104,6 +104,16 @@ html, body {
   -webkit-user-select: none;
   user-select: none;
 }
+#panel-version {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--c-text-sec);
+  vertical-align: middle;
+  opacity: 0.7;
+}
 
 /* Sidebar nav */
 #sidebar-nav {

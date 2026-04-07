@@ -262,7 +262,8 @@ Enable **2FA** on all administrator accounts.
 | **v2.10.3** | Released | Fix priorità italiane (`critica`/`alta`/`normale`/`bassa` ora accettate) |
 | **v2.10.4** | Released | Fix bordatura full-screen · pulse critico · beep audio · auto-reload su update |
 | **v2.10.5** | Released | Fix audio iOS (unlock gesture) · fix auto-reload Ingress · fix theme toggle auto |
-| **v2.10.6** | **Current** | Fix testo notifiche in light mode · toast rimosso su eliminazione (tutti i device) |
+| **v2.10.6** | Released | Fix testo notifiche in light mode · toast rimosso su eliminazione (tutti i device) |
+| **v2.10.7** | **Current** | Versione nell'header (verifica aggiornamenti automatici) |
 | **v3.0** | Planned | Plugin system · custom themes · history charts · offline-first |
 
 ---

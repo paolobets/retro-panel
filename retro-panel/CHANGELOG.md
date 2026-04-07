@@ -1,5 +1,10 @@
 # Retro Panel — Changelog
 
+## [2.10.7] — 2026-04-07
+
+### Added
+- **Versione nell'header**: `GET /api/config` ora include `version`; viene mostrata in piccolo accanto al titolo "Retro PANEL" (es. `v2.10.7`) — utile per verificare visivamente che l'auto-reload abbia applicato l'aggiornamento
+
 ## [2.10.6] — 2026-04-07
 
 ### Fixed

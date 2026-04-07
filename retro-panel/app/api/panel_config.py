@@ -90,6 +90,7 @@ async def get_panel_config(request: web.Request) -> web.Response:
         "title": config.title,
         "theme": config.theme,
         "refresh_interval": config.refresh_interval,
+        "version": request.app.get("addon_version", ""),
         "header_sensors": header_sensors_payload,
         "overview": {
             "title": config.overview_title,
