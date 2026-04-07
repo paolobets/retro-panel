@@ -1,5 +1,21 @@
 # Retro Panel — Changelog
 
+## [2.11.0] — 2026-04-07
+
+### Added
+- **Live HLS stream su iOS Safari (iPad/iPhone PWA)**: il lightbox delle telecamere ora
+  usa `<video>` con HLS nativo su Safari, eliminando il freeze del primo frame di MJPEG.
+  Su Chrome/Firefox il comportamento è invariato (MJPEG → snapshot fallback).
+  Richiede integrazione HA con supporto `stream` (FFmpeg, Reolink, Frigate, go2rtc);
+  telecamere cloud-only (Ring, eufy, Wyze) restano in modalità snapshot.
+- **Badge "HLS Live"** (punto blu) nel lightbox quando il live HLS è attivo.
+- **Tap-to-play**: se iOS blocca l'autoplay, appare l'hint "▶ Tocca per avviare".
+- **Auto-refresh token HLS**: i token HA (TTL 5 min) vengono rinnovati automaticamente;
+  riprova trasparente su 404 mid-stream.
+- **Fallback automatico a MJPEG/snapshot** se la telecamera non supporta HLS.
+
+---
+
 ## [2.10.9] — 2026-04-07
 
 ### Fixed
