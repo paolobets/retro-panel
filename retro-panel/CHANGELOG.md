@@ -13,6 +13,29 @@
 - **Auto-refresh token HLS**: i token HA (TTL 5 min) vengono rinnovati automaticamente;
   riprova trasparente su 404 mid-stream.
 - **Fallback automatico a MJPEG/snapshot** se la telecamera non supporta HLS.
+- **Lock component** — nuovo supporto `lock.*` entity. Tile 120px con icona SVG lucchetto
+  (forma cambia locked/unlocked), label di stato ("Chiusa"/"Aperta"), pulsante azione
+  full-width ("Sblocca"/"Blocca"). Colori: verde=bloccato, rosso=sbloccato.
+  Services: `lock.lock`, `lock.unlock`.
+- **Button component** — nuovo supporto `button.*` entity. Tile 120px stateless (come scenario).
+  Tap → flash verde 1.5s → chiama `button.press`.
+- **Climate/Thermostat component** — nuovo supporto `climate.*` entity. Tile 120px compatto:
+  nome, temperatura attuale (36px), setpoint target, badge modalità (heat=orange, cool=blue,
+  auto=green, fan=cyan, dry=amber, off=gray). Tap apre bottom sheet con slider temperatura
+  +/- e pulsanti selezione modalità. Services: `climate.set_temperature`, `climate.set_hvac_mode`,
+  `climate.turn_off`.
+
+### Fixed
+- **Security: path traversal in HLS proxy** — parametro `tail` validato via regex per `.m3u8`/`.ts`
+  solamente; blocked `..` nella path. Previene accesso a file fuori della directory stream.
+
+### Changed
+- **Lock iOS 12 gap compatibility** — rimosso `gap` CSS, utilizzati margin per spaziatura su iOS 12.
+- **Lock disabled button style** — pulsante disabilitato riporta corretto colore dimmed.
+- **Button icon color restore** — colore icona ripristinato dopo flash press animation.
+- **Climate attrs mutation fix** — attributi temperatura non più mutati durante render.
+- **Climate slider disabled states** — slider disabilitato per modalità off/fan/dry.
+- **Climate modal visual distinction** — fan_only e dry hanno stili visivi distinti.
 
 ---
 

@@ -507,9 +507,9 @@ bubble.style.color     = cfg.border_color;
 
 ---
 
-## v2.9.27 — Climate / Termostato Tile (Planned)
+## v2.9.27 — Climate / Termostato Tile (Implemented in v2.11.0)
 
-**Status**: PLANNED
+**Status**: IMPLEMENTED — released in v2.11.0
 
 **Release Goal**: Supporto per entità `climate.*` — termostati, split, caldaie. Molto comune nelle abitazioni.
 
@@ -529,6 +529,54 @@ bubble.style.color     = cfg.border_color;
 **Backend**:
 - Nuovo `layout_type`: `climate`
 - Whitelist: `climate.set_temperature`, `climate.set_hvac_mode`, `climate.turn_off`
+
+---
+
+## v2.11.0 — Lock, Button, Climate Components + HLS Live (Released 2026-04-07)
+
+**Status**: RELEASED
+
+**Release Goal**: Supporto per tre nuovi tipi di entità (`lock`, `button`, `climate`) e implementazione di HLS streaming live per telecamere su iOS Safari.
+
+### Completed Features
+
+#### HLS Live Streaming for Cameras
+- [x] **Live HLS stream su iOS Safari (iPad/iPhone PWA)**: il lightbox delle telecamere usa `<video>` con HLS nativo su Safari, eliminando il freeze del primo frame di MJPEG
+- [x] **Badge "HLS Live"** (punto blu) nel lightbox quando il live HLS è attivo
+- [x] **Tap-to-play**: iOS autoplay handling con hint "▶ Tocca per avviare"
+- [x] **Auto-refresh token HLS**: i token HA (TTL 5 min) rinnovati automaticamente con riprova trasparente su 404 mid-stream
+- [x] **Fallback automatico a MJPEG/snapshot** se la telecamera non supporta HLS
+- [x] **Backend** `ha_client.py`: aggiunto supporto streaming HLS con gestione token automatica
+
+#### Lock Component
+- [x] **Tile 120px** con icona SVG lucchetto (forma cambia locked/unlocked)
+- [x] **State label**: "Chiusa" (locked) / "Aperta" (unlocked)
+- [x] **Full-width action button**: "Sblocca" / "Blocca"
+- [x] **Color semantics**: verde=locked, rosso=unlocked
+- [x] **Services**: `lock.lock`, `lock.unlock`
+- [x] **iOS 12 compatibility**: rimosso `gap` CSS, utilizzati margin; disabled button style corretto
+
+#### Button Component
+- [x] **Tile 120px stateless** (come scenario)
+- [x] **One-shot action**: Tap → green flash 1.5s → chiama `button.press`
+- [x] **Icon color restore**: colore icona ripristinato dopo press animation
+
+#### Climate/Thermostat Component
+- [x] **Tile 120px compatto**: nome, temperatura attuale (36px), setpoint target, badge modalità
+- [x] **Mode badges**: heat=orange, cool=blue, auto=green, fan=cyan, dry=amber, off=gray
+- [x] **Bottom sheet on tap**: slider temperatura +/-, pulsanti selezione modalità, pulsante Off
+- [x] **Services**: `climate.set_temperature`, `climate.set_hvac_mode`, `climate.turn_off`
+- [x] **Attribute handling**: attrs temperatura non mutati durante render
+- [x] **Slider disabled states**: disabilitato per modalità off/fan/dry
+- [x] **Visual distinction**: fan_only e dry hanno stili visivi distinti
+
+#### Security Improvements
+- [x] **Path traversal fix in HLS proxy**: parametro `tail` validato via regex (`.m3u8`/`.ts` solamente), bloccato `..`
+
+### New Entity Types (3)
+- [x] `lock` — Toggle door/window lock states
+- [x] `button` — One-shot action triggers
+- [x] `climate` — Thermostat temperature and mode control
 
 ---
 
@@ -688,7 +736,8 @@ These targets apply to v2.0 and all future releases:
 | v2.9.21 | Released | 2026-04-04 | Completed |
 | v2.9.22 | Released | 2026-04-04 | Completed |
 | v2.9.23 | Released | 2026-04-04 | Completed |
-| v2.9.24 | Released | 2026-04-04 | **Current stable** |
+| v2.9.24 | Released | 2026-04-04 | Completed |
+| v2.11.0 | Released | 2026-04-07 | **Current stable** |
 | v3.0 | Planned | TBD | 2026 H2 (estimated) |
 
 ---
