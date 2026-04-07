@@ -160,6 +160,87 @@ class HAClient:
         timeout = aiohttp.ClientTimeout(total=None, sock_read=30)
         return session.get(url, timeout=timeout)
 
+    async def get_camera_hls_url(self, entity_id: str) -> str:
+        """Get HA HLS stream URL via WebSocket camera/stream command.
+
+        Returns the raw URL string from HA (e.g.
+        'http://homeassistant:8123/api/hls/{token}/playlist.m3u8').
+        The caller must extract the token from this URL.
+
+        Raises ValueError if the camera integration doesn't support streaming.
+        Raises TimeoutError if the WS request times out.
+        """
+        ws = await self.ws_connect()
+        cmd_id = 95  # distinct from area(98), entity(99), device(97), WSProxy(1,2)
+        try:
+            await ws.send_json({
+                "id": cmd_id,
+                "type": "camera/stream",
+                "entity_id": entity_id,
+            })
+            msg = await asyncio.wait_for(ws.receive_json(), timeout=15)
+            if not msg.get("success"):
+                err = msg.get("error") or {}
+                code = err.get("code") or err.get("message") or "unknown"
+                raise ValueError(
+                    f"HA camera/stream failed for {entity_id!r}: {code}"
+                )
+            result = msg.get("result") or {}
+            url = result.get("url") or ""
+            if not url:
+                raise ValueError(
+                    f"HA camera/stream returned empty URL for {entity_id!r}"
+                )
+            return url
+        except asyncio.TimeoutError as exc:
+            raise TimeoutError(
+                f"camera/stream WebSocket timed out for {entity_id!r}"
+            ) from exc
+        finally:
+            if not ws.closed:
+                await ws.close()
+
+    async def proxy_hls_segment(self, token: str, tail: str) -> tuple[bytes, str]:
+        """Fetch one HLS resource (m3u8 playlist or .ts segment) from HA.
+
+        Args:
+            token: The HLS stream token obtained from get_camera_hls_url().
+            tail:  The path component after the token, e.g. 'master_playlist.m3u8'
+                   or 'segment/0001.ts'.
+
+        Returns:
+            (body_bytes, content_type_string)
+
+        Raises FileNotFoundError on 404 (token expired or stream stopped).
+        Raises PermissionError on 401 (token rejected).
+        """
+        url = f"{self._ha_url}/api/hls/{token}/{tail}"
+        session = self._get_session()
+        try:
+            async with session.get(
+                url, timeout=aiohttp.ClientTimeout(total=10)
+            ) as resp:
+                if resp.status == 401:
+                    raise PermissionError(
+                        f"HA rejected HLS segment (401): token={token!r}"
+                    )
+                if resp.status == 404:
+                    raise FileNotFoundError(
+                        f"HLS resource not found (404): tail={tail!r}"
+                    )
+                resp.raise_for_status()
+                data = await resp.read()
+                ct = resp.headers.get(
+                    "Content-Type", "application/octet-stream"
+                )
+                return data, ct
+        except aiohttp.ClientConnectorError as exc:
+            raise ConnectionRefusedError(str(exc)) from exc
+        except asyncio.TimeoutError as exc:
+            raise TimeoutError(
+                f"HLS segment fetch timed out: tail={tail!r}"
+            ) from exc
+
     async def get_all_entity_states(self) -> list[dict[str, Any]]:
         """Fetch ALL entity states from HA (used by the entity picker config page).
 
