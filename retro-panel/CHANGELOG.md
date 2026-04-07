@@ -1,5 +1,13 @@
 # Retro Panel — Changelog
 
+## [2.11.1] — 2026-04-07
+
+### Changed
+- Version bump per forzare aggiornamento su tablet (le feature lock/button/climate
+  erano state pubblicate sotto 2.11.0 senza bump di versione)
+
+---
+
 ## [2.11.0] — 2026-04-07
 
 ### Added
