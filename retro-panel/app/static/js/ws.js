@@ -67,6 +67,18 @@
           if (typeof onNotificationSync === 'function') {
             onNotificationSync(msg.notifications);
           }
+        } else if (msg.type === 'rp_version' && msg.version) {
+          // Auto-reload when add-on version changes after an update
+          try {
+            var storedVer = localStorage.getItem('rp_addon_version');
+            if (storedVer && storedVer !== msg.version) {
+              console.info('[WS] Add-on updated (%s → %s) — reloading\u2026', storedVer, msg.version);
+              localStorage.setItem('rp_addon_version', msg.version);
+              setTimeout(function () { location.reload(true); }, 800);
+            } else {
+              localStorage.setItem('rp_addon_version', msg.version);
+            }
+          } catch (e) { /* localStorage non disponibile — ignora */ }
         }
       };
 

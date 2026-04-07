@@ -391,6 +391,15 @@ async def ws_handler(request: web.Request) -> web.WebSocketResponse:
     ws_proxy.add_client(ws)
     logger.info("Browser WebSocket connected from %s", request.remote)
 
+    # Send version handshake so clients can auto-reload after an add-on update
+    addon_version = request.app.get('addon_version', '')
+    if addon_version:
+        try:
+            import json as _json
+            await ws.send_str(_json.dumps({'type': 'rp_version', 'version': addon_version}))
+        except Exception:
+            pass
+
     try:
         async for msg in ws:
             # Protocol is server-push only: browser messages are discarded.
@@ -432,6 +441,21 @@ async def config_page_handler(request: web.Request) -> web.Response:
 # Application factory
 # ---------------------------------------------------------------------------
 
+def _read_addon_version() -> str:
+    """Read the add-on version from config.yaml (regex — no PyYAML dependency)."""
+    import re as _re
+    config_path = Path(__file__).parent.parent / 'config.yaml'
+    try:
+        with open(config_path, encoding='utf-8') as fh:
+            for line in fh:
+                m = _re.match(r'^version:\s*["\']?([^\s"\']+)', line)
+                if m:
+                    return m.group(1)
+    except OSError:
+        pass
+    return ''
+
+
 def _notification_data_path() -> str:
     """Return notifications JSON path: /data/ in production, ./data/ in dev."""
     if Path('/data').exists():
@@ -465,6 +489,7 @@ def create_app(config, ha_client: HAClient, ws_proxy: WSProxy) -> web.Applicatio
     app["ha_client"] = ha_client
     app["ws_proxy"] = ws_proxy
     app["supervisor_client"] = SupervisorClient()
+    app["addon_version"] = _read_addon_version()
 
     # Notification subsystem
     notification_store = NotificationStore(

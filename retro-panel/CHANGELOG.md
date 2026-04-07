@@ -1,5 +1,15 @@
 # Retro Panel — Changelog
 
+## [2.10.4] — 2026-04-07
+
+### Fixed
+- **Bordatura alert**: rimossa dal `body` (coperta da header/sidebar); sostituita con `<div id="alert-border-overlay">` `fixed` z-index 600 `pointer-events:none` — ora visibile su tutta la schermata inclusi header e navigatore
+- **Pulse critico**: l'animazione ora applicata all'overlay (prima era su `body` e non visibile)
+
+### Added
+- **Audio notifica**: alla ricezione di notifiche `high`/`critical` viene emesso un breve beep via Web Audio API (iOS 12: `webkitAudioContext`); `critical` emette due beep. Nota: iOS non permette di riaccendere lo schermo via browser — il beep è il massimo raggiungibile lato web
+- **Auto-reload su aggiornamento**: il backend invia `rp_version` al momento della connessione WS; se la versione memorizzata in `localStorage` differisce (dopo un update dell'add-on) tutti i client ricaricano automaticamente la pagina entro 800 ms
+
 ## [2.10.3] — 2026-04-07
 
 ### Fixed

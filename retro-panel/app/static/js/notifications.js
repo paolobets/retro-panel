@@ -74,7 +74,7 @@
   }
 
   // --------------------------------------------------------------------------
-  // Alert border — body class based on highest unread priority
+  // Alert border — fixed overlay above all UI layers
   // --------------------------------------------------------------------------
   function _updateAlertBorder() {
     var hasCritical = false;
@@ -86,9 +86,53 @@
         else if (n.priority === 'high') { hasHigh = true; }
       }
     }
-    document.body.classList.remove('alert-high', 'alert-critical');
-    if (hasCritical) { document.body.classList.add('alert-critical'); }
-    else if (hasHigh) { document.body.classList.add('alert-high'); }
+    var overlay = _qs('#alert-border-overlay');
+    if (!overlay) { return; }
+    overlay.classList.remove('alert-high', 'alert-critical');
+    if (hasCritical) { overlay.classList.add('alert-critical'); }
+    else if (hasHigh) { overlay.classList.add('alert-high'); }
+  }
+
+  // --------------------------------------------------------------------------
+  // Audio notification — Web Audio API beep (iOS 12: webkitAudioContext)
+  // Screen wake not possible from browser; audio plays even with screen on.
+  // --------------------------------------------------------------------------
+  function _playNotifSound(priority) {
+    if (priority !== 'high' && priority !== 'critical') { return; }
+    var AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) { return; }
+    try {
+      var ctx = new AudioCtx();
+      var osc  = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      // critical: two short beeps at 880 Hz; high: one beep at 660 Hz
+      osc.type = 'sine';
+      osc.frequency.value = priority === 'critical' ? 880 : 660;
+      gain.gain.setValueAtTime(0.35, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.4);
+      if (priority === 'critical') {
+        // Second beep after 0.5 s
+        var osc2  = ctx.createOscillator();
+        var gain2 = ctx.createGain();
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.type = 'sine';
+        osc2.frequency.value = 880;
+        gain2.gain.setValueAtTime(0.35, ctx.currentTime + 0.55);
+        gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.95);
+        osc2.start(ctx.currentTime + 0.55);
+        osc2.stop(ctx.currentTime + 0.95);
+        osc2.onended = function () { try { ctx.close(); } catch (e) {} };
+      } else {
+        osc.onended = function () { try { ctx.close(); } catch (e) {} };
+      }
+    } catch (e) {
+      // Audio not available or gesture not yet received — silent fail
+    }
   }
 
   // --------------------------------------------------------------------------
@@ -306,6 +350,7 @@
     if (_notifications.length > 100) { _notifications.pop(); }
     _updateBell();
     _updateAlertBorder();
+    _playNotifSound(notification.priority);
     _showToast(notification);
     if (_drawerOpen) { _renderDrawer(); }
   }

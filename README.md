@@ -259,7 +259,8 @@ Enable **2FA** on all administrator accounts.
 | **v2.10.0** | Released | Push notifications: bell, drawer, toast, alert border · HA `retro_panel_notify` event |
 | **v2.10.1** | Released | Fix bell colore (SVG al posto di emoji) · fix layout toggle/bell ai due estremi |
 | **v2.10.2** | Released | Fix automazioni (whitelist entity_id) · sync notifiche multi-device · fix alarm freeze dopo disarmo |
-| **v2.10.3** | **Current** | Fix priorità italiane (`critica`/`alta`/`normale`/`bassa` ora accettate) |
+| **v2.10.3** | Released | Fix priorità italiane (`critica`/`alta`/`normale`/`bassa` ora accettate) |
+| **v2.10.4** | **Current** | Fix bordatura full-screen · pulse critico · beep audio · auto-reload su update |
 | **v3.0** | Planned | Plugin system · custom themes · history charts · offline-first |
 
 ---
