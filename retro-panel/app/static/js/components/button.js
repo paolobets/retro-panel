@@ -76,14 +76,14 @@ window.ButtonComponent = (function () {
           setTimeout(function () {
             tile.classList.remove('is-on');
             if (tint)   { tint.style.opacity = '0'; }
-            if (iconEl) { iconEl.style.color = ''; }
+            if (iconEl) { iconEl.style.color = borderColor || ''; }
           }, 1500);
         })
         .catch(function (err) {
           console.warn('[button] Failed to press', entity_id, err.message);
           tile.classList.remove('is-on');
           if (tint)   { tint.style.opacity = '0'; }
-          if (iconEl) { iconEl.style.color = ''; }
+          if (iconEl) { iconEl.style.color = borderColor || ''; }
         });
     }
 

@@ -302,4 +302,12 @@
   border-color: var(--c-text-sec, #999); color: var(--c-text, #f0f0f0);
   background: var(--c-surface-3, #303030);
 }
+#climate-bs .cbs-mode-btn.active-fan {
+  border-color: #26c6da; color: #26c6da;
+  background: rgba(38,198,218,0.12);
+}
+#climate-bs .cbs-mode-btn.active-dry {
+  border-color: #ffa726; color: #ffa726;
+  background: rgba(255,167,38,0.12);
+}
 #climate-bs .cbs-mode-icon { display: block; margin: 0 auto 2px; }

@@ -73,6 +73,8 @@ window.ClimateComponent = (function () {
     if (mode === 'heat') return 'mode-heat';
     if (mode === 'cool') return 'mode-cool';
     if (mode === 'auto' || mode === 'heat_cool') return 'mode-auto';
+    if (mode === 'fan_only') return 'mode-fan';
+    if (mode === 'dry') return 'mode-dry';
     return 'mode-off';
   }
 
@@ -177,7 +179,7 @@ window.ClimateComponent = (function () {
     }, 300);
   }
 
-  function _openBS(entityId, label, attrs) {
+  function _openBS(entityId, label, attrs, hvacMode) {
     if (!_bsBuilt) { _buildBS(); }
     if (!_overlay || !_sheet) { return; }
 
@@ -202,8 +204,13 @@ window.ClimateComponent = (function () {
     }
     _syncTempUI();
 
-    /* Slider thumb color based on mode */
-    _currentMode = (attrs && attrs.hvac_mode) ? attrs.hvac_mode : 'off';
+    /* Slider: disable when mode is off/fan_only/dry */
+    _currentMode = hvacMode || 'off';
+    if (_slider) {
+      var _disableSlider = (_currentMode === 'off' || _currentMode === 'fan_only' || _currentMode === 'dry');
+      _slider.disabled = _disableSlider;
+      _slider.style.opacity = _disableSlider ? '0.4' : '1';
+    }
 
     /* Build mode buttons */
     _hvacModes = (attrs && attrs.hvac_modes) ? attrs.hvac_modes : ['off', 'heat', 'cool', 'auto'];
@@ -250,6 +257,12 @@ window.ClimateComponent = (function () {
   function _selectMode(mode) {
     _currentMode = mode;
     _renderModeButtons(mode);
+    /* Disable slider for modes that don't accept temperature */
+    if (_slider) {
+      var _dis = (mode === 'off' || mode === 'fan_only' || mode === 'dry');
+      _slider.disabled = _dis;
+      _slider.style.opacity = _dis ? '0.4' : '1';
+    }
     window.callService('climate', 'set_hvac_mode', {
       entity_id: _entityId,
       hvac_mode: mode
@@ -306,11 +319,11 @@ window.ClimateComponent = (function () {
     /* Tap interaction — opens bottom sheet */
     tile.addEventListener('touchend', function (e) {
       e.preventDefault();
-      _openBS(entity_id, label, tile._lastAttrs || {});
+      _openBS(entity_id, label, tile._lastAttrs || {}, tile._lastHvacMode || 'off');
     });
     tile.addEventListener('click', function () {
       if (!('ontouchstart' in window)) {
-        _openBS(entity_id, label, tile._lastAttrs || {});
+        _openBS(entity_id, label, tile._lastAttrs || {}, tile._lastHvacMode || 'off');
       }
     });
 
@@ -325,8 +338,7 @@ window.ClimateComponent = (function () {
     var attrs = stateObj.attributes || {};
 
     tile._lastAttrs = attrs;
-    /* Store hvac_mode on attrs for bottom sheet */
-    attrs.hvac_mode = state;
+    tile._lastHvacMode = state;
 
     /* mode class */
     tile.classList.remove('mode-heat', 'mode-cool', 'mode-auto', 'mode-off');

@@ -141,12 +141,12 @@
   display: flex;
   -webkit-align-items: center;
   align-items: center;
-  gap: 6px;
   margin: 4px 0 2px;
 }
 
 .lock-icon-wrap {
   line-height: 0;
+  margin-right: 6px;
 }
 .tile-lock.is-locked .lock-icon-wrap  { color: var(--c-on, #4caf50); }
 .tile-lock.is-unlocked .lock-icon-wrap { color: var(--c-danger, #f44336); }
@@ -179,6 +179,7 @@
 .lock-action-btn:active { opacity: 0.75; }
 .lock-action-btn.btn-lock   { background: var(--c-on, #4caf50); color: #fff; }
 .lock-action-btn.btn-unlock { background: var(--c-danger, #f44336); color: #fff; }
+.lock-action-btn:disabled   { background: var(--c-border, #333); color: var(--c-text-sec, #888); cursor: default; opacity: 0.5; }
 
 /* CLIMATE TILE — 120px compact, tap → bottom sheet */
 .tile-climate {
@@ -266,6 +267,20 @@
 .tile-climate.mode-off .climate-mode-badge { color: var(--c-text-sec, #999); }
 .tile-climate.mode-off .climate-target-val { color: var(--c-text-sec, #999); }
 .tile-climate.mode-off .climate-row3 { color: var(--c-text-sec, #999); }
+
+.tile-climate.mode-fan { border-color: #26c6da; }
+.tile-climate.mode-fan .climate-current { color: #26c6da; }
+.tile-climate.mode-fan .climate-mode-dot { background: #26c6da; }
+.tile-climate.mode-fan .climate-mode-badge { color: #26c6da; }
+.tile-climate.mode-fan .climate-target-val { color: #26c6da; }
+.tile-climate.mode-fan .climate-row3 { color: #26c6da; }
+
+.tile-climate.mode-dry { border-color: #ffa726; }
+.tile-climate.mode-dry .climate-current { color: #ffa726; }
+.tile-climate.mode-dry .climate-mode-dot { background: #ffa726; }
+.tile-climate.mode-dry .climate-mode-badge { color: #ffa726; }
+.tile-climate.mode-dry .climate-target-val { color: #ffa726; }
+.tile-climate.mode-dry .climate-row3 { color: #ffa726; }
 
 /* ---- SENSOR ROW TILE ---- */
 .tile-sensor {
