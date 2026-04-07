@@ -40,6 +40,17 @@ class NotificationEngine:
         priority = event_data.get("priority", "normal")
 
         notification = await self._store.add(title, message, priority)
+        logger.debug(
+            "NotificationEngine: notification stored (title=%r, priority=%r)",
+            title,
+            priority,
+        )
 
         payload = json.dumps({"type": "rp_notification", "notification": notification})
-        await self._broadcast(payload)
+        try:
+            await self._broadcast(payload)
+        except Exception as exc:
+            logger.warning(
+                "NotificationEngine: broadcast failed (notification already stored): %s",
+                exc,
+            )
