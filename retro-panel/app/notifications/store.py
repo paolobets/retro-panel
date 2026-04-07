@@ -5,10 +5,13 @@ Storage format: JSON array on disk at `path`.
 Atomic writes: write to `path + '.tmp'`, then os.replace().
 """
 import json
+import logging
 import os
 import time
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional
+
+logger = logging.getLogger(__name__)
 
 
 _PRIORITY_ORDER = {"info": 0, "normal": 1, "high": 2, "critical": 3}
@@ -34,7 +37,8 @@ class NotificationStore:
                 self._notifications = data
             else:
                 self._notifications = []
-        except (json.JSONDecodeError, OSError):
+        except (json.JSONDecodeError, OSError) as exc:
+            logger.warning("Failed to load notifications from %s: %s", self._path, exc)
             self._notifications = []
 
     async def add(self, title: str, message: str, priority: str) -> dict:
@@ -100,10 +104,15 @@ class NotificationStore:
         now = datetime.now(timezone.utc)
         before = len(self._notifications)
 
-        self._notifications = [
-            n for n in self._notifications
-            if datetime.fromisoformat(n["expires_at"]) >= now
-        ]
+        def _parse_dt(n: dict) -> bool:
+            """Return True (keep) if expires_at is valid and in the future; False (remove) otherwise."""
+            try:
+                return datetime.fromisoformat(n["expires_at"]) >= now
+            except (KeyError, ValueError):
+                logger.warning("Dropping notification %s with missing/malformed expires_at", n.get("id"))
+                return False
+
+        self._notifications = [n for n in self._notifications if _parse_dt(n)]
 
         removed = before - len(self._notifications)
         if removed > 0:
@@ -127,6 +136,10 @@ class NotificationStore:
     async def _save(self) -> None:
         """Atomic write: write to .tmp then os.replace()."""
         tmp_path = self._path + ".tmp"
-        with open(tmp_path, "w", encoding="utf-8") as f:
-            json.dump(self._notifications, f, ensure_ascii=False, indent=2)
-        os.replace(tmp_path, self._path)
+        try:
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump(self._notifications, f, ensure_ascii=False, indent=2)
+            os.replace(tmp_path, self._path)
+        except OSError as exc:
+            logger.error("Failed to save notifications to %s: %s", self._path, exc)
+            raise

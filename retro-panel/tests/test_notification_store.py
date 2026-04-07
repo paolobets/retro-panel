@@ -300,3 +300,65 @@ def test_unread_count():
         assert store.unread_count() == 0
     finally:
         os.unlink(path)
+
+
+# ---------------------------------------------------------------------------
+# Test 13: load() with corrupted JSON returns [] and does NOT raise
+# ---------------------------------------------------------------------------
+def test_load_corrupted_json():
+    with tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w", encoding="utf-8") as f:
+        f.write("{not valid json}")
+        path = f.name
+    try:
+        store = NotificationStore(path=path, ttl_days=7, max_count=100)
+        # Must not raise even though the file contains garbage
+        run(store.load())
+        assert run(store.get_all()) == []
+    finally:
+        os.unlink(path)
+
+
+# ---------------------------------------------------------------------------
+# Test 14: purge_expired() skips (removes) notifications with missing/malformed expires_at
+# ---------------------------------------------------------------------------
+def test_purge_expired_handles_bad_expires_at():
+    with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
+        path = f.name
+    try:
+        store = NotificationStore(path=path, ttl_days=7, max_count=100)
+        run(store.load())
+
+        # Add a valid, fresh notification
+        fresh = run(store.add("Fresh", "still valid", "normal"))
+
+        # Inject two bad entries: one with malformed expires_at, one missing the key
+        store._notifications.append({
+            "id": "rp-bad-format",
+            "title": "Bad format",
+            "message": "expires_at is not ISO",
+            "priority": "info",
+            "timestamp": "2024-01-01T00:00:00+00:00",
+            "read": False,
+            "expires_at": "not-a-date",
+        })
+        store._notifications.append({
+            "id": "rp-no-expires",
+            "title": "Missing key",
+            "message": "no expires_at field",
+            "priority": "info",
+            "timestamp": "2024-01-01T00:00:00+00:00",
+            "read": False,
+            # expires_at intentionally omitted
+        })
+
+        assert len(run(store.get_all())) == 3
+
+        # Must not raise; bad entries treated as expired (removed)
+        removed = run(store.purge_expired())
+        assert removed == 2
+
+        remaining = run(store.get_all())
+        assert len(remaining) == 1
+        assert remaining[0]["id"] == fresh["id"]
+    finally:
+        os.unlink(path)
