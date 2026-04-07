@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 _BACKOFF_SEQUENCE = [1, 2, 4, 8, 16, 30]
 _SUBSCRIBE_ID = 1
+_SUBSCRIBE_NOTIFY_ID = 2
 
 
 class WSProxy:
@@ -31,6 +32,7 @@ class WSProxy:
         self._clients: set[aiohttp.web.WebSocketResponse] = set()
         self._running: bool = False
         self._ha_ws: Optional[aiohttp.ClientWebSocketResponse] = None
+        self._notify_callback = None  # set via set_notify_callback()
 
     def update_config(self, config: "PanelConfig") -> None:
         """Update the entity filter after a config save — must be called whenever
@@ -48,6 +50,17 @@ class WSProxy:
         self._clients.discard(ws)
         logger.info("Browser WS client removed. Total clients: %d", len(self._clients))
 
+    def set_notify_callback(self, callback) -> None:
+        """Register async callback for retro_panel_notify events.
+
+        callback signature: async (event_data: dict) -> None
+        """
+        self._notify_callback = callback
+
+    async def broadcast(self, message: str) -> None:
+        """Public broadcast — delegates to _broadcast. Used by NotificationEngine."""
+        await self._broadcast(message)
+
     async def start(self) -> None:
         """Entry point for the background asyncio task.
 
@@ -63,6 +76,7 @@ class WSProxy:
                 attempt = 0  # reset backoff on successful connect
 
                 await self._subscribe_state_changed()
+                await self._subscribe_notify_events()
                 await self._read_loop()
 
             except PermissionError as exc:
@@ -105,6 +119,17 @@ class WSProxy:
         )
         logger.info("Subscribed to HA state_changed events")
 
+    async def _subscribe_notify_events(self) -> None:
+        """Subscribe to retro_panel_notify HA custom events."""
+        await self._ha_ws.send_json(
+            {
+                "id": _SUBSCRIBE_NOTIFY_ID,
+                "type": "subscribe_events",
+                "event_type": "retro_panel_notify",
+            }
+        )
+        logger.info("Subscribed to HA retro_panel_notify events")
+
     async def _read_loop(self) -> None:
         """Continuously read messages from HA and fan out relevant ones."""
         async for msg in self._ha_ws:
@@ -126,6 +151,13 @@ class WSProxy:
             return
 
         if payload.get("type") != "event":
+            return
+
+        # Route retro_panel_notify events to the notification callback
+        if payload.get("id") == _SUBSCRIBE_NOTIFY_ID:
+            event_data = payload.get("event", {}).get("data", {})
+            if self._notify_callback is not None:
+                asyncio.ensure_future(self._notify_callback(event_data))
             return
 
         event_data: dict = payload.get("event", {}).get("data", {})
