@@ -111,13 +111,74 @@
   cursor: pointer;
 }
 
-/* LOCK TILE — TRIPLE LOCK 120px */
+/* LOCK TILE — 120px, centered padlock icon + state + action button */
 .tile-lock {
   height: 120px;
   min-height: 120px;
   max-height: 120px;
-  cursor: pointer;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  -webkit-align-items: center;
+  align-items: center;
+  text-align: center;
+  padding: 10px 12px 8px;
+  cursor: default;
 }
+.tile-lock:active { -webkit-transform: none; transform: none; }
+
+.lock-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--c-text-sec, #888);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  -webkit-align-self: flex-start;
+  align-self: flex-start;
+}
+
+.lock-center {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 2px;
+}
+
+.lock-icon-wrap {
+  line-height: 0;
+}
+.tile-lock.is-locked .lock-icon-wrap  { color: var(--c-on, #4caf50); }
+.tile-lock.is-unlocked .lock-icon-wrap { color: var(--c-danger, #f44336); }
+
+.lock-state-label {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.lock-state-locked   { color: var(--c-on, #4caf50); }
+.lock-state-unlocked { color: var(--c-danger, #f44336); }
+
+.lock-action-btn {
+  width: 100%;
+  min-height: 30px;
+  border: none;
+  border-radius: var(--radius-sm, 6px);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: auto;
+  -webkit-transition: opacity 0.15s ease;
+  transition: opacity 0.15s ease;
+}
+.lock-action-btn:active { opacity: 0.75; }
+.lock-action-btn.btn-lock   { background: var(--c-on, #4caf50); color: #fff; }
+.lock-action-btn.btn-unlock { background: var(--c-danger, #f44336); color: #fff; }
 
 /* ---- SENSOR ROW TILE ---- */
 .tile-sensor {
@@ -703,8 +764,6 @@
 }
 .tile-light.is-on .tile-icon { color: var(--c-light-on); }
 .tile-switch.is-on .tile-icon { color: var(--c-on); }
-.tile-lock.is-locked .tile-icon { color: #4caf50; }
-.tile-lock.is-unlocked .tile-icon { color: #ff9800; }
 
 .tile-value {
   font-size: 13px;

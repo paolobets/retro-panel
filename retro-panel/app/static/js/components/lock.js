@@ -1,128 +1,150 @@
 /**
- * lock.js — Lock entity tile component v1.0
- * Fixed 120px tile, green when locked, orange when unlocked, tap to toggle.
- * No ES modules — loaded as regular script. iOS 12+ safe.
- * NO const/let/=>/?./?? — only var, IIFE pattern.
+ * lock.js — Lock entity tile component
+ * Retro Panel v2.11.0
  *
- * Exposes globally: window.LockComponent = { createTile, updateTile }
+ * Design: same visual as mockup (centered SVG padlock, state label,
+ * full-width action button) but compact 120px like switch/light tiles.
+ *
+ * No ES modules — IIFE + window global. iOS 12+ Safari safe.
+ * No const/let/=>/?./?? — only var, function declarations.
+ *
+ * Exposes: window.LockComponent = { createTile, updateTile }
  */
 window.LockComponent = (function () {
   'use strict';
 
-  var COLOR_LOCKED   = '#4caf50';
-  var COLOR_UNLOCKED = '#ff9800';
+  // SVG padlock — locked (closed arc)
+  var SVG_LOCKED = '<svg width="32" height="32" viewBox="0 0 48 48" fill="none">'
+    + '<rect x="10" y="22" width="28" height="20" rx="4" fill="currentColor" opacity="0.15"/>'
+    + '<rect x="10" y="22" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2"/>'
+    + '<path d="M16 22V17a8 8 0 0116 0v5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none"/>'
+    + '<circle cx="24" cy="33" r="3" fill="currentColor"/>'
+    + '</svg>';
 
-  /* ------------------------------------------------------------------ */
-  /* createTile                                                           */
-  /* ------------------------------------------------------------------ */
+  // SVG padlock — unlocked (open arc)
+  var SVG_UNLOCKED = '<svg width="32" height="32" viewBox="0 0 48 48" fill="none">'
+    + '<rect x="10" y="22" width="28" height="20" rx="4" fill="currentColor" opacity="0.15"/>'
+    + '<rect x="10" y="22" width="28" height="20" rx="4" stroke="currentColor" stroke-width="2"/>'
+    + '<path d="M16 22V17a8 8 0 0116 0" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none"/>'
+    + '<path d="M32 17h6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>'
+    + '<circle cx="24" cy="33" r="3" fill="currentColor"/>'
+    + '</svg>';
+
   function createTile(entityConfig) {
     var entity_id = entityConfig.entity_id;
-    var label     = entityConfig.label;
-    var icon      = entityConfig.icon;
+    var label     = entityConfig.label || entityConfig.title || entity_id;
 
     var DOM = window.RP_DOM;
-    var FMT = window.RP_FMT;
 
-    /* root tile */
+    // Root tile
     var tile = DOM.createElement('div', 'tile tile-lock');
     tile.dataset.entityId   = entity_id;
     tile.dataset.layoutType = 'lock';
 
-    /* tint overlay — always present, opacity controlled via updateTile */
-    var tint = DOM.createElement('div', 'tile-tint');
-    tint.style.background = 'rgba(76,175,80,0.12)';
-    tint.style.opacity = '0';
-    tile.appendChild(tint);
+    // Name (top left, small)
+    var nameEl = document.createElement('span');
+    nameEl.className = 'lock-name';
+    nameEl.textContent = label;
 
-    /* top row: icon + toggle */
-    var top    = DOM.createElement('div', 'tile-top');
-    var iconEl = DOM.createElement('span', 'tile-icon');
-    iconEl.innerHTML = FMT.getIcon(icon, 28, entity_id);
-    var toggle = DOM.createElement('div', 'tile-toggle');
-    toggle.appendChild(DOM.createElement('div', 'tile-toggle-thumb'));
-    top.appendChild(iconEl);
-    top.appendChild(toggle);
+    // Center row: SVG icon + state label side by side
+    var center = document.createElement('div');
+    center.className = 'lock-center';
 
-    /* bottom row: empty value + label */
-    var bottom  = DOM.createElement('div', 'tile-bottom');
-    var valueEl = DOM.createElement('span', 'tile-value', '');
-    var labelEl = DOM.createElement('span', 'tile-label', label);
-    bottom.appendChild(valueEl);
-    bottom.appendChild(labelEl);
+    var iconWrap = document.createElement('span');
+    iconWrap.className = 'lock-icon-wrap';
+    iconWrap.innerHTML = SVG_LOCKED;
 
-    tile.appendChild(top);
-    tile.appendChild(bottom);
+    var stateEl = document.createElement('span');
+    stateEl.className = 'lock-state-label lock-state-locked';
+    stateEl.textContent = 'Chiusa';
 
-    /* ---- Tap interaction ---- */
+    center.appendChild(iconWrap);
+    center.appendChild(stateEl);
+
+    // Action button (bottom, full-width)
+    var actionBtn = document.createElement('button');
+    actionBtn.className = 'lock-action-btn btn-unlock';
+    actionBtn.type = 'button';
+    actionBtn.textContent = 'Sblocca';
+
+    tile.appendChild(nameEl);
+    tile.appendChild(center);
+    tile.appendChild(actionBtn);
+
+    // Tap handler
     function handleTap() {
       var currentState = tile.dataset.state || 'locked';
       var service = currentState === 'locked' ? 'unlock' : 'lock';
       var next    = service === 'lock' ? 'locked' : 'unlocked';
-      /* optimistic update */
+
       updateTile(tile, { state: next, attributes: {} });
+
       window.callService('lock', service, { entity_id: entity_id })
         .catch(function (err) {
-          console.error('[lock] tap failed:', err);
+          console.error('[lock] action failed:', err);
           updateTile(tile, { state: currentState, attributes: {} });
         });
     }
 
-    tile.addEventListener('touchend', function (e) {
+    actionBtn.addEventListener('touchend', function (e) {
       e.preventDefault();
       handleTap();
     });
-    tile.addEventListener('click', function () {
+    actionBtn.addEventListener('click', function () {
       if (!('ontouchstart' in window)) { handleTap(); }
     });
 
     return tile;
   }
 
-  /* ------------------------------------------------------------------ */
-  /* updateTile                                                           */
-  /* ------------------------------------------------------------------ */
   function updateTile(tile, stateObj) {
     var state = stateObj.state;
-
     tile.dataset.state = state;
 
-    var toggle = tile.querySelector('.tile-toggle');
-    var thumb  = tile.querySelector('.tile-toggle-thumb');
-    var iconEl = tile.querySelector('.tile-icon');
-    var tintEl = tile.querySelector('.tile-tint');
-    var labelEl = tile.querySelector('.tile-label');
+    var iconWrap  = tile.querySelector('.lock-icon-wrap');
+    var stateEl   = tile.querySelector('.lock-state-label');
+    var actionBtn = tile.querySelector('.lock-action-btn');
 
     tile.classList.remove('is-locked', 'is-unlocked', 'is-unavail');
 
     if (state === 'locked') {
       tile.classList.add('is-locked');
-      if (toggle) { toggle.style.background = COLOR_LOCKED; }
-      if (thumb)  { thumb.style.transform = ''; }
-      if (iconEl) { iconEl.style.color = COLOR_LOCKED; }
-      if (tintEl) { tintEl.style.background = 'rgba(76,175,80,0.12)'; tintEl.style.opacity = '1'; }
-      if (labelEl) { labelEl.textContent = 'Bloccato'; }
+      if (iconWrap) { iconWrap.innerHTML = SVG_LOCKED; }
+      if (stateEl) {
+        stateEl.textContent = 'Chiusa';
+        stateEl.className = 'lock-state-label lock-state-locked';
+      }
+      if (actionBtn) {
+        actionBtn.textContent = 'Sblocca';
+        actionBtn.className = 'lock-action-btn btn-unlock';
+        actionBtn.disabled = false;
+      }
 
     } else if (state === 'unlocked') {
       tile.classList.add('is-unlocked');
-      if (toggle) { toggle.style.background = COLOR_UNLOCKED; }
-      if (thumb)  { thumb.style.transform = 'translateX(18px)'; }
-      if (iconEl) { iconEl.style.color = COLOR_UNLOCKED; }
-      if (tintEl) { tintEl.style.background = 'rgba(255,152,0,0.12)'; tintEl.style.opacity = '1'; }
-      if (labelEl) { labelEl.textContent = 'Sbloccato'; }
-
-    } else if (state === 'unavailable') {
-      tile.classList.add('is-unavail');
-      if (toggle) { toggle.style.background = ''; }
-      if (thumb)  { thumb.style.transform = ''; }
-      if (iconEl) { iconEl.style.color = ''; }
-      if (tintEl) { tintEl.style.opacity = '0'; }
+      if (iconWrap) { iconWrap.innerHTML = SVG_UNLOCKED; }
+      if (stateEl) {
+        stateEl.textContent = 'Aperta';
+        stateEl.className = 'lock-state-label lock-state-unlocked';
+      }
+      if (actionBtn) {
+        actionBtn.textContent = 'Blocca';
+        actionBtn.className = 'lock-action-btn btn-lock';
+        actionBtn.disabled = false;
+      }
 
     } else {
-      /* unknown or other states — treat as unlocked-ish but dimmed */
-      if (toggle) { toggle.style.background = ''; }
-      if (thumb)  { thumb.style.transform = ''; }
-      if (iconEl) { iconEl.style.color = ''; }
-      if (tintEl) { tintEl.style.opacity = '0'; }
+      tile.classList.add('is-unavail');
+      if (iconWrap) { iconWrap.innerHTML = SVG_LOCKED; }
+      if (stateEl) {
+        stateEl.textContent = 'N/D';
+        stateEl.className = 'lock-state-label';
+      }
+      if (actionBtn) {
+        actionBtn.textContent = '\u2014';
+        actionBtn.className = 'lock-action-btn';
+        actionBtn.disabled = true;
+      }
     }
   }
 
