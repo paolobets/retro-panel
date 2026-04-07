@@ -1,0 +1,62 @@
+# Retro Panel — Script HA riutilizzabile per le notifiche
+#
+# Come usarlo:
+#   1. Copia questo file in config/scripts/ della tua installazione HA
+#      OPPURE incolla il contenuto sotto "script:" in configuration.yaml
+#   2. Riavvia Home Assistant (o ricarica gli script)
+#   3. Chiama lo script da qualsiasi automazione con:
+#
+#        action:
+#          - service: script.retropanel_notify
+#            data:
+#              title: "Il mio titolo"
+#              message: "Il mio messaggio"
+#              priority: high
+#
+# Requisiti: Retro Panel v2.10.0+, nessuna altra configurazione necessaria.
+
+retropanel_notify:
+  alias: "Retro Panel — Invia notifica"
+  description: >
+    Invia una notifica push a tutti i tablet Retro Panel connessi.
+    Usa l'evento custom retro_panel_notify che il backend ascolta via WebSocket.
+  icon: mdi:bell-ring
+
+  fields:
+    title:
+      description: "Titolo della notifica (obbligatorio)"
+      required: true
+      selector:
+        text:
+      example: "Allarme cucina"
+
+    message:
+      description: "Corpo del messaggio (opzionale)"
+      required: false
+      default: ""
+      selector:
+        text:
+      example: "Il sensore fumo ha rilevato fumo."
+
+    priority:
+      description: "Priorità della notifica"
+      required: false
+      default: "normal"
+      selector:
+        select:
+          options:
+            - label: "Info (blu, scompare dopo 4s)"
+              value: "info"
+            - label: "Normal (verde, scompare dopo 5s)"
+              value: "normal"
+            - label: "High (arancio, scompare dopo 6s + bordo)"
+              value: "high"
+            - label: "Critical (rosso, persiste + bordo pulsante)"
+              value: "critical"
+
+  sequence:
+    - event: retro_panel_notify
+      event_data:
+        title: "{{ title }}"
+        message: "{{ message | default('') }}"
+        priority: "{{ priority | default('normal') }}"

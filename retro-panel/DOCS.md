@@ -18,6 +18,7 @@ Go to the **Configuration** tab in the add-on page:
 | `panel_title` | Title shown in the dashboard header | `Home` |
 | `theme` | `dark`, `light`, or `auto` (follows device OS preference) | `dark` |
 | `refresh_interval` | REST fallback poll interval in seconds (5–300) | `30` |
+| `notification_ttl_days` | How many days to keep notifications before they expire (1–365) | `7` |
 
 > **Tip:** Leave `ha_token` empty on Home Assistant OS/Supervised — the add-on automatically
 > uses the Supervisor token. Only fill it in if you run the add-on outside Supervisor.
@@ -269,6 +270,262 @@ The banner disappears automatically on reconnect.
 
 ---
 
+## Notifications
+
+Retro Panel v2.10.0 introduces a push notification system. HA automations can send prioritised
+messages to every connected tablet — displayed as a bell indicator, a slide-in drawer, a
+top-right toast and (for high/critical alerts) a coloured border around the entire screen.
+
+---
+
+### How it works
+
+1. A Home Assistant automation fires a **`retro_panel_notify`** custom event.
+2. The Retro Panel backend receives the event via its live WebSocket connection to HA.
+3. The notification is persisted in `/data/notifications.json` (max 100, FIFO).
+4. All connected browser clients receive a real-time push and display the notification
+   immediately — without page reload.
+
+---
+
+### Sending a notification from HA
+
+Use the `event.fire` service (or the newer `fire_event` action) in any automation or script:
+
+```yaml
+service: event.fire
+data:
+  event_type: retro_panel_notify
+  event_data:
+    title: "Allarme cucina"
+    message: "Il sensore fumo ha rilevato fumo."
+    priority: critical
+```
+
+| Field | Required | Values | Description |
+|-------|----------|--------|-------------|
+| `title` | **Yes** | any string | Short heading shown in the bell drawer and toast |
+| `message` | No | any string | Body text (optional but recommended) |
+| `priority` | No | `info` · `normal` · `high` · `critical` | Controls colour and auto-dismiss behaviour; defaults to `normal` |
+
+---
+
+### Priority levels
+
+| Priority | Colour | Toast auto-dismiss | Bell colour | Body border |
+|----------|--------|--------------------|-------------|-------------|
+| `info` | Blue | After 4 s | Blue | None |
+| `normal` | Green | After 5 s | Green | None |
+| `high` | Orange | After 6 s | Orange | Solid orange |
+| `critical` | Red | **Never** — tap to dismiss | Red | Pulsing red |
+
+The alert body border (for `high` and `critical`) disappears automatically once all
+unread high/critical notifications are marked as read.
+
+---
+
+### The bell icon
+
+The bell button sits in the sidebar, just below the ☰ toggle.
+
+- **Badge**: shows the count of unread notifications; hidden when there are none.
+- **Colour**: reflects the highest-priority unread notification (red > orange > green > blue).
+- **Tap the bell** → opens the notification drawer.
+
+---
+
+### Notification drawer
+
+The drawer slides in from the left and lists all notifications, **newest first**.
+
+| Action | Effect |
+|--------|--------|
+| Tap a notification | Marks it as read; alert border updates if no more high/critical unread |
+| Tap **×** on a row | Deletes that notification from the list and from the server |
+| Tap **Segna tutte lette** | Marks every notification as read in one action |
+| Tap the backdrop or **✕** | Closes the drawer |
+
+Unread notifications have a coloured left border matching their priority.
+
+---
+
+### Notification persistence and expiry
+
+- Notifications are saved to `/data/notifications.json` and survive an add-on restart.
+- The last **100** notifications are kept; older ones are evicted automatically (FIFO).
+- Each notification expires after `notification_ttl_days` days (default: 7).
+  Expired notifications are removed at startup and on clean shutdown.
+- To change the TTL go to the **Configuration** tab and set `notification_ttl_days`.
+
+---
+
+### Example automation — smoke alarm
+
+```yaml
+alias: "Notifica fumo cucina"
+trigger:
+  - platform: state
+    entity_id: binary_sensor.fumo_cucina
+    to: "on"
+action:
+  - service: event.fire
+    data:
+      event_type: retro_panel_notify
+      event_data:
+        title: "⚠ Fumo rilevato"
+        message: "Sensore cucina attivato — verificare immediatamente."
+        priority: critical
+```
+
+### Example automation — door left open
+
+```yaml
+alias: "Porta aperta da 5 minuti"
+trigger:
+  - platform: state
+    entity_id: binary_sensor.porta_ingresso
+    to: "on"
+    for: "00:05:00"
+action:
+  - service: event.fire
+    data:
+      event_type: retro_panel_notify
+      event_data:
+        title: "Porta aperta"
+        message: "La porta di ingresso è aperta da oltre 5 minuti."
+        priority: high
+```
+
+---
+
+### Script HA riutilizzabile
+
+Invece di ripetere l'evento `retro_panel_notify` in ogni automazione, conviene creare uno
+**script centralizzato** da chiamare con `service: script.retropanel_notify` ovunque serva.
+
+#### Variante A — tramite evento HA (consigliata, nessuna configurazione extra)
+
+```yaml
+# scripts.yaml (oppure inline in configuration.yaml sotto scripts:)
+retropanel_notify:
+  alias: "Retro Panel — Invia notifica"
+  description: "Invia una notifica push a tutti i tablet Retro Panel connessi."
+  fields:
+    title:
+      description: "Titolo della notifica"
+      required: true
+      selector:
+        text:
+      example: "Allarme cucina"
+    message:
+      description: "Corpo del messaggio (opzionale)"
+      required: false
+      selector:
+        text:
+      example: "Il sensore fumo è attivo"
+    priority:
+      description: "Priorità: info | normal | high | critical"
+      required: false
+      default: "normal"
+      selector:
+        select:
+          options: ["info", "normal", "high", "critical"]
+  sequence:
+    - event: retro_panel_notify
+      event_data:
+        title: "{{ title }}"
+        message: "{{ message | default('') }}"
+        priority: "{{ priority | default('normal') }}"
+```
+
+Chiamata dall'automazione:
+
+```yaml
+action:
+  - service: script.retropanel_notify
+    data:
+      title: "Porta aperta"
+      message: "Porta di ingresso aperta da più di 5 minuti."
+      priority: high
+```
+
+#### Variante B — tramite REST API (utile per test manuali e strumenti esterni)
+
+Aggiungi in `configuration.yaml`:
+
+```yaml
+rest_command:
+  retropanel_notify:
+    url: "http://homeassistant:7654/api/notify"
+    method: POST
+    headers:
+      Content-Type: application/json
+    payload: >
+      {"title": "{{ title }}",
+       "message": "{{ message | default('') }}",
+       "priority": "{{ priority | default('normal') }}"}
+```
+
+Poi crea lo script che lo espone con i campi tipizzati:
+
+```yaml
+retropanel_notify:
+  alias: "Retro Panel — Invia notifica (REST)"
+  fields:
+    title:
+      required: true
+    message:
+      required: false
+      default: ""
+    priority:
+      required: false
+      default: "normal"
+  sequence:
+    - service: rest_command.retropanel_notify
+      data:
+        title: "{{ title }}"
+        message: "{{ message }}"
+        priority: "{{ priority }}"
+```
+
+Con questa variante puoi testare anche da terminale senza aprire HA:
+
+```bash
+curl -X POST http://[HA-IP]:7654/api/notify \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Test","message":"Funziona!","priority":"high"}'
+```
+
+#### Quale scegliere
+
+| | Variante A (evento) | Variante B (REST) |
+|---|---|---|
+| Configurazione extra | Nessuna | `rest_command` in `configuration.yaml` |
+| Test manuale via curl | No | Sì |
+| Node-RED / AppDaemon | `fire_event` nativo | HTTP request |
+| Percorso dati | WebSocket HA → backend | HTTP → backend |
+
+Per la maggior parte degli utenti la **Variante A** è sufficiente e più semplice.
+
+---
+
+### Troubleshooting notifications
+
+**Bell not appearing**
+- Make sure you are running v2.10.0 or later (check the **Info** tab of the add-on).
+- Hard-refresh the dashboard: clear browser cache or append `?v=2100` to the URL.
+
+**Notification not arriving**
+- Check the add-on **Log** tab for `retro_panel_notify` lines.
+- Verify the automation actually fires in the HA logbook.
+- Confirm the event name is exactly `retro_panel_notify` (no typos, no spaces).
+
+**Alert border not clearing**
+- Open the bell drawer and mark the high/critical notification as read (tap the row).
+- If no such notification appears, it may have already expired — tap **Segna tutte lette** anyway.
+
+---
+
 ## Troubleshooting
 
 ### Panel shows "Failed to load"
@@ -318,4 +575,4 @@ The banner disappears automatically on reconnect.
 
 ---
 
-**Version**: 2.9.34 · **Last updated**: 2026-04-06
+**Version**: 2.10.0 · **Last updated**: 2026-04-07

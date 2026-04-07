@@ -255,7 +255,8 @@ Enable **2FA** on all administrator accounts.
 | **v2.9.26** | Released | MDI icon picker (7 400+ icons) with Italian-language search |
 | **v2.9.28** | Released | Conditional sensor tile with AND/OR logic |
 | **v2.9.32** | Released | Scenario tile redesign: MDI icons, domain badge, colour border |
-| **v2.9.34** | **Current** | Per-item icon + colour picker for scenarios in `/config` |
+| **v2.9.34** | Released | Per-item icon + colour picker for scenarios in `/config` |
+| **v2.10.0** | **Current** | Push notifications: bell, drawer, toast, alert border · HA `retro_panel_notify` event |
 | **v3.0** | Planned | Plugin system · custom themes · history charts · offline-first |
 
 ---

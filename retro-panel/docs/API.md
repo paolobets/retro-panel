@@ -468,6 +468,81 @@ Content-Type: application/json
 
 ---
 
+### GET /api/notifications
+
+**Description**: Return all stored notifications, newest first.
+
+**Response** (`200 OK`):
+```json
+[
+  {
+    "id": "rp-1712345678901",
+    "title": "Allarme cucina",
+    "message": "Il sensore fumo ha rilevato fumo.",
+    "priority": "critical",
+    "timestamp": "2026-04-07T10:30:00+00:00",
+    "read": false,
+    "expires_at": "2026-04-14T10:30:00+00:00"
+  }
+]
+```
+
+Returns `[]` when no notifications are stored.
+
+---
+
+### POST /api/notify
+
+**Description**: Create a notification from an external client (equivalent to firing `retro_panel_notify` from HA).
+
+**Request body** (JSON):
+```json
+{
+  "title": "Test",
+  "message": "Messaggio di test",
+  "priority": "high"
+}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `title` | Yes | Short heading (empty title is rejected) |
+| `message` | No | Body text |
+| `priority` | No | `info` · `normal` · `high` · `critical` (default: `normal`) |
+
+**Response** (`201 Created`):
+```json
+{ "ok": true }
+```
+
+---
+
+### PATCH /api/notifications/{id}
+
+**Description**: Mark a single notification as read.
+
+**Response** (`200 OK`): `{ "ok": true }`
+**Response** (`404 Not Found`): `{ "error": "Not found." }` — unknown id
+
+---
+
+### POST /api/notifications/read-all
+
+**Description**: Mark all notifications as read in one request.
+
+**Response** (`200 OK`): `{ "ok": true }`
+
+---
+
+### DELETE /api/notifications/{id}
+
+**Description**: Permanently delete a single notification.
+
+**Response** (`200 OK`): `{ "ok": true }`
+**Response** (`404 Not Found`): `{ "error": "Not found." }` — unknown id
+
+---
+
 ### GET /ws
 
 **Description**: WebSocket upgrade endpoint for real-time state updates
@@ -551,6 +626,46 @@ Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
 ```
 
 **Frequency**: Sent after initial connection, then periodically (every 30 seconds) to confirm connection is alive
+
+---
+
+#### Push Notification Event
+
+Sent to every connected browser client whenever a `retro_panel_notify` HA event is received.
+
+**Format**:
+```json
+{
+  "type": "rp_notification",
+  "notification": {
+    "id": "rp-1712345678901",
+    "title": "Allarme cucina",
+    "message": "Il sensore fumo ha rilevato fumo.",
+    "priority": "critical",
+    "timestamp": "2026-04-07T10:30:00+00:00",
+    "read": false,
+    "expires_at": "2026-04-14T10:30:00+00:00"
+  }
+}
+```
+
+**Schema**:
+```typescript
+{
+  type: "rp_notification";
+  notification: {
+    id: string;          // "rp-{unix_ms}"
+    title: string;
+    message: string;
+    priority: "info" | "normal" | "high" | "critical";
+    timestamp: string;   // ISO 8601 UTC
+    read: boolean;       // always false on arrival
+    expires_at: string;  // ISO 8601 UTC
+  };
+}
+```
+
+**Frequency**: Sent once per `retro_panel_notify` HA event; broadcast to all connected clients simultaneously.
 
 ---
 

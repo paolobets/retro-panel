@@ -1,5 +1,23 @@
 # Retro Panel — Changelog
 
+## [2.10.0] — 2026-04-07
+
+### Added
+- **Sistema notifiche push**: le automazioni HA possono inviare notifiche prioritizzate a tutti i tablet connessi tramite l'evento custom `retro_panel_notify`
+- **Bell icon + badge**: pulsante campanella nella sidebar con contatore unread; colore si adatta alla priorità più alta non letta (blu/verde/arancio/rosso)
+- **Notification drawer**: pannello scorrevole da sinistra con lista notifiche (newest-first), segna-letta singola o in blocco, eliminazione per-item
+- **Toast**: notifiche in overlay top-right con auto-dismiss (4 s info, 5 s normal, 6 s high, persistente per critical)
+- **Alert border**: bordo `box-shadow` inset sull'intera pagina — arancio per `high`, rosso pulsante per `critical`; sparisce quando tutte le notifiche high/critical sono lette
+- **NotificationStore** (`app/notifications/store.py`): persistenza JSON in `/data/notifications.json`, max 100 FIFO, TTL configurabile (default 7 giorni), scrittura atomica via `.tmp` + `os.replace()`
+- **NotificationEngine** (`app/notifications/engine.py`): riceve eventi HA, valida il campo `title`, archivia e fa broadcast a tutti i client WS connessi
+- **REST API** (5 endpoint): `GET /api/notifications`, `POST /api/notify`, `PATCH /api/notifications/{id}`, `POST /api/notifications/read-all`, `DELETE /api/notifications/{id}`
+- **Opzione config**: `notification_ttl_days` (1–365, default 7) — controlla la durata delle notifiche archiviate
+- **Frontend** (`notifications.js`): NotificationManager IIFE, iOS 12 safe (solo `var`, no arrow functions)
+
+### Changed
+- **WSProxy**: aggiunta sottoscrizione all'evento HA `retro_panel_notify` (subscription ID 2); aggiunto metodo pubblico `broadcast()`
+- **ws.js**: `connectWS()` accetta un 4° parametro opzionale `onNotification` per ricevere messaggi `rp_notification` dal backend
+
 ## [2.9.34] — 2026-04-06
 
 ### Fixed
