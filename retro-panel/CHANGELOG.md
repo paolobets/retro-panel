@@ -1,5 +1,10 @@
 # Retro Panel — Changelog
 
+## [2.10.3] — 2026-04-07
+
+### Fixed
+- **Priorità in italiano non riconosciuta**: `critica/critico` → `critical`, `alta/alto` → `high`, `normale` → `normal`, `bassa/basso` → `info`; prima ogni stringa non-inglese cadeva silenziosamente a `normal` (verde)
+
 ## [2.10.2] — 2026-04-07
 
 ### Fixed

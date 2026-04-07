@@ -14,6 +14,25 @@ except ModuleNotFoundError:
 
 logger = logging.getLogger(__name__)
 
+# Alias italiani (e varianti comuni) → valore canonico inglese
+_PRIORITY_ALIASES: dict = {
+    'critica':   'critical',
+    'critico':   'critical',
+    'alta':      'high',
+    'alto':      'high',
+    'normale':   'normal',
+    'bassa':     'info',
+    'basso':     'info',
+}
+
+
+def _normalize_priority(raw) -> str:
+    """Normalizza priorità: accetta inglese e alias italiani, default 'normal'."""
+    if not isinstance(raw, str):
+        return 'normal'
+    s = raw.strip().lower()
+    return _PRIORITY_ALIASES.get(s, s)  # alias italiani → inglese; inglese → invariato
+
 
 class NotificationEngine:
     def __init__(
@@ -40,7 +59,7 @@ class NotificationEngine:
             return
 
         message = event_data.get("message", "")
-        priority = event_data.get("priority", "normal")
+        priority = _normalize_priority(event_data.get("priority", "normal"))
 
         notification = await self._store.add(title, message, priority)
         logger.debug(

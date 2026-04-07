@@ -108,3 +108,37 @@ def test_handle_event_missing_title():
         assert len(broadcast_calls) == 0
     finally:
         os.unlink(path)
+
+
+# ---------------------------------------------------------------------------
+# Test 4: alias italiani normalizzati correttamente
+# ---------------------------------------------------------------------------
+def test_italian_priority_aliases():
+    with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
+        path = f.name
+    try:
+        store = NotificationStore(path=path, ttl_days=7, max_count=100)
+        run(store.load())
+
+        async def noop(payload: str) -> None:
+            pass
+
+        engine = NotificationEngine(store, noop)
+
+        # 'critica' → 'critical'
+        run(engine.handle_notify_event({'title': 'A', 'priority': 'critica'}))
+        # 'alta' → 'high'
+        run(engine.handle_notify_event({'title': 'B', 'priority': 'alta'}))
+        # 'normale' → 'normal'
+        run(engine.handle_notify_event({'title': 'C', 'priority': 'normale'}))
+        # 'bassa' → 'info'
+        run(engine.handle_notify_event({'title': 'D', 'priority': 'bassa'}))
+
+        all_notifs = run(store.get_all())
+        by_title = {n['title']: n['priority'] for n in all_notifs}
+        assert by_title['A'] == 'critical'
+        assert by_title['B'] == 'high'
+        assert by_title['C'] == 'normal'
+        assert by_title['D'] == 'info'
+    finally:
+        os.unlink(path)
