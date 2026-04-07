@@ -237,6 +237,12 @@
       // Inizializza renderer (risolve i componenti a runtime)
       window.RP_Renderer.init();
 
+      // Inizializza notifiche
+      if (window.RP_Notifications) {
+        window.RP_Notifications.init();
+        window.RP_Notifications.loadFromServer();
+      }
+
       // Fetch stati iniziali
       return window.getAllStates().then(function (statesArray) {
         if (Array.isArray(statesArray)) {
@@ -302,6 +308,11 @@
           function () {
             setConnectionStatus(false);
             scheduleStatePoll(config.refresh_interval || 30);
+          },
+          function (notification) {
+            if (window.RP_Notifications) {
+              window.RP_Notifications.handleIncoming(notification);
+            }
           }
         );
       });
