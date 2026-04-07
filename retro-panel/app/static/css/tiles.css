@@ -1232,7 +1232,7 @@
 .cam-lb-tap-hint {
   position: absolute;
   inset: 0;
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.6);
@@ -1241,7 +1241,6 @@
   font-size: 15px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  display: none;
 }
 .cam-lb-tap-hint.visible {
   display: flex;
