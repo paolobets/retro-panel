@@ -261,7 +261,8 @@ Enable **2FA** on all administrator accounts.
 | **v2.10.2** | Released | Fix automazioni (whitelist entity_id) · sync notifiche multi-device · fix alarm freeze dopo disarmo |
 | **v2.10.3** | Released | Fix priorità italiane (`critica`/`alta`/`normale`/`bassa` ora accettate) |
 | **v2.10.4** | Released | Fix bordatura full-screen · pulse critico · beep audio · auto-reload su update |
-| **v2.10.5** | **Current** | Fix audio iOS (unlock gesture) · fix auto-reload Ingress · fix theme toggle auto |
+| **v2.10.5** | Released | Fix audio iOS (unlock gesture) · fix auto-reload Ingress · fix theme toggle auto |
+| **v2.10.6** | **Current** | Fix testo notifiche in light mode · toast rimosso su eliminazione (tutti i device) |
 | **v3.0** | Planned | Plugin system · custom themes · history charts · offline-first |
 
 ---

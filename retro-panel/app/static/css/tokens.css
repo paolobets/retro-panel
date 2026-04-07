@@ -9,6 +9,11 @@
   --c-surface-3:    #2e2e2e;
   --c-text-pri:     #f0f0f0;
   --c-text-sec:     #999999;
+  /* Aliases used by notifications (defined here so light theme can override) */
+  --c-text:         #f0f0f0;
+  --c-text-muted:   #888888;
+  --c-text-dim:     #666666;
+  --c-border:       #2a2a2a;
   --c-accent:       #2196f3;
   --c-accent-bg:    rgba(33,150,243,0.10);
   --c-on:           #4caf50;
@@ -38,6 +43,10 @@ body.theme-light {
   --c-surface-3: #dde0e5;
   --c-text-pri:  #111111;
   --c-text-sec:  #555555;
+  --c-text:      #111111;
+  --c-text-muted:#555555;
+  --c-text-dim:  #777777;
+  --c-border:    #d0d3d8;
 }
 
 /* Auto theme: follow OS/browser preference */
@@ -49,5 +58,9 @@ body.theme-light {
     --c-surface-3: #dde0e5;
     --c-text-pri:  #111111;
     --c-text-sec:  #555555;
+    --c-text:      #111111;
+    --c-text-muted:#555555;
+    --c-text-dim:  #777777;
+    --c-border:    #d0d3d8;
   }
 }

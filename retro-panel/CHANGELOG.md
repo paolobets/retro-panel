@@ -1,5 +1,11 @@
 # Retro Panel — Changelog
 
+## [2.10.6] — 2026-04-07
+
+### Fixed
+- **Testo notifiche illeggibile in light mode**: `--c-text`, `--c-text-muted`, `--c-text-dim`, `--c-border` non erano definiti per il tema chiaro → fallback `#f0f0f0` (quasi bianco) su sfondo bianco; ora definiti esplicitamente in `tokens.css` per `theme-light` e `theme-auto` light
+- **Toast non si chiude su eliminazione**: i toast non avevano `data-notif-id`; ora lo hanno; `_deleteNotification()` rimuove il toast locale; `handleSync()` rimuove i toast delle notifiche eliminate da altri dispositivi
+
 ## [2.10.5] — 2026-04-07
 
 ### Fixed

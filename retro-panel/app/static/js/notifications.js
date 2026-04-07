@@ -258,6 +258,7 @@
       }
     }
     _notifications = updated;
+    _dismissToastById(notificationId);
     _renderDrawer();
     _updateBell();
     _updateAlertBorder();
@@ -270,6 +271,13 @@
   // --------------------------------------------------------------------------
   // Toast
   // --------------------------------------------------------------------------
+  function _dismissToastById(notificationId) {
+    var container = _qs('#notif-toast-container');
+    if (!container) { return; }
+    var toast = container.querySelector('[data-notif-id="' + notificationId + '"]');
+    if (toast && toast.parentNode) { toast.parentNode.removeChild(toast); }
+  }
+
   function _showToast(notification) {
     var container = _qs('#notif-toast-container');
     if (!container) { return; }
@@ -277,6 +285,7 @@
     var toast = document.createElement('div');
     toast.className = 'notif-toast';
     toast.setAttribute('data-priority', notification.priority || 'normal');
+    toast.setAttribute('data-notif-id', notification.id || '');
 
     var titleEl = document.createElement('div');
     titleEl.className = 'notif-toast-title';
@@ -375,6 +384,12 @@
   function handleSync(notifications) {
     // Replace local state with authoritative list from server (triggered by mutations on another device)
     if (!Array.isArray(notifications)) { return; }
+    // Dismiss toasts for any notification that has been removed remotely
+    var newIds = {};
+    for (var i = 0; i < notifications.length; i++) { newIds[notifications[i].id] = true; }
+    for (var j = 0; j < _notifications.length; j++) {
+      if (!newIds[_notifications[j].id]) { _dismissToastById(_notifications[j].id); }
+    }
     _notifications = notifications;
     _updateBell();
     _updateAlertBorder();
