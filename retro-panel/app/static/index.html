@@ -10,10 +10,10 @@
   <meta name="theme-color" content="#0f0f0f">
   <title>Retro Panel</title>
 
-  <link rel="stylesheet" href="static/css/tokens.css?v=2934">
-  <link rel="stylesheet" href="static/css/layout.css?v=2934">
-  <link rel="stylesheet" href="static/css/tiles.css?v=2934">
-  <link rel="stylesheet" href="static/css/bottom-sheet.css?v=2934">
+  <link rel="stylesheet" href="static/css/tokens.css?v=2100">
+  <link rel="stylesheet" href="static/css/layout.css?v=2100">
+  <link rel="stylesheet" href="static/css/tiles.css?v=2100">
+  <link rel="stylesheet" href="static/css/bottom-sheet.css?v=2100">
 </head>
 <body class="theme-dark">
   <script>try{var _t=localStorage.getItem('rp_theme');if(_t==='light'||_t==='dark'){document.body.className='theme-'+_t;}}catch(e){}</script>
@@ -40,6 +40,10 @@
       <button id="sidebar-toggle" type="button" aria-label="Toggle sidebar">
         <span class="sidebar-toggle-icon">&#9776;</span>
       </button>
+      <button id="notif-bell" type="button" aria-label="Notifiche">
+        &#128276;
+        <span id="notif-badge"></span>
+      </button>
       <div class="sidebar-divider"></div>
       <div id="sidebar-nav"></div>
       <div class="sidebar-spacer"></div>
@@ -49,6 +53,20 @@
         <span class="sidebar-item-label">Config</span>
       </a>
     </nav>
+
+    <!-- Notification drawer backdrop -->
+    <div id="notif-backdrop"></div>
+
+    <!-- Notification drawer -->
+    <div id="notif-drawer" role="dialog" aria-label="Notifiche">
+      <div id="notif-drawer-header">
+        <span id="notif-drawer-title">Notifiche</span>
+        <button id="notif-read-all-btn" type="button">Segna tutte lette</button>
+        <button id="notif-drawer-close" type="button" aria-label="Chiudi">&#10005;</button>
+      </div>
+      <div id="notif-list"></div>
+      <div id="notif-empty">Nessuna notifica</div>
+    </div>
 
     <!-- Main area -->
     <div id="main-area">
@@ -128,23 +146,27 @@
     </div>
   </div>
 
-  <script src="static/js/mdi-icons.js?v=2934"></script>
-  <script src="static/js/utils/dom.js?v=2934"></script>
-  <script src="static/js/utils/format.js?v=2934"></script>
-  <script src="static/js/api.js?v=2934"></script>
-  <script src="static/js/ws.js?v=2934"></script>
-  <script src="static/js/components/bottom-sheet.js?v=2934"></script>
-  <script src="static/js/components/light.js?v=2934"></script>
-  <script src="static/js/components/switch.js?v=2934"></script>
-  <script src="static/js/components/sensor.js?v=2934"></script>
-  <script src="static/js/components/alarm.js?v=2934"></script>
-  <script src="static/js/components/energy.js?v=2934"></script>
-  <script src="static/js/components/scenario.js?v=2934"></script>
-  <script src="static/js/components/camera.js?v=2934"></script>
-  <script src="static/js/components/cover.js?v=2934"></script>
-  <script src="static/js/components/conditional.js?v=2934"></script>
-  <script src="static/js/nav.js?v=2934"></script>
-  <script src="static/js/renderer.js?v=2934"></script>
-  <script src="static/js/app.js?v=2934"></script>
+  <!-- Toast container -->
+  <div id="notif-toast-container"></div>
+
+  <script src="static/js/mdi-icons.js?v=2100"></script>
+  <script src="static/js/utils/dom.js?v=2100"></script>
+  <script src="static/js/utils/format.js?v=2100"></script>
+  <script src="static/js/api.js?v=2100"></script>
+  <script src="static/js/ws.js?v=2100"></script>
+  <script src="static/js/components/bottom-sheet.js?v=2100"></script>
+  <script src="static/js/components/light.js?v=2100"></script>
+  <script src="static/js/components/switch.js?v=2100"></script>
+  <script src="static/js/components/sensor.js?v=2100"></script>
+  <script src="static/js/components/alarm.js?v=2100"></script>
+  <script src="static/js/components/energy.js?v=2100"></script>
+  <script src="static/js/components/scenario.js?v=2100"></script>
+  <script src="static/js/components/camera.js?v=2100"></script>
+  <script src="static/js/components/cover.js?v=2100"></script>
+  <script src="static/js/components/conditional.js?v=2100"></script>
+  <script src="static/js/nav.js?v=2100"></script>
+  <script src="static/js/renderer.js?v=2100"></script>
+  <script src="static/js/notifications.js?v=2100"></script>
+  <script src="static/js/app.js?v=2100"></script>
 </body>
 </html>
