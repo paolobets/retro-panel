@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 # Permitted HA domains — any domain not in this set is rejected at the handler
 # before any body parsing or HA communication.
 _ALLOWED_DOMAINS: frozenset[str] = frozenset(
-    {"light", "switch", "alarm_control_panel", "input_boolean", "cover", "scene", "script", "automation", "lock", "button"}
+    {"light", "switch", "alarm_control_panel", "input_boolean", "cover", "scene", "script", "automation", "lock", "button", "climate"}
 )
 
 # Per-domain allowlist of permitted service names.
@@ -43,6 +43,7 @@ _ALLOWED_SERVICES: dict[str, frozenset[str]] = {
     "automation": frozenset({"trigger", "turn_on", "turn_off"}),
     "lock": frozenset({"lock", "unlock"}),
     "button": frozenset({"press"}),
+    "climate": frozenset({"set_temperature", "set_hvac_mode", "turn_off"}),
 }
 
 # Entity ID must be: lowercase_domain.lowercase_object (e.g. light.living_room)

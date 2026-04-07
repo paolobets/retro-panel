@@ -180,6 +180,93 @@
 .lock-action-btn.btn-lock   { background: var(--c-on, #4caf50); color: #fff; }
 .lock-action-btn.btn-unlock { background: var(--c-danger, #f44336); color: #fff; }
 
+/* CLIMATE TILE — 120px compact, tap → bottom sheet */
+.tile-climate {
+  height: 120px;
+  min-height: 120px;
+  max-height: 120px;
+  padding: 12px 14px;
+  cursor: pointer;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+}
+
+.climate-row1 {
+  display: -webkit-flex; display: flex;
+  -webkit-align-items: center; align-items: center;
+  -webkit-justify-content: space-between; justify-content: space-between;
+}
+.climate-name {
+  font-size: 13px; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 60%;
+}
+.climate-mode-badge {
+  display: -webkit-flex; display: flex;
+  -webkit-align-items: center; align-items: center;
+  gap: 4px;
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.climate-mode-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  display: inline-block; flex-shrink: 0;
+}
+
+.climate-row2 {
+  display: -webkit-flex; display: flex;
+  -webkit-align-items: baseline; align-items: baseline;
+  -webkit-justify-content: space-between; justify-content: space-between;
+}
+.climate-current {
+  font-size: 36px; font-weight: 700; line-height: 1;
+  letter-spacing: -0.03em; font-variant-numeric: tabular-nums;
+}
+.climate-unit { font-size: 16px; color: var(--c-text-sec, #999); font-weight: 400; margin-left: 1px; }
+.climate-target {
+  display: -webkit-flex; display: flex;
+  -webkit-flex-direction: column; flex-direction: column;
+  -webkit-align-items: flex-end; align-items: flex-end;
+}
+.climate-target-label {
+  font-size: 9px; color: var(--c-text-sec, #999);
+  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px;
+}
+.climate-target-val {
+  font-size: 20px; font-weight: 700;
+  font-variant-numeric: tabular-nums; line-height: 1;
+}
+
+.climate-row3 { font-size: 10px; font-weight: 600; }
+
+/* Color variants */
+.tile-climate.mode-heat { border-color: var(--c-warning, #ff9800); }
+.tile-climate.mode-heat .climate-current { color: var(--c-warning, #ff9800); }
+.tile-climate.mode-heat .climate-mode-dot { background: var(--c-warning, #ff9800); }
+.tile-climate.mode-heat .climate-mode-badge { color: var(--c-warning, #ff9800); }
+.tile-climate.mode-heat .climate-target-val { color: var(--c-warning, #ff9800); }
+.tile-climate.mode-heat .climate-row3 { color: var(--c-warning, #ff9800); }
+
+.tile-climate.mode-cool { border-color: #2196f3; }
+.tile-climate.mode-cool .climate-current { color: #2196f3; }
+.tile-climate.mode-cool .climate-mode-dot { background: #2196f3; }
+.tile-climate.mode-cool .climate-mode-badge { color: #2196f3; }
+.tile-climate.mode-cool .climate-target-val { color: #2196f3; }
+.tile-climate.mode-cool .climate-row3 { color: #2196f3; }
+
+.tile-climate.mode-auto { border-color: var(--c-on, #4caf50); }
+.tile-climate.mode-auto .climate-current { color: var(--c-on, #4caf50); }
+.tile-climate.mode-auto .climate-mode-dot { background: var(--c-on, #4caf50); }
+.tile-climate.mode-auto .climate-mode-badge { color: var(--c-on, #4caf50); }
+.tile-climate.mode-auto .climate-target-val { color: var(--c-on, #4caf50); }
+.tile-climate.mode-auto .climate-row3 { color: var(--c-on, #4caf50); }
+
+.tile-climate.mode-off .climate-current { color: var(--c-text-sec, #999); }
+.tile-climate.mode-off .climate-mode-dot { background: var(--c-text-sec, #999); }
+.tile-climate.mode-off .climate-mode-badge { color: var(--c-text-sec, #999); }
+.tile-climate.mode-off .climate-target-val { color: var(--c-text-sec, #999); }
+.tile-climate.mode-off .climate-row3 { color: var(--c-text-sec, #999); }
+
 /* ---- SENSOR ROW TILE ---- */
 .tile-sensor {
   -webkit-flex-direction: row;

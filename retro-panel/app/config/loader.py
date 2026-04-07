@@ -115,6 +115,7 @@ _LAYOUT_TYPE_ICON_MAP: dict[str, str] = {
     "sensor_water":       "water",
     "sensor_ph":          "flask",
     "sensor_physical":    "ruler",
+    "climate":            "thermometer",
     "binary_door":        "door-open",
     "binary_window":      "window-open",
     "binary_motion":      "motion-sensor",
@@ -395,6 +396,8 @@ def _compute_layout_type(entity_id: str, device_class: str, visual_type: str) ->
         return "camera"
     if domain == "lock":
         return "lock"
+    if domain == "climate":
+        return "climate"
     if domain in ("scene", "script", "automation"):
         return "scenario"
     if domain == "button":

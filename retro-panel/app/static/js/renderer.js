@@ -59,6 +59,7 @@ window.RP_Renderer = (function () {
     'energy_flow':        null,
     'cover_standard':     null,
     'sensor_conditional': null,
+    'climate':    null,
   };
 
   // Column class for each layout_type
@@ -102,6 +103,7 @@ window.RP_Renderer = (function () {
     'energy_flow':        'tile-col-full',
     'cover_standard':     'tile-col-compact',
     'sensor_conditional': 'tile-col-sensor',
+    'climate':    'tile-col-compact',
   };
 
   function _initComponents() {
@@ -144,6 +146,7 @@ window.RP_Renderer = (function () {
     COMPONENT_MAP['energy_flow']        = window.EnergyFlowComponent || null;
     COMPONENT_MAP['cover_standard']     = window.CoverComponent              || null;
     COMPONENT_MAP['sensor_conditional'] = window.SensorConditionalComponent  || null;
+    COMPONENT_MAP['climate']            = window.ClimateComponent  || null;
   }
 
   // ---------------------------------------------------------------------------
