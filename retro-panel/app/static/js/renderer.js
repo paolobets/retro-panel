@@ -282,9 +282,11 @@ window.RP_Renderer = (function () {
   function renderActiveSection(appState) {
     var contentArea = document.getElementById('content-area');
     if (!contentArea) { return; }
+    if (window.CameraComponent) { window.CameraComponent.destroyAll(); }
     contentArea.innerHTML = '';
     appState.tileMap = {};
     appState.energyTiles = [];
+    appState.conditionalTiles = [];
 
     var sectionId = appState.activeSectionId;
     var config = appState.config;

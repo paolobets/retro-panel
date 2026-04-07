@@ -24,7 +24,6 @@ window.CameraComponent = (function () {
   var _lbPollTimer = null;     // interval ID for snapshot fallback polling
   var _lbStreamTimeout = null; // timeout to trigger fallback if stream never loads
   var _lbEntityId = null;      // entity currently shown in lightbox
-  var _lbRefreshInterval = 2;  // fallback snapshot interval in seconds
 
   // ---------------------------------------------------------------------------
   // Lightbox — single overlay reused for all cameras
@@ -89,7 +88,7 @@ window.CameraComponent = (function () {
 
   // Update the badge: 'stream' = green + "Live Streaming",
   //                   'snapshot' = amber + "Snapshot • Xs"
-  function _setLbMode(mode) {
+  function _setLbMode(mode, refreshSec) {
     var dot     = _lb.querySelector('.cam-lb-dot');
     var modeSpan = _lb.querySelector('.cam-lb-mode');
     var liveEl  = _lb.querySelector('.cam-lb-live');
@@ -101,7 +100,7 @@ window.CameraComponent = (function () {
     } else {
       dot.className      = 'cam-lb-dot cam-lb-dot--snapshot';
       liveEl.className   = 'cam-lb-live cam-lb-live--snapshot';
-      modeSpan.textContent = 'Snapshot \u2022 ' + (_lbRefreshInterval || 2) + 's';
+      modeSpan.textContent = 'Snapshot \u2022 ' + (refreshSec || 2) + 's';
     }
   }
 
@@ -120,14 +119,14 @@ window.CameraComponent = (function () {
     img.onload  = null;
     img.src     = '';   // abort previous connection
 
-    _lbEntityId        = entityId;
-    _lbRefreshInterval = refreshInterval || 2;
+    _lbEntityId = entityId;
+    var _lbRefreshSec = refreshInterval || 2;
 
     // Optimistically show "Live Streaming" and attempt MJPEG stream
     _setLbMode('stream');
 
     img.onerror = function () {
-      _startSnapshotFallback();
+      _startSnapshotFallback(_lbRefreshSec);
     };
     img.onload = function () {
       // First frame arrived — stream is healthy. Cancel the safety timeout.
@@ -143,12 +142,12 @@ window.CameraComponent = (function () {
       var lbImg = _lb ? _lb.querySelector('.cam-lb-img') : null;
       // If the img is still pointing at the stream URL, it hasn't loaded
       if (lbImg && lbImg.src && lbImg.src.indexOf('camera-proxy-stream') !== -1) {
-        _startSnapshotFallback();
+        _startSnapshotFallback(_lbRefreshSec);
       }
     }, 5000);
   }
 
-  function _startSnapshotFallback() {
+  function _startSnapshotFallback(refreshSec) {
     var img = _lb ? _lb.querySelector('.cam-lb-img') : null;
     if (!img) { return; }
 
@@ -160,13 +159,13 @@ window.CameraComponent = (function () {
     img.onerror = null;
     img.onload  = null;
 
-    _setLbMode('snapshot');
+    _setLbMode('snapshot', refreshSec);
 
     // Load first snapshot
     img.src = 'api/camera-proxy/' + _lbEntityId + '?_t=' + Date.now();
 
     // Start periodic refresh
-    var intervalMs = Math.max(1000, (_lbRefreshInterval || 2) * 1000);
+    var intervalMs = Math.max(1000, (refreshSec || 2) * 1000);
     _lbPollTimer = setInterval(function () {
       var lbImg = _lb ? _lb.querySelector('.cam-lb-img') : null;
       if (lbImg) { lbImg.src = 'api/camera-proxy/' + _lbEntityId + '?_t=' + Date.now(); }

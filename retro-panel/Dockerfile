@@ -7,6 +7,7 @@ RUN pip3 install --no-cache-dir -r /tmp/requirements.txt
 
 # Copy application source
 COPY app/ /usr/lib/retropanel/
+COPY config.yaml /usr/lib/retropanel/config.yaml
 
 # Copy s6-overlay process scripts
 COPY rootfs/ /

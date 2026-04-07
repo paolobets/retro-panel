@@ -200,6 +200,10 @@ window.EnergyFlowComponent = (function () {
     if (!ef) { return; }
     var cfg = ef.cfg;
 
+    var solarMaxW = cfg.solar_max_kw != null ? cfg.solar_max_kw * 1000 : SOLAR_MAX_W;
+    var homeMaxW  = cfg.home_max_kw  != null ? cfg.home_max_kw  * 1000 : HOME_MAX_W;
+    var gridMaxW  = cfg.grid_max_kw  != null ? cfg.grid_max_kw  * 1000 : GRID_MAX_W;
+
     // Returns: number = valid reading, null = entity not configured,
     //          undefined = entity configured but unavailable/unknown in HA
     function getNum(entityId) {
@@ -304,14 +308,14 @@ window.EnergyFlowComponent = (function () {
 
     // ── Metriche ─────────────────────────────────────────────
     ef.solarVal.textContent = solar > THRESHOLD ? fmtPower(solar) : '\u2014';
-    // Solar bar: rosso→verde (0→120) in base a SOLAR_MAX_W
-    var solarPct = Math.min(1, solar / SOLAR_MAX_W);
+    // Solar bar: rosso→verde (0→120) in base a solarMaxW
+    var solarPct = Math.min(1, solar / solarMaxW);
     ef.solarBarFill.style.width      = Math.round(solarPct * 100) + '%';
     ef.solarBarFill.style.background = calcBarColor(solarPct, 0, 120);
 
     ef.homeVal.textContent = home > 0 ? fmtPower(home) : '\u2014';
-    // Home bar: verde→rosso (120→0) in base a HOME_MAX_W
-    var homePct = Math.min(1, home / HOME_MAX_W);
+    // Home bar: verde→rosso (120→0) in base a homeMaxW
+    var homePct = Math.min(1, home / homeMaxW);
     ef.homeBarFill.style.width      = Math.round(homePct * 100) + '%';
     ef.homeBarFill.style.background = calcBarColor(homePct, 120, 0);
 
@@ -338,12 +342,12 @@ window.EnergyFlowComponent = (function () {
     if (gridIn > THRESHOLD) {
       ef.gridVal.textContent = fmtPower(gridIn);
       ef.gridLbl.textContent = 'Prelievo';
-      gridPct   = Math.min(1, gridIn / GRID_MAX_W);
+      gridPct   = Math.min(1, gridIn / gridMaxW);
       gridColor = calcBarColor(gridPct, 210, 0);
     } else if (gridOut > THRESHOLD) {
       ef.gridVal.textContent = fmtPower(gridOut);
       ef.gridLbl.textContent = 'Immissione';
-      gridPct   = Math.min(1, gridOut / GRID_MAX_W);
+      gridPct   = Math.min(1, gridOut / gridMaxW);
       gridColor = calcBarColor(gridPct, 210, 120);
     } else {
       ef.gridVal.textContent = '0 W';

@@ -233,7 +233,14 @@
     _updateAlertBorder();
 
     var xhr = new XMLHttpRequest();
-    xhr.open('PATCH', '/api/notifications/' + encodeURIComponent(notificationId), true);
+    xhr.open('PATCH', 'api/notifications/' + encodeURIComponent(notificationId), true);
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState !== 4) { return; }
+      if (xhr.status < 200 || xhr.status >= 300) {
+        console.warn('[Notifications] REST call failed (' + xhr.status + ') — re-syncing');
+        loadFromServer();
+      }
+    };
     xhr.send();
   }
 
@@ -246,7 +253,14 @@
     _updateAlertBorder();
 
     var xhr = new XMLHttpRequest();
-    xhr.open('POST', '/api/notifications/read-all', true);
+    xhr.open('POST', 'api/notifications/read-all', true);
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState !== 4) { return; }
+      if (xhr.status < 200 || xhr.status >= 300) {
+        console.warn('[Notifications] REST call failed (' + xhr.status + ') — re-syncing');
+        loadFromServer();
+      }
+    };
     xhr.send();
   }
 
@@ -264,7 +278,14 @@
     _updateAlertBorder();
 
     var xhr = new XMLHttpRequest();
-    xhr.open('DELETE', '/api/notifications/' + encodeURIComponent(notificationId), true);
+    xhr.open('DELETE', 'api/notifications/' + encodeURIComponent(notificationId), true);
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState !== 4) { return; }
+      if (xhr.status < 200 || xhr.status >= 300) {
+        console.warn('[Notifications] REST call failed (' + xhr.status + ') — re-syncing');
+        loadFromServer();
+      }
+    };
     xhr.send();
   }
 
@@ -371,6 +392,10 @@
   }
 
   function handleIncoming(notification) {
+    // Deduplicate by id before prepending
+    for (var _i = 0; _i < _notifications.length; _i++) {
+      if (_notifications[_i].id === notification.id) { return; }
+    }
     // Prepend (newest first), cap at 100
     _notifications.unshift(notification);
     if (_notifications.length > 100) { _notifications.pop(); }
@@ -398,7 +423,7 @@
 
   function loadFromServer() {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', '/api/notifications', true);
+    xhr.open('GET', 'api/notifications', true);
     xhr.onreadystatechange = function () {
       if (xhr.readyState !== 4) { return; }
       if (xhr.status === 200) {

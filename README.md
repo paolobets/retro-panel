@@ -263,7 +263,9 @@ Enable **2FA** on all administrator accounts.
 | **v2.10.4** | Released | Fix bordatura full-screen · pulse critico · beep audio · auto-reload su update |
 | **v2.10.5** | Released | Fix audio iOS (unlock gesture) · fix auto-reload Ingress · fix theme toggle auto |
 | **v2.10.6** | Released | Fix testo notifiche in light mode · toast rimosso su eliminazione (tutti i device) |
-| **v2.10.7** | **Current** | Versione nell'header (verifica aggiornamenti automatici) |
+| **v2.10.7** | Released | Versione nell'header (verifica aggiornamenti automatici) |
+| **v2.10.8** | Released | Fix energy card: poll periodico dedicato (refresh_interval) indipendente dal WebSocket |
+| **v2.10.9** | **Current** | Fix critici pre-beta: Ingress notifiche, lazy-load sezioni, 12 fix totali da code review |
 | **v3.0** | Planned | Plugin system · custom themes · history charts · offline-first |
 
 ---

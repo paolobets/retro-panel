@@ -245,6 +245,57 @@
   }
 
   // ---------------------------------------------------------------------------
+  // Energy tile periodic refresh (sempre attivo, indipendente dal WebSocket)
+  // Garantisce aggiornamenti regolari anche quando l'inverter non emette
+  // state_changed events frequenti (es. valore stabile a 0 di notte).
+  // ---------------------------------------------------------------------------
+  var energyPollTimer = null;
+
+  function _getEnergyEntityIds() {
+    var ids = [];
+    var seen = {};
+    for (var i = 0; i < AppState.energyTiles.length; i++) {
+      var cfg = AppState.energyTiles[i].cfg;
+      var candidates = [
+        cfg.solar_power, cfg.home_power, cfg.battery_soc,
+        cfg.battery_charge_power, cfg.battery_discharge_power,
+        cfg.grid_import, cfg.grid_export
+      ];
+      for (var j = 0; j < candidates.length; j++) {
+        var eid = candidates[j];
+        if (eid && !seen[eid]) { seen[eid] = true; ids.push(eid); }
+      }
+    }
+    return ids;
+  }
+
+  function scheduleEnergyPoll(intervalSeconds) {
+    if (energyPollTimer) { clearTimeout(energyPollTimer); }
+    energyPollTimer = setTimeout(function () {
+      energyPollTimer = null;
+      var ids = _getEnergyEntityIds();
+      if (ids.length === 0) {
+        scheduleEnergyPoll(intervalSeconds);
+        return;
+      }
+      window.getStates(ids).then(function (arr) {
+        if (Array.isArray(arr)) {
+          for (var i = 0; i < arr.length; i++) {
+            var s = arr[i];
+            if (s && s.entity_id) {
+              updateEntityState(s.entity_id, { state: s.state, attributes: s.attributes });
+            }
+          }
+        }
+      }, function (err) {
+        console.warn('[app] Energy poll failed:', err);
+      }).then(function () {
+        scheduleEnergyPoll(intervalSeconds);
+      });
+    }, intervalSeconds * 1000);
+  }
+
+  // ---------------------------------------------------------------------------
   // Boot
   // ---------------------------------------------------------------------------
   function boot() {
@@ -262,7 +313,10 @@
       }
 
       // Fetch stati iniziali
-      return window.getAllStates().then(function (statesArray) {
+      return window.getAllStates().catch(function (err) {
+          console.warn('[app] getAllStates failed, proceeding with empty states:', err);
+          return [];
+        }).then(function (statesArray) {
         if (Array.isArray(statesArray)) {
           for (var i = 0; i < statesArray.length; i++) {
             var s = statesArray[i];
@@ -280,8 +334,8 @@
           window.RP_Renderer.renderActiveSection(AppState);
           window.RP_Nav.setActiveSidebarItem(sectionId);
           // Lazy-load states for the newly visible section entities
-          if (window.getStates && window.RP_Nav.getSectionEntityIds) {
-            var sectionIds = window.RP_Nav.getSectionEntityIds(sectionId);
+          if (window.getStates) {
+            var sectionIds = Object.keys(AppState.tileMap);
             if (sectionIds && sectionIds.length > 0) {
               window.getStates(sectionIds).then(function (arr) {
                 if (Array.isArray(arr)) {
@@ -317,6 +371,9 @@
         showPanel();
         hideLoadingScreen();
         startClock();
+
+        // Energy tile periodic refresh (always on, even when WS is connected)
+        scheduleEnergyPoll(config.refresh_interval || 30);
 
         // WebSocket
         setConnecting();
@@ -373,7 +430,10 @@
       holdTimer = setTimeout(function () {
         titleEl.style.opacity = '1';
         setTimeout(function () {
-          window.location.href = window.location.pathname + '?_r=' + Date.now();
+          // Replace current history entry (no back-button ghost) and add
+          // a unique timestamp so the browser treats it as a new URL,
+          // bypassing disk cache — effective hard reload on iOS PWA.
+          window.location.replace(window.location.pathname + '?_r=' + Date.now());
         }, 150);
       }, 800);
     }

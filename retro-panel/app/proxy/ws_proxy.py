@@ -18,6 +18,17 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
+def _log_task_exception(task: "asyncio.Task[object]") -> None:
+    """Log exceptions from fire-and-forget asyncio tasks to avoid silent failures."""
+    try:
+        task.result()
+    except asyncio.CancelledError:
+        pass
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Background task raised an exception: %s", exc, exc_info=True)
+
+
 _BACKOFF_SEQUENCE = [1, 2, 4, 8, 16, 30]
 _SUBSCRIBE_ID = 1
 _SUBSCRIBE_NOTIFY_ID = 2
@@ -157,7 +168,8 @@ class WSProxy:
         if payload.get("id") == _SUBSCRIBE_NOTIFY_ID:
             event_data = payload.get("event", {}).get("data", {})
             if self._notify_callback is not None:
-                asyncio.ensure_future(self._notify_callback(event_data))
+                task = asyncio.create_task(self._notify_callback(event_data))
+                task.add_done_callback(_log_task_exception)
             return
 
         event_data: dict = payload.get("event", {}).get("data", {})

@@ -39,6 +39,9 @@ def _serialize_item(item) -> dict:
             "battery_discharge_power": ef.battery_discharge_power,
             "grid_import":             ef.grid_import,
             "grid_export":             ef.grid_export,
+            "solar_max_kw":            ef.solar_max_kw,
+            "home_max_kw":             ef.home_max_kw,
+            "grid_max_kw":             ef.grid_max_kw,
         }
     elif item.type == "sensor_conditional" and item.conditional_sensor is not None:
         cs = item.conditional_sensor

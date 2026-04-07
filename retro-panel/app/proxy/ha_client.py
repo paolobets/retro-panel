@@ -27,6 +27,7 @@ class HAClient:
         self._ha_url: str = ha_url.rstrip("/")
         self.__ha_token: str = ha_token  # name-mangled; never logged
         self._session: Optional[aiohttp.ClientSession] = None
+        self._state_semaphore = asyncio.Semaphore(10)
 
     def _get_session(self) -> aiohttp.ClientSession:
         """Return the shared ClientSession, creating it lazily on first call."""
@@ -78,9 +79,13 @@ class HAClient:
         except asyncio.TimeoutError as exc:
             raise TimeoutError(f"Request for entity '{entity_id}' timed out") from exc
 
+    async def _get_state_limited(self, entity_id: str):
+        async with self._state_semaphore:
+            return await self.get_state(entity_id)
+
     async def get_states_bulk(self, entity_ids: list[str]) -> list[dict[str, Any]]:
         """Fetch states for multiple entities concurrently."""
-        tasks = [self.get_state(eid) for eid in entity_ids]
+        tasks = [self._get_state_limited(eid) for eid in entity_ids]
         results = await asyncio.gather(*tasks, return_exceptions=True)
         output: list[dict[str, Any]] = []
         for eid, result in zip(entity_ids, results):

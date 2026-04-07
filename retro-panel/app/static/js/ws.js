@@ -75,11 +75,8 @@
           var serverNum = (msg.version + '').replace(/\./g, '');
           var pageNum = '';
           try {
-            var scripts = document.querySelectorAll('script[src*="?v="]');
-            for (var si = 0; si < scripts.length; si++) {
-              var sm = scripts[si].src.match(/\?v=(\d+)/);
-              if (sm) { pageNum = sm[1]; break; }
-            }
+            var metaEl = document.querySelector('meta[name="rp-build"]');
+            if (metaEl) { pageNum = metaEl.getAttribute('content') || ''; }
           } catch (e) {}
           if (pageNum && serverNum && pageNum !== serverNum) {
             console.info('[WS] Version mismatch (page=%s server=%s) \u2014 reloading\u2026', pageNum, serverNum);

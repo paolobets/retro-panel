@@ -20,6 +20,16 @@ from aiohttp import web
 logger = logging.getLogger(__name__)
 
 
+def _log_task_exception(task: "asyncio.Task[object]") -> None:
+    """Log exceptions from fire-and-forget asyncio tasks to avoid silent failures."""
+    try:
+        task.result()
+    except asyncio.CancelledError:
+        pass
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Background task raised an exception: %s", exc, exc_info=True)
+
+
 async def _broadcast_sync(request: web.Request, store) -> None:
     """Broadcast updated notification list to all WS clients after a mutation."""
     broadcast = request.app.get("ws_broadcast")
@@ -27,7 +37,8 @@ async def _broadcast_sync(request: web.Request, store) -> None:
         return
     notifications = await store.get_all()
     msg = json.dumps({"type": "rp_notification_update", "notifications": notifications})
-    asyncio.ensure_future(broadcast(msg))
+    task = asyncio.create_task(broadcast(msg))
+    task.add_done_callback(_log_task_exception)
 
 
 async def get_notifications(request: web.Request) -> web.Response:
@@ -49,6 +60,9 @@ async def get_notifications(request: web.Request) -> web.Response:
 
 
 async def post_notify(request: web.Request) -> web.Response:
+    # NOTE: Intentionally unauthenticated on the direct port (7654).
+    # Designed for HA automations running on the local network.
+    # Restrict access via `allowed_direct_ips` in the add-on config if needed.
     """Create a new notification via the notification engine.
 
     Accepts a JSON body with title, message, and optional priority fields.

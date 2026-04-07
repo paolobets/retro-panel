@@ -163,6 +163,9 @@ class EnergyFlowConfig:
     battery_discharge_power: str = ""
     grid_import: str = ""
     grid_export: str = ""
+    solar_max_kw: float = 6.0
+    home_max_kw: float = 3.5
+    grid_max_kw: float = 3.0
 
 
 @dataclass
@@ -534,6 +537,9 @@ def _parse_energy_flow(raw: dict) -> EnergyFlowConfig:
         battery_discharge_power=battery_discharge_power,
         grid_import=grid_import,
         grid_export=grid_export,
+        solar_max_kw=float(raw.get("solar_max_kw") or 6.0),
+        home_max_kw=float(raw.get("home_max_kw") or 3.5),
+        grid_max_kw=float(raw.get("grid_max_kw") or 3.0),
     )
 
 

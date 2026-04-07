@@ -1,5 +1,33 @@
 # Retro Panel — Changelog
 
+## [2.10.9] — 2026-04-07
+
+### Fixed
+- **[BUG] Versione non mostrata nell'header in produzione**: `config.yaml` non veniva copiato nel container Docker (`Dockerfile` copiava solo `app/`); `_read_addon_version()` usava il path sbagliato (`parent.parent`) invece di `parent`. Fix: `COPY config.yaml` nel Dockerfile + path corretto in `server.py`
+- **[UX] Long-press "Retro PANEL" ora usa `location.replace()`**: evita di lasciare una voce fantasma nella history di Safari — più pulito per l'uso come PWA kiosk
+
+### Fixed (da code review — applicati in questa release)
+- **[J-11 CRITICO] Notifiche non funzionanti via HA Ingress**: tutti gli XHR in `notifications.js` usavano path assoluti (`/api/...`) che bypassano il prefisso Ingress; convertiti a path relativi (`api/...`)
+- **[J-01 CRITICO] Lazy-load stati al cambio sezione silenziosamente disabilitato**: `getSectionEntityIds` non era implementata in `nav.js`; ora usa `Object.keys(AppState.tileMap)` dopo il render
+- **[J-02] Memory leak `conditionalTiles`**: aggiunto reset `appState.conditionalTiles = []` in `renderActiveSection`
+- **[J-03] Lightbox camera: `_lbRefreshInterval` variabile globale**: ora è variabile locale alla singola apertura del lightbox, nessuna contaminazione tra camere diverse
+- **[J-08] Rilevamento versione per auto-reload fragile**: sostituito parsing `?v=` da script src con lettura da `<meta name="rp-build">` — più affidabile su tutti gli ambienti
+- **[J-09] Notifiche duplicate dopo reload/reconnect WS**: aggiunta deduplicazione per `notification.id` in `handleIncoming`
+- **[J-10] Operazioni notifiche fire-and-forget senza error handling**: aggiunto `onreadystatechange` che ri-sincronizza da server su risposta non-2xx
+- **[U-05] Loading screen bloccata se `getAllStates` fallisce**: aggiunto `.catch()` su `getAllStates` che restituisce `[]` e lascia proseguire il boot; gli stati arrivano poi via WebSocket
+- **[F-03] Timer camera orfani**: `CameraComponent.destroyAll()` ora chiamato dentro `renderActiveSection` prima di svuotare il DOM, garantendo cleanup anche senza passare dalla nav callback
+- **[P-01] `asyncio.ensure_future` deprecato e senza error handling**: sostituito con `asyncio.create_task` + `done_callback` che logga le eccezioni in `ws_proxy.py` e `api/notifications.py`
+- **[P-04] Bulk fetch stati HA senza limitazione concorrenza**: aggiunto `asyncio.Semaphore(10)` in `ha_client.py` per evitare N richieste HTTP simultanee verso HA
+
+### Added
+- **[J-13] Scale barre energy card configurabili**: aggiunti campi opzionali `solar_max_kw` (default 6.0), `home_max_kw` (default 3.5), `grid_max_kw` (default 3.0) alla configurazione `energy_flow`; utenti con impianti diversi da 6 kW vedranno le barre scalate correttamente
+- **[J-08] Meta tag `rp-build`**: aggiunto `<meta name="rp-build">` in `index.html` per un rilevamento versione più robusto
+
+## [2.10.8] — 2026-04-07
+
+### Fixed
+- **Energy card non si aggiornava automaticamente**: la card dipendeva esclusivamente dagli eventi WebSocket `state_changed` di HA — se il valore del sensore non cambiava (es. solare a 0 W di notte) non arrivava nessun evento e il timestamp rimaneva fermo. Aggiunto un poll periodico dedicato alle entità energy (al ritmo del `refresh_interval` configurato, default 30 s) che agisce sempre, indipendentemente dalla connessione WebSocket
+
 ## [2.10.7] — 2026-04-07
 
 ### Added

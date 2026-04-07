@@ -444,7 +444,7 @@ async def config_page_handler(request: web.Request) -> web.Response:
 def _read_addon_version() -> str:
     """Read the add-on version from config.yaml (regex — no PyYAML dependency)."""
     import re as _re
-    config_path = Path(__file__).parent.parent / 'config.yaml'
+    config_path = Path(__file__).parent / 'config.yaml'
     try:
         with open(config_path, encoding='utf-8') as fh:
             for line in fh:
