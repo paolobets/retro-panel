@@ -7,7 +7,10 @@ import json
 import logging
 from typing import Awaitable, Callable
 
-from app.notifications.store import NotificationStore
+try:
+    from notifications.store import NotificationStore  # runtime (app/ on sys.path)
+except ModuleNotFoundError:
+    from app.notifications.store import NotificationStore  # test runner (project root)
 
 logger = logging.getLogger(__name__)
 

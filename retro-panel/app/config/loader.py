@@ -293,6 +293,7 @@ class PanelConfig:
     alarms_section_title: str = 'Allarme'
     alarms_section_icon: str = 'shield-home'
     nav_order: List[str] = field(default_factory=lambda: ['rooms', 'scenarios', 'cameras', 'alarms'])
+    notification_ttl_days: int = 7
 
     # --------------- backward compat helpers ---------------
 
@@ -1010,6 +1011,11 @@ def load_config() -> PanelConfig:
     except (ValueError, TypeError):
         refresh_interval = 30
 
+    try:
+        notification_ttl_days = int(raw.get('notification_ttl_days', 7))
+    except (ValueError, TypeError):
+        notification_ttl_days = 7
+
     config = PanelConfig(
         ha_url=ha_url,
         ha_token=ha_token,
@@ -1032,6 +1038,7 @@ def load_config() -> PanelConfig:
         alarms_section_title=alarms_section_title,
         alarms_section_icon=alarms_section_icon,
         nav_order=nav_order,
+        notification_ttl_days=notification_ttl_days,
     )
 
     logger.info(

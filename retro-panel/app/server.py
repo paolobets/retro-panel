@@ -51,6 +51,15 @@ from api.camera_proxy import get_camera_proxy, get_camera_proxy_stream
 from api.picker_entities import get_picker_entities
 from api.picker_areas import get_picker_areas
 from api.picker_cameras import get_picker_cameras
+from notifications.store import NotificationStore
+from notifications.engine import NotificationEngine
+from api.notifications import (
+    get_notifications,
+    post_notify,
+    patch_notification_read,
+    post_read_all,
+    delete_notification,
+)
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -423,6 +432,15 @@ async def config_page_handler(request: web.Request) -> web.Response:
 # Application factory
 # ---------------------------------------------------------------------------
 
+def _notification_data_path() -> str:
+    """Return notifications JSON path: /data/ in production, ./data/ in dev."""
+    if Path('/data').exists():
+        return '/data/notifications.json'
+    dev_path = Path(__file__).parent.parent / 'data' / 'notifications.json'
+    dev_path.parent.mkdir(parents=True, exist_ok=True)
+    return str(dev_path)
+
+
 def create_app(config, ha_client: HAClient, ws_proxy: WSProxy) -> web.Application:
     """Build and configure the aiohttp Application.
 
@@ -448,6 +466,21 @@ def create_app(config, ha_client: HAClient, ws_proxy: WSProxy) -> web.Applicatio
     app["ws_proxy"] = ws_proxy
     app["supervisor_client"] = SupervisorClient()
 
+    # Notification subsystem
+    notification_store = NotificationStore(
+        path=_notification_data_path(),
+        ttl_days=getattr(config, 'notification_ttl_days', 7),
+        max_count=100,
+    )
+    app['notification_store'] = notification_store
+
+    notification_engine = NotificationEngine(
+        store=notification_store,
+        broadcast=ws_proxy.broadcast,
+    )
+    app['notification_engine'] = notification_engine
+    ws_proxy.set_notify_callback(notification_engine.handle_notify_event)
+
     # Routes
     app.router.add_get("/", index_handler)
     app.router.add_get("/config", config_page_handler)
@@ -461,6 +494,11 @@ def create_app(config, ha_client: HAClient, ws_proxy: WSProxy) -> web.Applicatio
     app.router.add_get("/api/camera-proxy-stream/{entity_id}", get_camera_proxy_stream)
     app.router.add_post("/api/config", save_config)
     app.router.add_post("/api/service/{domain}/{service}", call_service)
+    app.router.add_get('/api/notifications', get_notifications)
+    app.router.add_post('/api/notify', post_notify)
+    app.router.add_post('/api/notifications/read-all', post_read_all)
+    app.router.add_patch('/api/notifications/{id}', patch_notification_read)
+    app.router.add_delete('/api/notifications/{id}', delete_notification)
     app.router.add_get("/ws", ws_handler)
 
     # Static assets (CSS, JS)
@@ -482,6 +520,12 @@ async def _on_startup(app: web.Application) -> None:
     app["ws_proxy_task"] = task
     logger.info("WSProxy background task started")
 
+    store = app.get('notification_store')
+    if store:
+        await store.load()
+        await store.purge_expired()
+        logger.info('NotificationStore loaded and expired entries purged')
+
 
 async def _on_cleanup(app: web.Application) -> None:
     """Cancel background tasks and close the HA client session on shutdown."""
@@ -501,6 +545,10 @@ async def _on_cleanup(app: web.Application) -> None:
     supervisor_client: SupervisorClient = app.get("supervisor_client")
     if supervisor_client:
         await supervisor_client.close()
+
+    store = app.get('notification_store')
+    if store:
+        await store.purge_expired()
 
 
 # ---------------------------------------------------------------------------
