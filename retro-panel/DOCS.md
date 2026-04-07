@@ -575,4 +575,4 @@ Per la maggior parte degli utenti la **Variante A** è sufficiente e più sempli
 
 ---
 
-**Version**: 2.10.0 · **Last updated**: 2026-04-07
+**Version**: 2.10.1 · **Last updated**: 2026-04-07

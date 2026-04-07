@@ -1,5 +1,11 @@
 # Retro Panel — Changelog
 
+## [2.10.1] — 2026-04-07
+
+### Fixed
+- **Bell colore**: l'emoji 🔔 veniva renderizzata sempre gialla dal browser indipendentemente dal CSS; sostituita con SVG inline `fill="currentColor"` — ora grigia a riposo, colorata solo con notifiche non lette
+- **Bell layout**: toggle (☰) e campanella erano entrambi centrati in colonna; ora in riga — toggle a sinistra, campanella a destra; sidebar collassata: si impilano verticalmente entrambi centrati
+
 ## [2.10.0] — 2026-04-07
 
 ### Added
