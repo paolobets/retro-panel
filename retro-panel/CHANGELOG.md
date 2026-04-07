@@ -1,5 +1,13 @@
 # Retro Panel — Changelog
 
+## [2.10.2] — 2026-04-07
+
+### Fixed
+- **Bug automazioni non si avviano**: le entità di tipo `scene`/`script`/`automation` non erano incluse in `all_entity_ids` (loader.py) — il whitelist di `panel_service.py` le bloccava con 403; ora iterate da `scenario_sections`
+- **Sincronizzazione notifiche multi-device**: mark-read, mark-all-read e delete trasmettevano solo una risposta REST locale; ora il backend fa broadcast del messaggio `rp_notification_update` (lista completa aggiornata) a tutti i client WS; `notifications.js` espone `handleSync()` che sostituisce lo stato locale
+- **Alarm panel si blocca dopo disarmo**: al cambio di stato, pin inserito e chip selezionato non venivano azzerati → l'interfaccia poteva sembrare bloccata; ora `updateTile()` chiama `clearPin()` e `clearSelection()` ad ogni transizione di stato
+- **ws.js**: `connectWS()` accetta 5° parametro `onNotificationSync` per messaggi `rp_notification_update`
+
 ## [2.10.1] — 2026-04-07
 
 ### Fixed

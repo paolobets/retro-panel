@@ -257,7 +257,8 @@ Enable **2FA** on all administrator accounts.
 | **v2.9.32** | Released | Scenario tile redesign: MDI icons, domain badge, colour border |
 | **v2.9.34** | Released | Per-item icon + colour picker for scenarios in `/config` |
 | **v2.10.0** | Released | Push notifications: bell, drawer, toast, alert border · HA `retro_panel_notify` event |
-| **v2.10.1** | **Current** | Fix bell colore (SVG al posto di emoji) · fix layout toggle/bell ai due estremi |
+| **v2.10.1** | Released | Fix bell colore (SVG al posto di emoji) · fix layout toggle/bell ai due estremi |
+| **v2.10.2** | **Current** | Fix automazioni (whitelist entity_id) · sync notifiche multi-device · fix alarm freeze dopo disarmo |
 | **v3.0** | Planned | Plugin system · custom themes · history charts · offline-first |
 
 ---

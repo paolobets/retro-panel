@@ -11,11 +11,23 @@ Handlers:
 
 from __future__ import annotations
 
+import asyncio
+import json
 import logging
 
 from aiohttp import web
 
 logger = logging.getLogger(__name__)
+
+
+async def _broadcast_sync(request: web.Request, store) -> None:
+    """Broadcast updated notification list to all WS clients after a mutation."""
+    broadcast = request.app.get("ws_broadcast")
+    if broadcast is None:
+        return
+    notifications = await store.get_all()
+    msg = json.dumps({"type": "rp_notification_update", "notifications": notifications})
+    asyncio.ensure_future(broadcast(msg))
 
 
 async def get_notifications(request: web.Request) -> web.Response:
@@ -96,6 +108,7 @@ async def patch_notification_read(request: web.Request) -> web.Response:
     if not ok:
         return web.json_response({"error": "Not found."}, status=404)
 
+    await _broadcast_sync(request, store)
     return web.json_response({"ok": True}, status=200)
 
 
@@ -117,6 +130,7 @@ async def post_read_all(request: web.Request) -> web.Response:
         )
 
     await store.mark_all_read()
+    await _broadcast_sync(request, store)
     return web.json_response({"ok": True}, status=200)
 
 
@@ -146,4 +160,5 @@ async def delete_notification(request: web.Request) -> web.Response:
     if not ok:
         return web.json_response({"error": "Not found."}, status=404)
 
+    await _broadcast_sync(request, store)
     return web.json_response({"ok": True}, status=200)

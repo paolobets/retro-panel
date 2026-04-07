@@ -407,6 +407,7 @@ window.AlarmComponent = (function () {
       statusBar:      statusBar,
       entityName:     entityName,
       entitySub:      entitySub,
+      clearSelection: function () { _selectModeChip(null); },
       modesSection:   modesSection,
       modesLabel:     modesLabel,
       modesRow:       modesRow,
@@ -457,6 +458,13 @@ window.AlarmComponent = (function () {
     var isPending   = !!PENDING_STATES[state];
     var isTriggered = (state === 'triggered');
     var isUnavail   = (state === 'unavailable' || state === 'unknown');
+
+    /* On state transition, clear stale PIN and chip selection to prevent UI lock */
+    var prevState = tile.getAttribute('data-alarm-state') || '';
+    if (prevState !== state) {
+      r.clearPin();
+      r.clearSelection();
+    }
 
     /* Store on tile for use in chip handlers and confirm handler */
     tile.setAttribute('data-alarm-state', state);

@@ -479,6 +479,7 @@ def create_app(config, ha_client: HAClient, ws_proxy: WSProxy) -> web.Applicatio
         broadcast=ws_proxy.broadcast,
     )
     app['notification_engine'] = notification_engine
+    app['ws_broadcast'] = ws_proxy.broadcast
     ws_proxy.set_notify_callback(notification_engine.handle_notify_event)
 
     # Routes

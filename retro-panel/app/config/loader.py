@@ -354,6 +354,10 @@ class PanelConfig:
             for sensor in alarm.sensors:
                 _add(sensor.entity_id)
 
+        for section in self.scenario_sections:
+            for item in section.items:
+                _add(item.entity_id)
+
         return ids
 
 

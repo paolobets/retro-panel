@@ -310,6 +310,15 @@
     if (_drawerOpen) { _renderDrawer(); }
   }
 
+  function handleSync(notifications) {
+    // Replace local state with authoritative list from server (triggered by mutations on another device)
+    if (!Array.isArray(notifications)) { return; }
+    _notifications = notifications;
+    _updateBell();
+    _updateAlertBorder();
+    if (_drawerOpen) { _renderDrawer(); }
+  }
+
   function loadFromServer() {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', '/api/notifications', true);
@@ -334,6 +343,7 @@
   window.RP_Notifications = {
     init: init,
     handleIncoming: handleIncoming,
+    handleSync: handleSync,
     loadFromServer: loadFromServer,
   };
 

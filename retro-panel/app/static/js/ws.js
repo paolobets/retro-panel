@@ -15,10 +15,11 @@
    * @param {function(string, object): void} onStateChanged
    * @param {function(): void} onConnect
    * @param {function(): void} onDisconnect
-   * @param {function(object): void} [onNotification] — optional; called with notification object on rp_notification messages
+   * @param {function(object): void} [onNotification] — called with notification object on rp_notification
+   * @param {function(Array): void} [onNotificationSync] — called with full notification array on rp_notification_update
    * @returns {{ close: function(): void }}
    */
-  function connectWS(onStateChanged, onConnect, onDisconnect, onNotification) {
+  function connectWS(onStateChanged, onConnect, onDisconnect, onNotification, onNotificationSync) {
     var ws = null;
     var attempt = 0;
     var stopped = false;
@@ -61,6 +62,10 @@
         } else if (msg.type === 'rp_notification' && msg.notification) {
           if (typeof onNotification === 'function') {
             onNotification(msg.notification);
+          }
+        } else if (msg.type === 'rp_notification_update' && msg.notifications) {
+          if (typeof onNotificationSync === 'function') {
+            onNotificationSync(msg.notifications);
           }
         }
       };

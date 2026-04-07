@@ -313,6 +313,11 @@
             if (window.RP_Notifications) {
               window.RP_Notifications.handleIncoming(notification);
             }
+          },
+          function (notifications) {
+            if (window.RP_Notifications) {
+              window.RP_Notifications.handleSync(notifications);
+            }
           }
         );
       });
