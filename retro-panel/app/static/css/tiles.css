@@ -1201,6 +1201,52 @@
   border-radius: 12px;
   background: var(--c-surface-2);
 }
+
+/* Video element (HLS playback — iOS Safari only) */
+.cam-lb-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: none;         /* hidden until HLS stream confirmed */
+  background: #000;
+  border-radius: 8px;
+}
+.cam-lb-video.active {
+  display: block;
+}
+
+/* Hide img when video is active */
+.cam-lb-img.hidden-for-video {
+  display: none;
+}
+
+/* HLS badge variant — blue dot */
+.cam-lb-dot--hls {
+  background: #2196f3;
+}
+.cam-lb-live--hls .cam-lb-mode {
+  color: #2196f3;
+}
+
+/* Tap-to-play hint — shown when iOS blocks autoplay */
+.cam-lb-tap-hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  display: none;
+}
+.cam-lb-tap-hint.visible {
+  display: flex;
+}
+
 .cam-lb-bar {
   display: -webkit-flex;
   display: flex;
