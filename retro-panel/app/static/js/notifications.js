@@ -22,6 +22,7 @@
   // --------------------------------------------------------------------------
   var _notifications = [];  // newest-first
   var _drawerOpen = false;
+  var _audioCtx = null;     // shared AudioContext, unlocked on first user gesture
 
   // --------------------------------------------------------------------------
   // DOM helpers
@@ -94,44 +95,56 @@
   }
 
   // --------------------------------------------------------------------------
-  // Audio notification — Web Audio API beep (iOS 12: webkitAudioContext)
-  // Screen wake not possible from browser; audio plays even with screen on.
+  // Audio — unlock AudioContext on first user gesture (iOS requirement),
+  // then reuse it for all subsequent notification beeps.
   // --------------------------------------------------------------------------
-  function _playNotifSound(priority) {
-    if (priority !== 'high' && priority !== 'critical') { return; }
+  function _unlockAudio() {
+    if (_audioCtx) { return; }
     var AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) { return; }
     try {
-      var ctx = new AudioCtx();
-      var osc  = ctx.createOscillator();
-      var gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      // critical: two short beeps at 880 Hz; high: one beep at 660 Hz
-      osc.type = 'sine';
-      osc.frequency.value = priority === 'critical' ? 880 : 660;
-      gain.gain.setValueAtTime(0.35, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.4);
-      if (priority === 'critical') {
-        // Second beep after 0.5 s
-        var osc2  = ctx.createOscillator();
-        var gain2 = ctx.createGain();
-        osc2.connect(gain2);
-        gain2.connect(ctx.destination);
-        osc2.type = 'sine';
-        osc2.frequency.value = 880;
-        gain2.gain.setValueAtTime(0.35, ctx.currentTime + 0.55);
-        gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.95);
-        osc2.start(ctx.currentTime + 0.55);
-        osc2.stop(ctx.currentTime + 0.95);
-        osc2.onended = function () { try { ctx.close(); } catch (e) {} };
-      } else {
-        osc.onended = function () { try { ctx.close(); } catch (e) {} };
-      }
+      _audioCtx = new AudioCtx();
+      // Play a silent 1-sample buffer to satisfy iOS gesture requirement
+      var buf = _audioCtx.createBuffer(1, 1, 22050);
+      var src = _audioCtx.createBufferSource();
+      src.buffer = buf;
+      src.connect(_audioCtx.destination);
+      src.start(0);
+      if (_audioCtx.resume) { _audioCtx.resume(); }
     } catch (e) {
-      // Audio not available or gesture not yet received — silent fail
+      _audioCtx = null;
+    }
+  }
+
+  function _beep(freq, startOffset, duration) {
+    if (!_audioCtx) { return; }
+    try {
+      var osc  = _audioCtx.createOscillator();
+      var gain = _audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(_audioCtx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      var t = _audioCtx.currentTime + startOffset;
+      gain.gain.setValueAtTime(0.35, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+      osc.start(t);
+      osc.stop(t + duration);
+    } catch (e) { /* no-op */ }
+  }
+
+  function _playNotifSound(priority) {
+    if (priority !== 'high' && priority !== 'critical') { return; }
+    if (!_audioCtx) { return; }
+    // Ensure context is running (iOS may suspend after inactivity)
+    if (_audioCtx.resume && _audioCtx.state === 'suspended') {
+      _audioCtx.resume();
+    }
+    if (priority === 'critical') {
+      _beep(880, 0, 0.35);    // first beep
+      _beep(880, 0.5, 0.35);  // second beep 0.5 s later
+    } else {
+      _beep(660, 0, 0.35);
     }
   }
 
@@ -334,6 +347,10 @@
   // Public API
   // --------------------------------------------------------------------------
   function init() {
+    // Unlock AudioContext on first user gesture (iOS mandatory)
+    document.addEventListener('touchstart', _unlockAudio, { once: true, passive: true });
+    document.addEventListener('click', _unlockAudio, { once: true });
+
     _bindTap(_qs('#notif-bell'), function () {
       if (_drawerOpen) { _closeDrawer(); } else { _openDrawer(); }
     });

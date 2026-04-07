@@ -1,5 +1,12 @@
 # Retro Panel — Changelog
 
+## [2.10.5] — 2026-04-07
+
+### Fixed
+- **Audio beep non funzionante su iPad**: iOS richiede che `AudioContext` venga sbloccato durante un gesto utente; ora un contesto condiviso (`_audioCtx`) viene inizializzato al primo `touchstart`/`click`, poi riutilizzato per tutti i beep successivi
+- **Auto-reload via Ingress non funzionante**: rimossa la dipendenza da `localStorage` (bloccato da iOS ITP in iframe cross-origin); la versione del server viene ora confrontata con il cache-buster `?v=XXXX` letto direttamente dai tag `<script>` nel DOM — funziona sia da porta diretta che da Ingress
+- **Theme toggle in modalità auto**: il pulsante mostrava l'icona sbagliata e la prima pressione era invisibile; ora `_isEffectivelyLight()` controlla sia la classe `theme-light` sia `prefers-color-scheme: light` quando il tema è `auto` — l'icona riflette il tema effettivamente renderizzato e il toggle cambia sempre in modo visibile
+
 ## [2.10.4] — 2026-04-07
 
 ### Fixed

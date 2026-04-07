@@ -42,10 +42,25 @@
   // ---------------------------------------------------------------------------
   // Theme toggle
   // ---------------------------------------------------------------------------
+  function _isEffectivelyLight() {
+    // Returns true if the screen is currently rendering a light theme.
+    // theme-light: explicit light
+    // theme-auto + OS prefers light: auto resolved to light
+    if (document.body.classList.contains('theme-light')) { return true; }
+    if (document.body.classList.contains('theme-auto')) {
+      try {
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+      } catch (e) {}
+    }
+    return false;
+  }
+
   function _updateThemeBtn() {
     var btn = DOM.qs('#theme-btn');
     if (!btn || !window.RP_MDI) { return; }
-    var iconName = document.body.classList.contains('theme-light') ? 'weather-night' : 'weather-sunny';
+    // weather-night = moon → "currently light, tap for dark"
+    // weather-sunny = sun  → "currently dark, tap for light"
+    var iconName = _isEffectivelyLight() ? 'weather-night' : 'weather-sunny';
     btn.innerHTML = window.RP_MDI(iconName, 18);
   }
 
@@ -55,7 +70,8 @@
     btn.dataset.themeInit = '1';
     _updateThemeBtn();
     function doToggle() {
-      var next = document.body.classList.contains('theme-light') ? 'dark' : 'light';
+      // Toggle based on what the user actually sees, not just the body class
+      var next = _isEffectivelyLight() ? 'dark' : 'light';
       document.body.classList.remove('theme-dark', 'theme-light', 'theme-auto');
       document.body.classList.add('theme-' + next);
       try { localStorage.setItem('rp_theme', next); } catch (e) {}

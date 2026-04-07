@@ -68,17 +68,23 @@
             onNotificationSync(msg.notifications);
           }
         } else if (msg.type === 'rp_version' && msg.version) {
-          // Auto-reload when add-on version changes after an update
+          // Auto-reload when add-on version changes after an update.
+          // Compare server version against cache-buster embedded in the loaded page
+          // (e.g. server sends "2.10.5" → "2105"; page has ?v=2104 → mismatch → reload).
+          // No localStorage needed — works in HA Ingress iframes too.
+          var serverNum = (msg.version + '').replace(/\./g, '');
+          var pageNum = '';
           try {
-            var storedVer = localStorage.getItem('rp_addon_version');
-            if (storedVer && storedVer !== msg.version) {
-              console.info('[WS] Add-on updated (%s → %s) — reloading\u2026', storedVer, msg.version);
-              localStorage.setItem('rp_addon_version', msg.version);
-              setTimeout(function () { location.reload(true); }, 800);
-            } else {
-              localStorage.setItem('rp_addon_version', msg.version);
+            var scripts = document.querySelectorAll('script[src*="?v="]');
+            for (var si = 0; si < scripts.length; si++) {
+              var sm = scripts[si].src.match(/\?v=(\d+)/);
+              if (sm) { pageNum = sm[1]; break; }
             }
-          } catch (e) { /* localStorage non disponibile — ignora */ }
+          } catch (e) {}
+          if (pageNum && serverNum && pageNum !== serverNum) {
+            console.info('[WS] Version mismatch (page=%s server=%s) \u2014 reloading\u2026', pageNum, serverNum);
+            setTimeout(function () { location.reload(); }, 800);
+          }
         }
       };
 
