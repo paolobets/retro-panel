@@ -111,6 +111,14 @@
   cursor: pointer;
 }
 
+/* LOCK TILE — TRIPLE LOCK 120px */
+.tile-lock {
+  height: 120px;
+  min-height: 120px;
+  max-height: 120px;
+  cursor: pointer;
+}
+
 /* ---- SENSOR ROW TILE ---- */
 .tile-sensor {
   -webkit-flex-direction: row;
@@ -589,6 +597,20 @@
   overflow: hidden;
 }
 
+/* BUTTON TILE — TRIPLE LOCK 120px */
+.tile-button {
+  height: 120px;
+  min-height: 120px;
+  max-height: 120px;
+  cursor: pointer;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  text-align: left;
+  overflow: hidden;
+}
+
 /* ---- CAMERA TILE ---- */
 .tile-camera {
   position: relative;
@@ -681,6 +703,8 @@
 }
 .tile-light.is-on .tile-icon { color: var(--c-light-on); }
 .tile-switch.is-on .tile-icon { color: var(--c-on); }
+.tile-lock.is-locked .tile-icon { color: #4caf50; }
+.tile-lock.is-unlocked .tile-icon { color: #ff9800; }
 
 .tile-value {
   font-size: 13px;

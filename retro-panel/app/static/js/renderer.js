@@ -25,6 +25,7 @@ window.RP_Renderer = (function () {
     'light_dimmer':       null,
     'light_rgb':          null,
     'switch':             null,
+    'lock':               null,
     'sensor_temperature': null,
     'sensor_humidity':    null,
     'sensor_co2':         null,
@@ -54,6 +55,7 @@ window.RP_Renderer = (function () {
     'alarm_sensor':       null,
     'camera':             null,
     'scenario':           null,
+    'button':             null,
     'energy_flow':        null,
     'cover_standard':     null,
     'sensor_conditional': null,
@@ -66,6 +68,7 @@ window.RP_Renderer = (function () {
     'light_dimmer':       'tile-col-compact',
     'light_rgb':          'tile-col-compact',
     'switch':             'tile-col-compact',
+    'lock':               'tile-col-compact',
     'sensor_temperature': 'tile-col-sensor',
     'sensor_humidity':    'tile-col-sensor',
     'sensor_co2':         'tile-col-sensor',
@@ -95,6 +98,7 @@ window.RP_Renderer = (function () {
     'alarm_sensor':       'tile-col-alarm-sensor',
     'camera':             'tile-col-full',
     'scenario':           'tile-col-compact',
+    'button':             'tile-col-compact',
     'energy_flow':        'tile-col-full',
     'cover_standard':     'tile-col-compact',
     'sensor_conditional': 'tile-col-sensor',
@@ -106,6 +110,7 @@ window.RP_Renderer = (function () {
     COMPONENT_MAP['light_dimmer']       = window.LightComponent    || null;
     COMPONENT_MAP['light_rgb']          = window.LightComponent    || null;
     COMPONENT_MAP['switch']             = window.SwitchComponent   || null;
+    COMPONENT_MAP['lock']               = window.LockComponent     || null;
     COMPONENT_MAP['sensor_temperature'] = window.SensorComponent   || null;
     COMPONENT_MAP['sensor_humidity']    = window.SensorComponent   || null;
     COMPONENT_MAP['sensor_co2']         = window.SensorComponent   || null;
@@ -135,6 +140,7 @@ window.RP_Renderer = (function () {
     COMPONENT_MAP['alarm_sensor']       = window.AlarmSensorComponent || null;
     COMPONENT_MAP['camera']             = window.CameraComponent   || null;
     COMPONENT_MAP['scenario']           = window.ScenarioComponent || null;
+    COMPONENT_MAP['button']             = window.ButtonComponent   || null;
     COMPONENT_MAP['energy_flow']        = window.EnergyFlowComponent || null;
     COMPONENT_MAP['cover_standard']     = window.CoverComponent              || null;
     COMPONENT_MAP['sensor_conditional'] = window.SensorConditionalComponent  || null;

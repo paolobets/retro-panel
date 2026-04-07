@@ -123,6 +123,8 @@ _LAYOUT_TYPE_ICON_MAP: dict[str, str] = {
     "binary_moisture":    "water-percent",
     "binary_lock":        "lock",
     "binary_vibration":   "vibrate",
+    "lock":               "lock",
+    "button":             "gesture-tap-button",
 }
 
 
@@ -391,8 +393,12 @@ def _compute_layout_type(entity_id: str, device_class: str, visual_type: str) ->
         return "alarm"
     if domain == "camera":
         return "camera"
+    if domain == "lock":
+        return "lock"
     if domain in ("scene", "script", "automation"):
         return "scenario"
+    if domain == "button":
+        return "button"
     # User visual_type override (sensor/binary_sensor/light only)
     if visual_type:
         return visual_type
