@@ -546,3 +546,240 @@ html, body {
   color: var(--c-text-sec);
   padding: 12px 0;
 }
+
+/* =========================================================
+   NOTIFICATIONS — bell, drawer, toast, alert border
+   ========================================================= */
+
+/* Bell button — sits in sidebar below ☰ toggle */
+#notif-bell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 44px;
+  height: 44px;
+  margin: 4px auto;
+  background: none;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--c-text-muted);
+  font-size: 20px;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.2s;
+}
+#notif-bell.has-unread-high     { color: #ff9800; }
+#notif-bell.has-unread-critical { color: #f44336; }
+#notif-bell.has-unread-normal   { color: #4caf50; }
+#notif-bell.has-unread-info     { color: #2196f3; }
+
+/* Badge count on bell */
+#notif-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 8px;
+  background: #f44336;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  display: none;
+}
+#notif-badge.visible { display: block; }
+
+/* Notification drawer — slides in from left */
+#notif-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 320px;
+  max-width: 92vw;
+  height: 100%;
+  background: var(--c-surface-2, #1e1e1e);
+  border-right: 1px solid var(--c-border, #2a2a2a);
+  z-index: 400;
+  display: flex;
+  flex-direction: column;
+  -webkit-transform: translateX(-100%);
+  transform: translateX(-100%);
+  -webkit-transition: -webkit-transform 0.25s ease;
+  transition: transform 0.25s ease;
+  overflow: hidden;
+}
+#notif-drawer.open {
+  -webkit-transform: translateX(0);
+  transform: translateX(0);
+}
+
+#notif-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--c-border, #2a2a2a);
+  flex-shrink: 0;
+}
+#notif-drawer-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--c-text, #f0f0f0);
+}
+#notif-read-all-btn {
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: var(--c-accent, #2196f3);
+  cursor: pointer;
+  padding: 4px 8px;
+}
+#notif-drawer-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--c-text-muted, #888);
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+#notif-list {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px;
+}
+
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  margin-bottom: 6px;
+  border-radius: 10px;
+  background: var(--c-surface-3, #252525);
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.notif-item.unread { background: var(--c-surface-2, #1e1e1e); }
+.notif-item[data-priority="info"]     { border-left-color: #2196f3; }
+.notif-item[data-priority="normal"]   { border-left-color: #4caf50; }
+.notif-item[data-priority="high"]     { border-left-color: #ff9800; }
+.notif-item[data-priority="critical"] { border-left-color: #f44336; }
+
+.notif-item-body { flex: 1; min-width: 0; }
+.notif-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-text, #f0f0f0);
+  margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.notif-item-msg {
+  font-size: 11px;
+  color: var(--c-text-muted, #888);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.notif-item-time {
+  font-size: 10px;
+  color: var(--c-text-dim, #666);
+  margin-top: 4px;
+}
+.notif-item-del {
+  background: none;
+  border: none;
+  color: var(--c-text-dim, #666);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 6px;
+  flex-shrink: 0;
+}
+
+#notif-empty {
+  text-align: center;
+  padding: 40px 16px;
+  color: var(--c-text-muted, #888);
+  font-size: 13px;
+  display: none;
+}
+#notif-empty.visible { display: block; }
+
+/* Drawer backdrop */
+#notif-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 399;
+}
+#notif-backdrop.visible { display: block; }
+
+/* Toast container — top-right */
+#notif-toast-container {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.notif-toast {
+  min-width: 240px;
+  max-width: 320px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: var(--c-surface-2, #1e1e1e);
+  border-left: 4px solid #4caf50;
+  color: var(--c-text, #f0f0f0);
+  font-size: 13px;
+  pointer-events: auto;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  -webkit-animation: toastIn 0.25s ease;
+  animation: toastIn 0.25s ease;
+}
+.notif-toast[data-priority="info"]     { border-left-color: #2196f3; }
+.notif-toast[data-priority="normal"]   { border-left-color: #4caf50; }
+.notif-toast[data-priority="high"]     { border-left-color: #ff9800; }
+.notif-toast[data-priority="critical"] { border-left-color: #f44336; }
+
+.notif-toast-title { font-weight: 700; margin-bottom: 2px; }
+.notif-toast-msg   { color: var(--c-text-muted, #888); font-size: 11px; }
+
+@-webkit-keyframes toastIn {
+  from { opacity: 0; -webkit-transform: translateY(-16px); }
+  to   { opacity: 1; -webkit-transform: translateY(0); }
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Alert border — full window inset box-shadow (iOS 12 safe) */
+body.alert-high     { box-shadow: inset 0 0 0 4px #ff9800; }
+body.alert-critical { box-shadow: inset 0 0 0 4px #f44336; }
+
+@-webkit-keyframes alertPulse {
+  0%, 100% { box-shadow: inset 0 0 0 4px #f44336; }
+  50%       { box-shadow: inset 0 0 0 6px rgba(244,67,54,0.8); }
+}
+@keyframes alertPulse {
+  0%, 100% { box-shadow: inset 0 0 0 4px #f44336; }
+  50%       { box-shadow: inset 0 0 0 6px rgba(244,67,54,0.8); }
+}
+body.alert-critical {
+  -webkit-animation: alertPulse 2s ease-in-out infinite;
+  animation: alertPulse 2s ease-in-out infinite;
+}
