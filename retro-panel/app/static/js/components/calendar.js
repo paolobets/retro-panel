@@ -369,7 +369,7 @@ window.CalendarComponent = (function () {
     }
 
     var html = '<div style="text-align:center;font-size:13px;color:#888;margin-bottom:8px;font-weight:600;">' + rangeLabel + '</div>';
-    html += '<div class="week-header"><div class="week-header-time"></div>';
+    html += '<div class="cal-week-header"><div class="cal-week-header-time"></div>';
     var weekDates = [];
     for (var i = 0; i < 7; i++) {
       var dd = new Date(monday);
@@ -378,10 +378,10 @@ window.CalendarComponent = (function () {
       var dayEvs = getEventsForDate(dd.getFullYear(), dd.getMonth(), dd.getDate());
       var evCount = dayEvs.length;
       var isTodayCol = dd.getFullYear() === TODAY.getFullYear() && dd.getMonth() === TODAY.getMonth() && dd.getDate() === TODAY.getDate();
-      html += '<div class="week-header-cell' + (isTodayCol ? ' today-col' : '') + '" data-wday="' + dd.getDate() + '" data-wmonth="' + dd.getMonth() + '">';
-      html += '<div class="week-header-name">' + DAYS_IT[i] + '</div>';
-      html += '<div class="week-header-day">' + dd.getDate() + '</div>';
-      if (evCount > 0) { html += '<div class="week-header-count">' + evCount + ' ev.</div>'; }
+      html += '<div class="cal-week-header-cell' + (isTodayCol ? ' today-col' : '') + '" data-wday="' + dd.getDate() + '" data-wmonth="' + dd.getMonth() + '">';
+      html += '<div class="cal-week-header-name">' + DAYS_IT[i] + '</div>';
+      html += '<div class="cal-week-header-day">' + dd.getDate() + '</div>';
+      if (evCount > 0) { html += '<div class="cal-week-header-count">' + evCount + ' ev.</div>'; }
       html += '</div>';
     }
     html += '</div>';
@@ -413,19 +413,19 @@ window.CalendarComponent = (function () {
     }
 
     // Time grid
-    html += '<div class="week-body">';
+    html += '<div class="cal-week-body">';
     var nowH = TODAY.getHours();
     var nowM = TODAY.getMinutes();
     for (var h = 7; h <= 22; h++) {
-      html += '<div class="week-row"><div class="week-hour">' + pad(h) + ':00</div>';
+      html += '<div class="cal-week-row"><div class="cal-week-hour">' + pad(h) + ':00</div>';
       for (var wi = 0; wi < 7; wi++) {
         var wd = weekDates[wi];
         var wdayEvents = getEventsForDate(wd.getFullYear(), wd.getMonth(), wd.getDate());
         var isTodayCell = wd.getFullYear() === TODAY.getFullYear() && wd.getMonth() === TODAY.getMonth() && wd.getDate() === TODAY.getDate();
-        html += '<div class="week-cell" style="' + (isTodayCell ? 'background:#4a9eff08;' : '') + '">';
+        html += '<div class="cal-week-cell" style="' + (isTodayCell ? 'background:#4a9eff08;' : '') + '">';
         if (isTodayCell && h === nowH) {
           var topPx = Math.round((nowM / 60) * 48);
-          html += '<div class="week-now-line" style="top:' + topPx + 'px;"><div class="week-now-dot"></div></div>';
+          html += '<div class="cal-week-now-line" style="top:' + topPx + 'px;"><div class="cal-week-now-dot"></div></div>';
         }
         for (var we = 0; we < wdayEvents.length; we++) {
           var ev = wdayEvents[we];
@@ -439,7 +439,7 @@ window.CalendarComponent = (function () {
             var pxH = Math.max(20, Math.round((durMin / 60) * 48) - 2);
             var topOffset = Math.round((startM / 60) * 48);
             var color = getCalColor(ev.cal);
-            html += '<div class="week-event" style="top:' + topOffset + 'px;background:' + color + '33;border-left:3px solid ' + color + ';height:' + pxH + 'px;z-index:10;" title="' + ev.title + ' ' + ev.start + '-' + ev.end + '">' + ev.title + '</div>';
+            html += '<div class="cal-week-event" style="top:' + topOffset + 'px;background:' + color + '33;border-left:3px solid ' + color + ';height:' + pxH + 'px;z-index:10;" title="' + ev.title + ' ' + ev.start + '-' + ev.end + '">' + ev.title + '</div>';
           }
         }
         html += '</div>';
@@ -486,32 +486,32 @@ window.CalendarComponent = (function () {
       return a.start < b.start ? -1 : 1;
     });
 
-    var html = '<div class="day-header-bar">';
-    html += '<div class="month-nav" id="cal-prev-day">\u25C0</div>';
-    html += '<div class="day-label">';
+    var html = '<div class="cal-day-header-bar">';
+    html += '<div class="cal-month-nav" id="cal-prev-day">\u25C0</div>';
+    html += '<div class="cal-day-label">';
     if (isDayToday) { html += '<span style="color:#4a9eff;font-size:12px;font-weight:600;text-transform:uppercase;display:block;">Oggi</span>'; }
     html += DAYS_FULL[dowIdx] + ' ' + day + ' ' + MONTHS_IT[_currentMonth];
-    html += '<span class="day-count">' + dayEvents.length + ' event' + (dayEvents.length !== 1 ? 'i' : 'o') + '</span>';
+    html += '<span class="cal-day-count">' + dayEvents.length + ' event' + (dayEvents.length !== 1 ? 'i' : 'o') + '</span>';
     html += '</div>';
-    html += '<div class="month-nav" id="cal-next-day">\u25B6</div>';
+    html += '<div class="cal-month-nav" id="cal-next-day">\u25B6</div>';
     html += '</div>';
 
     if (dayEvents.length === 0) {
-      html += '<div class="day-empty">';
-      html += '<div class="day-empty-icon">\uD83D\uDCC5</div>';
-      html += '<div class="day-empty-text">Nessun evento</div>';
+      html += '<div class="cal-day-empty">';
+      html += '<div class="cal-day-empty-icon">\uD83D\uDCC5</div>';
+      html += '<div class="cal-day-empty-text">Nessun evento</div>';
       html += '</div>';
     } else {
-      html += '<div class="day-agenda">';
+      html += '<div class="cal-day-agenda">';
       for (var i = 0; i < dayEvents.length; i++) {
         var ev = dayEvents[i];
         var color = getCalColor(ev.cal);
-        html += '<div class="day-card">';
-        html += '<div class="day-card-bar" style="background:' + color + '"></div>';
-        html += '<div class="day-card-info">';
-        html += '<div class="day-card-title">' + ev.title + '</div>';
-        html += '<div class="day-card-time">' + (ev.allDay ? '\u2B50 Tutto il giorno' : ev.start + ' \u2014 ' + ev.end) + '</div>';
-        html += '<div class="day-card-cal" style="color:' + color + '">' + getCalName(ev.cal) + '</div>';
+        html += '<div class="cal-day-card">';
+        html += '<div class="cal-day-card-bar" style="background:' + color + '"></div>';
+        html += '<div class="cal-day-card-info">';
+        html += '<div class="cal-day-card-title">' + ev.title + '</div>';
+        html += '<div class="cal-day-card-time">' + (ev.allDay ? '\u2B50 Tutto il giorno' : ev.start + ' \u2014 ' + ev.end) + '</div>';
+        html += '<div class="cal-day-card-cal" style="color:' + color + '">' + getCalName(ev.cal) + '</div>';
         html += '</div></div>';
       }
       html += '</div>';
@@ -656,10 +656,10 @@ window.CalendarComponent = (function () {
 
     var dropWrap = el('div', 'cal-dropdown-wrap');
     _elCalBtn = el('div', 'cal-dropdown-btn');
-    _elCalBtnDots = el('span', 'btn-dots');
+    _elCalBtnDots = el('span', 'cal-btn-dots');
     _elCalBtnLabel = el('span', '');
     _elCalBtnLabel.textContent = 'Tutti i calendari';
-    var arrow = el('span', 'arrow', '&#9662;');
+    var arrow = el('span', 'cal-arrow', '&#9662;');
     _elCalBtn.appendChild(_elCalBtnDots);
     _elCalBtn.appendChild(_elCalBtnLabel);
     _elCalBtn.appendChild(arrow);
@@ -692,11 +692,11 @@ window.CalendarComponent = (function () {
     _elMonthView.appendChild(_elDaysGrid);
 
     // ── Week view ──
-    _elWeekView = el('div', 'week-view');
+    _elWeekView = el('div', 'cal-week-view');
     _elWeekView.style.display = 'none';
 
     // ── Day view ──
-    _elDayView = el('div', 'day-view');
+    _elDayView = el('div', 'cal-day-view');
     _elDayView.style.display = 'none';
 
     _elPage.appendChild(rowMonth);

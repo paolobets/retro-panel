@@ -2405,3 +2405,68 @@ body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-
   flex-shrink: 0;
 }
 
+/* ── Missing container and view classes ── */
+
+.cal-grid-wrap {
+  -webkit-flex: 1;
+  flex: 1;
+  overflow: hidden;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+}
+
+.cal-week-view {
+  display: none;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  -webkit-flex: 1;
+  flex: 1;
+  overflow: hidden;
+}
+
+.cal-day-view {
+  display: none;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  -webkit-flex: 1;
+  flex: 1;
+  overflow: hidden;
+}
+
+.cal-today-col {
+  background: rgba(74, 158, 255, 0.13);
+}
+
+/* ── Day view header ── */
+
+.cal-day-header-bar {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+
+.cal-day-label {
+  font-size: 18px;
+  font-weight: 700;
+  margin-left: 16px;
+  margin-right: 16px;
+  text-align: center;
+}
+
+/* .cal-day-count in day view context (event count badge in header) */
+.cal-day-header-bar .cal-day-count {
+  font-size: 13px;
+  color: var(--c-text-sec, #888);
+  margin-left: 8px;
+  display: block;
+  font-weight: 400;
+}
+
