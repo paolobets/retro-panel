@@ -1,5 +1,13 @@
 # Retro Panel — Changelog
 
+## [2.12.1] — 2026-04-10
+
+### Fixed
+- **Fix critico:** import path errato `app.config.loader` → `config.loader` in panel_config.py
+  che impediva l'avvio del server nel container Docker
+
+---
+
 ## [2.12.0] — 2026-04-10
 
 ### Fixed

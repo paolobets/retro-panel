@@ -6,7 +6,7 @@ import logging
 
 from aiohttp import web
 
-from app.config.loader import _compute_layout_type
+from config.loader import _compute_layout_type
 
 logger = logging.getLogger(__name__)
 
