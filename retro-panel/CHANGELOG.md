@@ -1,5 +1,16 @@
 # Retro Panel — Changelog
 
+## [2.12.0] — 2026-04-10
+
+### Fixed
+- **Visual type reset:** aggiunta opzione "Default (automatico)" nel picker visual type
+  per sensori, binary sensor e luci — permette di tornare all'inferenza automatica da device_class
+- **Alarm sensors layout:** i sensori zona dell'allarme vengono ora renderizzati come
+  standard binary sensor tiles (stessi componenti, stesse dimensioni, stesso stile del resto
+  della dashboard) invece del componente compatto dedicato
+
+---
+
 ## [2.11.1] — 2026-04-07
 
 ### Changed
