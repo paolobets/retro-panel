@@ -14,11 +14,11 @@ arch:
   - aarch64
   - amd64
 ingress: true
-ingress_port: 7655
+ingress_port: 7654
 ports:
-  7655/tcp: 7655
+  7654/tcp: 7655
 ports_description:
-  7655/tcp: "Retro Panel Beta direct access (bypass HA login for legacy browsers)"
+  7654/tcp: "Retro Panel Beta direct access (bypass HA login for legacy browsers)"
 panel_icon: mdi:tablet-dashboard
 panel_title: Retro Panel Beta
 startup: services
