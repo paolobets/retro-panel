@@ -64,6 +64,15 @@ function cfgFetchCameras() {
   });
 }
 
+function cfgFetchCalendars() {
+  return fetch('api/picker/calendars').then(function (r) {
+    if (!r.ok) { throw new Error('Failed to load calendars (' + r.status + ')'); }
+    return r.json().then(function (data) {
+      return Array.isArray(data) ? data : [];
+    });
+  });
+}
+
 /**
  * Save the full v3 configuration structure.
  * payload: { overview, rooms, scenarios, header_sensors, cameras }

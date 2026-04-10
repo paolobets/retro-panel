@@ -27,6 +27,7 @@
     <button class="cfg-tab" type="button" data-tab="scenarios">Scenarios</button>
     <button class="cfg-tab" type="button" data-tab="cameras">Cameras</button>
     <button class="cfg-tab" type="button" data-tab="alarms">Alarms</button>
+    <button class="cfg-tab" type="button" data-tab="calendars">Calendari</button>
   </div>
 
   <div id="cfg-body">
@@ -455,6 +456,43 @@
 
     </section>
 
+    <!-- ══════════════════════════════════════════════
+         TAB: CALENDARI
+         ══════════════════════════════════════════════ -->
+    <section id="tab-calendars" class="cfg-section hidden">
+
+  <div class="section-header">
+    <h2 class="section-title">Calendari</h2>
+  </div>
+  <p class="cfg-hint">Configura i calendari da mostrare nel pannello. Per ogni calendario puoi impostare un'etichetta e un colore.</p>
+
+  <div class="field-group" style="margin-bottom:16px;">
+    <div class="field-row">
+      <label class="field-label" for="calendars-title-input">Nome sezione</label>
+      <input id="calendars-title-input" type="text" class="field-input"
+        maxlength="32" autocomplete="off" autocorrect="off"
+        autocapitalize="words" spellcheck="false" placeholder="Calendario">
+    </div>
+    <div class="field-row">
+      <label class="field-label">Icona</label>
+      <input id="calendars-icon-value" type="hidden" value="calendar">
+      <button id="calendars-icon-btn" type="button" class="icon-picker-btn">
+        <span id="calendars-icon-preview" class="icon-picker-btn-icon"></span>
+        <span id="calendars-icon-name" class="icon-picker-btn-label">calendar</span>
+        <span class="icon-picker-chevron" aria-hidden="true">&#8964;</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="calendars-list">
+    <p class="cfg-placeholder">Nessun calendario configurato.</p>
+  </div>
+  <div class="items-actions" style="margin-top:12px;">
+    <button id="add-calendar-btn" type="button" class="action-btn">+ Aggiungi Calendario</button>
+  </div>
+
+    </section>
+
   </div><!-- /cfg-body -->
 
   <!-- ══════════════════════════════════════════════
@@ -579,6 +617,26 @@
         autocapitalize="off" spellcheck="false">
     </div>
     <div id="alarm-sensor-list">
+      <p class="cfg-placeholder">Caricamento&#8230;</p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       CALENDAR ENTITY PICKER
+       ══════════════════════════════════════════════ -->
+  <section id="calendar-entity-picker" class="cfg-overlay hidden">
+    <div id="calendar-entity-picker-header">
+      <button id="calendar-entity-picker-cancel-btn" type="button" class="action-btn-outline">Annulla</button>
+      <h2 class="section-title" style="margin:0;">Seleziona Calendario</h2>
+      <button id="calendar-entity-picker-done-btn" type="button" class="action-btn">Fatto</button>
+    </div>
+    <div id="calendar-entity-search-wrap">
+      <input id="calendar-entity-search-input" type="text"
+        placeholder="Cerca calendar&#8230;"
+        autocomplete="off" autocorrect="off"
+        autocapitalize="off" spellcheck="false">
+    </div>
+    <div id="calendar-entity-list">
       <p class="cfg-placeholder">Caricamento&#8230;</p>
     </div>
   </section>

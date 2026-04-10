@@ -26,7 +26,9 @@
     cameras_section:   { title: 'Cameras', icon: 'cctv' },
     alarms:           [],  // list: [{id, entity_id, label, sensors:[{entity_id, label, device_class}]}]
     alarms_section:   { title: 'Allarme', icon: 'shield-home' },
-    nav_order:        ['rooms', 'scenarios', 'cameras', 'alarms'],
+    calendars:           [],  // [{entity_id, label, color}]
+    calendars_section:   { title: 'Calendario', icon: 'calendar' },
+    nav_order:        ['rooms', 'scenarios', 'cameras', 'alarms', 'calendars'],
   };
 
   var allEntities  = [];   // from /api/entities
@@ -245,10 +247,11 @@
   // Nav Order — drag-to-reorder sidebar sections (Overview locked at top)
   // ---------------------------------------------------------------------------
   var _NAV_META = {
-    rooms:     { label: 'Rooms',    icon: 'floor-plan'  },
-    scenarios: { label: 'Scenari',  icon: 'palette'     },
-    cameras:   { label: 'Cameras',  icon: 'cctv'        },
-    alarms:    { label: 'Allarme',  icon: 'shield-home' },
+    rooms:     { label: 'Rooms',      icon: 'floor-plan'  },
+    scenarios: { label: 'Scenari',    icon: 'palette'     },
+    cameras:   { label: 'Cameras',    icon: 'cctv'        },
+    alarms:    { label: 'Allarme',    icon: 'shield-home' },
+    calendars: { label: 'Calendario', icon: 'calendar'    },
   };
 
   function renderNavOrder() {
@@ -397,7 +400,7 @@
       tabs[i].classList.toggle('active', tabs[i].getAttribute('data-tab') === tabId);
     }
 
-    var sections = ['overview', 'rooms', 'scenarios', 'header', 'cameras', 'alarms'];
+    var sections = ['overview', 'rooms', 'scenarios', 'header', 'cameras', 'alarms', 'calendars'];
     for (var j = 0; j < sections.length; j++) {
       var el = qs('tab-' + sections[j]);
       if (el) { el.classList.toggle('hidden', sections[j] !== tabId); }
@@ -408,6 +411,7 @@
     if (tabId === 'scenarios')  { renderScSectionsList();  renderScSectionDetail(); }
     if (tabId === 'cameras')    { renderCamSectionsList(); renderCamSectionDetail(); }
     if (tabId === 'alarms')     { renderAlarmsList(); }
+    if (tabId === 'calendars')  { renderCalendarsList(); }
 
 
     // Close room editor when leaving rooms tab
@@ -2661,6 +2665,145 @@
     });
   }
 
+  // ── Calendars ─────────────────────────────────────────────────────────────
+
+  var allCalendarEntities  = [];
+  var calendarSearchText   = '';
+
+  function renderCalendarsList() {
+    var container = qs('calendars-list');
+    if (!container) { return; }
+    var cals = state.calendars || [];
+    if (cals.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">Nessun calendario configurato. Clicca &ldquo;+ Aggiungi Calendario&rdquo;.</p>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < cals.length; i++) {
+      var c = cals[i];
+      html += '<div class="alarm-card" data-idx="' + i + '">';
+
+      // ── Header: entity id + remove button ──
+      html += '<div class="alarm-card-hdr">';
+      html += '<span class="selected-id">' + esc(c.entity_id) + '</span>';
+      html += '<button class="remove-btn cal-del-btn" type="button" data-idx="' + i + '">\u2715</button>';
+      html += '</div>';
+
+      // ── Label field ──
+      html += '<div class="field-row">';
+      html += '<label class="field-label">Label</label>';
+      html += '<input type="text" class="cal-label-input field-input" placeholder="Nome display\u2026" maxlength="64" value="' + esc(c.label || '') + '" data-idx="' + i + '">';
+      html += '</div>';
+
+      // ── Color field ──
+      html += '<div class="field-row">';
+      html += '<label class="field-label">Colore</label>';
+      html += '<input type="color" class="cal-color-input" value="' + esc(c.color || '#4285f4') + '" data-idx="' + i + '" style="width:48px;height:32px;padding:2px;border:none;cursor:pointer;background:none;">';
+      html += '</div>';
+
+      html += '</div>'; // /alarm-card
+    }
+    container.innerHTML = html;
+
+    container.querySelectorAll('.cal-del-btn').forEach(function(btn) {
+      initConfirmableBtn(btn, function() {
+        var idx = parseInt(btn.getAttribute('data-idx'), 10);
+        state.calendars.splice(idx, 1);
+        markDirty();
+        renderCalendarsList();
+      });
+    });
+
+    container.querySelectorAll('.cal-label-input').forEach(function(inp) {
+      inp.addEventListener('change', function() {
+        var idx = parseInt(this.getAttribute('data-idx'), 10);
+        if (state.calendars[idx]) { state.calendars[idx].label = this.value.trim(); markDirty(); }
+      });
+    });
+
+    container.querySelectorAll('.cal-color-input').forEach(function(inp) {
+      inp.addEventListener('change', function() {
+        var idx = parseInt(this.getAttribute('data-idx'), 10);
+        if (state.calendars[idx]) { state.calendars[idx].color = this.value; markDirty(); }
+      });
+    });
+  }
+
+  function openCalendarEntityPicker() {
+    calendarSearchText = '';
+    var searchEl = qs('calendar-entity-search-input');
+    if (searchEl) { searchEl.value = ''; }
+    showOverlay('calendar-entity-picker');
+    if (allCalendarEntities.length > 0) {
+      renderCalendarEntityPickerList();
+    } else {
+      var listEl = qs('calendar-entity-list');
+      if (listEl) { listEl.innerHTML = '<p class="cfg-placeholder">Caricamento\u2026</p>'; }
+      cfgFetchCalendars()
+        .then(function(entities) {
+          allCalendarEntities = entities || [];
+          renderCalendarEntityPickerList();
+        })
+        .catch(function() {
+          var el = qs('calendar-entity-list');
+          if (el) { el.innerHTML = '<p class="cfg-placeholder">Nessun calendario trovato in HA.</p>'; }
+        });
+    }
+    if (searchEl) { setTimeout(function() { searchEl.focus(); }, 100); }
+  }
+
+  function renderCalendarEntityPickerList() {
+    var container = qs('calendar-entity-list');
+    if (!container) { return; }
+    if (allCalendarEntities.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">Nessun calendario trovato in HA.</p>';
+      return;
+    }
+    var filtered = allCalendarEntities.filter(function(e) {
+      if (!calendarSearchText) { return true; }
+      var hay = (e.entity_id + ' ' + (e.friendly_name || '')).toLowerCase();
+      return hay.indexOf(calendarSearchText) !== -1;
+    });
+    if (filtered.length === 0) {
+      container.innerHTML = '<p class="cfg-placeholder">Nessun risultato.</p>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < filtered.length; i++) {
+      var e = filtered[i];
+      var already = false;
+      var cals = state.calendars || [];
+      for (var j = 0; j < cals.length; j++) {
+        if (cals[j].entity_id === e.entity_id) { already = true; break; }
+      }
+      html += '<div class="entity-row' + (already ? ' entity-row--selected' : '') + '">';
+      html += '<span class="entity-domain">cal</span>';
+      html += '<span class="entity-info"><span class="entity-name">' + esc(e.friendly_name || e.entity_id) + '</span>';
+      html += '<span class="entity-id-label">' + esc(e.entity_id) + '</span></span>';
+      if (already) {
+        html += '<span class="entity-check">&#10003;</span>';
+      } else {
+        html += '<button class="add-btn calendar-entity-pick-btn" type="button"'
+          + ' data-id="' + esc(e.entity_id) + '"'
+          + ' data-name="' + esc(e.friendly_name || '') + '">+</button>';
+      }
+      html += '</div>';
+    }
+    container.innerHTML = html;
+    container.querySelectorAll('.calendar-entity-pick-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if ((state.calendars || []).length >= 20) { return; }
+        var eid = this.getAttribute('data-id');
+        var name = this.getAttribute('data-name');
+        if (!state.calendars) { state.calendars = []; }
+        state.calendars.push({ entity_id: eid, label: name, color: '' });
+        markDirty();
+        renderCalendarEntityPickerList();
+        renderCalendarsList();
+      });
+    });
+  }
+
   // ── Entity picker ──────────────────────────────────────────────────────────
 
   function openEntityPicker(context) {
@@ -3322,7 +3465,7 @@
 
   // ── Overlay management ─────────────────────────────────────────────────────
 
-  var OVERLAYS = ['entity-picker', 'sensor-picker', 'scenario-picker', 'energy-editor', 'conditional-editor', 'camera-picker', 'alarm-entity-picker', 'alarm-sensor-picker', 'visual-type-picker', 'icon-picker-modal'];
+  var OVERLAYS = ['entity-picker', 'sensor-picker', 'scenario-picker', 'energy-editor', 'conditional-editor', 'camera-picker', 'alarm-entity-picker', 'alarm-sensor-picker', 'calendar-entity-picker', 'visual-type-picker', 'icon-picker-modal'];
 
   function showOverlay(id) {
     for (var i = 0; i < OVERLAYS.length; i++) {
@@ -3484,8 +3627,8 @@
 
         // nav_order
         state.nav_order = (Array.isArray(cfg.nav_order) && cfg.nav_order.length > 0)
-          ? cfg.nav_order.filter(function(s) { return ['rooms','scenarios','cameras','alarms'].indexOf(s) !== -1; })
-          : ['rooms', 'scenarios', 'cameras', 'alarms'];
+          ? cfg.nav_order.filter(function(s) { return ['rooms','scenarios','cameras','alarms','calendars'].indexOf(s) !== -1; })
+          : ['rooms', 'scenarios', 'cameras', 'alarms', 'calendars'];
 
         // alarms: flat list
         var almRaw = cfg.alarms_section || {};
@@ -3501,6 +3644,20 @@
             sensors:   (a.sensors || []).map(function(s) {
               return { entity_id: s.entity_id || '', label: s.label || '', device_class: s.device_class || '' };
             }),
+          };
+        });
+
+        // calendars
+        var calSecRaw = cfg.calendars_section || {};
+        state.calendars_section = {
+          title: calSecRaw.title || 'Calendario',
+          icon:  calSecRaw.icon  || 'calendar',
+        };
+        state.calendars = (cfg.calendars || []).map(function(c) {
+          return {
+            entity_id: c.entity_id || '',
+            label:     c.label     || '',
+            color:     c.color     || '',
           };
         });
 
@@ -3523,6 +3680,10 @@
         if (almTitleInput) { almTitleInput.value = state.alarms_section.title; }
         updateSectionIconPreview('alarms', state.alarms_section.icon);
 
+        var calTitleInput = qs('calendars-title-input');
+        if (calTitleInput) { calTitleInput.value = state.calendars_section.title; }
+        updateSectionIconPreview('calendars', state.calendars_section.icon);
+
         renderNavOrder();
         renderOvSectionsList();
         renderOvSectionDetail();
@@ -3533,6 +3694,7 @@
         renderCamSectionsList();
         renderCamSectionDetail();
         renderAlarmsList();
+        renderCalendarsList();
 
         // Load live entities from HA separately — non-fatal if HA is offline
         cfgFetchEntities()
@@ -3553,7 +3715,7 @@
       });
 
     // ── Tab buttons — inject MDI icons and wire clicks ────────────────────
-    var TAB_ICONS = { overview: 'home', rooms: 'floor-plan', scenarios: 'palette', header: 'thermometer', cameras: 'cctv', alarms: 'shield-home' };
+    var TAB_ICONS = { overview: 'home', rooms: 'floor-plan', scenarios: 'palette', header: 'thermometer', cameras: 'cctv', alarms: 'shield-home', calendars: 'calendar' };
     document.querySelectorAll('.cfg-tab').forEach(function (btn) {
       var tab = btn.getAttribute('data-tab');
       if (window.RP_MDI && TAB_ICONS[tab]) {
@@ -3788,6 +3950,45 @@
       almSensorSearchEl.addEventListener('input', function () {
         alarmSensorSearchText = this.value.toLowerCase();
         renderAlarmSensorPickerList();
+      });
+    }
+
+    // ── Calendars section title & icon ────────────────────────────────────────
+    var calTitleInput2 = qs('calendars-title-input');
+    if (calTitleInput2) {
+      calTitleInput2.addEventListener('input', function () {
+        markDirty();
+        state.calendars_section.title = this.value.trim() || 'Calendario';
+      });
+    }
+
+    var calIconBtn = qs('calendars-icon-btn');
+    if (calIconBtn) {
+      calIconBtn.addEventListener('click', function () {
+        openIconPickerModal(state.calendars_section.icon, function (name) {
+          markDirty();
+          state.calendars_section.icon = name;
+          updateSectionIconPreview('calendars', name);
+        });
+      });
+    }
+
+    // ── Add calendar button ───────────────────────────────────────────────────
+    var addCalendarBtn = qs('add-calendar-btn');
+    if (addCalendarBtn) { addCalendarBtn.addEventListener('click', openCalendarEntityPicker); }
+
+    // ── Calendar entity picker controls ───────────────────────────────────────
+    var calEntityCancelBtn = qs('calendar-entity-picker-cancel-btn');
+    if (calEntityCancelBtn) { calEntityCancelBtn.addEventListener('click', hideOverlay); }
+
+    var calEntityDoneBtn = qs('calendar-entity-picker-done-btn');
+    if (calEntityDoneBtn) { calEntityDoneBtn.addEventListener('click', hideOverlay); }
+
+    var calEntitySearchEl = qs('calendar-entity-search-input');
+    if (calEntitySearchEl) {
+      calEntitySearchEl.addEventListener('input', function () {
+        calendarSearchText = this.value.toLowerCase();
+        renderCalendarEntityPickerList();
       });
     }
 
