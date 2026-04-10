@@ -141,7 +141,7 @@ window.RP_Nav = (function () {
     addNavItem(nav, 'overview', _mdi(overviewIcon, 22), overviewTitle);
 
     // Build ordered list of visible sections from nav_order (default order if missing)
-    var navOrder = config.nav_order || ['rooms', 'scenarios', 'cameras', 'alarms'];
+    var navOrder = config.nav_order || ['rooms', 'scenarios', 'cameras', 'alarms', 'calendars'];
 
     var visibleRooms = [];
     var rooms = config.rooms || [];
@@ -173,6 +173,11 @@ window.RP_Nav = (function () {
         if (config.alarms && config.alarms.length > 0) {
           var almSec = config.alarms_section || {};
           addNavItem(nav, 'alarms', _mdi(almSec.icon || 'shield-home', 22), almSec.title || 'Allarme');
+        }
+      } else if (secId === 'calendars') {
+        if (config.calendars && config.calendars.length > 0) {
+          var calSec = config.calendars_section || {};
+          addNavItem(nav, 'calendars', _mdi(calSec.icon || 'calendar', 22), calSec.title || 'Calendario');
         }
       }
     }

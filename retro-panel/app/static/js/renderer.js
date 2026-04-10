@@ -335,6 +335,17 @@ window.RP_Renderer = (function () {
       var alarmSec = config.alarms_section || {};
       _renderAlarmSection(contentArea, config.alarms, alarmSec, appState);
 
+    } else if (sectionId === 'calendars') {
+      var calComp = window.CalendarComponent;
+      if (calComp) {
+        calComp.init(contentArea, config.calendars || [], appState);
+      } else {
+        var emptyDiv = DOM.createElement('div', 'empty-state');
+        emptyDiv.innerHTML = '<span class="empty-state-icon">\uD83D\uDCC5</span>'
+          + '<p class="empty-state-title">Calendario non disponibile</p>';
+        contentArea.appendChild(emptyDiv);
+      }
+
     } else if (sectionId.indexOf('room:') === 0) {
       var roomId = sectionId.slice(5);
       var rooms = config.rooms || [];
