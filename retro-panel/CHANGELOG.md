@@ -1,5 +1,13 @@
 # Retro Panel — Changelog
 
+## [2.12.2] — 2026-04-10
+
+### Fixed
+- **Fix reload loop:** meta tag `rp-build` non veniva aggiornato con il cache-buster,
+  causando mismatch versione server/pagina e reload infinito via WebSocket
+
+---
+
 ## [2.12.1] — 2026-04-10
 
 ### Fixed
