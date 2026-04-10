@@ -187,9 +187,11 @@ else
     OLD_VERSION=$(grep '^version:' "$CONFIG_YAML" | sed 's/version:[[:space:]]*["'"'"']*\([^"'"'"']*\)["'"'"']*/\1/')
     OLD_CACHE=$(echo "$OLD_VERSION" | tr -d '.')
 
-    echo "  Updating beta cache-buster: ?v=$OLD_CACHE → ?v=$BETA_CACHE"
-    sed -i "s/?v=${OLD_CACHE}/?v=${BETA_CACHE}/g" "$INDEX_HTML" "$CONFIG_HTML"
-    sed -i "s/rp-build\" content=\"${OLD_CACHE}\"/rp-build\" content=\"${BETA_CACHE}\"/" "$INDEX_HTML"
+    echo "  Updating beta cache-buster: ?v=... → ?v=$BETA_CACHE"
+    echo "  NOTE: rp-build meta tag NOT changed (must match server config.yaml version)"
+    # Update ?v= cache-busters on CSS/JS URLs (forces browser re-download)
+    # Do NOT touch rp-build meta — it must match config.yaml version for WebSocket version check
+    sed -i "s/?v=[0-9a-zA-Z]*/?v=${BETA_CACHE}/g" "$INDEX_HTML" "$CONFIG_HTML"
 
     # 2. Run tests
     echo ""
