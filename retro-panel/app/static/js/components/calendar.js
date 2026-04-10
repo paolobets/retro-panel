@@ -368,7 +368,11 @@ window.CalendarComponent = (function () {
       rangeLabel = 'Sett. ' + weekNum + ' \u00B7 ' + monday.getDate() + '\u2013' + sunday.getDate() + ' ' + MONTHS_IT[monday.getMonth()];
     }
 
-    var html = '<div style="text-align:center;font-size:13px;color:#888;margin-bottom:8px;font-weight:600;">' + rangeLabel + '</div>';
+    var html = '<div style="display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center;margin-bottom:8px;">';
+    html += '<div class="cal-month-nav" id="cal-prev-week">\u25C0</div>';
+    html += '<div style="font-size:13px;color:#888;font-weight:600;margin-left:12px;margin-right:12px;">' + rangeLabel + '</div>';
+    html += '<div class="cal-month-nav" id="cal-next-week">\u25B6</div>';
+    html += '</div>';
     html += '<div class="cal-week-header"><div class="cal-week-header-time"></div>';
     var weekDates = [];
     for (var i = 0; i < 7; i++) {
@@ -450,6 +454,37 @@ window.CalendarComponent = (function () {
 
     _elWeekView.innerHTML = html;
 
+    // Week nav arrows
+    var prevWeekEl = document.getElementById('cal-prev-week');
+    var nextWeekEl = document.getElementById('cal-next-week');
+    if (prevWeekEl) {
+      prevWeekEl.addEventListener('click', function () {
+        var ref = _selectedDay || new Date().getDate();
+        var d = new Date(_currentYear, _currentMonth, ref - 7);
+        _currentYear = d.getFullYear();
+        _currentMonth = d.getMonth();
+        _selectedDay = d.getDate();
+        fetchEvents(_currentYear, _currentMonth);
+        renderCurrentView();
+        renderDropdown();
+        updateOggiBtn();
+      });
+    }
+    if (nextWeekEl) {
+      nextWeekEl.addEventListener('click', function () {
+        var ref = _selectedDay || new Date().getDate();
+        var d = new Date(_currentYear, _currentMonth, ref + 7);
+        _currentYear = d.getFullYear();
+        _currentMonth = d.getMonth();
+        _selectedDay = d.getDate();
+        fetchEvents(_currentYear, _currentMonth);
+        renderCurrentView();
+        renderDropdown();
+        updateOggiBtn();
+      });
+    }
+
+    // Day header clicks → open sheet
     var wHeaders = _elWeekView.querySelectorAll('[data-wday]');
     for (var whi = 0; whi < wHeaders.length; whi++) {
       (function (hdr) {
