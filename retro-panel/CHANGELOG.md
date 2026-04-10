@@ -1,5 +1,26 @@
 # Retro Panel — Changelog
 
+## [2.13.0] — 2026-04-10
+
+### Added
+- **Sezione Calendario** — nuova sezione con supporto multi-calendario da Home Assistant
+  (CalDAV, Google Calendar, calendari locali HA — qualsiasi entità `calendar.*`)
+- **Vista Mese** — griglia 7 colonne con indicatori eventi colorati (dot singolo o conteggio),
+  weekend evidenziati, navigazione swipe e frecce, pulsante "Oggi"
+- **Vista Settimana** — timeline oraria con banner eventi tutto il giorno, indicatore tempo
+  corrente (linea rossa), conteggio eventi per giorno nell'header
+- **Vista Giorno** — agenda compatta con card evento (titolo, orario, calendario), nessuno
+  scroll necessario per giornate normali
+- **Bottom sheet** — dettaglio eventi del giorno con peek/expand/close, ordinamento
+  (tutto il giorno prima, poi cronologico), pulsante chiusura ✕
+- **Dropdown multi-calendario** — selezione multipla con conteggio eventi per calendario
+  nel mese corrente, filtro in tempo reale
+- **Tab Calendari nel Config** — aggiunta/rimozione entità calendario, label personalizzata,
+  color picker per colore identificativo
+- **API proxy eventi** — `/api/calendar-events/{entity_id}` con cache per mese
+
+---
+
 ## [2.12.2] — 2026-04-10
 
 ### Fixed
