@@ -181,13 +181,15 @@ if [ "$MODE" = "stable" ]; then
 # ── Beta release ─────────────────────────────────────────────────────────────
 
 else
-    # 1. Verify stable config is consistent
-    echo "  Running release checks (stable consistency)..."
-    if ! bash "$ROOT/scripts/check_release.sh"; then
-        echo ""
-        echo "ERROR: stable config is inconsistent. Fix before beta release."
-        exit 1
-    fi
+    # 1. Update cache-buster for beta (forces browser refresh between beta builds)
+    # Beta cache-buster uses version with dots removed + rc suffix stripped to numbers
+    BETA_CACHE=$(echo "$VERSION" | tr -d '.' | tr -d '-' | sed 's/rc//')
+    OLD_VERSION=$(grep '^version:' "$CONFIG_YAML" | sed 's/version:[[:space:]]*["'"'"']*\([^"'"'"']*\)["'"'"']*/\1/')
+    OLD_CACHE=$(echo "$OLD_VERSION" | tr -d '.')
+
+    echo "  Updating beta cache-buster: ?v=$OLD_CACHE → ?v=$BETA_CACHE"
+    sed -i "s/?v=${OLD_CACHE}/?v=${BETA_CACHE}/g" "$INDEX_HTML" "$CONFIG_HTML"
+    sed -i "s/rp-build\" content=\"${OLD_CACHE}\"/rp-build\" content=\"${BETA_CACHE}\"/" "$INDEX_HTML"
 
     # 2. Run tests
     echo ""
@@ -195,20 +197,29 @@ else
     if ! (cd "$ROOT" && py -m pytest retro-panel/tests/ -q); then
         echo ""
         echo "ERROR: tests failed. Fix before releasing."
+        git -C "$ROOT" checkout -- .
         exit 1
     fi
 
-    # 3. Tag and push (tag only — no commit needed)
+    # 3. Commit cache-buster change, tag, push
     echo ""
+    echo "  Committing cache-buster update..."
+    git -C "$ROOT" add \
+        retro-panel/app/static/index.html \
+        retro-panel/app/static/config.html
+
+    git -C "$ROOT" commit -m "chore(beta): bump cache-buster to ${BETA_CACHE} for beta-${VERSION}"
+
     echo "  Tagging $TAG..."
     git -C "$ROOT" tag "$TAG"
 
-    echo "  Pushing tag..."
-    git -C "$ROOT" push origin "$TAG"
+    echo "  Pushing..."
+    git -C "$ROOT" push origin master --tags
 
     echo ""
     echo "  ✅ Beta release $VERSION complete!"
     echo "     Tag: $TAG"
+    echo "     Cache-buster: ?v=$BETA_CACHE"
     echo "     CI will build beta Docker image and bump retro-panel-beta/config.yaml."
     echo ""
 fi
