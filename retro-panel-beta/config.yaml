@@ -1,0 +1,45 @@
+name: "Retro Panel Beta"
+version: "2.12.0"
+slug: "retro_panel_beta"
+description: >-
+  Beta channel for Retro Panel. Touch-optimized kiosk dashboard for Home Assistant.
+  Designed for wall-mounted tablets and always-on displays.
+  Works on legacy devices (iOS 12+), old Android browsers, and modern browsers.
+  WARNING: This is the experimental version — may contain bugs.
+url: "https://github.com/paolobets/retro-panel"
+homeassistant: "2023.1.0"
+stage: experimental
+image: "ghcr.io/paolobets/{arch}-retro-panel-beta"
+arch:
+  - aarch64
+  - amd64
+ingress: true
+ingress_port: 7655
+ports:
+  7655/tcp: 7655
+ports_description:
+  7655/tcp: "Retro Panel Beta direct access (bypass HA login for legacy browsers)"
+panel_icon: mdi:tablet-dashboard
+panel_title: Retro Panel Beta
+startup: services
+init: false
+hassio_api: true
+homeassistant_api: true
+options:
+  ha_url: "http://homeassistant:8123"
+  ha_token: ""
+  panel_title: "Home"
+  theme: "dark"
+  refresh_interval: 30
+  notification_ttl_days: 7
+  allowed_direct_ips:
+    - "0.0.0.0/0"
+schema:
+  ha_url: url?
+  ha_token: password?
+  panel_title: str
+  theme: "list(dark|light|auto)"
+  refresh_interval: "int(5,300)"
+  notification_ttl_days: "int(1,365)"
+  allowed_direct_ips:
+    - str
