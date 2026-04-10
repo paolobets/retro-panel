@@ -265,6 +265,14 @@ class AlarmConfig:
 
 
 @dataclass
+class CalendarConfig:
+    """A calendar entity with optional display settings."""
+    entity_id: str
+    label: str = ''
+    color: str = ''
+
+
+@dataclass
 class RoomConfig:
     """A room/area with its own entity grid."""
     id: str
@@ -298,7 +306,10 @@ class PanelConfig:
     alarms: List[AlarmConfig] = field(default_factory=list)
     alarms_section_title: str = 'Allarme'
     alarms_section_icon: str = 'shield-home'
-    nav_order: List[str] = field(default_factory=lambda: ['rooms', 'scenarios', 'cameras', 'alarms'])
+    calendars: List[CalendarConfig] = field(default_factory=list)
+    calendars_section_title: str = 'Calendario'
+    calendars_section_icon: str = 'calendar'
+    nav_order: List[str] = field(default_factory=lambda: ['rooms', 'scenarios', 'cameras', 'alarms', 'calendars'])
     notification_ttl_days: int = 7
 
     # --------------- backward compat helpers ---------------
@@ -359,6 +370,9 @@ class PanelConfig:
             _add(alarm.entity_id)
             for sensor in alarm.sensors:
                 _add(sensor.entity_id)
+
+        for cal in self.calendars:
+            _add(cal.entity_id)
 
         for section in self.scenario_sections:
             for item in section.items:
@@ -729,6 +743,18 @@ def _parse_alarm(raw: dict) -> Optional[AlarmConfig]:
     )
 
 
+def _parse_calendar(raw: dict) -> Optional[CalendarConfig]:
+    """Parse a single calendar entry from entities.json v5."""
+    eid = str(raw.get('entity_id') or '').strip()
+    if not eid or not eid.startswith('calendar.'):
+        return None
+    return CalendarConfig(
+        entity_id=eid,
+        label=str(raw.get('label') or '').strip(),
+        color=str(raw.get('color') or '').strip(),
+    )
+
+
 def _migrate_v4_to_v5(raw: dict) -> tuple[
     list[RoomSection],       # overview_sections
     list[RoomConfig],        # rooms
@@ -787,7 +813,7 @@ def _migrate_v2_pages(pages_raw: list) -> list[SectionItem]:
     return _parse_items(first.get("items") or [], "v2-migration")
 
 
-_VALID_NAV_SECTIONS = ('rooms', 'scenarios', 'cameras', 'alarms')
+_VALID_NAV_SECTIONS = ('rooms', 'scenarios', 'cameras', 'alarms', 'calendars')
 _DEFAULT_NAV_ORDER  = list(_VALID_NAV_SECTIONS)
 
 
@@ -823,9 +849,12 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
     str,                       # alarms_section_title     [12]
     str,                       # alarms_section_icon      [13]
     list[str],                 # nav_order                [14]
+    list[CalendarConfig],      # calendars                [15]
+    str,                       # calendars_section_title  [16]
+    str,                       # calendars_section_icon   [17]
 ]:
     """Load layout from /data/entities.json, migrating older formats."""
-    empty = ([], "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv", [], "Allarme", "shield-home", list(_DEFAULT_NAV_ORDER))
+    empty = ([], "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv", [], "Allarme", "shield-home", list(_DEFAULT_NAV_ORDER), [], "Calendario", "calendar")
 
     if entities_file.exists():
         try:
@@ -871,7 +900,9 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
             sc_sec = raw.get("scenarios_section") or {}
             cam_sec = raw.get("cameras_section") or {}
             alm_sec = raw.get("alarms_section") or {}
+            cal_sec = raw.get("calendars_section") or {}
             alarms = [a for a in [_parse_alarm(x) for x in (raw.get("alarms") or []) if isinstance(x, dict)] if a]
+            calendars = [c for c in [_parse_calendar(x) for x in (raw.get("calendars") or []) if isinstance(x, dict)] if c]
             return (
                 overview_sections, overview_title, overview_icon,
                 rooms, scenario_sections, header_sensors, camera_sections,
@@ -883,6 +914,9 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
                 str(alm_sec.get("title") or "Allarme").strip() or "Allarme",
                 str(alm_sec.get("icon") or "shield-home").strip() or "shield-home",
                 _parse_nav_order(raw.get("nav_order")),
+                calendars,
+                str(cal_sec.get("title") or "Calendario").strip() or "Calendario",
+                str(cal_sec.get("icon") or "calendar").strip() or "calendar",
             )
 
         # v3/v4 format — migrate to v5 shape (also handles v3 rooms via _parse_room migration logic)
@@ -913,6 +947,7 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
                 scenarios_section_title, scenarios_section_icon,
                 cameras_section_title, cameras_section_icon,
                 [], "Allarme", "shield-home", list(_DEFAULT_NAV_ORDER),
+                [], "Calendario", "calendar",
             )
 
         # v2 format: migrate first page to overview
@@ -920,14 +955,14 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
             logger.info("Migrating v2 pages format to v5")
             ov_items = _migrate_v2_pages(raw.get("pages") or [])
             ov_secs = [RoomSection(id="sec_default", title="", items=ov_items)] if ov_items else []
-            return (ov_secs, "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv", [], "Allarme", "shield-home", list(_DEFAULT_NAV_ORDER))
+            return (ov_secs, "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv", [], "Allarme", "shield-home", list(_DEFAULT_NAV_ORDER), [], "Calendario", "calendar")
 
         # v1 format: plain list
         if isinstance(raw, list):
             logger.info("Migrating v1 flat entities format to v5")
             ov_items = _migrate_v1_flat(raw)
             ov_secs = [RoomSection(id="sec_default", title="", items=ov_items)] if ov_items else []
-            return (ov_secs, "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv", [], "Allarme", "shield-home", list(_DEFAULT_NAV_ORDER))
+            return (ov_secs, "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv", [], "Allarme", "shield-home", list(_DEFAULT_NAV_ORDER), [], "Calendario", "calendar")
 
         logger.warning("Unrecognised entities.json format, using empty layout")
         return empty
@@ -937,7 +972,7 @@ def _load_layout(entities_file: Path, options_fallback: list) -> tuple[
         logger.info("No entities.json found, migrating from options.json")
         ov_items = _migrate_v1_flat(options_fallback)
         ov_secs = [RoomSection(id="sec_default", title="", items=ov_items)] if ov_items else []
-        return (ov_secs, "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv", [], "Allarme", "shield-home")
+        return (ov_secs, "Overview", "home", [], [], [], [], "Scenarios", "palette", "Telecamere", "cctv", [], "Allarme", "shield-home", list(_DEFAULT_NAV_ORDER), [], "Calendario", "calendar")
 
     return empty
 
@@ -1010,7 +1045,8 @@ def load_config() -> PanelConfig:
     (overview_sections, overview_title, overview_icon, rooms, scenario_sections, header_sensors, camera_sections,
      scenarios_section_title, scenarios_section_icon,
      cameras_section_title, cameras_section_icon,
-     alarms, alarms_section_title, alarms_section_icon, nav_order) = _load_layout(
+     alarms, alarms_section_title, alarms_section_icon, nav_order,
+     calendars, calendars_section_title, calendars_section_icon) = _load_layout(
         entities_file,
         options_entities if isinstance(options_entities, list) else [],
     )
@@ -1056,6 +1092,9 @@ def load_config() -> PanelConfig:
         alarms=alarms,
         alarms_section_title=alarms_section_title,
         alarms_section_icon=alarms_section_icon,
+        calendars=calendars,
+        calendars_section_title=calendars_section_title,
+        calendars_section_icon=calendars_section_icon,
         nav_order=nav_order,
         notification_ttl_days=notification_ttl_days,
     )

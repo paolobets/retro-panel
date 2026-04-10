@@ -56,6 +56,8 @@ from api.camera_proxy import (
 from api.picker_entities import get_picker_entities
 from api.picker_areas import get_picker_areas
 from api.picker_cameras import get_picker_cameras
+from api.picker_calendars import get_picker_calendars
+from api.calendar_events import get_calendar_events
 from notifications.store import NotificationStore
 from notifications.engine import NotificationEngine
 from api.notifications import (
@@ -213,6 +215,7 @@ _INGRESS_ONLY_PATHS: frozenset[str] = frozenset({
     "/api/picker/entities",
     "/api/picker/areas",
     "/api/picker/cameras",
+    "/api/picker/calendars",
     "/api/config",
 })
 
@@ -520,6 +523,8 @@ def create_app(config, ha_client: HAClient, ws_proxy: WSProxy) -> web.Applicatio
     app.router.add_get("/api/picker/entities", get_picker_entities)
     app.router.add_get("/api/picker/areas", get_picker_areas)
     app.router.add_get("/api/picker/cameras", get_picker_cameras)
+    app.router.add_get("/api/picker/calendars", get_picker_calendars)
+    app.router.add_get("/api/calendar-events/{entity_id}", get_calendar_events)
     app.router.add_get("/api/camera-proxy/{entity_id}", get_camera_proxy)
     app.router.add_get("/api/camera-proxy-stream/{entity_id}", get_camera_proxy_stream)
     app.router.add_get("/api/camera-stream/{entity_id}", get_camera_stream_info)

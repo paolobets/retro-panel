@@ -160,6 +160,18 @@ async def get_panel_config(request: web.Request) -> web.Response:
             "title": config.alarms_section_title,
             "icon":  config.alarms_section_icon,
         },
+        "calendars": [
+            {
+                "entity_id": c.entity_id,
+                "label": c.label,
+                "color": c.color,
+            }
+            for c in config.calendars
+        ],
+        "calendars_section": {
+            "title": config.calendars_section_title,
+            "icon":  config.calendars_section_icon,
+        },
         "nav_order": config.nav_order,
     }
 

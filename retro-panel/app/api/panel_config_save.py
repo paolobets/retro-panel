@@ -31,6 +31,10 @@ _ALARM_SENSOR_RE = re.compile(r'^binary_sensor\.[a-z0-9_]+$')
 
 _CAMERA_ENTITY_RE = re.compile(r"^camera\.[a-z0-9_]+$")
 
+_MAX_CALENDARS = 20
+_CALENDAR_ENTITY_RE = re.compile(r'^calendar\.[a-z0-9_]+$')
+_COLOR_RE = re.compile(r'^#[0-9a-fA-F]{6}$')
+
 
 def _validate_entity_id(eid: str) -> str:
     eid = str(eid or "").strip()
@@ -355,9 +359,30 @@ async def save_config(request: web.Request) -> web.Response:
             "sensors": sensors_out,
         })
 
+    # --- calendars ---
+    cal_sec_raw = body.get("calendars_section") or {}
+    calendars_section_title = str(cal_sec_raw.get("title") or "Calendario").strip()[:_MAX_TITLE] or "Calendario"
+    calendars_section_icon = str(cal_sec_raw.get("icon") or "calendar").strip()[:_MAX_ICON] or "calendar"
+
+    calendars_out = []
+    for cal in (body.get("calendars") or [])[:_MAX_CALENDARS]:
+        if not isinstance(cal, dict):
+            continue
+        cal_eid = str(cal.get("entity_id") or "").strip()
+        if not cal_eid or not _CALENDAR_ENTITY_RE.match(cal_eid):
+            continue
+        cal_color = str(cal.get("color") or "").strip()
+        if cal_color and not _COLOR_RE.match(cal_color):
+            cal_color = ""
+        calendars_out.append({
+            "entity_id": cal_eid,
+            "label": str(cal.get("label") or "").strip()[:_MAX_LABEL],
+            "color": cal_color,
+        })
+
     # --- nav_order ---
-    _VALID_NAV = {'rooms', 'scenarios', 'cameras', 'alarms'}
-    _DEFAULT_NAV = ['rooms', 'scenarios', 'cameras', 'alarms']
+    _VALID_NAV = {'rooms', 'scenarios', 'cameras', 'alarms', 'calendars'}
+    _DEFAULT_NAV = ['rooms', 'scenarios', 'cameras', 'alarms', 'calendars']
     nav_order_raw = body.get("nav_order") or []
     if not isinstance(nav_order_raw, list):
         nav_order_raw = []
@@ -387,6 +412,8 @@ async def save_config(request: web.Request) -> web.Response:
         "cameras_section": cameras_section,
         "alarms": alarms_out,
         "alarms_section": {"title": alarms_section_title, "icon": alarms_section_icon},
+        "calendars": calendars_out,
+        "calendars_section": {"title": calendars_section_title, "icon": calendars_section_icon},
         "nav_order": nav_order,
     }
 

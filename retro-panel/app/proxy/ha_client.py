@@ -241,6 +241,29 @@ class HAClient:
                 f"HLS segment fetch timed out: tail={tail!r}"
             ) from exc
 
+    async def get_calendar_events(
+        self, entity_id: str, start: str, end: str
+    ) -> list[dict]:
+        """Fetch calendar events from HA REST API."""
+        url = f"{self._ha_url}/api/calendars/{entity_id}"
+        session = self._get_session()
+        try:
+            async with session.get(
+                url,
+                params={"start": start, "end": end},
+                timeout=aiohttp.ClientTimeout(total=10),
+            ) as resp:
+                if resp.status == 401:
+                    raise PermissionError("HA token rejected for calendar events")
+                if resp.status == 404:
+                    raise FileNotFoundError(f"Calendar entity not found: {entity_id}")
+                resp.raise_for_status()
+                return await resp.json()
+        except aiohttp.ClientConnectorError as exc:
+            raise ConnectionRefusedError(str(exc)) from exc
+        except asyncio.TimeoutError as exc:
+            raise TimeoutError(f"Calendar events request for '{entity_id}' timed out") from exc
+
     async def get_all_entity_states(self) -> list[dict[str, Any]]:
         """Fetch ALL entity states from HA (used by the entity picker config page).
 
