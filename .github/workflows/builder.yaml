@@ -6,6 +6,7 @@ on:
       - master
     tags:
       - "v*"
+      - "beta-*"
   pull_request:
     branches:
       - master
@@ -24,11 +25,17 @@ jobs:
         with:
           path: "./retro-panel"
 
+      - name: Validate beta add-on config
+        uses: frenck/action-addon-linter@v2
+        with:
+          path: "./retro-panel-beta"
+
   # ── Build multi-arch images ─────────────────────────────────────────────────
   build:
     name: Build ${{ matrix.arch }}
     runs-on: ubuntu-latest
     needs: lint
+    if: "!startsWith(github.ref, 'refs/tags/beta-')"
     permissions:
       contents: read
       packages: write
@@ -109,3 +116,97 @@ jobs:
           body: ${{ steps.changelog.outputs.notes }}
           draft: false
           prerelease: false
+
+  # ── Build beta images on beta-* tags ───────────────────────────────────────
+  build-beta:
+    name: Build beta ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    needs: lint
+    if: startsWith(github.ref, 'refs/tags/beta-')
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - arch: aarch64
+            platform: linux/arm64
+            build_from: ghcr.io/home-assistant/aarch64-base-python:3.12-alpine3.21
+          - arch: amd64
+            platform: linux/amd64
+            build_from: ghcr.io/home-assistant/amd64-base-python:3.12-alpine3.21
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract beta version from tag
+        id: version
+        run: |
+          # Tag format: beta-X.Y.Z or beta-X.Y.Z-rcN
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#beta-}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push beta
+        uses: docker/build-push-action@v6
+        with:
+          context: ./retro-panel
+          platforms: ${{ matrix.platform }}
+          push: true
+          provenance: false
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.arch }}-retro-panel-beta:${{ steps.version.outputs.version }}
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.arch }}-retro-panel-beta:beta
+          build-args: |
+            BUILD_FROM=${{ matrix.build_from }}
+          labels: |
+            io.hass.type=addon
+            io.hass.arch=${{ matrix.arch }}
+            io.hass.version=${{ steps.version.outputs.version }}
+
+  # ── Update beta config.yaml version so HA detects the update ───────────────
+  bump-beta-version:
+    name: Bump beta version
+    runs-on: ubuntu-latest
+    needs: build-beta
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract beta version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#beta-}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Update beta config.yaml version
+        run: |
+          sed -i 's/^version: .*/version: "${{ steps.version.outputs.version }}"/' retro-panel-beta/config.yaml
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add retro-panel-beta/config.yaml
+          git diff --cached --quiet && echo "No version change" && exit 0
+          git commit -m "chore(beta): bump version to ${{ steps.version.outputs.version }}"
+          git push origin master
