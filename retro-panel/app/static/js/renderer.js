@@ -545,29 +545,29 @@ window.RP_Renderer = (function () {
         }
       }
 
-      // Sensor zone grid (if any)
+      // Sensor zone tiles — rendered as standard binary_sensor items
       var sensors = alarmCfg.sensors || [];
       if (sensors.length > 0) {
-        var sensorComp = COMPONENT_MAP['alarm_sensor'];
-        if (sensorComp) {
-          var sensorGrid = DOM.createElement('div', 'alarm-sensor-grid');
-          for (var j = 0; j < sensors.length; j++) {
-            var sensorCfg = sensors[j];
-            if (!sensorCfg || !sensorCfg.entity_id) { continue; }
-            try {
-              var sensorTile = sensorComp.createTile(sensorCfg);
-              sensorGrid.appendChild(sensorTile);
-              appState.tileMap[sensorCfg.entity_id] = sensorTile;
-              var sensorState = appState.states[sensorCfg.entity_id];
-              if (sensorState) {
-                try { sensorComp.updateTile(sensorTile, sensorState); } catch (ue) { }
-              }
-            } catch (serr) {
-              console.error('[renderer] alarm sensor tile failed:', sensorCfg.entity_id, serr);
-            }
+        var sensorRow = DOM.createElement('div', 'tile-row');
+        for (var j = 0; j < sensors.length; j++) {
+          var sensorCfg = sensors[j];
+          if (!sensorCfg || !sensorCfg.entity_id) { continue; }
+          // Build a standard item object so _renderItem can handle it
+          var sensorItem = {
+            type: 'entity',
+            entity_id: sensorCfg.entity_id,
+            label: sensorCfg.label || '',
+            layout_type: sensorCfg.layout_type || 'binary_standard',
+            icon: '',
+            visual_type: '',
+            display_mode: 'auto'
+          };
+          var tile = _renderItem(sensorItem, sensorRow, appState);
+          if (tile) {
+            appState.tileMap[sensorCfg.entity_id] = tile;
           }
-          container.appendChild(sensorGrid);
         }
+        container.appendChild(sensorRow);
       }
     }
   }
