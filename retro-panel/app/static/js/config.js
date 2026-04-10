@@ -99,6 +99,7 @@
 
   var VISUAL_OPTIONS = {
     sensor: [
+      { v: '', l: 'Default (automatico)' },
       { v: 'sensor_temperature', l: 'Temperatura' },
       { v: 'sensor_humidity',    l: 'Umidit\u00e0' },
       { v: 'sensor_co2',         l: 'CO\u2082' },
@@ -116,6 +117,7 @@
       { v: 'sensor_physical',   l: 'Fisico' },
     ],
     binary_sensor: [
+      { v: '', l: 'Default (automatico)' },
       { v: 'binary_door',      l: 'Porta' },
       { v: 'binary_window',    l: 'Finestra' },
       { v: 'binary_motion',    l: 'Movimento' },
@@ -127,6 +129,7 @@
       { v: 'binary_standard',  l: 'Standard' },
     ],
     light: [
+      { v: '', l: 'Default (automatico)' },
       { v: 'light_standard', l: 'Luce standard' },
       { v: 'light_dimmer',   l: 'Luce dimmer' },
       { v: 'light_rgb',      l: 'Luce RGB' },
@@ -164,6 +167,7 @@
       light_dimmer:       'Dimmer',
       light_rgb:          'RGB',
     };
+    if (!vt) { return 'Default (automatico)'; }
     return LABELS[vt] || 'Tipo visivo';
   }
 
