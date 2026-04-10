@@ -6,6 +6,8 @@ import logging
 
 from aiohttp import web
 
+from app.config.loader import _compute_layout_type
+
 logger = logging.getLogger(__name__)
 
 
@@ -147,6 +149,7 @@ async def get_panel_config(request: web.Request) -> web.Response:
                         "entity_id": s.entity_id,
                         "label": s.label,
                         "device_class": s.device_class,
+                        "layout_type": _compute_layout_type(s.entity_id, s.device_class, ""),
                     }
                     for s in a.sensors
                 ],
