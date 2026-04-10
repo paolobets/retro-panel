@@ -167,6 +167,7 @@ jobs:
           platforms: ${{ matrix.platform }}
           push: true
           provenance: false
+          no-cache: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/${{ matrix.arch }}-retro-panel-beta:${{ steps.version.outputs.version }}
             ghcr.io/${{ github.repository_owner }}/${{ matrix.arch }}-retro-panel-beta:beta
