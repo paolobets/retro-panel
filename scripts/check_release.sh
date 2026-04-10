@@ -135,6 +135,17 @@ for ASSET in "${INDEX_ASSETS[@]}"; do
     fi
 done
 
+# ── 2c. Check rp-build meta tag in index.html ──────────────────────────────
+
+EXPECTED_META="<meta name=\"rp-build\" content=\"$CACHE_VER\">"
+if grep -qF "content=\"$CACHE_VER\"" "$INDEX_HTML" && grep -qF "rp-build" "$INDEX_HTML"; then
+    [ "$VERBOSE" -eq 1 ] && echo "  ✓  [index] rp-build meta content=$CACHE_VER"
+else
+    FOUND_META=$(grep -oE 'rp-build" content="[0-9]+"' "$INDEX_HTML" | head -1 || echo "?")
+    echo "  ✗  [index] rp-build meta — found '$FOUND_META', expected content=\"$CACHE_VER\""
+    ERRORS=$((ERRORS + 1))
+fi
+
 # ── 3. Result ────────────────────────────────────────────────────────────────
 
 echo ""
