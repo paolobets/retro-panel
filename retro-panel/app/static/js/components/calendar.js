@@ -559,6 +559,10 @@ window.CalendarComponent = (function () {
   // ── Bottom Sheet ──
 
   function openSheet(day) {
+    var sidebar = document.getElementById('sidebar');
+    var sbWidth = sidebar ? sidebar.offsetWidth : 0;
+    _elSheet.style.left = sbWidth + 'px';
+    _elOverlay.style.left = sbWidth + 'px';
     var events = getEventsForDate(_currentYear, _currentMonth, day);
     var date = new Date(_currentYear, _currentMonth, day);
     var dowIdx = (date.getDay() === 0) ? 6 : date.getDay() - 1;

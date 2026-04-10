@@ -2224,3 +2224,49 @@ body {
   background: var(--c-surface-2);
 }
 
+/* ════════════════════════════════════════════
+   CALENDAR ENTITY PICKER
+   ════════════════════════════════════════════ */
+
+#calendar-entity-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-surface-2);
+  margin-bottom: 4px;
+}
+
+#calendar-entity-search-wrap {
+  padding: 10px 0 6px;
+}
+
+#calendar-entity-search-wrap input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-surface-2);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-size: 15px;
+  padding: 8px 12px;
+  outline: none;
+  font-family: inherit;
+  -webkit-appearance: none;
+}
+
+#calendar-entity-search-wrap input::placeholder {
+  color: var(--color-text-secondary);
+}
+
+#calendar-entity-search-wrap input:focus {
+  border-color: var(--color-accent);
+}
+
+#calendar-entity-list {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  flex: 1;
+  padding: 0 0 16px;
+}
+
