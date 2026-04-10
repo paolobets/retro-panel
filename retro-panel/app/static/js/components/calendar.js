@@ -510,8 +510,7 @@ window.CalendarComponent = (function () {
         html += '<div class="cal-day-card-bar" style="background:' + color + '"></div>';
         html += '<div class="cal-day-card-info">';
         html += '<div class="cal-day-card-title">' + ev.title + '</div>';
-        html += '<div class="cal-day-card-time">' + (ev.allDay ? '\u2B50 Tutto il giorno' : ev.start + ' \u2014 ' + ev.end) + '</div>';
-        html += '<div class="cal-day-card-cal" style="color:' + color + '">' + getCalName(ev.cal) + '</div>';
+        html += '<div class="cal-day-card-time">' + (ev.allDay ? '\u2B50 Tutto il giorno' : ev.start + ' \u2014 ' + ev.end) + ' \u00B7 <span style="color:' + color + '">' + getCalName(ev.cal) + '</span></div>';
         html += '</div></div>';
       }
       html += '</div>';
@@ -751,20 +750,39 @@ window.CalendarComponent = (function () {
     });
 
     _elPrevMonth.addEventListener('click', function () {
-      _currentMonth--;
-      if (_currentMonth < 0) { _currentMonth = 11; _currentYear--; }
-      _selectedDay = null;
-      fetchEvents(_currentYear, _currentMonth);
+      if (_currentView === 'week') {
+        // Navigate to previous week
+        var ref = _selectedDay || new Date().getDate();
+        var d = new Date(_currentYear, _currentMonth, ref - 7);
+        _currentYear = d.getFullYear();
+        _currentMonth = d.getMonth();
+        _selectedDay = d.getDate();
+        fetchEvents(_currentYear, _currentMonth);
+      } else {
+        _currentMonth--;
+        if (_currentMonth < 0) { _currentMonth = 11; _currentYear--; }
+        _selectedDay = null;
+        fetchEvents(_currentYear, _currentMonth);
+      }
       renderCurrentView();
       renderDropdown();
       updateOggiBtn();
     });
 
     _elNextMonth.addEventListener('click', function () {
-      _currentMonth++;
-      if (_currentMonth > 11) { _currentMonth = 0; _currentYear++; }
-      _selectedDay = null;
-      fetchEvents(_currentYear, _currentMonth);
+      if (_currentView === 'week') {
+        var ref = _selectedDay || new Date().getDate();
+        var d = new Date(_currentYear, _currentMonth, ref + 7);
+        _currentYear = d.getFullYear();
+        _currentMonth = d.getMonth();
+        _selectedDay = d.getDate();
+        fetchEvents(_currentYear, _currentMonth);
+      } else {
+        _currentMonth++;
+        if (_currentMonth > 11) { _currentMonth = 0; _currentYear++; }
+        _selectedDay = null;
+        fetchEvents(_currentYear, _currentMonth);
+      }
       renderCurrentView();
       renderDropdown();
       updateOggiBtn();
@@ -845,31 +863,86 @@ window.CalendarComponent = (function () {
       }
     }, { passive: true });
 
+    // Week swipe
+    _elWeekView.addEventListener('touchstart', function (e) {
+      _swipeStartX = e.touches[0].clientX;
+    }, { passive: true });
+    _elWeekView.addEventListener('touchend', function (e) {
+      var diff = _swipeStartX - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 60) {
+        var ref = _selectedDay || new Date().getDate();
+        var d = new Date(_currentYear, _currentMonth, ref + (diff > 0 ? 7 : -7));
+        _currentYear = d.getFullYear();
+        _currentMonth = d.getMonth();
+        _selectedDay = d.getDate();
+        fetchEvents(_currentYear, _currentMonth);
+        renderCurrentView();
+        renderDropdown();
+        updateOggiBtn();
+      }
+    }, { passive: true });
+
     // Sheet overlay tap to close
     _elOverlay.addEventListener('click', closeSheet);
     _elSheetClose.addEventListener('click', closeSheet);
 
-    // Sheet swipe
-    _elSheetHandleWrap.addEventListener('touchstart', function (e) {
-      onSheetSwipeStart(e.touches[0].clientY);
-    }, { passive: true });
-    _elSheetHandleWrap.addEventListener('touchend', function (e) {
-      onSheetSwipeEnd(e.changedTouches[0].clientY);
-    }, { passive: true });
-    _elSheetHandleWrap.addEventListener('mousedown', function (e) {
-      onSheetSwipeStart(e.clientY);
-    });
+    // Sheet swipe — listen on entire sheet for better touch area
+    var _sheetTouchStartY = 0;
+    var _sheetTouchStartX = 0;
+    var _sheetSwipeDecided = false;
 
-    // Also allow swipe on sheet header
-    var sheetHeaderEl = _elSheet.querySelector('.cal-sheet-header');
-    if (sheetHeaderEl) {
-      sheetHeaderEl.addEventListener('touchstart', function (e) {
-        onSheetSwipeStart(e.touches[0].clientY);
-      }, { passive: true });
-      sheetHeaderEl.addEventListener('touchend', function (e) {
-        onSheetSwipeEnd(e.changedTouches[0].clientY);
-      }, { passive: true });
-    }
+    _elSheet.addEventListener('touchstart', function (e) {
+      _sheetTouchStartY = e.touches[0].clientY;
+      _sheetTouchStartX = e.touches[0].clientX;
+      _sheetSwipeDecided = false;
+    }, { passive: true });
+
+    _elSheet.addEventListener('touchmove', function (e) {
+      if (_sheetSwipeDecided) return;
+      var dy = Math.abs(e.touches[0].clientY - _sheetTouchStartY);
+      var dx = Math.abs(e.touches[0].clientX - _sheetTouchStartX);
+      if (dy > 10 || dx > 10) {
+        _sheetSwipeDecided = true;
+        // If mostly vertical AND sheet body is at scroll top, treat as swipe
+        if (dy > dx) {
+          var scrollTop = _elSheetBody ? _elSheetBody.scrollTop : 0;
+          var goingUp = (e.touches[0].clientY < _sheetTouchStartY);
+          // Allow swipe up from peek (expand), or swipe down when scrolled to top
+          if (_sheetState === 'peek' || (!goingUp && scrollTop <= 0)) {
+            // This is a sheet gesture, not a scroll
+          }
+        }
+      }
+    }, { passive: true });
+
+    _elSheet.addEventListener('touchend', function (e) {
+      var diff = _sheetTouchStartY - e.changedTouches[0].clientY;
+      var absDx = Math.abs(e.changedTouches[0].clientX - _sheetTouchStartX);
+      // Only handle vertical swipes (not horizontal)
+      if (Math.abs(diff) > 40 && Math.abs(diff) > absDx) {
+        var scrollTop = _elSheetBody ? _elSheetBody.scrollTop : 0;
+        if (diff > 0 && _sheetState === 'peek') {
+          // Swipe up from peek → expand
+          _elSheet.className = 'cal-sheet expanded';
+          _sheetState = 'expanded';
+        } else if (diff < 0) {
+          if (_sheetState === 'expanded' && scrollTop <= 0) {
+            // Swipe down from expanded (scrolled to top) → peek
+            _elSheet.className = 'cal-sheet peek';
+            _sheetState = 'peek';
+          } else if (_sheetState === 'peek') {
+            // Swipe down from peek → close
+            closeSheet();
+          }
+        }
+      }
+      _sheetTouchStartY = 0;
+      _sheetTouchStartX = 0;
+    }, { passive: true });
+
+    _elSheet.addEventListener('mousedown', function (e) {
+      _sheetStartY = e.clientY;
+    });
 
     // Close dropdown on outside click — attach to document, store ref for cleanup
     _docClickHandler = function () { closeDropdown(); };
