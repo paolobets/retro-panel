@@ -2244,103 +2244,50 @@ body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-
   font-size: 16px;
 }
 
-/* ── Bottom sheet overlay ── */
-/* Uses visibility+opacity (NOT display:none) for smooth transitions on iOS 12 */
-.cal-sheet-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 200;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  -webkit-transition: opacity 0.25s, visibility 0.25s;
-  transition: opacity 0.25s, visibility 0.25s;
+/* ── Inline detail panel (replaces fixed bottom sheet) ── */
+.cal-detail {
+  max-height: 0;
+  overflow: hidden;
+  -webkit-transition: max-height 0.3s ease;
+  transition: max-height 0.3s ease;
+  border-top: 1px solid var(--c-surface-3, #333);
 }
-.cal-sheet-overlay.show {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
+.cal-detail.open {
+  max-height: 50vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
-
-/* ── Bottom sheet ── */
-.cal-sheet {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--c-surface-2, #1e1e36);
-  border-radius: 16px 16px 0 0;
-  z-index: 201;
-  -webkit-transform: translateY(100%);
-  transform: translateY(100%);
-  -webkit-transition: -webkit-transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), max-height 0.3s;
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), max-height 0.3s;
-  display: -webkit-flex;
-  display: flex;
-  -webkit-flex-direction: column;
-  flex-direction: column;
+.cal-detail.expanded {
+  max-height: 80vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
-
-.cal-sheet.peek {
-  -webkit-transform: translateY(0);
-  transform: translateY(0);
-  max-height: 38vh;
-}
-
-.cal-sheet.expanded {
-  -webkit-transform: translateY(0);
-  transform: translateY(0);
-  max-height: 85vh;
-}
-
-/* ── Sheet drag handle ── */
-.cal-sheet-handle-wrap {
-  padding: 12px 0 6px;
-  cursor: grab;
-  -webkit-flex-shrink: 0;
-  flex-shrink: 0;
-}
-
-.cal-sheet-handle {
-  width: 40px;
-  height: 5px;
-  background: #555;
-  border-radius: 3px;
-  margin: 0 auto;
-}
-
-/* ── Sheet header ── */
-.cal-sheet-header {
+.cal-detail-header {
   display: -webkit-flex;
   display: flex;
   -webkit-align-items: center;
   align-items: center;
-  padding: 0 20px 12px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--c-surface-3, #333);
-  -webkit-flex-shrink: 0;
-  flex-shrink: 0;
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  background: var(--c-surface-2, #1e1e36);
+  z-index: 10;
 }
-
-.cal-sheet-title {
+.cal-detail-title {
   font-size: 16px;
   font-weight: 700;
-  color: var(--c-text-pri, #e0e0e0);
 }
-
-.cal-sheet-count {
+.cal-detail-count {
   font-size: 12px;
   color: var(--c-text-sec, #888);
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--c-surface-3, #ffffff11);
   padding: 2px 8px;
   border-radius: 10px;
   margin-left: 10px;
 }
-
-.cal-sheet-close {
+.cal-detail-toggle {
   margin-left: auto;
   min-width: 44px;
   min-height: 44px;
@@ -2350,80 +2297,61 @@ body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-
   align-items: center;
   -webkit-justify-content: center;
   justify-content: center;
-  font-size: 20px;
-  color: #666;
+  font-size: 16px;
+  color: var(--c-text-sec, #888);
   cursor: pointer;
   border-radius: 8px;
-  -webkit-transition: background 0.1s;
-  transition: background 0.1s;
 }
-.cal-sheet-close:active { background: rgba(255, 255, 255, 0.07); }
-
-/* ── Sheet event list ── */
-.cal-sheet-body {
-  padding: 12px 20px;
-  overflow-y: auto;
-  -webkit-flex: 1;
-  flex: 1;
-  -webkit-overflow-scrolling: touch;
+.cal-detail-toggle:active { background: rgba(255, 255, 255, 0.07); }
+.cal-detail-close {
+  min-width: 44px;
+  min-height: 44px;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  font-size: 20px;
+  color: var(--c-text-sec, #666);
+  cursor: pointer;
+  border-radius: 8px;
 }
-
-.cal-sheet-event {
+.cal-detail-close:active { background: rgba(255, 255, 255, 0.07); }
+.cal-detail-body {
+  padding: 8px 16px 16px;
+}
+.cal-detail-event {
   display: -webkit-flex;
   display: flex;
   -webkit-align-items: flex-start;
   align-items: flex-start;
-  padding: 12px 0;
+  padding: 10px 0;
   border-bottom: 1px solid var(--c-surface-3, #1a1a2e);
 }
-.cal-sheet-event:last-child { border-bottom: none; }
-
-.cal-sheet-event-bar {
+.cal-detail-event:last-child { border-bottom: none; }
+.cal-detail-event-bar {
   width: 4px;
-  min-height: 44px;
+  min-height: 40px;
   border-radius: 2px;
   -webkit-flex-shrink: 0;
   flex-shrink: 0;
   margin-right: 12px;
+  -webkit-align-self: stretch;
+  align-self: stretch;
 }
-
-.cal-sheet-event-info {
+.cal-detail-event-info {
   -webkit-flex: 1;
   flex: 1;
 }
-
-.cal-sheet-event-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--c-text-pri, #e0e0e0);
-}
-
-.cal-sheet-event-time {
-  font-size: 12px;
-  color: var(--c-text-sec, #888);
-  margin-top: 3px;
-}
-
-.cal-sheet-event-cal {
-  font-size: 11px;
-  margin-top: 3px;
-  color: var(--c-text-sec, #888);
-}
-
-.cal-sheet-empty {
+.cal-detail-event-title { font-size: 14px; font-weight: 600; }
+.cal-detail-event-time { font-size: 12px; color: var(--c-text-sec, #888); margin-top: 3px; }
+.cal-detail-event-cal { font-size: 11px; margin-top: 3px; }
+.cal-detail-empty {
   text-align: center;
   color: var(--c-text-sec, #555);
   padding: 24px 0;
   font-size: 14px;
-}
-
-.cal-sheet-hint {
-  text-align: center;
-  font-size: 10px;
-  color: var(--c-text-sec, #444);
-  padding: 6px 0;
-  -webkit-flex-shrink: 0;
-  flex-shrink: 0;
 }
 
 /* ── Missing container and view classes ── */

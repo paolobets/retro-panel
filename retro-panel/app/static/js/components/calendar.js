@@ -3,7 +3,7 @@
  * Full IIFE, ES5 only. iOS 12 Safari safe.
  *
  * Month grid with event indicators, multi-calendar dropdown,
- * bottom sheet (peek/expand/close), Oggi button, swipe navigation.
+ * inline detail panel (open/expanded/close), Oggi button, swipe navigation.
  * Fetches events from /api/calendar-events/ per calendar entity.
  *
  * NO const/let/arrow functions/?./?? — only var, function declarations.
@@ -42,18 +42,15 @@ window.CalendarComponent = (function () {
   var _elDaysGrid = null;
   var _elWeekView = null;
   var _elDayView = null;
-  var _elSheet = null;
-  var _elOverlay = null;
-  var _elSheetHandleWrap = null;
-  var _elSheetTitle = null;
-  var _elSheetCount = null;
-  var _elSheetClose = null;
-  var _elSheetBody = null;
-  var _sheetState = 'closed';
+  var _elDetailPanel = null;
+  var _elDetailTitle = null;
+  var _elDetailCount = null;
+  var _elDetailClose = null;
+  var _elDetailToggle = null;
+  var _elDetailBody = null;
+  var _detailState = 'closed';
   var _swipeStartX = 0;
-  var _sheetStartY = 0;
   var _docClickHandler = null;
-  var _docMouseupHandler = null;
 
   // ── Constants ──
   var MONTHS_IT = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
@@ -346,7 +343,7 @@ window.CalendarComponent = (function () {
         cell.addEventListener('click', function () {
           _selectedDay = parseInt(cell.getAttribute('data-day'));
           renderMonth();
-          openSheet(_selectedDay);
+          openDetail(_selectedDay);
         });
       }(dayCells[di]));
     }
@@ -494,7 +491,7 @@ window.CalendarComponent = (function () {
       });
     }
 
-    // Day header clicks → open sheet
+    // Day header clicks → open detail panel
     var wHeaders = _elWeekView.querySelectorAll('[data-wday]');
     for (var whi = 0; whi < wHeaders.length; whi++) {
       (function (hdr) {
@@ -503,7 +500,7 @@ window.CalendarComponent = (function () {
           var month = parseInt(hdr.getAttribute('data-wmonth'));
           if (month === _currentMonth) {
             _selectedDay = day;
-            openSheet(day);
+            openDetail(day);
           }
         });
       }(wHeaders[whi]));
@@ -600,22 +597,18 @@ window.CalendarComponent = (function () {
     else if (_currentView === 'day') { renderDay(); }
   }
 
-  // ── Bottom Sheet ──
+  // ── Inline Detail Panel ──
 
-  function openSheet(day) {
-    var sidebar = document.getElementById('sidebar');
-    var sbWidth = sidebar ? sidebar.offsetWidth : 0;
-    _elSheet.style.left = sbWidth + 'px';
-    _elOverlay.style.left = sbWidth + 'px';
+  function openDetail(day) {
     var events = getEventsForDate(_currentYear, _currentMonth, day);
     var date = new Date(_currentYear, _currentMonth, day);
     var dowIdx = (date.getDay() === 0) ? 6 : date.getDay() - 1;
-    _elSheetTitle.textContent = DAYS_FULL[dowIdx] + ' ' + day + ' ' + MONTHS_IT[_currentMonth];
-    _elSheetCount.textContent = events.length + ' event' + (events.length !== 1 ? 'i' : 'o');
+    _elDetailTitle.textContent = DAYS_FULL[dowIdx] + ' ' + day + ' ' + MONTHS_IT[_currentMonth];
+    _elDetailCount.textContent = events.length + ' event' + (events.length !== 1 ? 'i' : 'o');
 
     var html = '';
     if (events.length === 0) {
-      html = '<div class="cal-sheet-empty">\uD83D\uDCC5 Nessun evento</div>';
+      html = '<div class="cal-detail-empty">\uD83D\uDCC5 Nessun evento</div>';
     } else {
       events.sort(function (a, b) {
         if (a.allDay && !b.allDay) { return -1; }
@@ -625,100 +618,63 @@ window.CalendarComponent = (function () {
       for (var i = 0; i < events.length; i++) {
         var ev = events[i];
         var color = getCalColor(ev.cal);
-        html += '<div class="cal-sheet-event">';
-        html += '<div class="cal-sheet-event-bar" style="background:' + color + '"></div>';
-        html += '<div class="cal-sheet-event-info">';
-        html += '<div class="cal-sheet-event-title">' + ev.title + '</div>';
-        html += '<div class="cal-sheet-event-time">' + (ev.allDay ? '\u2B50 Tutto il giorno' : ev.start + ' \u2014 ' + ev.end) + '</div>';
-        html += '<div class="cal-sheet-event-cal" style="color:' + color + '">' + getCalName(ev.cal) + '</div>';
+        html += '<div class="cal-detail-event">';
+        html += '<div class="cal-detail-event-bar" style="background:' + color + '"></div>';
+        html += '<div class="cal-detail-event-info">';
+        html += '<div class="cal-detail-event-title">' + ev.title + '</div>';
+        html += '<div class="cal-detail-event-time">' + (ev.allDay ? '\u2B50 Tutto il giorno' : ev.start + ' \u2014 ' + ev.end) + '</div>';
+        html += '<div class="cal-detail-event-cal" style="color:' + color + '">' + getCalName(ev.cal) + '</div>';
         html += '</div></div>';
       }
     }
-    _elSheetBody.innerHTML = html;
+    _elDetailBody.innerHTML = html;
 
-    _elSheet.className = 'cal-sheet';
     if (events.length > 3) {
-      _elSheet.className = 'cal-sheet expanded';
-      _sheetState = 'expanded';
-      _elSheetBody.style.overflowY = 'auto';
+      _elDetailPanel.className = 'cal-detail expanded';
     } else {
-      _elSheet.className = 'cal-sheet peek';
-      _sheetState = 'peek';
-      _elSheetBody.style.overflowY = 'hidden'; // Disable scroll in peek so iOS doesn't eat swipe up
+      _elDetailPanel.className = 'cal-detail open';
     }
-    _updateSheetToggleBtn();
-    _elOverlay.className = 'cal-sheet-overlay show';
-    // Block page scroll behind sheet (iOS Safari)
-    _elPage.style.overflow = 'hidden';
-    _elPage.style.pointerEvents = 'none';
-    _elOverlay.addEventListener('touchmove', _preventTouch, { passive: false });
+    _detailState = (events.length > 3) ? 'expanded' : 'open';
+    _updateDetailToggle();
+
+    // Scroll the detail panel into view
+    setTimeout(function () {
+      _elDetailPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
   }
 
-  function _preventTouch(e) { e.preventDefault(); }
-
-  function closeSheet() {
-    _elSheet.className = 'cal-sheet';
-    _elOverlay.className = 'cal-sheet-overlay';
-    _sheetState = 'closed';
-    // Restore page interaction
-    _elPage.style.overflow = '';
-    _elPage.style.pointerEvents = '';
-    _elOverlay.removeEventListener('touchmove', _preventTouch);
+  function closeDetail() {
+    _elDetailPanel.className = 'cal-detail';
+    _detailState = 'closed';
     _selectedDay = null;
     if (_currentView === 'month') { renderMonth(); }
   }
 
-  function onSheetSwipeStart(y) { _sheetStartY = y; }
-
-  function onSheetSwipeEnd(y) {
-    var diff = _sheetStartY - y;
-    _sheetStartY = 0;
-    if (diff > 40 && _sheetState === 'peek') {
-      _elSheet.className = 'cal-sheet expanded';
-      _sheetState = 'expanded';
-    } else if (diff < -40) {
-      if (_sheetState === 'expanded') {
-        _elSheet.className = 'cal-sheet peek';
-        _sheetState = 'peek';
-      } else {
-        closeSheet();
-      }
+  function _updateDetailToggle() {
+    if (!_elDetailToggle) { return; }
+    if (_detailState === 'open') {
+      _elDetailToggle.innerHTML = '&#9650;'; // ▲
+      _elDetailToggle.style.display = '';
+    } else if (_detailState === 'expanded') {
+      _elDetailToggle.innerHTML = '&#9660;'; // ▼
+      _elDetailToggle.style.display = '';
+    } else {
+      _elDetailToggle.style.display = 'none';
     }
+  }
+
+  function _onDetailToggleClick() {
+    if (_detailState === 'open') {
+      _elDetailPanel.className = 'cal-detail expanded';
+      _detailState = 'expanded';
+    } else if (_detailState === 'expanded') {
+      _elDetailPanel.className = 'cal-detail open';
+      _detailState = 'open';
+    }
+    _updateDetailToggle();
   }
 
   // ── DOM Building ──
-
-  // ── Sheet toggle button (▲/▼ fallback for swipe) ──
-
-  var _elSheetToggle = null;
-
-  function _updateSheetToggleBtn() {
-    if (!_elSheetToggle) { return; }
-    if (_sheetState === 'peek') {
-      _elSheetToggle.innerHTML = '&#9650;'; // ▲ expand
-      _elSheetToggle.title = 'Espandi';
-      _elSheetToggle.style.display = '';
-    } else if (_sheetState === 'expanded') {
-      _elSheetToggle.innerHTML = '&#9660;'; // ▼ reduce
-      _elSheetToggle.title = 'Riduci';
-      _elSheetToggle.style.display = '';
-    } else {
-      _elSheetToggle.style.display = 'none';
-    }
-  }
-
-  function _onSheetToggleClick() {
-    if (_sheetState === 'peek') {
-      _elSheet.className = 'cal-sheet expanded';
-      _sheetState = 'expanded';
-      _elSheetBody.style.overflowY = 'auto';
-    } else if (_sheetState === 'expanded') {
-      _elSheet.className = 'cal-sheet peek';
-      _sheetState = 'peek';
-      _elSheetBody.style.overflowY = 'hidden';
-    }
-    _updateSheetToggleBtn();
-  }
 
   // ── DOM helpers ──
 
@@ -801,41 +757,29 @@ window.CalendarComponent = (function () {
     _elPage.appendChild(_elDayView);
 
     // Debug version indicator — remove after beta testing
-    var _dbgVer = el('div', '', 'cal-build:rc13');
+    var _dbgVer = el('div', '', 'cal-build:rc14');
     _dbgVer.style.cssText = 'position:fixed;bottom:4px;right:4px;font-size:9px;color:#555;z-index:9999;pointer-events:none;';
     _elPage.appendChild(_dbgVer);
 
+    // ── Inline detail panel ──
+    _elDetailPanel = el('div', 'cal-detail');
+    var detailHeader = el('div', 'cal-detail-header');
+    _elDetailTitle = el('div', 'cal-detail-title');
+    _elDetailCount = el('div', 'cal-detail-count');
+    _elDetailToggle = el('div', 'cal-detail-toggle', '&#9650;');
+    _elDetailClose = el('div', 'cal-detail-close', '&#x2715;');
+    detailHeader.appendChild(_elDetailTitle);
+    detailHeader.appendChild(_elDetailCount);
+    detailHeader.appendChild(_elDetailToggle);
+    detailHeader.appendChild(_elDetailClose);
+    _elDetailBody = el('div', 'cal-detail-body');
+    _elDetailPanel.appendChild(detailHeader);
+    _elDetailPanel.appendChild(_elDetailBody);
+
+    // Append INSIDE _elPage, after the views
+    _elPage.appendChild(_elDetailPanel);
+
     _container.appendChild(_elPage);
-
-    // ── Bottom sheet (appended to container, fixed positioning) ──
-    _elOverlay = el('div', 'cal-sheet-overlay');
-    _elSheet = el('div', 'cal-sheet');
-
-    _elSheetHandleWrap = el('div', 'cal-sheet-handle-wrap');
-    var sheetHandle = el('div', 'cal-sheet-handle');
-    _elSheetHandleWrap.appendChild(sheetHandle);
-
-    var sheetHeader = el('div', 'cal-sheet-header');
-    _elSheetTitle = el('div', 'cal-sheet-title');
-    _elSheetCount = el('div', 'cal-sheet-count');
-    _elSheetToggle = el('div', 'cal-sheet-close', '&#9650;');
-    _elSheetToggle.style.cssText = 'margin-left:auto;min-width:44px;min-height:44px;display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center;font-size:16px;color:#888;cursor:pointer;border-radius:8px;';
-    _elSheetClose = el('div', 'cal-sheet-close', '&#x2715;');
-    sheetHeader.appendChild(_elSheetTitle);
-    sheetHeader.appendChild(_elSheetCount);
-    sheetHeader.appendChild(_elSheetToggle);
-    sheetHeader.appendChild(_elSheetClose);
-
-    _elSheetBody = el('div', 'cal-sheet-body');
-    var sheetHint = el('div', 'cal-sheet-hint', '&#8593; Scorri su per espandere &middot; &#8595; gi&ugrave; per chiudere');
-
-    _elSheet.appendChild(_elSheetHandleWrap);
-    _elSheet.appendChild(sheetHeader);
-    _elSheet.appendChild(_elSheetBody);
-    _elSheet.appendChild(sheetHint);
-
-    _container.appendChild(_elOverlay);
-    _container.appendChild(_elSheet);
 
     // ── Event listeners ──
 
@@ -983,93 +927,13 @@ window.CalendarComponent = (function () {
       }
     }, { passive: true });
 
-    // Sheet overlay tap to close
-    _elOverlay.addEventListener('click', closeSheet);
-    _elSheetClose.addEventListener('click', closeSheet);
-    _elSheetToggle.addEventListener('click', _onSheetToggleClick);
-
-    // Sheet swipe — simple approach: touchstart/touchend on handle+header area
-    // Using a dedicated touch zone avoids conflicts with sheet body scrolling
-    var _sheetTouchY = 0;
-
-    function sheetTouchStart(e) {
-      _sheetTouchY = e.touches[0].clientY;
-    }
-    function sheetTouchEnd(e) {
-      if (_sheetTouchY === 0) { return; }
-      var diff = _sheetTouchY - e.changedTouches[0].clientY;
-      _sheetTouchY = 0;
-      if (Math.abs(diff) < 30) { return; }
-      if (diff > 0) {
-        // Swipe up
-        if (_sheetState === 'peek') {
-          _elSheet.className = 'cal-sheet expanded';
-          _sheetState = 'expanded';
-          _elSheetBody.style.overflowY = 'auto'; // Enable scroll in expanded
-          _updateSheetToggleBtn();
-        }
-      } else {
-        // Swipe down
-        if (_sheetState === 'expanded') {
-          _elSheet.className = 'cal-sheet peek';
-          _sheetState = 'peek';
-          _elSheetBody.style.overflowY = 'hidden'; // Disable scroll in peek
-          _updateSheetToggleBtn();
-        } else if (_sheetState === 'peek') {
-          closeSheet();
-        }
-      }
-    }
-
-    // Attach swipe to handle, header AND body top area
-    _elSheetHandleWrap.addEventListener('touchstart', sheetTouchStart, { passive: true });
-    _elSheetHandleWrap.addEventListener('touchend', sheetTouchEnd, { passive: true });
-    var sheetHeaderEl = _elSheet.querySelector('.cal-sheet-header');
-    if (sheetHeaderEl) {
-      sheetHeaderEl.addEventListener('touchstart', sheetTouchStart, { passive: true });
-      sheetHeaderEl.addEventListener('touchend', sheetTouchEnd, { passive: true });
-    }
-    // Also on body — but only trigger if scrolled to top
-    _elSheetBody.addEventListener('touchstart', function (e) {
-      _sheetTouchY = e.touches[0].clientY;
-    }, { passive: true });
-    _elSheetBody.addEventListener('touchend', function (e) {
-      if (_sheetTouchY === 0) { return; }
-      var diff = _sheetTouchY - e.changedTouches[0].clientY;
-      _sheetTouchY = 0;
-      if (Math.abs(diff) < 30) { return; }
-      var scrollTop = _elSheetBody.scrollTop;
-      if (diff > 0 && _sheetState === 'peek') {
-        _elSheet.className = 'cal-sheet expanded';
-        _sheetState = 'expanded';
-        _elSheetBody.style.overflowY = 'auto';
-        _updateSheetToggleBtn();
-      } else if (diff < 0 && scrollTop <= 0) {
-        if (_sheetState === 'expanded') {
-          _elSheet.className = 'cal-sheet peek';
-          _sheetState = 'peek';
-          _elSheetBody.style.overflowY = 'hidden';
-          _updateSheetToggleBtn();
-        } else if (_sheetState === 'peek') {
-          closeSheet();
-        }
-      }
-    }, { passive: true });
-
-    // Mouse support for desktop testing
-    _elSheet.addEventListener('mousedown', function (e) {
-      _sheetStartY = e.clientY;
-    });
+    // Detail panel close and toggle
+    _elDetailClose.addEventListener('click', closeDetail);
+    _elDetailToggle.addEventListener('click', _onDetailToggleClick);
 
     // Close dropdown on outside click — attach to document, store ref for cleanup
     _docClickHandler = function () { closeDropdown(); };
     document.addEventListener('click', _docClickHandler);
-
-    // Mouse drag on sheet handle
-    _docMouseupHandler = function (e) {
-      if (_sheetStartY !== 0) { onSheetSwipeEnd(e.clientY); }
-    };
-    document.addEventListener('mouseup', _docMouseupHandler);
   }
 
   // ── Public API ──
@@ -1077,7 +941,6 @@ window.CalendarComponent = (function () {
   function init(container, calendars, appState) {
     // Cleanup previous listeners if re-inited
     if (_docClickHandler) { document.removeEventListener('click', _docClickHandler); _docClickHandler = null; }
-    if (_docMouseupHandler) { document.removeEventListener('mouseup', _docMouseupHandler); _docMouseupHandler = null; }
 
     _container = container;
     _calendars = calendars || [];
@@ -1094,7 +957,7 @@ window.CalendarComponent = (function () {
     _currentView = 'month';
     _eventsCache = {};
     _allEvents = [];
-    _sheetState = 'closed';
+    _detailState = 'closed';
 
     buildDOM();
     renderDropdown();
