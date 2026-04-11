@@ -635,12 +635,20 @@ window.CalendarComponent = (function () {
       _sheetState = 'peek';
     }
     _elOverlay.className = 'cal-sheet-overlay show';
+    // Block body scroll while sheet is open (iOS Safari fix)
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
   }
 
   function closeSheet() {
     _elSheet.className = 'cal-sheet';
     _elOverlay.className = 'cal-sheet-overlay';
     _sheetState = 'closed';
+    // Restore body scroll
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
     _selectedDay = null;
     if (_currentView === 'month') { renderMonth(); }
   }
@@ -744,7 +752,7 @@ window.CalendarComponent = (function () {
     _elPage.appendChild(_elDayView);
 
     // Debug version indicator — remove after beta testing
-    var _dbgVer = el('div', '', 'cal-build:rc10');
+    var _dbgVer = el('div', '', 'cal-build:rc11');
     _dbgVer.style.cssText = 'position:fixed;bottom:4px;right:4px;font-size:9px;color:#555;z-index:9999;pointer-events:none;';
     _elPage.appendChild(_dbgVer);
 
