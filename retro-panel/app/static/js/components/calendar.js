@@ -742,6 +742,12 @@ window.CalendarComponent = (function () {
     _elPage.appendChild(_elMonthView);
     _elPage.appendChild(_elWeekView);
     _elPage.appendChild(_elDayView);
+
+    // Debug version indicator — remove after beta testing
+    var _dbgVer = el('div', '', 'cal-build:rc10');
+    _dbgVer.style.cssText = 'position:fixed;bottom:4px;right:4px;font-size:9px;color:#555;z-index:9999;pointer-events:none;';
+    _elPage.appendChild(_dbgVer);
+
     _container.appendChild(_elPage);
 
     // ── Bottom sheet (appended to container, fixed positioning) ──
