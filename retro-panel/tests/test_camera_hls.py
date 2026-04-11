@@ -90,6 +90,7 @@ def test_proxy_hls_segment_success():
     mock_response.status = 200
     mock_response.read = AsyncMock(return_value=b'#EXTM3U\nplaylist.m3u8\n')
     mock_response.headers = {'Content-Type': 'application/vnd.apple.mpegurl'}
+    mock_response.raise_for_status = MagicMock()  # sync method, not async
     mock_response.__aenter__ = AsyncMock(return_value=mock_response)
     mock_response.__aexit__ = AsyncMock(return_value=False)
 
