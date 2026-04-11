@@ -933,22 +933,18 @@ window.CalendarComponent = (function () {
     }, { passive: true });
 
     _elSheet.addEventListener('touchmove', function (e) {
-      if (_sheetSwipeDecided) return;
       var dy = Math.abs(e.touches[0].clientY - _sheetTouchStartY);
       var dx = Math.abs(e.touches[0].clientX - _sheetTouchStartX);
-      if (dy > 10 || dx > 10) {
-        _sheetSwipeDecided = true;
-        // If mostly vertical AND sheet body is at scroll top, treat as swipe
-        if (dy > dx) {
-          var scrollTop = _elSheetBody ? _elSheetBody.scrollTop : 0;
-          var goingUp = (e.touches[0].clientY < _sheetTouchStartY);
-          // Allow swipe up from peek (expand), or swipe down when scrolled to top
-          if (_sheetState === 'peek' || (!goingUp && scrollTop <= 0)) {
-            // This is a sheet gesture, not a scroll
-          }
+      // Determine if this is a vertical swipe that should control the sheet
+      if (dy > dx && dy > 10) {
+        var scrollTop = _elSheetBody ? _elSheetBody.scrollTop : 0;
+        var goingUp = (e.touches[0].clientY < _sheetTouchStartY);
+        // Block page scroll when: peek state (any direction), or expanded + scrolled to top + swiping down
+        if (_sheetState === 'peek' || (_sheetState === 'expanded' && !goingUp && scrollTop <= 0)) {
+          e.preventDefault();
         }
       }
-    }, { passive: true });
+    }, { passive: false });
 
     _elSheet.addEventListener('touchend', function (e) {
       var diff = _sheetTouchStartY - e.changedTouches[0].clientY;
