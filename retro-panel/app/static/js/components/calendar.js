@@ -635,20 +635,23 @@ window.CalendarComponent = (function () {
       _sheetState = 'peek';
     }
     _elOverlay.className = 'cal-sheet-overlay show';
-    // Block body scroll while sheet is open (iOS Safari fix)
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
+    // Block page scroll behind sheet (iOS Safari)
+    _elPage.style.overflow = 'hidden';
+    _elPage.style.pointerEvents = 'none';
+    // Also block touch scroll on overlay
+    _elOverlay.addEventListener('touchmove', _preventTouch, { passive: false });
   }
+
+  function _preventTouch(e) { e.preventDefault(); }
 
   function closeSheet() {
     _elSheet.className = 'cal-sheet';
     _elOverlay.className = 'cal-sheet-overlay';
     _sheetState = 'closed';
-    // Restore body scroll
-    document.body.style.overflow = '';
-    document.body.style.position = '';
-    document.body.style.width = '';
+    // Restore page interaction
+    _elPage.style.overflow = '';
+    _elPage.style.pointerEvents = '';
+    _elOverlay.removeEventListener('touchmove', _preventTouch);
     _selectedDay = null;
     if (_currentView === 'month') { renderMonth(); }
   }
@@ -752,7 +755,7 @@ window.CalendarComponent = (function () {
     _elPage.appendChild(_elDayView);
 
     // Debug version indicator — remove after beta testing
-    var _dbgVer = el('div', '', 'cal-build:rc11');
+    var _dbgVer = el('div', '', 'cal-build:rc12');
     _dbgVer.style.cssText = 'position:fixed;bottom:4px;right:4px;font-size:9px;color:#555;z-index:9999;pointer-events:none;';
     _elPage.appendChild(_dbgVer);
 
@@ -935,56 +938,69 @@ window.CalendarComponent = (function () {
     _elOverlay.addEventListener('click', closeSheet);
     _elSheetClose.addEventListener('click', closeSheet);
 
-    // Sheet swipe — listen on entire sheet for better touch area
-    var _sheetTouchStartY = 0;
-    var _sheetTouchStartX = 0;
-    var _sheetSwipeDecided = false;
+    // Sheet swipe — simple approach: touchstart/touchend on handle+header area
+    // Using a dedicated touch zone avoids conflicts with sheet body scrolling
+    var _sheetTouchY = 0;
 
-    _elSheet.addEventListener('touchstart', function (e) {
-      _sheetTouchStartY = e.touches[0].clientY;
-      _sheetTouchStartX = e.touches[0].clientX;
-      _sheetSwipeDecided = false;
-    }, { passive: true });
-
-    _elSheet.addEventListener('touchmove', function (e) {
-      var dy = Math.abs(e.touches[0].clientY - _sheetTouchStartY);
-      var dx = Math.abs(e.touches[0].clientX - _sheetTouchStartX);
-      // Determine if this is a vertical swipe that should control the sheet
-      if (dy > dx && dy > 10) {
-        var scrollTop = _elSheetBody ? _elSheetBody.scrollTop : 0;
-        var goingUp = (e.touches[0].clientY < _sheetTouchStartY);
-        // Block page scroll when: peek state (any direction), or expanded + scrolled to top + swiping down
-        if (_sheetState === 'peek' || (_sheetState === 'expanded' && !goingUp && scrollTop <= 0)) {
-          e.preventDefault();
-        }
-      }
-    }, { passive: false });
-
-    _elSheet.addEventListener('touchend', function (e) {
-      var diff = _sheetTouchStartY - e.changedTouches[0].clientY;
-      var absDx = Math.abs(e.changedTouches[0].clientX - _sheetTouchStartX);
-      // Only handle vertical swipes (not horizontal)
-      if (Math.abs(diff) > 40 && Math.abs(diff) > absDx) {
-        var scrollTop = _elSheetBody ? _elSheetBody.scrollTop : 0;
-        if (diff > 0 && _sheetState === 'peek') {
-          // Swipe up from peek → expand
+    function sheetTouchStart(e) {
+      _sheetTouchY = e.touches[0].clientY;
+    }
+    function sheetTouchEnd(e) {
+      if (_sheetTouchY === 0) { return; }
+      var diff = _sheetTouchY - e.changedTouches[0].clientY;
+      _sheetTouchY = 0;
+      if (Math.abs(diff) < 30) { return; } // Too small, ignore
+      if (diff > 0) {
+        // Swipe up
+        if (_sheetState === 'peek') {
           _elSheet.className = 'cal-sheet expanded';
           _sheetState = 'expanded';
-        } else if (diff < 0) {
-          if (_sheetState === 'expanded' && scrollTop <= 0) {
-            // Swipe down from expanded (scrolled to top) → peek
-            _elSheet.className = 'cal-sheet peek';
-            _sheetState = 'peek';
-          } else if (_sheetState === 'peek') {
-            // Swipe down from peek → close
-            closeSheet();
-          }
+        }
+      } else {
+        // Swipe down
+        if (_sheetState === 'expanded') {
+          _elSheet.className = 'cal-sheet peek';
+          _sheetState = 'peek';
+        } else if (_sheetState === 'peek') {
+          closeSheet();
         }
       }
-      _sheetTouchStartY = 0;
-      _sheetTouchStartX = 0;
+    }
+
+    // Attach swipe to handle, header AND body top area
+    _elSheetHandleWrap.addEventListener('touchstart', sheetTouchStart, { passive: true });
+    _elSheetHandleWrap.addEventListener('touchend', sheetTouchEnd, { passive: true });
+    var sheetHeaderEl = _elSheet.querySelector('.cal-sheet-header');
+    if (sheetHeaderEl) {
+      sheetHeaderEl.addEventListener('touchstart', sheetTouchStart, { passive: true });
+      sheetHeaderEl.addEventListener('touchend', sheetTouchEnd, { passive: true });
+    }
+    // Also on body — but only trigger if scrolled to top
+    _elSheetBody.addEventListener('touchstart', function (e) {
+      _sheetTouchY = e.touches[0].clientY;
+    }, { passive: true });
+    _elSheetBody.addEventListener('touchend', function (e) {
+      if (_sheetTouchY === 0) { return; }
+      var diff = _sheetTouchY - e.changedTouches[0].clientY;
+      _sheetTouchY = 0;
+      if (Math.abs(diff) < 30) { return; }
+      var scrollTop = _elSheetBody.scrollTop;
+      if (diff > 0 && _sheetState === 'peek') {
+        // Swipe up from peek → expand
+        _elSheet.className = 'cal-sheet expanded';
+        _sheetState = 'expanded';
+      } else if (diff < 0 && scrollTop <= 0) {
+        // Swipe down when at top
+        if (_sheetState === 'expanded') {
+          _elSheet.className = 'cal-sheet peek';
+          _sheetState = 'peek';
+        } else if (_sheetState === 'peek') {
+          closeSheet();
+        }
+      }
     }, { passive: true });
 
+    // Mouse support for desktop testing
     _elSheet.addEventListener('mousedown', function (e) {
       _sheetStartY = e.clientY;
     });
