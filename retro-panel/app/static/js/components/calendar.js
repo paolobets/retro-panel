@@ -139,6 +139,16 @@ window.CalendarComponent = (function () {
     var today = new Date();
     if (_currentMonth !== today.getMonth() || _currentYear !== today.getFullYear()) { return true; }
     if (_currentView === 'day' && _selectedDay && _selectedDay !== today.getDate()) { return true; }
+    if (_currentView === 'week' && _selectedDay) {
+      // Check if today is in the currently displayed week
+      var refDate = new Date(_currentYear, _currentMonth, _selectedDay);
+      var dow = (refDate.getDay() === 0) ? 6 : refDate.getDay() - 1;
+      var monday = new Date(refDate);
+      monday.setDate(monday.getDate() - dow);
+      var sunday = new Date(monday);
+      sunday.setDate(sunday.getDate() + 6);
+      if (today < monday || today > sunday) { return true; }
+    }
     return false;
   }
 
@@ -630,15 +640,17 @@ window.CalendarComponent = (function () {
     if (events.length > 3) {
       _elSheet.className = 'cal-sheet expanded';
       _sheetState = 'expanded';
+      _elSheetBody.style.overflowY = 'auto';
     } else {
       _elSheet.className = 'cal-sheet peek';
       _sheetState = 'peek';
+      _elSheetBody.style.overflowY = 'hidden'; // Disable scroll in peek so iOS doesn't eat swipe up
     }
+    _updateSheetToggleBtn();
     _elOverlay.className = 'cal-sheet-overlay show';
     // Block page scroll behind sheet (iOS Safari)
     _elPage.style.overflow = 'hidden';
     _elPage.style.pointerEvents = 'none';
-    // Also block touch scroll on overlay
     _elOverlay.addEventListener('touchmove', _preventTouch, { passive: false });
   }
 
@@ -675,6 +687,40 @@ window.CalendarComponent = (function () {
   }
 
   // ── DOM Building ──
+
+  // ── Sheet toggle button (▲/▼ fallback for swipe) ──
+
+  var _elSheetToggle = null;
+
+  function _updateSheetToggleBtn() {
+    if (!_elSheetToggle) { return; }
+    if (_sheetState === 'peek') {
+      _elSheetToggle.innerHTML = '&#9650;'; // ▲ expand
+      _elSheetToggle.title = 'Espandi';
+      _elSheetToggle.style.display = '';
+    } else if (_sheetState === 'expanded') {
+      _elSheetToggle.innerHTML = '&#9660;'; // ▼ reduce
+      _elSheetToggle.title = 'Riduci';
+      _elSheetToggle.style.display = '';
+    } else {
+      _elSheetToggle.style.display = 'none';
+    }
+  }
+
+  function _onSheetToggleClick() {
+    if (_sheetState === 'peek') {
+      _elSheet.className = 'cal-sheet expanded';
+      _sheetState = 'expanded';
+      _elSheetBody.style.overflowY = 'auto';
+    } else if (_sheetState === 'expanded') {
+      _elSheet.className = 'cal-sheet peek';
+      _sheetState = 'peek';
+      _elSheetBody.style.overflowY = 'hidden';
+    }
+    _updateSheetToggleBtn();
+  }
+
+  // ── DOM helpers ──
 
   function el(tag, cls, innerHTML) {
     var e = document.createElement(tag);
@@ -755,7 +801,7 @@ window.CalendarComponent = (function () {
     _elPage.appendChild(_elDayView);
 
     // Debug version indicator — remove after beta testing
-    var _dbgVer = el('div', '', 'cal-build:rc12');
+    var _dbgVer = el('div', '', 'cal-build:rc13');
     _dbgVer.style.cssText = 'position:fixed;bottom:4px;right:4px;font-size:9px;color:#555;z-index:9999;pointer-events:none;';
     _elPage.appendChild(_dbgVer);
 
@@ -772,9 +818,12 @@ window.CalendarComponent = (function () {
     var sheetHeader = el('div', 'cal-sheet-header');
     _elSheetTitle = el('div', 'cal-sheet-title');
     _elSheetCount = el('div', 'cal-sheet-count');
+    _elSheetToggle = el('div', 'cal-sheet-close', '&#9650;');
+    _elSheetToggle.style.cssText = 'margin-left:auto;min-width:44px;min-height:44px;display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center;font-size:16px;color:#888;cursor:pointer;border-radius:8px;';
     _elSheetClose = el('div', 'cal-sheet-close', '&#x2715;');
     sheetHeader.appendChild(_elSheetTitle);
     sheetHeader.appendChild(_elSheetCount);
+    sheetHeader.appendChild(_elSheetToggle);
     sheetHeader.appendChild(_elSheetClose);
 
     _elSheetBody = el('div', 'cal-sheet-body');
@@ -937,6 +986,7 @@ window.CalendarComponent = (function () {
     // Sheet overlay tap to close
     _elOverlay.addEventListener('click', closeSheet);
     _elSheetClose.addEventListener('click', closeSheet);
+    _elSheetToggle.addEventListener('click', _onSheetToggleClick);
 
     // Sheet swipe — simple approach: touchstart/touchend on handle+header area
     // Using a dedicated touch zone avoids conflicts with sheet body scrolling
@@ -949,18 +999,22 @@ window.CalendarComponent = (function () {
       if (_sheetTouchY === 0) { return; }
       var diff = _sheetTouchY - e.changedTouches[0].clientY;
       _sheetTouchY = 0;
-      if (Math.abs(diff) < 30) { return; } // Too small, ignore
+      if (Math.abs(diff) < 30) { return; }
       if (diff > 0) {
         // Swipe up
         if (_sheetState === 'peek') {
           _elSheet.className = 'cal-sheet expanded';
           _sheetState = 'expanded';
+          _elSheetBody.style.overflowY = 'auto'; // Enable scroll in expanded
+          _updateSheetToggleBtn();
         }
       } else {
         // Swipe down
         if (_sheetState === 'expanded') {
           _elSheet.className = 'cal-sheet peek';
           _sheetState = 'peek';
+          _elSheetBody.style.overflowY = 'hidden'; // Disable scroll in peek
+          _updateSheetToggleBtn();
         } else if (_sheetState === 'peek') {
           closeSheet();
         }
@@ -986,14 +1040,16 @@ window.CalendarComponent = (function () {
       if (Math.abs(diff) < 30) { return; }
       var scrollTop = _elSheetBody.scrollTop;
       if (diff > 0 && _sheetState === 'peek') {
-        // Swipe up from peek → expand
         _elSheet.className = 'cal-sheet expanded';
         _sheetState = 'expanded';
+        _elSheetBody.style.overflowY = 'auto';
+        _updateSheetToggleBtn();
       } else if (diff < 0 && scrollTop <= 0) {
-        // Swipe down when at top
         if (_sheetState === 'expanded') {
           _elSheet.className = 'cal-sheet peek';
           _sheetState = 'peek';
+          _elSheetBody.style.overflowY = 'hidden';
+          _updateSheetToggleBtn();
         } else if (_sheetState === 'peek') {
           closeSheet();
         }
