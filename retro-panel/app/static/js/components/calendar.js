@@ -637,10 +637,6 @@
     root.appendChild(State.weekEl);
     WeekRenderer.build(State.weekEl);
 
-    var dbg = _el('div', '', 'cal-build:rc16');
-    dbg.style.cssText = 'position:fixed;bottom:4px;right:4px;font-size:9px;color:#555;z-index:9999;pointer-events:none;';
-    root.appendChild(dbg);
-
     container.appendChild(root);
 
     PanelRenderer.build(State.panelEl);
