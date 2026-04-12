@@ -79,6 +79,23 @@
     return div.innerHTML;
   }
 
+  function getMonday(date) {
+    var d = new Date(date.getTime());
+    var dow = d.getDay();
+    var diff = (dow === 0) ? -6 : 1 - dow;
+    d.setDate(d.getDate() + diff);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  function getISOWeekNumber(date) {
+    var d = new Date(date.getTime());
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
+    var jan4 = new Date(d.getFullYear(), 0, 4);
+    return 1 + Math.round(((d - jan4) / 86400000 - 3 + (jan4.getDay() + 6) % 7) / 7);
+  }
+
   // ── State ──
 
   var State = {
@@ -91,7 +108,10 @@
     selectedCalIds: [],
     root: null,
     monthEl: null,
-    panelEl: null
+    panelEl: null,
+    currentView: 'month',
+    weekStart: null,
+    weekEl: null
   };
 
   State.reset = function (calendars) {
@@ -109,6 +129,9 @@
     State.root = null;
     State.monthEl = null;
     State.panelEl = null;
+    State.currentView = 'month';
+    State.weekStart = null;
+    State.weekEl = null;
   };
 
   // ── DataLayer ──
@@ -490,6 +513,74 @@
     }
   };
 
+  // ── WeekRenderer ──
+
+  var WeekRenderer = {};
+  WeekRenderer._headerEl = null;
+  WeekRenderer._gridEl = null;
+
+  WeekRenderer.build = function (container) {
+    container.innerHTML = '';
+    WeekRenderer._headerEl = _el('div', 'cal-week-header');
+    WeekRenderer._gridEl = _el('div', 'cal-week-grid');
+    container.appendChild(WeekRenderer._headerEl);
+    container.appendChild(WeekRenderer._gridEl);
+  };
+
+  WeekRenderer.refresh = function () {
+    var headerEl = WeekRenderer._headerEl;
+    var gridEl = WeekRenderer._gridEl;
+    if (!headerEl || !gridEl) return;
+
+    var monday = State.weekStart;
+    if (!monday) return;
+    var today = new Date();
+
+    var headerHtml = '';
+    var gridHtml = '';
+
+    for (var i = 0; i < 7; i++) {
+      var day = new Date(monday.getTime());
+      day.setDate(day.getDate() + i);
+      var isToday = (day.getFullYear() === today.getFullYear() &&
+                     day.getMonth() === today.getMonth() &&
+                     day.getDate() === today.getDate());
+      var isWeekend = i >= 5;
+
+      headerHtml += '<div class="cal-week-col-header">';
+      headerHtml += '<div class="cal-week-day-name' + (isWeekend ? ' weekend' : '') + '">' + DAYS_IT[i] + '</div>';
+      headerHtml += '<div class="cal-week-day-num' + (isToday ? ' today' : '') + '">' + day.getDate() + '</div>';
+      headerHtml += '</div>';
+
+      var events = DataLayer.getEventsForDay(day.getFullYear(), day.getMonth(), day.getDate(), State.selectedCalIds);
+
+      gridHtml += '<div class="cal-week-col">';
+      if (events.length === 0) {
+        gridHtml += '<div class="cal-week-empty">Nessun evento</div>';
+      } else {
+        for (var j = 0; j < events.length; j++) {
+          var ev = events[j];
+          var color = getCalColor(State.calendars, ev.cal);
+          gridHtml += '<div class="cal-event-card">';
+          gridHtml += '<div class="cal-event-bar" style="background:' + color + '"></div>';
+          gridHtml += '<div class="cal-event-body">';
+          gridHtml += '<div class="cal-event-title">' + escapeHtml(ev.title) + '</div>';
+          if (ev.allDay) {
+            gridHtml += '<div class="cal-event-allday">Tutto il giorno</div>';
+          } else {
+            gridHtml += '<div class="cal-event-time">' + ev.start + ' \u2013 ' + ev.end + '</div>';
+          }
+          gridHtml += '<div class="cal-event-cal">' + escapeHtml(getCalName(State.calendars, ev.cal)) + '</div>';
+          gridHtml += '</div></div>';
+        }
+      }
+      gridHtml += '</div>';
+    }
+
+    headerEl.innerHTML = headerHtml;
+    gridEl.innerHTML = gridHtml;
+  };
+
   // ── Controller ──
 
   var Controller = {};
@@ -520,6 +611,19 @@
 
     var controls = _el('div', 'cal-row-controls');
     DropdownRenderer.build(controls, calendars);
+    var viewSwitcher = _el('div', 'cal-view-switcher');
+    Controller._viewBtns = [];
+    var viewDefs = [
+      { view: 'month', label: 'Mese' },
+      { view: 'week', label: 'Settimana' }
+    ];
+    for (var vi = 0; vi < viewDefs.length; vi++) {
+      var vb = _el('div', 'cal-view-btn' + (viewDefs[vi].view === 'month' ? ' active' : ''), viewDefs[vi].label);
+      vb.setAttribute('data-view', viewDefs[vi].view);
+      viewSwitcher.appendChild(vb);
+      Controller._viewBtns.push(vb);
+    }
+    controls.appendChild(viewSwitcher);
     root.appendChild(controls);
 
     var body = _el('div', 'cal-body');
@@ -529,7 +633,11 @@
     body.appendChild(State.panelEl);
     root.appendChild(body);
 
-    var dbg = _el('div', '', 'cal-build:rc15');
+    State.weekEl = _el('div', 'cal-week');
+    root.appendChild(State.weekEl);
+    WeekRenderer.build(State.weekEl);
+
+    var dbg = _el('div', '', 'cal-build:rc16');
     dbg.style.cssText = 'position:fixed;bottom:4px;right:4px;font-size:9px;color:#555;z-index:9999;pointer-events:none;';
     root.appendChild(dbg);
 
@@ -553,6 +661,19 @@
       if (!target || target === State.monthEl) return;
       var day = parseInt(target.getAttribute('data-day'));
       Controller.onDayClick(day);
+    }, false);
+
+    viewSwitcher.addEventListener('click', function (e) {
+      var target = e.target;
+      while (target && target !== viewSwitcher) {
+        if (target.getAttribute && target.getAttribute('data-view')) break;
+        target = target.parentNode;
+      }
+      if (!target || !target.getAttribute('data-view')) return;
+      var view = target.getAttribute('data-view');
+      if (view !== State.currentView) {
+        Controller.onViewSwitch(view);
+      }
     }, false);
 
     Controller._updateMonthLabel();
@@ -594,7 +715,89 @@
     MonthRenderer.highlightSelected();
   };
 
+  Controller.onViewSwitch = function (view) {
+    State.currentView = view;
+
+    for (var i = 0; i < Controller._viewBtns.length; i++) {
+      var btn = Controller._viewBtns[i];
+      if (btn.getAttribute('data-view') === view) {
+        btn.className = 'cal-view-btn active';
+      } else {
+        btn.className = 'cal-view-btn';
+      }
+    }
+
+    if (view === 'week') {
+      if (State.isPanelOpen) Controller.closePanel();
+      if (State.selectedDay) {
+        State.weekStart = getMonday(State.selectedDay);
+      } else {
+        State.weekStart = getMonday(new Date());
+      }
+      State.monthEl.parentNode.style.display = 'none';
+      State.weekEl.className = 'cal-week cal-week-active';
+      Controller._updateWeekLabel();
+      Controller._updateOggi();
+      Controller._fetchAndRefreshWeek();
+    } else {
+      State.weekEl.className = 'cal-week';
+      State.monthEl.parentNode.style.display = '';
+      if (State.weekStart) {
+        State.year = State.weekStart.getFullYear();
+        State.month = State.weekStart.getMonth();
+      }
+      State.selectedDay = null;
+      Controller._updateMonthLabel();
+      Controller._updateOggi();
+      MonthRenderer.build(State.monthEl);
+      var gen = ++Controller._navGen;
+      DataLayer.fetchMonth(State.selectedCalIds, State.year, State.month, function () {
+        if (gen !== Controller._navGen) return;
+        MonthRenderer.refreshCells();
+        DropdownRenderer.refresh();
+      });
+    }
+  };
+
+  Controller._fetchAndRefreshWeek = function () {
+    var monday = State.weekStart;
+    var sunday = new Date(monday.getTime());
+    sunday.setDate(sunday.getDate() + 6);
+
+    var months = [[monday.getFullYear(), monday.getMonth()]];
+    if (sunday.getMonth() !== monday.getMonth() || sunday.getFullYear() !== monday.getFullYear()) {
+      months.push([sunday.getFullYear(), sunday.getMonth()]);
+    }
+
+    var pending = months.length;
+    var gen = ++Controller._navGen;
+    for (var i = 0; i < months.length; i++) {
+      DataLayer.fetchMonth(State.selectedCalIds, months[i][0], months[i][1], function () {
+        if (gen !== Controller._navGen) return;
+        pending--;
+        if (pending <= 0) {
+          WeekRenderer.refresh();
+          DropdownRenderer.refresh();
+        }
+      });
+    }
+  };
+
   Controller.onMonthNav = function (direction) {
+    if (State.currentView === 'week') {
+      if (direction === 0) {
+        State.weekStart = getMonday(new Date());
+      } else {
+        var d = new Date(State.weekStart.getTime());
+        d.setDate(d.getDate() + (direction * 7));
+        State.weekStart = d;
+      }
+      Controller._updateWeekLabel();
+      Controller._updateOggi();
+      Controller._fetchAndRefreshWeek();
+      return;
+    }
+
     if (direction === 0) {
       var now = new Date();
       State.year = now.getFullYear();
@@ -619,6 +822,12 @@
   };
 
   Controller.onCalendarFilterChange = function () {
+    if (State.currentView === 'week') {
+      WeekRenderer.refresh();
+      DropdownRenderer.refresh();
+      Controller._fetchAndRefreshWeek();
+      return;
+    }
     MonthRenderer.refreshCells();
     DropdownRenderer.refresh();
     var gen = ++Controller._navGen;
@@ -647,17 +856,44 @@
     }
   };
 
+  Controller._updateWeekLabel = function () {
+    if (!Controller._monthLabel || !State.weekStart) return;
+    var monday = State.weekStart;
+    var sunday = new Date(monday.getTime());
+    sunday.setDate(sunday.getDate() + 6);
+    var weekNum = getISOWeekNumber(monday);
+    var label;
+    if (monday.getMonth() === sunday.getMonth()) {
+      label = 'Sett. ' + weekNum + ' \u00B7 ' + monday.getDate() + '\u2013' + sunday.getDate() + ' ' + MONTHS_IT[monday.getMonth()];
+    } else {
+      label = 'Sett. ' + weekNum + ' \u00B7 ' + monday.getDate() + ' ' + MONTHS_IT[monday.getMonth()].substring(0, 3) + ' \u2013 ' + sunday.getDate() + ' ' + MONTHS_IT[sunday.getMonth()].substring(0, 3);
+    }
+    Controller._monthLabel.textContent = label;
+  };
+
   Controller._updateOggi = function () {
     if (!Controller._oggiBtn) return;
     var now = new Date();
-    var isCurrentMonth = (now.getFullYear() === State.year && now.getMonth() === State.month);
-    Controller._oggiBtn.className = isCurrentMonth ? 'cal-btn-oggi on-today' : 'cal-btn-oggi';
+    var isCurrent;
+    if (State.currentView === 'week' && State.weekStart) {
+      var currentMonday = getMonday(now);
+      isCurrent = (State.weekStart.getTime() === currentMonday.getTime());
+    } else {
+      isCurrent = (now.getFullYear() === State.year && now.getMonth() === State.month);
+    }
+    Controller._oggiBtn.className = isCurrent ? 'cal-btn-oggi on-today' : 'cal-btn-oggi';
   };
 
   Controller.destroy = function () {
     DropdownRenderer.destroy();
     DataLayer.clear();
     MonthRenderer._gridEl = null;
+    WeekRenderer._headerEl = null;
+    WeekRenderer._gridEl = null;
+    Controller._viewBtns = null;
+    State.weekEl = null;
+    State.weekStart = null;
+    State.currentView = 'month';
     PanelRenderer._dateEl = null;
     PanelRenderer._eventsEl = null;
     DropdownRenderer._menuEl = null;
