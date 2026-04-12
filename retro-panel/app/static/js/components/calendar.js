@@ -73,6 +73,12 @@
     };
   }
 
+  function escapeHtml(s) {
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(s));
+    return div.innerHTML;
+  }
+
   // ── State ──
 
   var State = {
@@ -173,6 +179,7 @@
       }
     }
     result.sort(function (a, b) {
+      if (a.allDay && b.allDay) return a.title < b.title ? -1 : (a.title > b.title ? 1 : 0);
       if (a.allDay && !b.allDay) return -1;
       if (!a.allDay && b.allDay) return 1;
       return a.start < b.start ? -1 : (a.start > b.start ? 1 : 0);
@@ -334,13 +341,13 @@
       html += '<div class="cal-event-card">';
       html += '<div class="cal-event-bar" style="background:' + color + '"></div>';
       html += '<div class="cal-event-body">';
-      html += '<div class="cal-event-title">' + ev.title + '</div>';
+      html += '<div class="cal-event-title">' + escapeHtml(ev.title) + '</div>';
       if (ev.allDay) {
         html += '<div class="cal-event-allday">Tutto il giorno</div>';
       } else {
         html += '<div class="cal-event-time">' + ev.start + ' \u2013 ' + ev.end + '</div>';
       }
-      html += '<div class="cal-event-cal">' + getCalName(State.calendars, ev.cal) + '</div>';
+      html += '<div class="cal-event-cal">' + escapeHtml(getCalName(State.calendars, ev.cal)) + '</div>';
       html += '</div></div>';
     }
     el.innerHTML = html;
@@ -433,7 +440,7 @@
       var name = c.label || (c.entity_id.split('.')[1]) || c.entity_id;
       html += '<div class="cal-dropdown-item' + (sel ? ' selected' : '') + '" data-cal="' + c.entity_id + '">';
       html += '<span class="cal-dot" style="background:' + color + '"></span>';
-      html += '<span class="cal-item-name">' + name + '</span>';
+      html += '<span class="cal-item-name">' + escapeHtml(name) + '</span>';
       html += '<span class="cal-event-count">' + count + '</span>';
       if (sel) html += '<span class="cal-check">\u2713</span>';
       html += '</div>';
@@ -488,6 +495,7 @@
   var Controller = {};
   Controller._monthLabel = null;
   Controller._oggiBtn = null;
+  Controller._navGen = 0;
 
   Controller.init = function (container, calendars, appState) {
     if (DropdownRenderer._docHandler) DropdownRenderer.destroy();
@@ -550,7 +558,9 @@
     Controller._updateMonthLabel();
     Controller._updateOggi();
     MonthRenderer.build(State.monthEl);
+    var initGen = ++Controller._navGen;
     DataLayer.fetchMonth(State.selectedCalIds, State.year, State.month, function () {
+      if (initGen !== Controller._navGen) return;
       MonthRenderer.refreshCells();
       DropdownRenderer.refresh();
     });
@@ -600,7 +610,9 @@
     Controller._updateMonthLabel();
     Controller._updateOggi();
     MonthRenderer.build(State.monthEl);
+    var gen = ++Controller._navGen;
     DataLayer.fetchMonth(State.selectedCalIds, State.year, State.month, function () {
+      if (gen !== Controller._navGen) return;
       MonthRenderer.refreshCells();
       DropdownRenderer.refresh();
     });
@@ -609,6 +621,18 @@
   Controller.onCalendarFilterChange = function () {
     MonthRenderer.refreshCells();
     DropdownRenderer.refresh();
+    var gen = ++Controller._navGen;
+    DataLayer.fetchMonth(State.selectedCalIds, State.year, State.month, function () {
+      if (gen !== Controller._navGen) return;
+      MonthRenderer.refreshCells();
+      DropdownRenderer.refresh();
+      if (State.isPanelOpen && State.selectedDay) {
+        var events = DataLayer.getEventsForDay(
+          State.selectedDay.getFullYear(), State.selectedDay.getMonth(),
+          State.selectedDay.getDate(), State.selectedCalIds);
+        PanelRenderer.update(State.selectedDay, events);
+      }
+    });
     if (State.isPanelOpen && State.selectedDay) {
       var events = DataLayer.getEventsForDay(
         State.selectedDay.getFullYear(), State.selectedDay.getMonth(),
@@ -633,6 +657,15 @@
   Controller.destroy = function () {
     DropdownRenderer.destroy();
     DataLayer.clear();
+    MonthRenderer._gridEl = null;
+    PanelRenderer._dateEl = null;
+    PanelRenderer._eventsEl = null;
+    DropdownRenderer._menuEl = null;
+    DropdownRenderer._btnEl = null;
+    DropdownRenderer._dotsEl = null;
+    DropdownRenderer._labelEl = null;
+    Controller._monthLabel = null;
+    Controller._oggiBtn = null;
     State.root = null;
     State.monthEl = null;
     State.panelEl = null;
