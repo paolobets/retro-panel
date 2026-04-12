@@ -823,8 +823,6 @@
 
   Controller.onCalendarFilterChange = function () {
     if (State.currentView === 'week') {
-      WeekRenderer.refresh();
-      DropdownRenderer.refresh();
       Controller._fetchAndRefreshWeek();
       return;
     }
