@@ -2181,4 +2181,104 @@ body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-
   font-size: 13px;
 }
 
+/* ── View switcher (Mese / Settimana) ── */
+.cal-view-switcher {
+  display: -webkit-flex;
+  display: flex;
+  background: var(--c-surface-2, #1e1e32);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #333;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+.cal-view-btn {
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--c-text-sec, #888);
+  cursor: pointer;
+  border: none;
+  background: none;
+  min-height: 44px;
+  -webkit-transition: background 0.1s, color 0.1s;
+  transition: background 0.1s, color 0.1s;
+}
+.cal-view-btn.active {
+  background: var(--c-accent, #4a9eff);
+  color: #fff;
+}
+.cal-view-btn:active:not(.active) {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+/* ── Week view ── */
+.cal-week {
+  -webkit-flex: 1 1 auto;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: none;
+}
+.cal-week.cal-week-active {
+  display: block;
+}
+
+.cal-week-header {
+  display: -webkit-flex;
+  display: flex;
+  border-bottom: 1px solid var(--c-surface-2, #333);
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+}
+.cal-week-col-header {
+  -webkit-flex: 1;
+  flex: 1;
+  text-align: center;
+  margin-left: 2px;
+  margin-right: 2px;
+}
+.cal-week-day-name {
+  font-size: 10px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+}
+.cal-week-day-name.weekend {
+  color: var(--c-text-sec, #555);
+}
+.cal-week-day-num {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--c-text-pri, #e0e0e0);
+}
+.cal-week-day-num.today {
+  color: var(--c-accent, #4a9eff);
+}
+
+.cal-week-grid {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: flex-start;
+  align-items: flex-start;
+}
+.cal-week-col {
+  -webkit-flex: 1;
+  flex: 1;
+  margin-left: 2px;
+  margin-right: 2px;
+  min-height: 120px;
+  padding: 4px;
+  border-left: 1px solid var(--c-surface-2, #333);
+}
+.cal-week-col:first-child {
+  border-left: none;
+}
+
+.cal-week-empty {
+  text-align: center;
+  color: var(--c-text-sec, #555);
+  font-size: 11px;
+  padding: 16px 4px;
+}
 
