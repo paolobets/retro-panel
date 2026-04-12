@@ -1,82 +1,47 @@
-/**
- * calendar.js — CalendarComponent for Retro Panel
- * Full IIFE, ES5 only. iOS 12 Safari safe.
- *
- * Month grid with event indicators, multi-calendar dropdown,
- * inline detail panel (open/expanded/close), Oggi button, swipe navigation.
- * Fetches events from /api/calendar-events/ per calendar entity.
- *
- * NO const/let/arrow functions/?./?? — only var, function declarations.
- * NO template literals — only string concatenation.
- *
- * Exposes globally: window.CalendarComponent = { init: init }
- */
-window.CalendarComponent = (function () {
+(function (window) {
   'use strict';
 
-  // ── State ──
-  var _container = null;
-  var _calendars = [];    // [{entity_id, label, color}] from config
-  var _appState = null;
-  var _currentYear = 0;
-  var _currentMonth = 0;  // 0-indexed
-  var _selectedDay = null;
-  var _currentView = 'month';
-  var _selectedCals = [];  // entity_ids of selected calendars
-  var _eventsCache = {};   // key: 'entity_id:YYYY-MM' → [events]
-  var _allEvents = [];     // merged events for current month from all selected calendars
-
-  // ── DOM references (set in buildDOM) ──
-  var _elPage = null;
-  var _elMonthLabel = null;
-  var _elPrevMonth = null;
-  var _elNextMonth = null;
-  var _elBtnOggi = null;
-  var _elCalBtn = null;
-  var _elCalBtnDots = null;
-  var _elCalBtnLabel = null;
-  var _elCalMenu = null;
-  var _elViewBtns = [];
-  var _elMonthView = null;
-  var _elWeekdays = null;
-  var _elDaysGrid = null;
-  var _elWeekView = null;
-  var _elDayView = null;
-  var _elDetailPanel = null;
-  var _elDetailTitle = null;
-  var _elDetailCount = null;
-  var _elDetailClose = null;
-  var _elDetailToggle = null;
-  var _elDetailBody = null;
-  var _detailState = 'closed';
-  var _swipeStartX = 0;
-  var _docClickHandler = null;
-
   // ── Constants ──
-  var MONTHS_IT = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+
+  var MONTHS_IT = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
+                   'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
   var DAYS_IT = ['LUN','MAR','MER','GIO','VEN','SAB','DOM'];
-  var DAYS_FULL = ['Luned\u00ec','Marted\u00ec','Mercoled\u00ec','Gioved\u00ec','Venerd\u00ec','Sabato','Domenica'];
-  var DEFAULT_COLORS = ['#4a9eff','#4caf50','#ff9800','#e91e63','#9c27b0','#00bcd4','#ff5722','#607d8b'];
+  var DAYS_FULL = ['Luned\u00ec','Marted\u00ec','Mercoled\u00ec','Gioved\u00ec',
+                   'Venerd\u00ec','Sabato','Domenica'];
+  var DEFAULT_COLORS = ['#4a9eff','#4caf50','#ff9800','#e91e63',
+                        '#9c27b0','#00bcd4','#ff5722','#607d8b'];
 
   // ── Helpers ──
 
   function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
-  function dateStr(y, m, d) { return y + '-' + pad(m + 1) + '-' + pad(d); }
+  function dateKey(y, m, d) { return y + '-' + pad(m + 1) + '-' + pad(d); }
 
-  function getCalColor(entityId) {
-    for (var i = 0; i < _calendars.length; i++) {
-      if (_calendars[i].entity_id === entityId) {
-        return _calendars[i].color || DEFAULT_COLORS[i % DEFAULT_COLORS.length];
+  function getDow(date) {
+    var d = date.getDay();
+    return d === 0 ? 6 : d - 1;
+  }
+
+  function _el(tag, cls, innerHTML) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (innerHTML !== undefined) e.innerHTML = innerHTML;
+    return e;
+  }
+
+  function getCalColor(calendars, entityId) {
+    for (var i = 0; i < calendars.length; i++) {
+      if (calendars[i].entity_id === entityId) {
+        return calendars[i].color || DEFAULT_COLORS[i % DEFAULT_COLORS.length];
       }
     }
     return '#888';
   }
 
-  function getCalName(entityId) {
-    for (var i = 0; i < _calendars.length; i++) {
-      if (_calendars[i].entity_id === entityId) {
-        return _calendars[i].label || (entityId.split('.')[1]) || entityId;
+  function getCalName(calendars, entityId) {
+    for (var i = 0; i < calendars.length; i++) {
+      if (calendars[i].entity_id === entityId) {
+        return calendars[i].label || (entityId.split('.')[1]) || entityId;
       }
     }
     return entityId;
@@ -95,8 +60,8 @@ window.CalendarComponent = (function () {
     if (!allDay) {
       var stMatch = startDT.match(/T(\d{2}:\d{2})/);
       var etMatch = endDT.match(/T(\d{2}:\d{2})/);
-      if (stMatch) { startTime = stMatch[1]; }
-      if (etMatch) { endTime = etMatch[1]; }
+      if (stMatch) startTime = stMatch[1];
+      if (etMatch) endTime = etMatch[1];
     }
     return {
       cal: calEntityId,
@@ -104,228 +69,188 @@ window.CalendarComponent = (function () {
       date: startDate,
       start: startTime,
       end: endTime,
-      allDay: allDay,
-      description: haEvent.description || '',
-      location: haEvent.location || ''
+      allDay: allDay
     };
   }
 
-  function getEventsForDate(y, m, d) {
-    var ds = dateStr(y, m, d);
-    var result = [];
-    for (var i = 0; i < _allEvents.length; i++) {
-      if (_allEvents[i].date === ds && _selectedCals.indexOf(_allEvents[i].cal) !== -1) {
-        result.push(_allEvents[i]);
-      }
+  // ── State ──
+
+  var State = {
+    year: 0,
+    month: 0,
+    today: null,
+    selectedDay: null,
+    isPanelOpen: false,
+    calendars: [],
+    selectedCalIds: [],
+    root: null,
+    monthEl: null,
+    panelEl: null
+  };
+
+  State.reset = function (calendars) {
+    var now = new Date();
+    State.year = now.getFullYear();
+    State.month = now.getMonth();
+    State.today = now;
+    State.selectedDay = null;
+    State.isPanelOpen = false;
+    State.calendars = calendars || [];
+    State.selectedCalIds = [];
+    for (var i = 0; i < State.calendars.length; i++) {
+      State.selectedCalIds.push(State.calendars[i].entity_id);
     }
-    return result;
-  }
+    State.root = null;
+    State.monthEl = null;
+    State.panelEl = null;
+  };
 
-  function countEventsForCalInMonth(calEntityId) {
-    var count = 0;
-    var prefix = _currentYear + '-' + pad(_currentMonth + 1) + '-';
-    for (var i = 0; i < _allEvents.length; i++) {
-      if (_allEvents[i].cal === calEntityId && _allEvents[i].date.indexOf(prefix) === 0) {
-        count++;
-      }
-    }
-    return count;
-  }
+  // ── DataLayer ──
 
-  function isNotToday() {
-    var today = new Date();
-    if (_currentMonth !== today.getMonth() || _currentYear !== today.getFullYear()) { return true; }
-    if (_currentView === 'day' && _selectedDay && _selectedDay !== today.getDate()) { return true; }
-    if (_currentView === 'week' && _selectedDay) {
-      // Check if today is in the currently displayed week
-      var refDate = new Date(_currentYear, _currentMonth, _selectedDay);
-      var dow = (refDate.getDay() === 0) ? 6 : refDate.getDay() - 1;
-      var monday = new Date(refDate);
-      monday.setDate(monday.getDate() - dow);
-      var sunday = new Date(monday);
-      sunday.setDate(sunday.getDate() + 6);
-      if (today < monday || today > sunday) { return true; }
-    }
-    return false;
-  }
+  var DataLayer = {
+    cache: {}
+  };
 
-  // ── Event Fetching ──
+  DataLayer.clear = function () {
+    DataLayer.cache = {};
+  };
 
-  function fetchEvents(year, month) {
+  DataLayer.fetchMonth = function (entityIds, year, month, callback) {
     var startDate = new Date(year, month, 1);
     startDate.setDate(startDate.getDate() - 7);
     var endDate = new Date(year, month + 1, 0);
     endDate.setDate(endDate.getDate() + 7);
     var startISO = startDate.toISOString();
     var endISO = endDate.toISOString();
+    var monthKey = year + '-' + pad(month + 1);
 
     var promises = [];
     var calIds = [];
-    for (var i = 0; i < _calendars.length; i++) {
-      var cal = _calendars[i];
-      var cacheKey = cal.entity_id + ':' + year + '-' + pad(month + 1);
-      if (_eventsCache[cacheKey]) { continue; }
-      calIds.push(cal.entity_id);
+    for (var i = 0; i < entityIds.length; i++) {
+      var eid = entityIds[i];
+      if (DataLayer.cache[eid] && DataLayer.cache[eid][monthKey]) continue;
+      calIds.push(eid);
       promises.push(
-        fetch('api/calendar-events/' + encodeURIComponent(cal.entity_id) + '?start=' + encodeURIComponent(startISO) + '&end=' + encodeURIComponent(endISO))
+        fetch('api/calendar-events/' + encodeURIComponent(eid) +
+              '?start=' + encodeURIComponent(startISO) +
+              '&end=' + encodeURIComponent(endISO))
           .then(function (r) { return r.ok ? r.json() : []; })
           ['catch'](function () { return []; })
       );
     }
 
     if (promises.length === 0) {
-      rebuildAllEvents();
-      renderCurrentView();
-      renderDropdown();
-      updateOggiBtn();
+      callback();
       return;
     }
 
     Promise.all(promises).then(function (results) {
       for (var j = 0; j < results.length; j++) {
-        var calId = calIds[j];
-        var cacheKey = calId + ':' + year + '-' + pad(month + 1);
+        var cid = calIds[j];
+        if (!DataLayer.cache[cid]) DataLayer.cache[cid] = {};
         var normalized = [];
         var events = results[j] || [];
         for (var k = 0; k < events.length; k++) {
-          normalized.push(normalizeEvent(events[k], calId));
+          normalized.push(normalizeEvent(events[k], cid));
         }
-        _eventsCache[cacheKey] = normalized;
+        DataLayer.cache[cid][monthKey] = normalized;
       }
-      rebuildAllEvents();
-      renderCurrentView();
-      renderDropdown();
-      updateOggiBtn();
+      callback();
     })['catch'](function () {
-      rebuildAllEvents();
-      renderCurrentView();
-      renderDropdown();
-      updateOggiBtn();
+      callback();
     });
-  }
+  };
 
-  function rebuildAllEvents() {
-    _allEvents = [];
-    for (var key in _eventsCache) {
-      if (_eventsCache.hasOwnProperty(key)) {
-        var events = _eventsCache[key];
-        for (var i = 0; i < events.length; i++) {
-          _allEvents.push(events[i]);
-        }
+  DataLayer.getEventsForDay = function (year, month, day, selectedCalIds) {
+    var dk = dateKey(year, month, day);
+    var result = [];
+    for (var i = 0; i < selectedCalIds.length; i++) {
+      var cid = selectedCalIds[i];
+      var monthKey = year + '-' + pad(month + 1);
+      var events = (DataLayer.cache[cid] && DataLayer.cache[cid][monthKey]) || [];
+      for (var j = 0; j < events.length; j++) {
+        if (events[j].date === dk) result.push(events[j]);
       }
     }
-  }
+    result.sort(function (a, b) {
+      if (a.allDay && !b.allDay) return -1;
+      if (!a.allDay && b.allDay) return 1;
+      return a.start < b.start ? -1 : (a.start > b.start ? 1 : 0);
+    });
+    return result;
+  };
 
-  // ── Oggi button ──
-
-  function updateOggiBtn() {
-    if (!_elBtnOggi) { return; }
-    if (isNotToday()) {
-      _elBtnOggi.className = 'cal-btn-oggi';
-    } else {
-      _elBtnOggi.className = 'cal-btn-oggi on-today';
+  DataLayer.countEventsForCal = function (calEntityId, year, month) {
+    var monthKey = year + '-' + pad(month + 1);
+    var events = (DataLayer.cache[calEntityId] && DataLayer.cache[calEntityId][monthKey]) || [];
+    var prefix = year + '-' + pad(month + 1) + '-';
+    var count = 0;
+    for (var i = 0; i < events.length; i++) {
+      if (events[i].date.indexOf(prefix) === 0) count++;
     }
-  }
+    return count;
+  };
 
-  // ── Dropdown ──
+  // ── MonthRenderer ──
 
-  function renderDropdown() {
-    if (!_elCalMenu) { return; }
+  var MonthRenderer = {};
+  MonthRenderer._gridEl = null;
+
+  MonthRenderer.build = function (container) {
+    container.innerHTML = '';
+    var weekdaysEl = _el('div', 'cal-weekdays');
     var html = '';
-    for (var i = 0; i < _calendars.length; i++) {
-      var c = _calendars[i];
-      var sel = _selectedCals.indexOf(c.entity_id) !== -1;
-      var count = countEventsForCalInMonth(c.entity_id);
-      var color = c.color || DEFAULT_COLORS[i % DEFAULT_COLORS.length];
-      var name = c.label || (c.entity_id.split('.')[1]) || c.entity_id;
-      html += '<div class="cal-dropdown-item' + (sel ? ' selected' : '') + '" data-cal="' + c.entity_id + '">';
-      html += '<span class="cal-dot" style="background:' + color + '"></span>';
-      html += '<span class="cal-item-name">' + name + '</span>';
-      html += '<span class="cal-event-count">' + count + '</span>';
-      if (sel) { html += '<span class="cal-check">\u2713</span>'; }
-      html += '</div>';
-    }
-    html += '<div class="cal-dropdown-item" data-cal="__all" style="border-top:1px solid #333;margin-top:4px;padding-top:12px;color:#4a9eff;">Seleziona tutti</div>';
-    _elCalMenu.innerHTML = html;
-
-    // Update button label and dots
-    if (_selectedCals.length === _calendars.length) {
-      _elCalBtnLabel.textContent = 'Tutti i calendari';
-      var dh = '';
-      for (var j = 0; j < _calendars.length; j++) {
-        var jColor = _calendars[j].color || DEFAULT_COLORS[j % DEFAULT_COLORS.length];
-        dh += '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + jColor + ';margin-right:3px;"></span>';
-      }
-      _elCalBtnDots.innerHTML = dh;
-    } else if (_selectedCals.length === 0) {
-      _elCalBtnLabel.textContent = 'Nessun calendario';
-      _elCalBtnDots.innerHTML = '';
-    } else {
-      var names = [];
-      var dh2 = '';
-      for (var k = 0; k < _calendars.length; k++) {
-        if (_selectedCals.indexOf(_calendars[k].entity_id) !== -1) {
-          var kName = _calendars[k].label || (_calendars[k].entity_id.split('.')[1]) || _calendars[k].entity_id;
-          var kColor = _calendars[k].color || DEFAULT_COLORS[k % DEFAULT_COLORS.length];
-          names.push(kName);
-          dh2 += '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + kColor + ';margin-right:3px;"></span>';
-        }
-      }
-      _elCalBtnLabel.textContent = names.join(', ');
-      _elCalBtnDots.innerHTML = dh2;
-    }
-  }
-
-  function closeDropdown() {
-    if (_elCalMenu) { _elCalMenu.className = 'cal-dropdown-menu'; }
-    if (_elCalBtn) { _elCalBtn.className = 'cal-dropdown-btn'; }
-  }
-
-  // ── Render Month ──
-
-  function renderMonth() {
-    _elMonthView.style.display = '';
-    _elWeekView.style.display = 'none';
-    _elDayView.style.display = 'none';
-    _elMonthLabel.textContent = MONTHS_IT[_currentMonth] + ' ' + _currentYear;
-
-    var today = new Date();
-    var isCurrentMonth = (today.getFullYear() === _currentYear && today.getMonth() === _currentMonth);
-
-    var wdHtml = '';
     for (var w = 0; w < 7; w++) {
-      wdHtml += '<div class="cal-weekday' + (w >= 5 ? ' weekend' : '') + '">' + DAYS_IT[w] + '</div>';
+      html += '<div class="cal-weekday' + (w >= 5 ? ' weekend' : '') + '">' + DAYS_IT[w] + '</div>';
     }
-    _elWeekdays.innerHTML = wdHtml;
+    weekdaysEl.innerHTML = html;
+    container.appendChild(weekdaysEl);
 
-    var firstDay = new Date(_currentYear, _currentMonth, 1).getDay();
-    firstDay = (firstDay === 0) ? 6 : firstDay - 1;
-    var daysInMonth = new Date(_currentYear, _currentMonth + 1, 0).getDate();
-    var prevDays = new Date(_currentYear, _currentMonth, 0).getDate();
+    var gridEl = _el('div', 'cal-days');
+    container.appendChild(gridEl);
+    MonthRenderer._gridEl = gridEl;
+    MonthRenderer.refreshCells();
+  };
+
+  MonthRenderer.refreshCells = function () {
+    var gridEl = MonthRenderer._gridEl;
+    if (!gridEl) return;
+    var y = State.year;
+    var m = State.month;
+    var today = new Date();
+    var isCurrentMonth = (today.getFullYear() === y && today.getMonth() === m);
+
+    var firstDay = new Date(y, m, 1).getDay();
+    firstDay = firstDay === 0 ? 6 : firstDay - 1;
+    var daysInMonth = new Date(y, m + 1, 0).getDate();
+    var prevDays = new Date(y, m, 0).getDate();
 
     var html = '';
     for (var p = firstDay - 1; p >= 0; p--) {
       html += '<div class="cal-day-wrap"><div class="cal-day outside"><span class="cal-day-num">' + (prevDays - p) + '</span></div></div>';
     }
     for (var d = 1; d <= daysInMonth; d++) {
-      var events = getEventsForDate(_currentYear, _currentMonth, d);
+      var events = DataLayer.getEventsForDay(y, m, d, State.selectedCalIds);
       var isToday = isCurrentMonth && today.getDate() === d;
-      var isSel = _selectedDay === d;
-      var date = new Date(_currentYear, _currentMonth, d);
-      var dow = (date.getDay() === 0) ? 6 : date.getDay() - 1;
+      var isSel = State.selectedDay !== null && State.selectedDay.getDate() === d &&
+                  State.selectedDay.getMonth() === m && State.selectedDay.getFullYear() === y;
+      var date = new Date(y, m, d);
+      var dow = getDow(date);
       var isWeekend = dow >= 5;
       var cls = 'cal-day';
-      if (isToday) { cls += ' today'; }
-      if (isSel) { cls += ' selected'; }
-      if (events.length > 0) { cls += ' has-events'; }
-      if (isWeekend) { cls += ' weekend-cell'; }
+      if (isToday) cls += ' today';
+      if (isSel) cls += ' selected';
+      if (events.length > 0) cls += ' has-events';
+      if (isWeekend) cls += ' weekend-cell';
 
       html += '<div class="cal-day-wrap"><div class="' + cls + '" data-day="' + d + '">';
       html += '<span class="cal-day-num">' + d + '</span>';
       html += '<div class="cal-day-indicators">';
-      if (events.length === 1) {
-        html += '<span class="cal-day-dot" style="background:' + getCalColor(events[0].cal) + '"></span>';
-      } else if (events.length >= 2) {
+      if (events.length >= 1 && events.length <= 3) {
+        for (var ei = 0; ei < events.length; ei++) {
+          html += '<span class="cal-day-dot" style="background:' + getCalColor(State.calendars, events[ei].cal) + '"></span>';
+        }
+      } else if (events.length >= 4) {
         html += '<span class="cal-day-count">' + events.length + '</span>';
       }
       html += '</div></div></div>';
@@ -335,636 +260,393 @@ window.CalendarComponent = (function () {
     for (var n = 1; n <= remaining; n++) {
       html += '<div class="cal-day-wrap"><div class="cal-day outside"><span class="cal-day-num">' + n + '</span></div></div>';
     }
-    _elDaysGrid.innerHTML = html;
+    gridEl.innerHTML = html;
+  };
 
-    var dayCells = _elDaysGrid.querySelectorAll('.cal-day:not(.outside)');
-    for (var di = 0; di < dayCells.length; di++) {
-      (function (cell) {
-        cell.addEventListener('click', function () {
-          _selectedDay = parseInt(cell.getAttribute('data-day'));
-          renderMonth();
-          openDetail(_selectedDay);
-        });
-      }(dayCells[di]));
-    }
-  }
-
-  // ── Render Week ──
-
-  function renderWeek() {
-    _elMonthView.style.display = 'none';
-    _elWeekView.style.display = '-webkit-flex';
-    _elWeekView.style.display = 'flex';
-    _elDayView.style.display = 'none';
-    _elMonthLabel.textContent = MONTHS_IT[_currentMonth] + ' ' + _currentYear;
-
-    var TODAY = new Date();
-    var refDay = _selectedDay || (TODAY.getMonth() === _currentMonth ? TODAY.getDate() : 15);
-    var refDate = new Date(_currentYear, _currentMonth, refDay);
-    var dayOfWeek = (refDate.getDay() === 0) ? 6 : refDate.getDay() - 1;
-    var monday = new Date(refDate);
-    monday.setDate(monday.getDate() - dayOfWeek);
-    var sunday = new Date(monday);
-    sunday.setDate(sunday.getDate() + 6);
-    var janFirst = new Date(_currentYear, 0, 1);
-    var weekNum = Math.ceil(((monday - janFirst) / 86400000 + janFirst.getDay() + 1) / 7);
-    var rangeLabel;
-    if (monday.getMonth() !== sunday.getMonth()) {
-      rangeLabel = 'Sett. ' + weekNum + ' \u00B7 ' + monday.getDate() + ' ' + MONTHS_IT[monday.getMonth()].substring(0, 3) + ' \u2013 ' + sunday.getDate() + ' ' + MONTHS_IT[sunday.getMonth()].substring(0, 3);
-    } else {
-      rangeLabel = 'Sett. ' + weekNum + ' \u00B7 ' + monday.getDate() + '\u2013' + sunday.getDate() + ' ' + MONTHS_IT[monday.getMonth()];
-    }
-
-    var html = '<div style="display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center;margin-bottom:8px;">';
-    html += '<div class="cal-month-nav" id="cal-prev-week">\u25C0</div>';
-    html += '<div style="font-size:13px;color:#888;font-weight:600;margin-left:12px;margin-right:12px;">' + rangeLabel + '</div>';
-    html += '<div class="cal-month-nav" id="cal-next-week">\u25B6</div>';
-    html += '</div>';
-    html += '<div class="cal-week-header"><div class="cal-week-header-time"></div>';
-    var weekDates = [];
-    for (var i = 0; i < 7; i++) {
-      var dd = new Date(monday);
-      dd.setDate(dd.getDate() + i);
-      weekDates.push(dd);
-      var dayEvs = getEventsForDate(dd.getFullYear(), dd.getMonth(), dd.getDate());
-      var evCount = dayEvs.length;
-      var isTodayCol = dd.getFullYear() === TODAY.getFullYear() && dd.getMonth() === TODAY.getMonth() && dd.getDate() === TODAY.getDate();
-      html += '<div class="cal-week-header-cell' + (isTodayCol ? ' today-col' : '') + '" data-wday="' + dd.getDate() + '" data-wmonth="' + dd.getMonth() + '">';
-      html += '<div class="cal-week-header-name">' + DAYS_IT[i] + '</div>';
-      html += '<div class="cal-week-header-day">' + dd.getDate() + '</div>';
-      if (evCount > 0) { html += '<div class="cal-week-header-count">' + evCount + ' ev.</div>'; }
-      html += '</div>';
-    }
-    html += '</div>';
-
-    // All-day banner
-    var hasAnyAllDay = false;
-    for (var ai = 0; ai < 7; ai++) {
-      var adEvs = getEventsForDate(weekDates[ai].getFullYear(), weekDates[ai].getMonth(), weekDates[ai].getDate());
-      for (var ae = 0; ae < adEvs.length; ae++) {
-        if (adEvs[ae].allDay) { hasAnyAllDay = true; break; }
+  MonthRenderer.highlightSelected = function () {
+    var gridEl = MonthRenderer._gridEl;
+    if (!gridEl) return;
+    var cells = gridEl.querySelectorAll('.cal-day:not(.outside)');
+    for (var i = 0; i < cells.length; i++) {
+      var cell = cells[i];
+      var day = parseInt(cell.getAttribute('data-day'));
+      var isSel = State.selectedDay !== null && State.selectedDay.getDate() === day &&
+                  State.selectedDay.getMonth() === State.month && State.selectedDay.getFullYear() === State.year;
+      if (isSel) {
+        if (cell.className.indexOf('selected') === -1) cell.className += ' selected';
+      } else {
+        cell.className = cell.className.replace(/ ?selected/g, '');
       }
-      if (hasAnyAllDay) { break; }
     }
-    if (hasAnyAllDay) {
-      html += '<div style="display:-webkit-flex;display:flex;border-bottom:1px solid #333;margin-bottom:4px;">';
-      html += '<div style="width:50px;-webkit-flex-shrink:0;flex-shrink:0;font-size:9px;color:#555;text-align:right;padding:6px 8px 6px 0;">tutto<br>il d\u00ec</div>';
-      for (var adi = 0; adi < 7; adi++) {
-        var adayEvs = getEventsForDate(weekDates[adi].getFullYear(), weekDates[adi].getMonth(), weekDates[adi].getDate());
-        html += '<div style="-webkit-flex:1;flex:1;margin:0 1px;padding:4px 2px;">';
-        for (var ade = 0; ade < adayEvs.length; ade++) {
-          if (adayEvs[ade].allDay) {
-            var adColor = getCalColor(adayEvs[ade].cal);
-            html += '<div style="background:' + adColor + '33;border-left:3px solid ' + adColor + ';border-radius:3px;padding:3px 4px;font-size:10px;font-weight:600;margin-bottom:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">' + adayEvs[ade].title + '</div>';
-          }
-        }
-        html += '</div>';
-      }
-      html += '</div>';
+  };
+
+  // ── PanelRenderer ──
+
+  var PanelRenderer = {};
+  PanelRenderer._dateEl = null;
+  PanelRenderer._eventsEl = null;
+
+  PanelRenderer.build = function (container) {
+    container.innerHTML = '';
+    var header = _el('div', 'cal-panel-header');
+    PanelRenderer._dateEl = _el('span', 'cal-panel-date');
+    var closeBtn = _el('button', 'cal-panel-close', '\u2715');
+    closeBtn.addEventListener('click', function () {
+      Controller.closePanel();
+    }, false);
+    header.appendChild(PanelRenderer._dateEl);
+    header.appendChild(closeBtn);
+    container.appendChild(header);
+
+    PanelRenderer._eventsEl = _el('div', 'cal-panel-events');
+    container.appendChild(PanelRenderer._eventsEl);
+  };
+
+  PanelRenderer.open = function (day, events) {
+    State.root.className = 'cal-root cal-layout-split';
+    PanelRenderer._render(day, events);
+  };
+
+  PanelRenderer.update = function (day, events) {
+    PanelRenderer._render(day, events);
+  };
+
+  PanelRenderer.close = function () {
+    State.root.className = 'cal-root';
+  };
+
+  PanelRenderer._render = function (day, events) {
+    var dow = getDow(day);
+    PanelRenderer._dateEl.textContent = DAYS_FULL[dow].substring(0, 3) + ' ' + day.getDate() + ' ' + MONTHS_IT[day.getMonth()];
+
+    var el = PanelRenderer._eventsEl;
+    if (events.length === 0) {
+      el.innerHTML = '<div class="cal-panel-empty">' +
+        '<span class="cal-panel-empty-icon">\uD83D\uDCC5</span>' +
+        '<span class="cal-panel-empty-text">Nessun evento</span></div>';
+      return;
     }
-
-    // Time grid
-    html += '<div class="cal-week-body">';
-    var nowH = TODAY.getHours();
-    var nowM = TODAY.getMinutes();
-    for (var h = 7; h <= 22; h++) {
-      html += '<div class="cal-week-row"><div class="cal-week-hour">' + pad(h) + ':00</div>';
-      for (var wi = 0; wi < 7; wi++) {
-        var wd = weekDates[wi];
-        var wdayEvents = getEventsForDate(wd.getFullYear(), wd.getMonth(), wd.getDate());
-        var isTodayCell = wd.getFullYear() === TODAY.getFullYear() && wd.getMonth() === TODAY.getMonth() && wd.getDate() === TODAY.getDate();
-        html += '<div class="cal-week-cell" style="' + (isTodayCell ? 'background:#4a9eff08;' : '') + '">';
-        if (isTodayCell && h === nowH) {
-          var topPx = Math.round((nowM / 60) * 48);
-          html += '<div class="cal-week-now-line" style="top:' + topPx + 'px;"><div class="cal-week-now-dot"></div></div>';
-        }
-        for (var we = 0; we < wdayEvents.length; we++) {
-          var ev = wdayEvents[we];
-          if (ev.allDay) { continue; }
-          var startH = parseInt(ev.start.split(':')[0]);
-          if (startH === h) {
-            var startM = parseInt(ev.start.split(':')[1]) || 0;
-            var endH = parseInt(ev.end.split(':')[0]);
-            var endM = parseInt(ev.end.split(':')[1]) || 0;
-            var durMin = (endH * 60 + endM) - (startH * 60 + startM);
-            var pxH = Math.max(20, Math.round((durMin / 60) * 48) - 2);
-            var topOffset = Math.round((startM / 60) * 48);
-            var color = getCalColor(ev.cal);
-            html += '<div class="cal-week-event" style="top:' + topOffset + 'px;background:' + color + '33;border-left:3px solid ' + color + ';height:' + pxH + 'px;z-index:10;" title="' + ev.title + ' ' + ev.start + '-' + ev.end + '">' + ev.title + '</div>';
-          }
-        }
-        html += '</div>';
-      }
-      html += '</div>';
-    }
-    html += '</div>';
-
-    _elWeekView.innerHTML = html;
-
-    // Week nav arrows
-    var prevWeekEl = document.getElementById('cal-prev-week');
-    var nextWeekEl = document.getElementById('cal-next-week');
-    if (prevWeekEl) {
-      prevWeekEl.addEventListener('click', function () {
-        var ref = _selectedDay || new Date().getDate();
-        var d = new Date(_currentYear, _currentMonth, ref - 7);
-        _currentYear = d.getFullYear();
-        _currentMonth = d.getMonth();
-        _selectedDay = d.getDate();
-        fetchEvents(_currentYear, _currentMonth);
-        renderCurrentView();
-        renderDropdown();
-        updateOggiBtn();
-      });
-    }
-    if (nextWeekEl) {
-      nextWeekEl.addEventListener('click', function () {
-        var ref = _selectedDay || new Date().getDate();
-        var d = new Date(_currentYear, _currentMonth, ref + 7);
-        _currentYear = d.getFullYear();
-        _currentMonth = d.getMonth();
-        _selectedDay = d.getDate();
-        fetchEvents(_currentYear, _currentMonth);
-        renderCurrentView();
-        renderDropdown();
-        updateOggiBtn();
-      });
-    }
-
-    // Day header clicks → open detail panel
-    var wHeaders = _elWeekView.querySelectorAll('[data-wday]');
-    for (var whi = 0; whi < wHeaders.length; whi++) {
-      (function (hdr) {
-        hdr.addEventListener('click', function () {
-          var day = parseInt(hdr.getAttribute('data-wday'));
-          var month = parseInt(hdr.getAttribute('data-wmonth'));
-          if (month === _currentMonth) {
-            _selectedDay = day;
-            openDetail(day);
-          }
-        });
-      }(wHeaders[whi]));
-    }
-  }
-
-  // ── Render Day ──
-
-  function renderDay() {
-    _elMonthView.style.display = 'none';
-    _elWeekView.style.display = 'none';
-    _elDayView.style.display = '-webkit-flex';
-    _elDayView.style.display = 'flex';
-    var TODAY = new Date();
-    var day = _selectedDay || TODAY.getDate();
-    var date = new Date(_currentYear, _currentMonth, day);
-    var dowIdx = (date.getDay() === 0) ? 6 : date.getDay() - 1;
-    var isDayToday = (_currentYear === TODAY.getFullYear() && _currentMonth === TODAY.getMonth() && day === TODAY.getDate());
-    _elMonthLabel.textContent = MONTHS_IT[_currentMonth] + ' ' + _currentYear;
-
-    var dayEvents = getEventsForDate(_currentYear, _currentMonth, day);
-    dayEvents.sort(function (a, b) {
-      if (a.allDay && !b.allDay) { return -1; }
-      if (!a.allDay && b.allDay) { return 1; }
-      return a.start < b.start ? -1 : 1;
-    });
-
-    var html = '<div class="cal-day-header-bar">';
-    html += '<div class="cal-month-nav" id="cal-prev-day">\u25C0</div>';
-    html += '<div class="cal-day-label">';
-    if (isDayToday) { html += '<span style="color:#4a9eff;font-size:12px;font-weight:600;text-transform:uppercase;display:block;">Oggi</span>'; }
-    html += DAYS_FULL[dowIdx] + ' ' + day + ' ' + MONTHS_IT[_currentMonth];
-    html += '<span class="cal-day-count">' + dayEvents.length + ' event' + (dayEvents.length !== 1 ? 'i' : 'o') + '</span>';
-    html += '</div>';
-    html += '<div class="cal-month-nav" id="cal-next-day">\u25B6</div>';
-    html += '</div>';
-
-    if (dayEvents.length === 0) {
-      html += '<div class="cal-day-empty">';
-      html += '<div class="cal-day-empty-icon">\uD83D\uDCC5</div>';
-      html += '<div class="cal-day-empty-text">Nessun evento</div>';
-      html += '</div>';
-    } else {
-      html += '<div class="cal-day-agenda">';
-      for (var i = 0; i < dayEvents.length; i++) {
-        var ev = dayEvents[i];
-        var color = getCalColor(ev.cal);
-        html += '<div class="cal-day-card">';
-        html += '<div class="cal-day-card-bar" style="background:' + color + '"></div>';
-        html += '<div class="cal-day-card-info">';
-        html += '<div class="cal-day-card-title">' + ev.title + '</div>';
-        html += '<div class="cal-day-card-time">' + (ev.allDay ? '\u2B50 Tutto il giorno' : ev.start + ' \u2014 ' + ev.end) + ' \u00B7 <span style="color:' + color + '">' + getCalName(ev.cal) + '</span></div>';
-        html += '</div></div>';
-      }
-      html += '</div>';
-    }
-
-    _elDayView.innerHTML = html;
-
-    var prevDayEl = document.getElementById('cal-prev-day');
-    var nextDayEl = document.getElementById('cal-next-day');
-    if (prevDayEl) {
-      prevDayEl.addEventListener('click', function () {
-        _selectedDay = (_selectedDay || day) - 1;
-        if (_selectedDay < 1) {
-          _currentMonth--;
-          if (_currentMonth < 0) { _currentMonth = 11; _currentYear--; }
-          _selectedDay = new Date(_currentYear, _currentMonth + 1, 0).getDate();
-        }
-        renderDay();
-        renderDropdown();
-        updateOggiBtn();
-      });
-    }
-    if (nextDayEl) {
-      nextDayEl.addEventListener('click', function () {
-        var maxD = new Date(_currentYear, _currentMonth + 1, 0).getDate();
-        _selectedDay = (_selectedDay || day) + 1;
-        if (_selectedDay > maxD) {
-          _currentMonth++;
-          if (_currentMonth > 11) { _currentMonth = 0; _currentYear++; }
-          _selectedDay = 1;
-        }
-        renderDay();
-        renderDropdown();
-        updateOggiBtn();
-      });
-    }
-  }
-
-  function renderCurrentView() {
-    if (_currentView === 'month') { renderMonth(); }
-    else if (_currentView === 'week') { renderWeek(); }
-    else if (_currentView === 'day') { renderDay(); }
-  }
-
-  // ── Inline Detail Panel ──
-
-  function openDetail(day) {
-    var events = getEventsForDate(_currentYear, _currentMonth, day);
-    var date = new Date(_currentYear, _currentMonth, day);
-    var dowIdx = (date.getDay() === 0) ? 6 : date.getDay() - 1;
-    _elDetailTitle.textContent = DAYS_FULL[dowIdx] + ' ' + day + ' ' + MONTHS_IT[_currentMonth];
-    _elDetailCount.textContent = events.length + ' event' + (events.length !== 1 ? 'i' : 'o');
 
     var html = '';
-    if (events.length === 0) {
-      html = '<div class="cal-detail-empty">\uD83D\uDCC5 Nessun evento</div>';
-    } else {
-      events.sort(function (a, b) {
-        if (a.allDay && !b.allDay) { return -1; }
-        if (!a.allDay && b.allDay) { return 1; }
-        return a.start < b.start ? -1 : 1;
-      });
-      for (var i = 0; i < events.length; i++) {
-        var ev = events[i];
-        var color = getCalColor(ev.cal);
-        html += '<div class="cal-detail-event">';
-        html += '<div class="cal-detail-event-bar" style="background:' + color + '"></div>';
-        html += '<div class="cal-detail-event-info">';
-        html += '<div class="cal-detail-event-title">' + ev.title + '</div>';
-        html += '<div class="cal-detail-event-time">' + (ev.allDay ? '\u2B50 Tutto il giorno' : ev.start + ' \u2014 ' + ev.end) + '</div>';
-        html += '<div class="cal-detail-event-cal" style="color:' + color + '">' + getCalName(ev.cal) + '</div>';
-        html += '</div></div>';
-      }
-    }
-    _elDetailBody.innerHTML = html;
-
-    if (events.length > 3) {
-      _elDetailPanel.className = 'cal-detail expanded';
-    } else {
-      _elDetailPanel.className = 'cal-detail open';
-    }
-    _detailState = (events.length > 3) ? 'expanded' : 'open';
-    _updateDetailToggle();
-
-    // Scroll the detail panel into view
-    setTimeout(function () {
-      _elDetailPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 100);
-  }
-
-  function closeDetail() {
-    _elDetailPanel.className = 'cal-detail';
-    _detailState = 'closed';
-    _selectedDay = null;
-    if (_currentView === 'month') { renderMonth(); }
-  }
-
-  function _updateDetailToggle() {
-    if (!_elDetailToggle) { return; }
-    if (_detailState === 'open') {
-      _elDetailToggle.innerHTML = '&#9650;'; // ▲
-      _elDetailToggle.style.display = '';
-    } else if (_detailState === 'expanded') {
-      _elDetailToggle.innerHTML = '&#9660;'; // ▼
-      _elDetailToggle.style.display = '';
-    } else {
-      _elDetailToggle.style.display = 'none';
-    }
-  }
-
-  function _onDetailToggleClick() {
-    if (_detailState === 'open') {
-      _elDetailPanel.className = 'cal-detail expanded';
-      _detailState = 'expanded';
-    } else if (_detailState === 'expanded') {
-      _elDetailPanel.className = 'cal-detail open';
-      _detailState = 'open';
-    }
-    _updateDetailToggle();
-  }
-
-  // ── DOM Building ──
-
-  // ── DOM helpers ──
-
-  function el(tag, cls, innerHTML) {
-    var e = document.createElement(tag);
-    if (cls) { e.className = cls; }
-    if (innerHTML !== undefined) { e.innerHTML = innerHTML; }
-    return e;
-  }
-
-  function buildDOM() {
-    _container.innerHTML = '';
-
-    // ── Page wrapper ──
-    _elPage = el('div', 'cal-page');
-
-    // ── Row 1: Month nav ──
-    var rowMonth = el('div', 'cal-row-month');
-    _elPrevMonth = el('div', 'cal-month-nav', '&#9664;');
-    _elMonthLabel = el('div', 'cal-month-label', '');
-    _elNextMonth = el('div', 'cal-month-nav', '&#9654;');
-    _elBtnOggi = el('div', 'cal-btn-oggi', 'Oggi');
-    rowMonth.appendChild(_elPrevMonth);
-    rowMonth.appendChild(_elMonthLabel);
-    rowMonth.appendChild(_elNextMonth);
-    rowMonth.appendChild(_elBtnOggi);
-
-    // ── Row 2: Dropdown + view switcher ──
-    var rowControls = el('div', 'cal-row-controls');
-
-    var dropWrap = el('div', 'cal-dropdown-wrap');
-    _elCalBtn = el('div', 'cal-dropdown-btn');
-    _elCalBtnDots = el('span', 'cal-btn-dots');
-    _elCalBtnLabel = el('span', '');
-    _elCalBtnLabel.textContent = 'Tutti i calendari';
-    var arrow = el('span', 'cal-arrow', '&#9662;');
-    _elCalBtn.appendChild(_elCalBtnDots);
-    _elCalBtn.appendChild(_elCalBtnLabel);
-    _elCalBtn.appendChild(arrow);
-    _elCalMenu = el('div', 'cal-dropdown-menu');
-    dropWrap.appendChild(_elCalBtn);
-    dropWrap.appendChild(_elCalMenu);
-
-    var viewSwitcher = el('div', 'cal-view-switcher');
-    var viewDefs = [
-      { view: 'month', label: 'Mese' },
-      { view: 'week',  label: 'Settimana' },
-      { view: 'day',   label: 'Giorno' }
-    ];
-    _elViewBtns = [];
-    for (var vi = 0; vi < viewDefs.length; vi++) {
-      var vb = el('div', 'cal-view-btn' + (viewDefs[vi].view === 'month' ? ' active' : ''), viewDefs[vi].label);
-      vb.setAttribute('data-view', viewDefs[vi].view);
-      viewSwitcher.appendChild(vb);
-      _elViewBtns.push(vb);
-    }
-
-    rowControls.appendChild(dropWrap);
-    rowControls.appendChild(viewSwitcher);
-
-    // ── Month view (grid wrap) ──
-    _elMonthView = el('div', 'cal-grid-wrap');
-    _elWeekdays = el('div', 'cal-weekdays');
-    _elDaysGrid = el('div', 'cal-days');
-    _elMonthView.appendChild(_elWeekdays);
-    _elMonthView.appendChild(_elDaysGrid);
-
-    // ── Week view ──
-    _elWeekView = el('div', 'cal-week-view');
-    _elWeekView.style.display = 'none';
-
-    // ── Day view ──
-    _elDayView = el('div', 'cal-day-view');
-    _elDayView.style.display = 'none';
-
-    _elPage.appendChild(rowMonth);
-    _elPage.appendChild(rowControls);
-    _elPage.appendChild(_elMonthView);
-    _elPage.appendChild(_elWeekView);
-    _elPage.appendChild(_elDayView);
-
-    // Debug version indicator — remove after beta testing
-    var _dbgVer = el('div', '', 'cal-build:rc14');
-    _dbgVer.style.cssText = 'position:fixed;bottom:4px;right:4px;font-size:9px;color:#555;z-index:9999;pointer-events:none;';
-    _elPage.appendChild(_dbgVer);
-
-    // ── Inline detail panel ──
-    _elDetailPanel = el('div', 'cal-detail');
-    var detailHeader = el('div', 'cal-detail-header');
-    _elDetailTitle = el('div', 'cal-detail-title');
-    _elDetailCount = el('div', 'cal-detail-count');
-    _elDetailToggle = el('div', 'cal-detail-toggle', '&#9650;');
-    _elDetailClose = el('div', 'cal-detail-close', '&#x2715;');
-    detailHeader.appendChild(_elDetailTitle);
-    detailHeader.appendChild(_elDetailCount);
-    detailHeader.appendChild(_elDetailToggle);
-    detailHeader.appendChild(_elDetailClose);
-    _elDetailBody = el('div', 'cal-detail-body');
-    _elDetailPanel.appendChild(detailHeader);
-    _elDetailPanel.appendChild(_elDetailBody);
-
-    // Append INSIDE _elPage, after the views
-    _elPage.appendChild(_elDetailPanel);
-
-    _container.appendChild(_elPage);
-
-    // ── Event listeners ──
-
-    _elBtnOggi.addEventListener('click', function () {
-      var today = new Date();
-      _currentYear = today.getFullYear();
-      _currentMonth = today.getMonth();
-      _selectedDay = (_currentView === 'day') ? today.getDate() : null;
-      renderCurrentView();
-      renderDropdown();
-      updateOggiBtn();
-      fetchEvents(_currentYear, _currentMonth);
-    });
-
-    _elPrevMonth.addEventListener('click', function () {
-      if (_currentView === 'week') {
-        // Navigate to previous week
-        var ref = _selectedDay || new Date().getDate();
-        var d = new Date(_currentYear, _currentMonth, ref - 7);
-        _currentYear = d.getFullYear();
-        _currentMonth = d.getMonth();
-        _selectedDay = d.getDate();
-        fetchEvents(_currentYear, _currentMonth);
+    for (var i = 0; i < events.length; i++) {
+      var ev = events[i];
+      var color = getCalColor(State.calendars, ev.cal);
+      html += '<div class="cal-event-card">';
+      html += '<div class="cal-event-bar" style="background:' + color + '"></div>';
+      html += '<div class="cal-event-body">';
+      html += '<div class="cal-event-title">' + ev.title + '</div>';
+      if (ev.allDay) {
+        html += '<div class="cal-event-allday">Tutto il giorno</div>';
       } else {
-        _currentMonth--;
-        if (_currentMonth < 0) { _currentMonth = 11; _currentYear--; }
-        _selectedDay = null;
-        fetchEvents(_currentYear, _currentMonth);
+        html += '<div class="cal-event-time">' + ev.start + ' \u2013 ' + ev.end + '</div>';
       }
-      renderCurrentView();
-      renderDropdown();
-      updateOggiBtn();
-    });
+      html += '<div class="cal-event-cal">' + getCalName(State.calendars, ev.cal) + '</div>';
+      html += '</div></div>';
+    }
+    el.innerHTML = html;
+  };
 
-    _elNextMonth.addEventListener('click', function () {
-      if (_currentView === 'week') {
-        var ref = _selectedDay || new Date().getDate();
-        var d = new Date(_currentYear, _currentMonth, ref + 7);
-        _currentYear = d.getFullYear();
-        _currentMonth = d.getMonth();
-        _selectedDay = d.getDate();
-        fetchEvents(_currentYear, _currentMonth);
-      } else {
-        _currentMonth++;
-        if (_currentMonth > 11) { _currentMonth = 0; _currentYear++; }
-        _selectedDay = null;
-        fetchEvents(_currentYear, _currentMonth);
-      }
-      renderCurrentView();
-      renderDropdown();
-      updateOggiBtn();
-    });
+  // ── DropdownRenderer ──
 
-    // Calendar dropdown
-    _elCalBtn.addEventListener('click', function (e) {
+  var DropdownRenderer = {};
+  DropdownRenderer._menuEl = null;
+  DropdownRenderer._btnEl = null;
+  DropdownRenderer._dotsEl = null;
+  DropdownRenderer._labelEl = null;
+  DropdownRenderer._docHandler = null;
+
+  DropdownRenderer.build = function (container, calendars) {
+    var wrap = _el('div', 'cal-dropdown-wrap');
+    var btn = _el('button', 'cal-dropdown-btn');
+    DropdownRenderer._dotsEl = _el('span', 'cal-btn-dots');
+    DropdownRenderer._labelEl = _el('span', '');
+    var arrow = _el('span', 'cal-arrow', '\u25BE');
+    btn.appendChild(DropdownRenderer._dotsEl);
+    btn.appendChild(DropdownRenderer._labelEl);
+    btn.appendChild(arrow);
+
+    var menu = _el('div', 'cal-dropdown-menu');
+    DropdownRenderer._menuEl = menu;
+    DropdownRenderer._btnEl = btn;
+
+    wrap.appendChild(btn);
+    wrap.appendChild(menu);
+    container.appendChild(wrap);
+
+    btn.addEventListener('click', function (e) {
       e.stopPropagation();
-      if (_elCalMenu.className.indexOf('show') !== -1) {
-        _elCalMenu.className = 'cal-dropdown-menu';
-        _elCalBtn.className = 'cal-dropdown-btn';
+      var isOpen = menu.className.indexOf('show') !== -1;
+      if (isOpen) {
+        DropdownRenderer._close();
       } else {
-        _elCalMenu.className = 'cal-dropdown-menu show';
-        _elCalBtn.className = 'cal-dropdown-btn open';
+        menu.className = 'cal-dropdown-menu show';
+        btn.className = 'cal-dropdown-btn open';
       }
-    });
+    }, false);
 
-    _elCalMenu.addEventListener('click', function (e) {
+    menu.addEventListener('click', function (e) {
       e.stopPropagation();
       var target = e.target;
-      // Walk up to find the dropdown item
-      while (target && target !== _elCalMenu) {
-        if (target.className && target.className.indexOf('cal-dropdown-item') !== -1) { break; }
+      while (target && target !== menu) {
+        if (target.className && target.className.indexOf('cal-dropdown-item') !== -1) break;
         target = target.parentNode;
       }
-      if (!target || target === _elCalMenu) { return; }
+      if (!target || target === menu) return;
       var calId = target.getAttribute('data-cal');
-      if (!calId) { return; }
+      if (!calId) return;
+
       if (calId === '__all') {
-        _selectedCals = [];
-        for (var i = 0; i < _calendars.length; i++) {
-          _selectedCals.push(_calendars[i].entity_id);
+        var allSelected = State.selectedCalIds.length === State.calendars.length;
+        if (allSelected) return;
+        State.selectedCalIds = [];
+        for (var a = 0; a < State.calendars.length; a++) {
+          State.selectedCalIds.push(State.calendars[a].entity_id);
         }
       } else {
-        var idx = _selectedCals.indexOf(calId);
-        if (idx !== -1) { _selectedCals.splice(idx, 1); }
-        else { _selectedCals.push(calId); }
+        var idx = State.selectedCalIds.indexOf(calId);
+        if (idx !== -1) {
+          if (State.selectedCalIds.length <= 1) return;
+          State.selectedCalIds.splice(idx, 1);
+        } else {
+          State.selectedCalIds.push(calId);
+        }
       }
-      renderDropdown();
-      renderCurrentView();
-      updateOggiBtn();
-    });
+      Controller.onCalendarFilterChange();
+    }, false);
 
-    // View switcher
-    for (var vbi = 0; vbi < _elViewBtns.length; vbi++) {
-      (function (btn) {
-        btn.addEventListener('click', function () {
-          for (var j = 0; j < _elViewBtns.length; j++) {
-            _elViewBtns[j].className = 'cal-view-btn';
-          }
-          btn.className = 'cal-view-btn active';
-          _currentView = btn.getAttribute('data-view');
-          renderCurrentView();
-          updateOggiBtn();
-        });
-      }(_elViewBtns[vbi]));
+    DropdownRenderer._docHandler = function () { DropdownRenderer._close(); };
+    document.addEventListener('click', DropdownRenderer._docHandler, false);
+
+    DropdownRenderer.refresh();
+  };
+
+  DropdownRenderer.refresh = function () {
+    var menu = DropdownRenderer._menuEl;
+    if (!menu) return;
+    var cals = State.calendars;
+    var html = '';
+    for (var i = 0; i < cals.length; i++) {
+      var c = cals[i];
+      var sel = State.selectedCalIds.indexOf(c.entity_id) !== -1;
+      var count = DataLayer.countEventsForCal(c.entity_id, State.year, State.month);
+      var color = c.color || DEFAULT_COLORS[i % DEFAULT_COLORS.length];
+      var name = c.label || (c.entity_id.split('.')[1]) || c.entity_id;
+      html += '<div class="cal-dropdown-item' + (sel ? ' selected' : '') + '" data-cal="' + c.entity_id + '">';
+      html += '<span class="cal-dot" style="background:' + color + '"></span>';
+      html += '<span class="cal-item-name">' + name + '</span>';
+      html += '<span class="cal-event-count">' + count + '</span>';
+      if (sel) html += '<span class="cal-check">\u2713</span>';
+      html += '</div>';
+    }
+    html += '<div class="cal-dropdown-item" data-cal="__all" style="border-top:1px solid #333;margin-top:4px;padding-top:12px;color:#4a9eff;">Seleziona tutti</div>';
+    menu.innerHTML = html;
+
+    var dotsHtml = '';
+    var labelText = '';
+    if (State.selectedCalIds.length === cals.length) {
+      labelText = 'Tutti i calendari';
+      for (var j = 0; j < cals.length; j++) {
+        var jColor = cals[j].color || DEFAULT_COLORS[j % DEFAULT_COLORS.length];
+        dotsHtml += '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + jColor + ';margin-right:3px;"></span>';
+      }
+    } else if (State.selectedCalIds.length === 1) {
+      for (var s = 0; s < cals.length; s++) {
+        if (cals[s].entity_id === State.selectedCalIds[0]) {
+          labelText = cals[s].label || (cals[s].entity_id.split('.')[1]) || cals[s].entity_id;
+          var sColor = cals[s].color || DEFAULT_COLORS[s % DEFAULT_COLORS.length];
+          dotsHtml = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + sColor + ';margin-right:3px;"></span>';
+          break;
+        }
+      }
+    } else {
+      labelText = '';
+      for (var k = 0; k < cals.length; k++) {
+        if (State.selectedCalIds.indexOf(cals[k].entity_id) !== -1) {
+          var kColor = cals[k].color || DEFAULT_COLORS[k % DEFAULT_COLORS.length];
+          dotsHtml += '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + kColor + ';margin-right:3px;"></span>';
+        }
+      }
+    }
+    DropdownRenderer._dotsEl.innerHTML = dotsHtml;
+    DropdownRenderer._labelEl.textContent = labelText;
+  };
+
+  DropdownRenderer._close = function () {
+    if (DropdownRenderer._menuEl) DropdownRenderer._menuEl.className = 'cal-dropdown-menu';
+    if (DropdownRenderer._btnEl) DropdownRenderer._btnEl.className = 'cal-dropdown-btn';
+  };
+
+  DropdownRenderer.destroy = function () {
+    if (DropdownRenderer._docHandler) {
+      document.removeEventListener('click', DropdownRenderer._docHandler, false);
+      DropdownRenderer._docHandler = null;
+    }
+  };
+
+  // ── Controller ──
+
+  var Controller = {};
+  Controller._monthLabel = null;
+  Controller._oggiBtn = null;
+
+  Controller.init = function (container, calendars, appState) {
+    if (DropdownRenderer._docHandler) DropdownRenderer.destroy();
+    DataLayer.clear();
+    State.reset(calendars);
+
+    container.innerHTML = '';
+    var root = _el('div', 'cal-root');
+    State.root = root;
+
+    var header = _el('div', 'cal-row-month');
+    var prevBtn = _el('div', 'cal-month-nav', '\u25C0');
+    Controller._monthLabel = _el('div', 'cal-month-label');
+    var nextBtn = _el('div', 'cal-month-nav', '\u25B6');
+    Controller._oggiBtn = _el('div', 'cal-btn-oggi', 'Oggi');
+
+    header.appendChild(prevBtn);
+    header.appendChild(Controller._monthLabel);
+    header.appendChild(nextBtn);
+    header.appendChild(Controller._oggiBtn);
+    root.appendChild(header);
+
+    var controls = _el('div', 'cal-row-controls');
+    DropdownRenderer.build(controls, calendars);
+    root.appendChild(controls);
+
+    var body = _el('div', 'cal-body');
+    State.monthEl = _el('div', 'cal-month');
+    State.panelEl = _el('div', 'cal-panel');
+    body.appendChild(State.monthEl);
+    body.appendChild(State.panelEl);
+    root.appendChild(body);
+
+    var dbg = _el('div', '', 'cal-build:rc15');
+    dbg.style.cssText = 'position:fixed;bottom:4px;right:4px;font-size:9px;color:#555;z-index:9999;pointer-events:none;';
+    root.appendChild(dbg);
+
+    container.appendChild(root);
+
+    PanelRenderer.build(State.panelEl);
+
+    prevBtn.addEventListener('click', function () { Controller.onMonthNav(-1); }, false);
+    nextBtn.addEventListener('click', function () { Controller.onMonthNav(1); }, false);
+    Controller._oggiBtn.addEventListener('click', function () { Controller.onMonthNav(0); }, false);
+
+    State.monthEl.addEventListener('click', function (e) {
+      var target = e.target;
+      while (target && target !== State.monthEl) {
+        if (target.className && target.className.indexOf('cal-day') !== -1 &&
+            target.className.indexOf('outside') === -1 && target.getAttribute('data-day')) {
+          break;
+        }
+        target = target.parentNode;
+      }
+      if (!target || target === State.monthEl) return;
+      var day = parseInt(target.getAttribute('data-day'));
+      Controller.onDayClick(day);
+    }, false);
+
+    Controller._updateMonthLabel();
+    Controller._updateOggi();
+    MonthRenderer.build(State.monthEl);
+    DataLayer.fetchMonth(State.selectedCalIds, State.year, State.month, function () {
+      MonthRenderer.refreshCells();
+      DropdownRenderer.refresh();
+    });
+  };
+
+  Controller.onDayClick = function (day) {
+    var clickedDate = new Date(State.year, State.month, day);
+
+    if (State.isPanelOpen && State.selectedDay !== null &&
+        State.selectedDay.getTime() === clickedDate.getTime()) {
+      Controller.closePanel();
+      return;
     }
 
-    // Month swipe
-    _elMonthView.addEventListener('touchstart', function (e) {
-      _swipeStartX = e.touches[0].clientX;
-    }, { passive: true });
-    _elMonthView.addEventListener('touchend', function (e) {
-      var diff = _swipeStartX - e.changedTouches[0].clientX;
-      if (Math.abs(diff) > 60) {
-        if (diff > 0) {
-          _currentMonth++;
-          if (_currentMonth > 11) { _currentMonth = 0; _currentYear++; }
-        } else {
-          _currentMonth--;
-          if (_currentMonth < 0) { _currentMonth = 11; _currentYear--; }
-        }
-        _selectedDay = null;
-        fetchEvents(_currentYear, _currentMonth);
-        renderCurrentView();
-        renderDropdown();
-        updateOggiBtn();
-      }
-    }, { passive: true });
+    var events = DataLayer.getEventsForDay(State.year, State.month, day, State.selectedCalIds);
+    State.selectedDay = clickedDate;
 
-    // Week swipe
-    _elWeekView.addEventListener('touchstart', function (e) {
-      _swipeStartX = e.touches[0].clientX;
-    }, { passive: true });
-    _elWeekView.addEventListener('touchend', function (e) {
-      var diff = _swipeStartX - e.changedTouches[0].clientX;
-      if (Math.abs(diff) > 60) {
-        var ref = _selectedDay || new Date().getDate();
-        var d = new Date(_currentYear, _currentMonth, ref + (diff > 0 ? 7 : -7));
-        _currentYear = d.getFullYear();
-        _currentMonth = d.getMonth();
-        _selectedDay = d.getDate();
-        fetchEvents(_currentYear, _currentMonth);
-        renderCurrentView();
-        renderDropdown();
-        updateOggiBtn();
-      }
-    }, { passive: true });
+    if (!State.isPanelOpen) {
+      State.isPanelOpen = true;
+      PanelRenderer.open(clickedDate, events);
+    } else {
+      PanelRenderer.update(clickedDate, events);
+    }
+    MonthRenderer.highlightSelected();
+  };
 
-    // Detail panel close and toggle
-    _elDetailClose.addEventListener('click', closeDetail);
-    _elDetailToggle.addEventListener('click', _onDetailToggleClick);
+  Controller.closePanel = function () {
+    State.isPanelOpen = false;
+    State.selectedDay = null;
+    PanelRenderer.close();
+    MonthRenderer.highlightSelected();
+  };
 
-    // Close dropdown on outside click — attach to document, store ref for cleanup
-    _docClickHandler = function () { closeDropdown(); };
-    document.addEventListener('click', _docClickHandler);
-  }
+  Controller.onMonthNav = function (direction) {
+    if (direction === 0) {
+      var now = new Date();
+      State.year = now.getFullYear();
+      State.month = now.getMonth();
+    } else {
+      State.month += direction;
+      if (State.month > 11) { State.month = 0; State.year++; }
+      if (State.month < 0) { State.month = 11; State.year--; }
+    }
+
+    if (State.isPanelOpen) Controller.closePanel();
+    State.selectedDay = null;
+    Controller._updateMonthLabel();
+    Controller._updateOggi();
+    MonthRenderer.build(State.monthEl);
+    DataLayer.fetchMonth(State.selectedCalIds, State.year, State.month, function () {
+      MonthRenderer.refreshCells();
+      DropdownRenderer.refresh();
+    });
+  };
+
+  Controller.onCalendarFilterChange = function () {
+    MonthRenderer.refreshCells();
+    DropdownRenderer.refresh();
+    if (State.isPanelOpen && State.selectedDay) {
+      var events = DataLayer.getEventsForDay(
+        State.selectedDay.getFullYear(), State.selectedDay.getMonth(),
+        State.selectedDay.getDate(), State.selectedCalIds);
+      PanelRenderer.update(State.selectedDay, events);
+    }
+  };
+
+  Controller._updateMonthLabel = function () {
+    if (Controller._monthLabel) {
+      Controller._monthLabel.textContent = MONTHS_IT[State.month] + ' ' + State.year;
+    }
+  };
+
+  Controller._updateOggi = function () {
+    if (!Controller._oggiBtn) return;
+    var now = new Date();
+    var isCurrentMonth = (now.getFullYear() === State.year && now.getMonth() === State.month);
+    Controller._oggiBtn.className = isCurrentMonth ? 'cal-btn-oggi on-today' : 'cal-btn-oggi';
+  };
+
+  Controller.destroy = function () {
+    DropdownRenderer.destroy();
+    DataLayer.clear();
+    State.root = null;
+    State.monthEl = null;
+    State.panelEl = null;
+  };
 
   // ── Public API ──
 
-  function init(container, calendars, appState) {
-    // Cleanup previous listeners if re-inited
-    if (_docClickHandler) { document.removeEventListener('click', _docClickHandler); _docClickHandler = null; }
-
-    _container = container;
-    _calendars = calendars || [];
-    _appState = appState;
-    _selectedCals = [];
-    for (var i = 0; i < _calendars.length; i++) {
-      _selectedCals.push(_calendars[i].entity_id);
+  window.CalendarComponent = {
+    init: function (container, calendars, appState) {
+      Controller.init(container, calendars, appState);
+    },
+    destroy: function () {
+      Controller.destroy();
     }
+  };
 
-    var today = new Date();
-    _currentYear = today.getFullYear();
-    _currentMonth = today.getMonth();
-    _selectedDay = null;
-    _currentView = 'month';
-    _eventsCache = {};
-    _allEvents = [];
-    _detailState = 'closed';
-
-    buildDOM();
-    renderDropdown();
-    updateOggiBtn();
-    fetchEvents(_currentYear, _currentMonth);
-  }
-
-  return { init: init };
-
-}());
+})(window);
