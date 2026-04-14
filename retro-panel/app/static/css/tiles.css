@@ -2287,9 +2287,9 @@ body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-
    iOS 12 safe: -webkit-flex, no grid, no gap, no aspect-ratio
    ============================================================ */
 
-/* ---- Wide column (2-col) for active media player ---- */
+/* ---- Wide column (2 compact slots) for active media player ---- */
 .tile-col-media-wide {
-  width: 50%;
+  width: 66.666%;
   padding-right: 12px;
   padding-bottom: 12px;
 }
@@ -2398,10 +2398,12 @@ body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-
   border: none;
   background: none;
   color: var(--c-text-sec);
-  padding: 8px;
+  padding: 6px;
   cursor: pointer;
-  min-width: 44px;
-  min-height: 44px;
+  min-width: 32px;
+  min-height: 32px;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
   display: -webkit-flex;
   display: flex;
   -webkit-align-items: center;
@@ -2411,9 +2413,9 @@ body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-
 }
 .media-btn svg { fill: currentColor; }
 .media-btn-play {
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
   border-radius: 50%;
   background: var(--c-on);
   color: #fff;

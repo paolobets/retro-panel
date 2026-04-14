@@ -519,14 +519,15 @@ window.MediaComponent = (function () {
         svgEl.style.fill = '#fff';
       }
     }
-    var pic = attrs.entity_picture || '';
-    if (pic) {
-      imgEl.src = 'api/media-cover/' + entityId;
+    /* Always try to load via proxy: backend returns 404 if no entity_picture,
+       and onerror hides the img revealing the gradient fallback beneath. */
+    var newSrc = 'api/media-cover/' + entityId + '?_t=' + (attrs.media_content_id || attrs.media_title || '');
+    if (imgEl.dataset.mediaSrc !== newSrc) {
+      imgEl.dataset.mediaSrc = newSrc;
       imgEl.style.display = '';
       imgEl.onerror = function () { imgEl.style.display = 'none'; };
-    } else {
-      imgEl.style.display = 'none';
-      imgEl.src = '';
+      imgEl.onload = function () { imgEl.style.display = ''; };
+      imgEl.src = newSrc;
     }
   }
 
