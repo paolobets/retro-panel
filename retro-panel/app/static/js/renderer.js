@@ -60,6 +60,7 @@ window.RP_Renderer = (function () {
     'cover_standard':     null,
     'sensor_conditional': null,
     'climate':    null,
+    'media_player':       null,
   };
 
   // Column class for each layout_type
@@ -104,6 +105,7 @@ window.RP_Renderer = (function () {
     'cover_standard':     'tile-col-compact',
     'sensor_conditional': 'tile-col-sensor',
     'climate':    'tile-col-compact',
+    'media_player':       'tile-col-compact',
   };
 
   function _initComponents() {
@@ -147,6 +149,7 @@ window.RP_Renderer = (function () {
     COMPONENT_MAP['cover_standard']     = window.CoverComponent              || null;
     COMPONENT_MAP['sensor_conditional'] = window.SensorConditionalComponent  || null;
     COMPONENT_MAP['climate']            = window.ClimateComponent  || null;
+    COMPONENT_MAP['media_player']       = window.MediaComponent    || null;
   }
 
   // ---------------------------------------------------------------------------
