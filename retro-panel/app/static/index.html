@@ -179,6 +179,81 @@
     </div>
   </div>
 
+  <!-- Media player bottom sheet overlay -->
+  <div id="media-bs-overlay"></div>
+
+  <!-- Media player bottom sheet -->
+  <div id="media-bs">
+    <div class="mbs-handle"></div>
+    <button class="mbs-close" type="button" aria-label="Close">&#10005;</button>
+
+    <!-- Header: cover + info + power -->
+    <div class="mbs-header">
+      <div class="mbs-cover">
+        <div class="mbs-cover-fallback"></div>
+        <img class="mbs-cover-img" src="" alt="">
+      </div>
+      <div class="mbs-info">
+        <div class="mbs-title"></div>
+        <div class="mbs-artist"></div>
+        <div class="mbs-device"></div>
+        <div class="mbs-state"></div>
+      </div>
+      <button class="mbs-power-btn" type="button" aria-label="Power"></button>
+    </div>
+
+    <!-- Progress -->
+    <div class="mbs-section mbs-progress-section" style="display:none;">
+      <div class="mbs-section-label">Riproduzione</div>
+      <div class="mbs-progress">
+        <div class="mbs-progress-track"><div class="mbs-progress-fill"></div></div>
+        <div class="mbs-progress-times"><span class="mbs-time-cur">0:00</span><span class="mbs-time-dur">0:00</span></div>
+      </div>
+    </div>
+
+    <!-- Transport -->
+    <div class="mbs-section mbs-transport-section">
+      <div class="mbs-transport"></div>
+    </div>
+
+    <div class="mbs-divider"></div>
+
+    <!-- Volume -->
+    <div class="mbs-section mbs-volume-section" style="display:none;">
+      <div class="mbs-section-label">Volume</div>
+      <div class="mbs-volume">
+        <button class="mbs-vol-mute" type="button" aria-label="Mute"></button>
+        <input class="mbs-vol-slider" type="range" min="0" max="100" step="1" value="50">
+        <span class="mbs-vol-pct">50%</span>
+      </div>
+      <div class="mbs-divider"></div>
+    </div>
+
+    <!-- Source -->
+    <div class="mbs-section mbs-source-section" style="display:none;">
+      <div class="mbs-section-label">Sorgente</div>
+      <div class="mbs-select-card">
+        <select class="mbs-source-select"></select>
+        <span class="mbs-select-arrow"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg></span>
+      </div>
+    </div>
+
+    <!-- Sound mode -->
+    <div class="mbs-section mbs-soundmode-section" style="display:none;">
+      <div class="mbs-section-label">Modalit&agrave; audio</div>
+      <div class="mbs-select-card">
+        <select class="mbs-soundmode-select"></select>
+        <span class="mbs-select-arrow"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg></span>
+      </div>
+    </div>
+
+    <!-- Grouping -->
+    <div class="mbs-section mbs-group-section" style="display:none;">
+      <div class="mbs-section-label">Gruppo speaker</div>
+      <div class="mbs-group-list"></div>
+    </div>
+  </div>
+
   <!-- Toast container -->
   <div id="notif-toast-container"></div>
 
@@ -203,6 +278,7 @@
   <script src="static/js/components/button.js?v=213016"></script>
   <script src="static/js/components/climate.js?v=213016"></script>
   <script src="static/js/components/calendar.js?v=213016"></script>
+  <script src="static/js/components/media.js?v=213016"></script>
   <script src="static/js/components/conditional.js?v=213016"></script>
   <script src="static/js/nav.js?v=213016"></script>
   <script src="static/js/renderer.js?v=213016"></script>
