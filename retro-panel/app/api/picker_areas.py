@@ -11,7 +11,7 @@ from aiohttp import web
 logger = logging.getLogger(__name__)
 
 _EXCLUDED_DOMAINS = frozenset({
-    "update", "media_player", "camera", "person", "zone",
+    "update", "camera", "person", "zone",
     "weather", "number", "select", "button", "input_boolean",
     "input_number", "input_select", "input_text", "input_datetime",
     "automation", "script", "scene", "group", "persistent_notification",
