@@ -53,6 +53,7 @@ from api.camera_proxy import (
     get_camera_stream_info,
     get_camera_hls_proxy,
 )
+from api.media_proxy import get_media_cover
 from api.picker_entities import get_picker_entities
 from api.picker_areas import get_picker_areas
 from api.picker_cameras import get_picker_cameras
@@ -529,6 +530,7 @@ def create_app(config, ha_client: HAClient, ws_proxy: WSProxy) -> web.Applicatio
     app.router.add_get("/api/camera-proxy-stream/{entity_id}", get_camera_proxy_stream)
     app.router.add_get("/api/camera-stream/{entity_id}", get_camera_stream_info)
     app.router.add_get("/api/camera-hls/{entity_id}/{tail:.*}", get_camera_hls_proxy)
+    app.router.add_get("/api/media-cover/{entity_id}", get_media_cover)
     app.router.add_post("/api/config", save_config)
     app.router.add_post("/api/service/{domain}/{service}", call_service)
     app.router.add_get('/api/notifications', get_notifications)
