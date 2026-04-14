@@ -416,6 +416,8 @@ def _compute_layout_type(entity_id: str, device_class: str, visual_type: str) ->
         return "scenario"
     if domain == "button":
         return "button"
+    if domain == "media_player":
+        return "media_player"
     # User visual_type override (sensor/binary_sensor/light only)
     if visual_type:
         return visual_type
