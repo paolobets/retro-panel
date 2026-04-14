@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 _EXCLUDED_DOMAINS = frozenset({
     "update", "camera", "person", "zone",
-    "weather", "number", "select", "button", "input_boolean",
+    "weather", "number", "select",
     "input_number", "input_select", "input_text", "input_datetime",
     "automation", "script", "scene", "group", "persistent_notification",
     "system_log", "notify", "tts", "stt",

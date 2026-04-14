@@ -200,8 +200,8 @@ async def test_disabled_entity_excluded():
 
 @pytest.mark.asyncio
 async def test_excluded_domain_filtered():
-    """input_boolean, update → excluded from area entity lists.
-    media_player è ora incluso."""
+    """update, weather, person → excluded from area entity lists.
+    media_player, input_boolean e button sono ora inclusi."""
     client = _make_ha_client(
         areas=[_area("casa", "Casa")],
         entity_registry=[
@@ -210,6 +210,7 @@ async def test_excluded_domain_filtered():
             _entity("input_boolean.helper", area_id="casa"),
             _entity("media_player.tv", area_id="casa"),
             _entity("update.firmware", area_id="casa"),
+            _entity("weather.meteo", area_id="casa"),
         ],
     )
     body = _body(await get_picker_areas(_make_request(client)))
@@ -217,8 +218,9 @@ async def test_excluded_domain_filtered():
     assert "light.lampadina" in eids
     assert "switch.presa" in eids
     assert "media_player.tv" in eids
-    assert "input_boolean.helper" not in eids
+    assert "input_boolean.helper" in eids
     assert "update.firmware" not in eids
+    assert "weather.meteo" not in eids
 
 
 # ---------------------------------------------------------------------------

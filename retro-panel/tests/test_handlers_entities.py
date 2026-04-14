@@ -181,13 +181,15 @@ async def test_ha_unreachable_returns_502():
 
 @pytest.mark.asyncio
 async def test_unknown_domains_filtered_out():
-    """Entità di domini non consentiti (es. climate) non devono comparire.
-    media_player è ora consentito."""
+    """Entità di domini non consentiti (es. weather, person) non devono comparire.
+    media_player e climate sono ora consentiti."""
     states = [
         _state("light.ok"),
         _state("climate.termostato"),
         _state("media_player.tv"),
         _state("sensor.temperatura"),
+        _state("weather.meteo"),
+        _state("person.paolo"),
     ]
     client = _make_ha_client(states)
     body = _body(await get_picker_entities(_make_request(client)))
@@ -195,7 +197,9 @@ async def test_unknown_domains_filtered_out():
     assert "light.ok" in ids
     assert "sensor.temperatura" in ids
     assert "media_player.tv" in ids
-    assert "climate.termostato" not in ids
+    assert "climate.termostato" in ids
+    assert "weather.meteo" not in ids
+    assert "person.paolo" not in ids
 
 
 # ---------------------------------------------------------------------------
