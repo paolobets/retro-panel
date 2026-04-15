@@ -16,9 +16,20 @@
   <!-- Sticky header -->
   <header id="cfg-header">
     <a href="./" id="back-link" title="Back to panel">&#8592; Panel</a>
-    <h1 id="cfg-title">Settings</h1>
+    <h1 id="cfg-title">Settings<span id="cfg-build-tag" style="font-size:11px;font-weight:400;color:var(--c-text-sec);margin-left:10px;padding:2px 8px;border:1px solid var(--c-surface-3);border-radius:10px;vertical-align:middle;"></span></h1>
     <button id="save-btn" type="button">Save</button>
   </header>
+  <script>
+    /* Build tag — extracted from cache-buster so release.sh keeps it in sync */
+    (function(){
+      try {
+        var link = document.querySelector('link[href*="?v="]');
+        var m = link && link.href.match(/\?v=(\d+)/);
+        var tag = document.getElementById('cfg-build-tag');
+        if (tag && m) { tag.textContent = 'build ' + m[1]; }
+      } catch(e) {}
+    }());
+  </script>
 
   <!-- Section tabs -->
   <div id="cfg-tabs">
