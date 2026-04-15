@@ -440,6 +440,7 @@ def _compute_layout_type(entity_id: str, device_class: str, visual_type: str) ->
             "illuminance":                    "sensor_illuminance",
             "pressure":                       "sensor_pressure",
             "atmospheric_pressure":           "sensor_pressure",
+            "pm1":                            "sensor_air_quality",
             "pm25":                           "sensor_air_quality",
             "pm10":                           "sensor_air_quality",
             "aqi":                            "sensor_air_quality",
@@ -456,6 +457,7 @@ def _compute_layout_type(entity_id: str, device_class: str, visual_type: str) ->
             "signal_strength":         "sensor_signal",
             "carbon_monoxide":         "sensor_gas",
             "sulphur_dioxide":         "sensor_gas",
+            "nitrogen_monoxide":       "sensor_gas",
             "nitrous_oxide":           "sensor_gas",
             "speed":                   "sensor_speed",
             "ph":                      "sensor_ph",
@@ -469,11 +471,14 @@ def _compute_layout_type(entity_id: str, device_class: str, visual_type: str) ->
             "distance":                "sensor_physical",
             "volume_storage":          "sensor_physical",
             "duration":                "sensor_physical",
+            "enum":                    "sensor_enum",
+            "date":                    "sensor_datetime",
+            "timestamp":               "sensor_datetime",
         }
         return _map.get(dc, "sensor_generic")
     if domain == "binary_sensor":
         dc = (device_class or "").lower()
-        if dc == "door":                              return "binary_door"
+        if dc in ("door", "garage_door"):             return "binary_door"
         if dc == "window":                            return "binary_window"
         if dc == "motion":                            return "binary_motion"
         if dc in ("occupancy", "presence"):           return "binary_presence"

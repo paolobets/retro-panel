@@ -42,6 +42,9 @@ window.RP_Renderer = (function () {
     'sensor_water':      null,
     'sensor_ph':         null,
     'sensor_physical':   null,
+    'sensor_enum':       null,
+    'sensor_datetime':   null,
+    'sensor_progress':   null,
     'binary_door':        null,
     'binary_window':      null,
     'binary_motion':      null,
@@ -87,6 +90,9 @@ window.RP_Renderer = (function () {
     'sensor_water':      'tile-col-sensor',
     'sensor_ph':         'tile-col-sensor',
     'sensor_physical':   'tile-col-sensor',
+    'sensor_enum':       'tile-col-sensor',
+    'sensor_datetime':   'tile-col-sensor',
+    'sensor_progress':   'tile-col-sensor',
     'binary_door':        'tile-col-sensor',
     'binary_window':      'tile-col-sensor',
     'binary_motion':      'tile-col-sensor',
@@ -131,6 +137,9 @@ window.RP_Renderer = (function () {
     COMPONENT_MAP['sensor_water']      = window.SensorComponent || null;
     COMPONENT_MAP['sensor_ph']         = window.SensorComponent || null;
     COMPONENT_MAP['sensor_physical']   = window.SensorComponent || null;
+    COMPONENT_MAP['sensor_enum']       = window.SensorComponent || null;
+    COMPONENT_MAP['sensor_datetime']   = window.SensorComponent || null;
+    COMPONENT_MAP['sensor_progress']   = window.SensorComponent || null;
     COMPONENT_MAP['binary_door']        = window.SensorComponent   || null;
     COMPONENT_MAP['binary_window']      = window.SensorComponent   || null;
     COMPONENT_MAP['binary_motion']      = window.SensorComponent   || null;

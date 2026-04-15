@@ -31,6 +31,9 @@ window.SensorComponent = (function () {
     sensor_water:       's-water',
     sensor_ph:          's-ph-neutral',
     sensor_physical:    's-physical',
+    sensor_enum:        's-enum',
+    sensor_datetime:    's-datetime',
+    sensor_progress:    's-progress',
     binary_door:        's-off',
     binary_motion:      's-off',
     binary_standard:    's-off',
@@ -60,6 +63,8 @@ window.SensorComponent = (function () {
     's-water',
     's-ph-acid', 's-ph-neutral', 's-ph-alkaline',
     's-physical', 's-generic',
+    's-enum', 's-datetime',
+    's-progress', 's-progress-full', 's-progress-mid', 's-progress-low', 's-progress-crit',
     's-door-open', 's-win-open', 's-motion-on', 's-pres-on',
     's-smoke-on', 's-moist-on', 's-lock-open', 's-vib-on', 's-bin-on',
   ];
@@ -81,6 +86,9 @@ window.SensorComponent = (function () {
     sensor_water:       'water',
     sensor_ph:          'flask',
     sensor_physical:    'ruler',
+    sensor_enum:        'state-machine',
+    sensor_datetime:    'clock-outline',
+    sensor_progress:    'gauge',
     binary_door:        'door-open',
     binary_window:      'window-open',
     binary_motion:      'motion-sensor',
@@ -132,6 +140,11 @@ window.SensorComponent = (function () {
     'distance':                         'sensor_physical',
     'volume_storage':                   'sensor_physical',
     'duration':                         'sensor_physical',
+    'pm1':                              'sensor_air_quality',
+    'nitrogen_monoxide':                'sensor_gas',
+    'enum':                             'sensor_enum',
+    'date':                             'sensor_datetime',
+    'timestamp':                        'sensor_datetime',
   };
 
   // Derive layout_type from live HA device_class — returns '' if unknown
@@ -139,7 +152,7 @@ window.SensorComponent = (function () {
     if (!dc) { return ''; }
     dc = dc.toLowerCase();
     if (entityId && entityId.indexOf('binary_sensor.') === 0) {
-      if (dc === 'door')                                              { return 'binary_door';      }
+      if (dc === 'door' || dc === 'garage_door')                      { return 'binary_door';      }
       if (dc === 'window')                                            { return 'binary_window';    }
       if (dc === 'motion')                                            { return 'binary_motion';    }
       if (dc === 'occupancy' || dc === 'presence')                    { return 'binary_presence';  }
@@ -256,6 +269,70 @@ window.SensorComponent = (function () {
     }
 
     // -----------------------------------------------------------------
+    // Runtime upgrade: promote sensor_generic with unit=% to sensor_progress
+    // -----------------------------------------------------------------
+    if (layoutType === 'sensor_generic') {
+      var unitRaw = (attrs.unit_of_measurement || '').trim();
+      if (unitRaw === '%') {
+        layoutType = 'sensor_progress';
+      }
+    }
+
+    // -----------------------------------------------------------------
+    // sensor_enum — show discrete state (e.g. washer: "rinse", "spin")
+    // -----------------------------------------------------------------
+    if (layoutType === 'sensor_enum') {
+      if (valEl) {
+        var enumTxt = (state === null || state === undefined || state === '') ? '\u2014' : String(state);
+        // Capitalize first letter for display
+        if (enumTxt.length > 0 && enumTxt !== '\u2014') {
+          enumTxt = enumTxt.charAt(0).toUpperCase() + enumTxt.slice(1).replace(/_/g, ' ');
+        }
+        valEl.textContent = enumTxt;
+      }
+      clearStateClasses(tile);
+      tile.classList.add('s-enum');
+      _updateBubbleIcon(bubble, attrs, layoutType, null, entityId);
+      return;
+    }
+
+    // -----------------------------------------------------------------
+    // sensor_datetime — format date/timestamp as friendly relative text
+    // -----------------------------------------------------------------
+    if (layoutType === 'sensor_datetime') {
+      if (valEl) {
+        valEl.textContent = _formatFriendlyDate(state);
+      }
+      clearStateClasses(tile);
+      tile.classList.add('s-datetime');
+      _updateBubbleIcon(bubble, attrs, layoutType, null, entityId);
+      return;
+    }
+
+    // -----------------------------------------------------------------
+    // sensor_progress — % progress bar (cartridge, RAM, storage)
+    // -----------------------------------------------------------------
+    if (layoutType === 'sensor_progress') {
+      var pct = parseFloat(state);
+      if (valEl) {
+        if (isNaN(pct)) {
+          valEl.textContent = '\u2014';
+        } else {
+          valEl.innerHTML = Math.round(pct) + '<span class="unit">%</span>';
+        }
+      }
+      _renderProgressBar(tile, pct);
+      clearStateClasses(tile);
+      var pClass = 's-progress-full';
+      if      (!isNaN(pct) && pct <= 10) { pClass = 's-progress-crit'; }
+      else if (!isNaN(pct) && pct <= 25) { pClass = 's-progress-low';  }
+      else if (!isNaN(pct) && pct <= 50) { pClass = 's-progress-mid';  }
+      tile.classList.add('s-progress', pClass);
+      _updateBubbleIcon(bubble, attrs, layoutType, null, entityId);
+      return;
+    }
+
+    // -----------------------------------------------------------------
     // Regular sensors — format value with unit span
     // -----------------------------------------------------------------
     if (valEl) {
@@ -356,6 +433,68 @@ window.SensorComponent = (function () {
     clearStateClasses(tile);
     tile.classList.add(sClass);
     _updateBubbleIcon(bubble, attrs, layoutType, batIcon, entityId);
+  }
+
+  // -----------------------------------------------------------------------
+  // Format ISO date/timestamp into friendly relative Italian string.
+  // Supports:
+  //   - full ISO timestamp  "2026-04-15T14:30:00+00:00"
+  //   - date only           "2026-04-15"
+  // -----------------------------------------------------------------------
+  function _formatFriendlyDate(raw) {
+    if (!raw) { return '\u2014'; }
+    var d = new Date(raw);
+    if (isNaN(d.getTime())) { return String(raw); }
+    var now = new Date();
+    var diffMs = d.getTime() - now.getTime();
+    var absSec = Math.abs(diffMs) / 1000;
+    var past   = diffMs < 0;
+
+    if (absSec < 60)    { return past ? 'adesso' : 'tra pochi secondi'; }
+    if (absSec < 3600)  {
+      var m = Math.round(absSec / 60);
+      return past ? m + ' min fa' : 'tra ' + m + ' min';
+    }
+    if (absSec < 86400) {
+      var h = Math.round(absSec / 3600);
+      // If same calendar day, show HH:MM
+      if (d.toDateString() === now.toDateString()) {
+        var hh = ('0' + d.getHours()).slice(-2);
+        var mm = ('0' + d.getMinutes()).slice(-2);
+        return 'oggi ' + hh + ':' + mm;
+      }
+      return past ? h + ' h fa' : 'tra ' + h + ' h';
+    }
+    if (absSec < 7 * 86400) {
+      var days = Math.round(absSec / 86400);
+      return past ? days + ' g fa' : 'tra ' + days + ' g';
+    }
+    // Older / further: show dd/mm/yyyy
+    var dd = ('0' + d.getDate()).slice(-2);
+    var mo = ('0' + (d.getMonth() + 1)).slice(-2);
+    var yy = d.getFullYear();
+    return dd + '/' + mo + '/' + yy;
+  }
+
+  // -----------------------------------------------------------------------
+  // Render/update a progress bar inside the tile (for sensor_progress).
+  // Creates the bar element on first call; updates the fill width thereafter.
+  // -----------------------------------------------------------------------
+  function _renderProgressBar(tile, pct) {
+    var bar = tile.querySelector('.sensor-progress-bar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'sensor-progress-bar';
+      var fill = document.createElement('div');
+      fill.className = 'sensor-progress-fill';
+      bar.appendChild(fill);
+      tile.appendChild(bar);
+    }
+    var fillEl = bar.querySelector('.sensor-progress-fill');
+    if (fillEl) {
+      var safePct = isNaN(pct) ? 0 : Math.max(0, Math.min(100, pct));
+      fillEl.style.width = safePct + '%';
+    }
   }
 
   // Update bubble icon: HA attrs.icon > batIcon > layout-type default

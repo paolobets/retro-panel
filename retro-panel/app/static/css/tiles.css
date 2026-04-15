@@ -2777,3 +2777,43 @@ body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-
   min-height: 44px;
 }
 
+/* ============================================================
+   Sensor extras — enum, datetime, progress
+   ============================================================ */
+
+/* Enum state — discrete stateful sensor (e.g. washer "spin") */
+.tile-sensor.s-enum .bubble { background: var(--c-surface-3); color: var(--c-text-pri); }
+.tile-sensor.s-enum .val { font-size: 13px; font-weight: 600; }
+
+/* Datetime — relative friendly timestamp */
+.tile-sensor.s-datetime .bubble { background: var(--c-surface-3); color: var(--c-text-sec); }
+.tile-sensor.s-datetime .val { font-size: 13px; font-weight: 500; color: var(--c-text-pri); }
+
+/* Progress — % bar for generic sensors with unit=% (cartridge, RAM, storage) */
+.tile-sensor.s-progress .sensor-progress-bar,
+.tile-sensor .sensor-progress-bar {
+  width: 100%;
+  height: 4px;
+  background: var(--c-surface-3);
+  border-radius: 2px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+.tile-sensor .sensor-progress-fill {
+  height: 100%;
+  width: 0;
+  background: var(--c-on);
+  border-radius: 2px;
+  -webkit-transition: width 0.3s ease;
+  transition: width 0.3s ease;
+}
+.tile-sensor.s-progress-full .sensor-progress-fill { background: var(--c-on); }
+.tile-sensor.s-progress-mid  .sensor-progress-fill { background: var(--c-warning); }
+.tile-sensor.s-progress-low  .sensor-progress-fill { background: #ff7043; }
+.tile-sensor.s-progress-crit .sensor-progress-fill { background: var(--c-danger); }
+
+.tile-sensor.s-progress-full .bubble { color: var(--c-on); }
+.tile-sensor.s-progress-mid  .bubble { color: var(--c-warning); }
+.tile-sensor.s-progress-low  .bubble { color: #ff7043; }
+.tile-sensor.s-progress-crit .bubble { color: var(--c-danger); }
+
