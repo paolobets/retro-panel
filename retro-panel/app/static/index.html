@@ -18,6 +18,20 @@
 </head>
 <body class="theme-dark">
   <script>try{var _t=localStorage.getItem('rp_theme');if(_t==='light'||_t==='dark'){document.body.className='theme-'+_t;}}catch(e){}</script>
+  <!-- DEV-BUILD-TAG-SCRIPT-START: rimuovere prima del release stable -->
+  <script>
+    (function(){
+      try {
+        var link = document.querySelector('link[href*="?v="]');
+        var m = link && link.href.match(/\?v=(\d+)/);
+        window.addEventListener('DOMContentLoaded', function () {
+          var tag = document.getElementById('panel-build-tag');
+          if (tag && m) { tag.textContent = 'build ' + m[1]; }
+        });
+      } catch(e) {}
+    }());
+  </script>
+  <!-- DEV-BUILD-TAG-SCRIPT-END -->
 
   <!-- Loading Screen -->
   <div id="loading-screen">
@@ -76,7 +90,7 @@
 
       <!-- Header -->
       <header id="panel-header">
-        <h1 id="panel-title">Retro <span style="color:var(--c-accent)">PANEL</span><span id="panel-version"></span></h1>
+        <h1 id="panel-title">Retro <span style="color:var(--c-accent)">PANEL</span><span id="panel-version"></span><!-- DEV-BUILD-TAG-START: rimuovere prima del release stable --><span id="panel-build-tag" style="font-size:10px;font-weight:400;color:var(--c-text-sec);margin-left:8px;padding:2px 6px;border:1px solid var(--c-surface-3);border-radius:8px;vertical-align:middle;"></span><!-- DEV-BUILD-TAG-END --></h1>
         <div id="header-info">
           <span id="panel-date"></span>
           <span id="panel-clock"></span>
