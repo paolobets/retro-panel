@@ -2355,16 +2355,17 @@ body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-
 }
 .media-cover img { position: relative; z-index: 1; }
 
-/* Info area (right of cover) — flex column with space-between:
-   first child (.media-info-top: title/artist/device) sits at the top,
-   last child (.media-transport) pins to the bottom. */
+/* Info area (right of cover) — flex column centered vertically:
+   two children (.media-info-top + .media-transport) clustered in the
+   middle with a fixed gap, so wide tiles don't show a large empty
+   band between title and controls. */
 .media-info {
   display: -webkit-flex;
   display: flex;
   -webkit-flex-direction: column;
   flex-direction: column;
-  -webkit-justify-content: space-between;
-  justify-content: space-between;
+  -webkit-justify-content: center;
+  justify-content: center;
   -webkit-flex: 1;
   flex: 1;
   min-width: 0;
@@ -2373,6 +2374,9 @@ body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-
 .media-info-top {
   min-width: 0;
   overflow: hidden;
+}
+.media-info .media-transport {
+  margin-top: 10px;
 }
 .media-title {
   font-size: 12px;
@@ -2811,9 +2815,10 @@ body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-
 .tile-sensor.s-datetime .bubble { background: var(--c-surface-3); color: var(--c-text-sec); }
 .tile-sensor.s-datetime .val { font-size: 13px; font-weight: 500; color: var(--c-text-pri); }
 
-/* Progress — % bar for generic sensors with unit=% (cartridge, RAM, storage) */
-.tile-sensor.s-progress .sensor-progress-bar,
-.tile-sensor .sensor-progress-bar {
+/* Progress — % bar for generic sensors with unit=% (cartridge, RAM, storage).
+   The bar sits inside .info as a third child under name + val. */
+.tile-sensor .info .sensor-progress-bar {
+  display: block;
   width: 100%;
   height: 4px;
   background: var(--c-surface-3);

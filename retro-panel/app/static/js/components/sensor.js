@@ -481,14 +481,18 @@ window.SensorComponent = (function () {
   // Creates the bar element on first call; updates the fill width thereafter.
   // -----------------------------------------------------------------------
   function _renderProgressBar(tile, pct) {
-    var bar = tile.querySelector('.sensor-progress-bar');
+    /* Place the bar inside .info (below name+val) so the tile's
+       bubble+info flex row is not disrupted by a third full-width child. */
+    var info = tile.querySelector('.info');
+    if (!info) { return; }
+    var bar = info.querySelector('.sensor-progress-bar');
     if (!bar) {
       bar = document.createElement('div');
       bar.className = 'sensor-progress-bar';
       var fill = document.createElement('div');
       fill.className = 'sensor-progress-fill';
       bar.appendChild(fill);
-      tile.appendChild(bar);
+      info.appendChild(bar);
     }
     var fillEl = bar.querySelector('.sensor-progress-fill');
     if (fillEl) {

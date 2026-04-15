@@ -18,26 +18,6 @@
 </head>
 <body class="theme-dark">
   <script>try{var _t=localStorage.getItem('rp_theme');if(_t==='light'||_t==='dark'){document.body.className='theme-'+_t;}}catch(e){}</script>
-  <!-- DEV-BUILD-TAG-SCRIPT-START: rimuovere prima del release stable -->
-  <script>
-    (function(){
-      try {
-        var links = document.getElementsByTagName('link');
-        var buster = '';
-        var marker = String.fromCharCode(63) + 'v=';
-        for (var i = 0; i < links.length; i++) {
-          var href = links[i].getAttribute('href') || '';
-          var idx = href.indexOf(marker);
-          if (idx >= 0) { buster = href.substring(idx + 3).split('&')[0]; break; }
-        }
-        window.addEventListener('DOMContentLoaded', function () {
-          var tag = document.getElementById('panel-build-tag');
-          if (tag && buster) { tag.textContent = 'build ' + buster; }
-        });
-      } catch(e) {}
-    }());
-  </script>
-  <!-- DEV-BUILD-TAG-SCRIPT-END -->
 
   <!-- Loading Screen -->
   <div id="loading-screen">
@@ -281,6 +261,9 @@
   <div id="alert-border-overlay"></div>
 
   <script src="static/js/mdi-icons.js?v=21408"></script>
+  <!-- DEV-BUILD-TAG-SCRIPT-START: rimuovere prima del release stable -->
+  <script src="static/js/build-tag.js?v=21408"></script>
+  <!-- DEV-BUILD-TAG-SCRIPT-END -->
   <script src="static/js/utils/dom.js?v=21408"></script>
   <script src="static/js/utils/format.js?v=21408"></script>
   <script src="static/js/api.js?v=21408"></script>

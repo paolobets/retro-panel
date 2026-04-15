@@ -19,24 +19,9 @@
     <h1 id="cfg-title">Settings<span id="cfg-build-tag" style="font-size:11px;font-weight:400;color:var(--c-text-sec);margin-left:10px;padding:2px 8px;border:1px solid var(--c-surface-3);border-radius:10px;vertical-align:middle;"></span></h1>
     <button id="save-btn" type="button">Save</button>
   </header>
-  <script>
-    /* Build tag — extracted from cache-buster.
-       Must avoid literal "?v=21408" which the release.sh sed would rewrite. */
-    (function(){
-      try {
-        var links = document.getElementsByTagName('link');
-        var buster = '';
-        var marker = String.fromCharCode(63) + 'v=';
-        for (var i = 0; i < links.length; i++) {
-          var href = links[i].getAttribute('href') || '';
-          var idx = href.indexOf(marker);
-          if (idx >= 0) { buster = href.substring(idx + 3).split('&')[0]; break; }
-        }
-        var tag = document.getElementById('cfg-build-tag');
-        if (tag && buster) { tag.textContent = 'build ' + buster; }
-      } catch(e) {}
-    }());
-  </script>
+  <!-- DEV-BUILD-TAG-SCRIPT-START: rimuovere prima del release stable -->
+  <script src="static/js/build-tag.js?v=21408"></script>
+  <!-- DEV-BUILD-TAG-SCRIPT-END -->
 
   <!-- Section tabs -->
   <div id="cfg-tabs">
