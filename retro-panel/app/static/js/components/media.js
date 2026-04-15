@@ -569,8 +569,9 @@ window.MediaComponent = (function () {
     coverWrap.appendChild(coverImg);
     wideWrap.appendChild(coverWrap);
 
-    /* Info area */
+    /* Info area: two children — top block (title/artist/device) + transport */
     var infoArea = DOM.createElement('div', 'media-info');
+    var infoTop  = DOM.createElement('div', 'media-info-top');
     var titleEl  = DOM.createElement('div', 'media-title');
     var artistEl = DOM.createElement('div', 'media-artist');
     var deviceEl = DOM.createElement('div', 'media-device', label);
@@ -607,9 +608,10 @@ window.MediaComponent = (function () {
     transport.appendChild(transBtns);
     transport.appendChild(volPct);
 
-    infoArea.appendChild(titleEl);
-    infoArea.appendChild(artistEl);
-    infoArea.appendChild(deviceEl);
+    infoTop.appendChild(titleEl);
+    infoTop.appendChild(artistEl);
+    infoTop.appendChild(deviceEl);
+    infoArea.appendChild(infoTop);
     infoArea.appendChild(transport);
     wideWrap.appendChild(infoArea);
     tile.appendChild(wideWrap);

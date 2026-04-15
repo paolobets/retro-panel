@@ -2304,7 +2304,23 @@ body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-
   border-radius: 10px;
   padding: 12px;
   border-left: 3px solid #999;
-  min-height: 96px;
+  height: 120px;
+  min-height: 120px;
+  max-height: 120px;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+}
+/* media-wide-wrap is the inner flex row containing cover + info */
+.tile-media-wide .media-wide-wrap {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-direction: row;
+  flex-direction: row;
+  -webkit-flex: 1;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
 }
 .tile-media-wide.s-playing { border-left-color: var(--c-on); }
 .tile-media-wide.s-paused  { border-left-color: var(--c-warning); }
@@ -2339,7 +2355,9 @@ body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-
 }
 .media-cover img { position: relative; z-index: 1; }
 
-/* Info area (right of cover) */
+/* Info area (right of cover) — flex column with space-between:
+   first child (.media-info-top: title/artist/device) sits at the top,
+   last child (.media-transport) pins to the bottom. */
 .media-info {
   display: -webkit-flex;
   display: flex;
@@ -2349,6 +2367,10 @@ body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-
   justify-content: space-between;
   -webkit-flex: 1;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.media-info-top {
   min-width: 0;
   overflow: hidden;
 }
