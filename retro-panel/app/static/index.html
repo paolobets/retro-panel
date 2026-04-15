@@ -22,11 +22,17 @@
   <script>
     (function(){
       try {
-        var link = document.querySelector('link[href*="?v=21405"]');
-        var m = link && link.href.match(/\?v=21405(\d+)/);
+        var links = document.getElementsByTagName('link');
+        var buster = '';
+        var marker = String.fromCharCode(63) + 'v=';
+        for (var i = 0; i < links.length; i++) {
+          var href = links[i].getAttribute('href') || '';
+          var idx = href.indexOf(marker);
+          if (idx >= 0) { buster = href.substring(idx + 3).split('&')[0]; break; }
+        }
         window.addEventListener('DOMContentLoaded', function () {
           var tag = document.getElementById('panel-build-tag');
-          if (tag && m) { tag.textContent = 'build ' + m[1]; }
+          if (tag && buster) { tag.textContent = 'build ' + buster; }
         });
       } catch(e) {}
     }());

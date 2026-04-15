@@ -20,13 +20,20 @@
     <button id="save-btn" type="button">Save</button>
   </header>
   <script>
-    /* Build tag — extracted from cache-buster so release.sh keeps it in sync */
+    /* Build tag — extracted from cache-buster.
+       Must avoid literal "?v=NNN" which the release.sh sed would rewrite. */
     (function(){
       try {
-        var link = document.querySelector('link[href*="?v=21405"]');
-        var m = link && link.href.match(/\?v=21405(\d+)/);
+        var links = document.getElementsByTagName('link');
+        var buster = '';
+        var marker = String.fromCharCode(63) + 'v=';
+        for (var i = 0; i < links.length; i++) {
+          var href = links[i].getAttribute('href') || '';
+          var idx = href.indexOf(marker);
+          if (idx >= 0) { buster = href.substring(idx + 3).split('&')[0]; break; }
+        }
         var tag = document.getElementById('cfg-build-tag');
-        if (tag && m) { tag.textContent = 'build ' + m[1]; }
+        if (tag && buster) { tag.textContent = 'build ' + buster; }
       } catch(e) {}
     }());
   </script>
