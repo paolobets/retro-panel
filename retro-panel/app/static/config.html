@@ -7,8 +7,8 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Retro Panel — Settings</title>
-  <link rel="stylesheet" href="static/css/tokens.css?v=21403">
-  <link rel="stylesheet" href="static/css/config.css?v=21403">
+  <link rel="stylesheet" href="static/css/tokens.css?v=21404">
+  <link rel="stylesheet" href="static/css/config.css?v=21404">
 </head>
 <body class="theme-dark">
   <script>try{var _t=localStorage.getItem('rp_theme');if(_t==='light'||_t==='dark'||_t==='auto'){document.body.className='theme-'+_t;}}catch(e){}</script>
@@ -23,8 +23,8 @@
     /* Build tag — extracted from cache-buster so release.sh keeps it in sync */
     (function(){
       try {
-        var link = document.querySelector('link[href*="?v="]');
-        var m = link && link.href.match(/\?v=(\d+)/);
+        var link = document.querySelector('link[href*="?v=21404"]');
+        var m = link && link.href.match(/\?v=21404(\d+)/);
         var tag = document.getElementById('cfg-build-tag');
         if (tag && m) { tag.textContent = 'build ' + m[1]; }
       } catch(e) {}
@@ -752,8 +752,8 @@
     </div>
   </section>
 
-  <script src="static/js/mdi-icons.js?v=21403"></script>
-  <script src="static/js/config-api.js?v=21403"></script>
-  <script src="static/js/config.js?v=21403"></script>
+  <script src="static/js/mdi-icons.js?v=21404"></script>
+  <script src="static/js/config-api.js?v=21404"></script>
+  <script src="static/js/config.js?v=21404"></script>
 </body>
 </html>
