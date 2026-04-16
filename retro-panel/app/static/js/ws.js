@@ -68,17 +68,21 @@
             onNotificationSync(msg.notifications);
           }
         } else if (msg.type === 'rp_version' && msg.version) {
-          // Auto-reload when add-on version changes after an update.
-          // Compare server version against cache-buster embedded in the loaded page
-          // (e.g. server sends "2.10.5" → "2105"; page has ?v=2104 → mismatch → reload).
-          // No localStorage needed — works in HA Ingress iframes too.
-          var serverNum = (msg.version + '').replace(/\./g, '');
+          // Auto-reload when add-on version changes after a *stable* update.
+          // Compare server version (major.minor.patch only, strip -rc/-beta
+          // suffixes) against rp-build meta. Beta versions skip the check
+          // because rp-build only tracks stable releases and the mismatch
+          // would cause an infinite reload loop.
+          var rawVer = msg.version + '';
+          var stableVer = rawVer.split('-')[0]; // "2.14.0-rc11" → "2.14.0"
+          var serverNum = stableVer.replace(/\./g, ''); // "2140"
+          var isBeta = rawVer.indexOf('-') !== -1;
           var pageNum = '';
           try {
             var metaEl = document.querySelector('meta[name="rp-build"]');
             if (metaEl) { pageNum = metaEl.getAttribute('content') || ''; }
           } catch (e) {}
-          if (pageNum && serverNum && pageNum !== serverNum) {
+          if (!isBeta && pageNum && serverNum && pageNum !== serverNum) {
             console.info('[WS] Version mismatch (page=%s server=%s) \u2014 reloading\u2026', pageNum, serverNum);
             setTimeout(function () { location.reload(); }, 800);
           }

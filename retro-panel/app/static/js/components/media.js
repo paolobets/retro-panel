@@ -519,17 +519,24 @@ window.MediaComponent = (function () {
         svgEl.style.fill = '#fff';
       }
     }
-    /* Always try to load via proxy: backend returns 404 if no entity_picture,
-       and onerror hides the img revealing the gradient fallback beneath.
-       Cache key uses media_title (simple string) — media_content_id can be
-       a URL with ?/& characters that corrupt the query string. */
+    /* Try to load cover via proxy; backend returns 404 if no entity_picture.
+       Cache key = title|artist — only re-fetch when the track changes.
+       After onerror the failed key is stored so the same track is not
+       re-requested on every WebSocket state update (prevents 404 spam). */
     var cacheKey = (attrs.media_title || '') + '|' + (attrs.media_artist || '');
     var newSrc = 'api/media-cover/' + entityId + '?_t=' + encodeURIComponent(cacheKey);
-    if (imgEl.dataset.mediaSrc !== newSrc) {
+    if (imgEl.dataset.mediaSrc !== newSrc && imgEl.dataset.mediaFailed !== cacheKey) {
       imgEl.dataset.mediaSrc = newSrc;
+      imgEl.dataset.mediaFailed = '';
       imgEl.style.display = '';
-      imgEl.onerror = function () { imgEl.style.display = 'none'; };
-      imgEl.onload = function () { imgEl.style.display = ''; };
+      imgEl.onerror = function () {
+        imgEl.style.display = 'none';
+        imgEl.dataset.mediaFailed = cacheKey;
+      };
+      imgEl.onload = function () {
+        imgEl.style.display = '';
+        imgEl.dataset.mediaFailed = '';
+      };
       imgEl.src = newSrc;
     }
   }
