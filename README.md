@@ -41,17 +41,19 @@ no frameworks, no `const`, no arrow functions.
 
 ## Dashboard
 
-<img src="docs/assets/dashboard-overview.svg" alt="Retro Panel dashboard overview" width="100%"/>
+<img src="docs/assets/dashboard-overview.png" alt="Retro Panel dashboard overview" width="100%"/>
 
-The panel is split into a collapsible **sidebar** (navigation sections) and a **content area**
+The panel is split into a collapsible **sidebar** (navigation by rooms) and a **content area**
 with a fixed-height tile grid. A live **clock**, connection **status dot** and **theme toggle**
-sit in the header. Everything works at 120 px tile height with no layout shift.
+sit in the header. All tiles are 120 px tall with no layout shift.
+
+The overview shows all entity types at a glance: lights with toggle, switches, media players,
+sensors, covers with position bar, climate with target temperature — all updating in real time
+via WebSocket.
 
 ---
 
 ## Lights & Switches
-
-<img src="docs/assets/tiles-light-switch.svg" alt="Light and switch tiles" width="100%"/>
 
 | Action | Result |
 |--------|--------|
@@ -63,39 +65,84 @@ sit in the header. Everything works at 120 px tile height with no layout shift.
 
 ## Sensors
 
-<img src="docs/assets/tiles-sensors.svg" alt="Sensor tiles" width="100%"/>
+<img src="docs/assets/tiles-sensors.png" alt="Sensor tiles" width="100%"/>
 
 Read-only tiles that display the current value and unit. Icon and visual style adapt
-automatically to the device class: `temperature` · `humidity` · `co2` · `battery` ·
-`power` · `energy` · `pressure` · `illuminance` · and any generic sensor.
+automatically to the device class:
+
+| Type | Example |
+|------|---------|
+| **Temperature / Humidity / CO₂** | Coloured bubble, threshold-based state class |
+| **Battery / Energy / Power** | Dynamic icon, value + unit |
+| **Progress (%)** | Horizontal bar with 4-tier colouring (cartridges, RAM, storage) |
+| **Enum** | Discrete state display (washer: "Centrifuga") |
+| **DateTime** | Friendly relative time ("3 min fa", "oggi 16:30") |
+| **Binary** | State-driven icon (open/closed, detected/clear) with alert border |
 
 ---
 
-## Binary sensors & Scenarios
+## Media Player
 
-<img src="docs/assets/tiles-binary-scenario.svg" alt="Binary sensor and scenario tiles" width="100%"/>
+<img src="docs/assets/tiles-media-player.png" alt="Media player tiles" width="100%"/>
 
-**Binary sensors** show a state-driven icon (open/closed, detected/clear, armed/ok…).
-An **orange pulsing border** signals an active alert.
+Full remote control for speakers and TVs (Echo, Sonos, HomePod, Apple TV, Samsung TV).
 
-**Scenario tiles** (scene · script · automation) trigger with a single tap.
-Each tile shows a **domain badge**, a configurable **MDI icon** and an optional **border colour**.
+| State | Tile |
+|-------|------|
+| **Playing / Paused** | Wide tile (2 columns): cover art · title · artist · transport buttons · volume |
+| **Idle / Off** | Compact tile (1 column): icon · name · state |
+
+Tap the wide tile to open the **bottom sheet** with full controls: volume slider, source selector,
+sound mode, shuffle/repeat, and speaker grouping — all dynamic based on device capabilities.
+
+---
+
+## Calendar
+
+<img src="docs/assets/calendar.png" alt="Calendar with side panel" width="100%"/>
+
+Month and week views with **multi-calendar support** (dropdown filter). Click a day or week
+event to open the **side panel** showing event details: time, location (📍), description, and
+calendar name.
+
+---
+
+## Energy Flow
+
+<img src="docs/assets/energy-card.png" alt="Energy flow card" width="100%"/>
+
+Real-time energy dashboard with **traffic-light semaphore**: green (solar surplus), yellow
+(battery or neutral), red (grid import). Coloured progress bars for solar production, home
+consumption, battery SOC, and grid import/export.
+
+---
+
+## Additional Components
+
+| Component | Features |
+|-----------|----------|
+| **Covers** | Open/close/stop buttons · position bar · moving state animation |
+| **Climate** | Current + target temperature · HVAC mode buttons · bottom sheet |
+| **Lock** | SVG padlock · lock/unlock action · state feedback |
+| **Button** | One-shot press · green flash confirmation |
+| **Alarm** | PIN keypad · arm modes · zone sensor dashboard |
+| **Camera** | 4-column grid · lightbox · snapshot polling · MJPEG · HLS live (iOS Safari) |
+| **Scenarios** | Scene / script / automation · domain badge · MDI icon · border colour |
 
 ---
 
 ## Configuration UI
 
-<img src="docs/assets/config-ui.svg" alt="Configuration UI" width="100%"/>
-
-Access the admin panel at `http://[HA-IP]:7654/config`. Five tabs cover everything:
+Access the admin panel at `http://[HA-IP]:7654/config`. Six tabs:
 
 | Tab | What you configure |
 |-----|--------------------|
-| **Overview** | Main home screen entities · Power flow card · Navigation order |
+| **Overview** | Main home screen entities · Energy flow card · Navigation order |
 | **Rooms** | Rooms with sections · Import from HA Areas · Per-entity icon and label |
 | **Scenarios** | Scene/script/automation groups · MDI icon per item · Border colour per item |
 | **Cameras** | Camera feeds · Per-camera refresh interval · Hide/show |
 | **Alarms** | Alarm panels · Zone sensors per panel |
+| **Calendars** | Calendar selection · Multi-calendar filter |
 
 The icon picker includes **7 400+ MDI icons** with Italian-language search
 ("tapparella", "umido", "riscaldamento"…).
