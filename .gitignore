@@ -19,7 +19,23 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
-.claude/worktrees/
+
+# Claude Code
+.claude/
+CLAUDE.md
+
+# Superpowers brainstorm sessions
+.superpowers/
+
+# Dev mockups (not part of the product)
+mockups/
+
+# Local data (HA Supervisor injects at runtime)
+retro-panel/data/
+retro-panel-beta/data/
+
+# Superpowers docs (design specs & plans — dev only)
+retro-panel/docs/superpowers/
 
 # Scripts build artifacts
 scripts/node_modules/
