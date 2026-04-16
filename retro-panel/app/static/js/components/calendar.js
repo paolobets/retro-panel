@@ -69,7 +69,8 @@
       date: startDate,
       start: startTime,
       end: endTime,
-      allDay: allDay
+      allDay: allDay,
+      location: haEvent.location || ''
     };
   }
 
@@ -369,6 +370,9 @@
         html += '<div class="cal-event-allday">Tutto il giorno</div>';
       } else {
         html += '<div class="cal-event-time">' + ev.start + ' \u2013 ' + ev.end + '</div>';
+      }
+      if (ev.location) {
+        html += '<div class="cal-event-location">\uD83D\uDCCD ' + escapeHtml(ev.location) + '</div>';
       }
       html += '<div class="cal-event-cal">' + escapeHtml(getCalName(State.calendars, ev.cal)) + '</div>';
       html += '</div></div>';

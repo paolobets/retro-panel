@@ -2145,6 +2145,14 @@ body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-
   margin-top: 2px;
 }
 
+.cal-event-location {
+  font-size: 11px;
+  color: var(--c-text-sec, #888);
+  margin-top: 2px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
 .cal-event-cal {
   font-size: 11px;
   color: var(--c-text-sec, #888);
@@ -2287,11 +2295,25 @@ body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-
    iOS 12 safe: -webkit-flex, no grid, no gap, no aspect-ratio
    ============================================================ */
 
-/* ---- Wide column for active media player (50% = between compact and full) ---- */
+/* ---- Wide column for active media player ----
+   Scales with the same breakpoints as tile-col-compact so the wide tile
+   always occupies roughly 2 compact slots at every screen size. */
 .tile-col-media-wide {
   width: 50%;
   padding-right: 12px;
   padding-bottom: 12px;
+}
+@media (max-width: 599px) {
+  .tile-col-media-wide { width: 100%; }
+}
+@media (orientation: landscape) and (min-width: 1024px) {
+  .tile-col-media-wide { width: 50%; }
+}
+@media (orientation: landscape) and (min-width: 1440px) {
+  .tile-col-media-wide { width: 33.333%; }
+}
+@media (orientation: landscape) and (min-width: 1800px) {
+  .tile-col-media-wide { width: 25%; }
 }
 
 /* ---- Wide tile (playing/paused/buffering) ---- */
