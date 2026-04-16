@@ -2153,6 +2153,19 @@ body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+.cal-event-desc {
+  font-size: 11px;
+  color: var(--c-text-sec, #888);
+  margin-top: 4px;
+  line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+.cal-week-event-clickable {
+  cursor: pointer;
+}
 .cal-event-cal {
   font-size: 11px;
   color: var(--c-text-sec, #888);

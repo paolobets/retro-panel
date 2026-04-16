@@ -70,7 +70,8 @@
       start: startTime,
       end: endTime,
       allDay: allDay,
-      location: haEvent.location || ''
+      location: haEvent.location || '',
+      description: haEvent.description || ''
     };
   }
 
@@ -374,6 +375,9 @@
       if (ev.location) {
         html += '<div class="cal-event-location">\uD83D\uDCCD ' + escapeHtml(ev.location) + '</div>';
       }
+      if (ev.description) {
+        html += '<div class="cal-event-desc">' + escapeHtml(ev.description) + '</div>';
+      }
       html += '<div class="cal-event-cal">' + escapeHtml(getCalName(State.calendars, ev.cal)) + '</div>';
       html += '</div></div>';
     }
@@ -558,14 +562,14 @@
 
       var events = DataLayer.getEventsForDay(day.getFullYear(), day.getMonth(), day.getDate(), State.selectedCalIds);
 
-      gridHtml += '<div class="cal-week-col">';
+      gridHtml += '<div class="cal-week-col" data-week-date="' + dateKey(day.getFullYear(), day.getMonth(), day.getDate()) + '">';
       if (events.length === 0) {
         gridHtml += '<div class="cal-week-empty">Nessun evento</div>';
       } else {
         for (var j = 0; j < events.length; j++) {
           var ev = events[j];
           var color = getCalColor(State.calendars, ev.cal);
-          gridHtml += '<div class="cal-event-card">';
+          gridHtml += '<div class="cal-event-card cal-week-event-clickable">';
           gridHtml += '<div class="cal-event-bar" style="background:' + color + '"></div>';
           gridHtml += '<div class="cal-event-body">';
           gridHtml += '<div class="cal-event-title">' + escapeHtml(ev.title) + '</div>';
@@ -574,10 +578,6 @@
           } else {
             gridHtml += '<div class="cal-event-time">' + ev.start + ' \u2013 ' + ev.end + '</div>';
           }
-          if (ev.location) {
-            gridHtml += '<div class="cal-event-location">\uD83D\uDCCD ' + escapeHtml(ev.location) + '</div>';
-          }
-          gridHtml += '<div class="cal-event-cal">' + escapeHtml(getCalName(State.calendars, ev.cal)) + '</div>';
           gridHtml += '</div></div>';
         }
       }
@@ -586,6 +586,30 @@
 
     headerEl.innerHTML = headerHtml;
     gridEl.innerHTML = gridHtml;
+
+    /* Attach click handlers on week event cards → open side panel */
+    var cols = gridEl.querySelectorAll('.cal-week-col');
+    for (var c = 0; c < cols.length; c++) {
+      (function (col) {
+        var cards = col.querySelectorAll('.cal-week-event-clickable');
+        for (var k = 0; k < cards.length; k++) {
+          cards[k].addEventListener('click', function () {
+            var dk = col.getAttribute('data-week-date');
+            if (!dk) return;
+            var parts = dk.split('-');
+            var clickedDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+            var dayEvents = DataLayer.getEventsForDay(clickedDate.getFullYear(), clickedDate.getMonth(), clickedDate.getDate(), State.selectedCalIds);
+            State.selectedDay = clickedDate;
+            if (!State.isPanelOpen) {
+              State.isPanelOpen = true;
+              PanelRenderer.open(clickedDate, dayEvents);
+            } else {
+              PanelRenderer.update(clickedDate, dayEvents);
+            }
+          }, false);
+        }
+      })(cols[c]);
+    }
   };
 
   // ── Controller ──
