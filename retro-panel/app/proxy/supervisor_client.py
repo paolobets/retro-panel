@@ -34,6 +34,25 @@ class SupervisorClient:
             resp.raise_for_status()
             return await resp.json()
 
+    async def get_addon_version(self) -> str:
+        """Fetch the installed version of this add-on from the Supervisor.
+
+        Uses GET /addons/self/info which returns the version as seen by HA
+        Supervisor — this is the real installed version (e.g. '2.14.0-rc10'
+        for beta, '2.13.0' for stable), regardless of what config.yaml
+        is baked into the Docker image.
+        """
+        try:
+            async with self._session.get(f"{_SUPERVISOR_URL}/addons/self/info") as resp:
+                resp.raise_for_status()
+                data = await resp.json()
+                # HA Supervisor wraps in {"result": "ok", "data": {...}}
+                info = data.get("data", data)
+                return info.get("version", "")
+        except Exception as exc:
+            logger.warning("Could not fetch addon version from Supervisor: %s", exc)
+            return ""
+
     async def save_options(self, options: dict) -> None:
         """Persist add-on options via the Supervisor API."""
         async with self._session.post(

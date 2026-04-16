@@ -565,6 +565,16 @@ async def _on_startup(app: web.Application) -> None:
         await store.purge_expired()
         logger.info('NotificationStore loaded and expired entries purged')
 
+    # Resolve the real add-on version from Supervisor (async).
+    # This overwrites the config.yaml fallback set in create_app() with
+    # the actual installed version so beta and stable show the right tag.
+    supervisor: SupervisorClient = app.get("supervisor_client")
+    if supervisor:
+        sv_version = await supervisor.get_addon_version()
+        if sv_version:
+            app["addon_version"] = sv_version
+            logger.info("Add-on version from Supervisor: %s", sv_version)
+
 
 async def _on_cleanup(app: web.Application) -> None:
     """Cancel background tasks and close the HA client session on shutdown."""
