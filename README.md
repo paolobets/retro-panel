@@ -1,7 +1,7 @@
 # Retro Panel — Home Assistant Add-on
 
 [![Release][release-badge]][release-url]
-[![License][license-badge]](LICENSE)
+[![License][license-badge]][license-url]
 [![HA Supervisor][ha-badge]][ha-url]
 [![Supports aarch64][aarch64-badge]][aarch64-url]
 [![Supports amd64][amd64-badge]][amd64-url]
@@ -11,7 +11,8 @@
 
 [release-badge]: https://img.shields.io/github/v/release/paolobets/retro-panel?style=flat-square
 [release-url]: https://github.com/paolobets/retro-panel/releases
-[license-badge]: https://img.shields.io/github/license/paolobets/retro-panel?style=flat-square
+[license-badge]: https://img.shields.io/badge/license-Source%20Available-blue?style=flat-square
+[license-url]: https://github.com/paolobets/retro-panel/blob/master/LICENSE
 [ha-badge]: https://img.shields.io/badge/Home%20Assistant-2023.1%2B-blue?style=flat-square
 [ha-url]: https://www.home-assistant.io/
 [aarch64-badge]: https://img.shields.io/badge/aarch64-yes-green?style=flat-square
@@ -284,4 +285,4 @@ If Retro Panel saved your old tablet from the drawer, consider buying me a beer!
 
 ## License
 
-MIT — see [LICENSE](LICENSE)
+**Source Available** — personal use as HA add-on permitted. Redistribution, modification, and commercial use prohibited. See [LICENSE](LICENSE) for full terms.
