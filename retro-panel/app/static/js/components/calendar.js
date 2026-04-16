@@ -574,6 +574,9 @@
           } else {
             gridHtml += '<div class="cal-event-time">' + ev.start + ' \u2013 ' + ev.end + '</div>';
           }
+          if (ev.location) {
+            gridHtml += '<div class="cal-event-location">\uD83D\uDCCD ' + escapeHtml(ev.location) + '</div>';
+          }
           gridHtml += '<div class="cal-event-cal">' + escapeHtml(getCalName(State.calendars, ev.cal)) + '</div>';
           gridHtml += '</div></div>';
         }
