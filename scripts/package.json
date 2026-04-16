@@ -1,8 +1,0 @@
-{
-  "name": "retro-panel-scripts",
-  "private": true,
-  "description": "Build/generation scripts for retro-panel",
-  "devDependencies": {
-    "@mdi/js": "^7.4.47"
-  }
-}

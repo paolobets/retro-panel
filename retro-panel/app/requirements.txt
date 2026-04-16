@@ -1,4 +1,0 @@
-aiohttp==3.9.5
-# pyyaml removed: not used by this application.
-# config.yaml is consumed by HA Supervisor, not by Python code.
-# options.json (runtime config) is plain JSON, parsed with stdlib json module.

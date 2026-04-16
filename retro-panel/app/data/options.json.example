@@ -1,7 +1,0 @@
-{
-  "ha_url": "http://192.168.1.10:8123",
-  "ha_token": "YOUR_LONG_LIVED_ACCESS_TOKEN_HERE",
-  "panel_title": "Home",
-  "theme": "dark",
-  "refresh_interval": 30
-}
