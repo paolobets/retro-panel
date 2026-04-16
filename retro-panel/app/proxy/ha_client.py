@@ -120,6 +120,39 @@ class HAClient:
         except asyncio.TimeoutError as exc:
             raise TimeoutError(f"Service call {domain}.{service} timed out") from exc
 
+    async def get_media_cover(self, entity_id: str) -> tuple[bytes, str]:
+        """Fetch media player cover art from HA. Returns (image_bytes, content_type).
+
+        Reads entity_picture from the entity state, then proxies the image.
+        Raises FileNotFoundError if no entity_picture is available.
+        """
+        state = await self.get_state(entity_id)
+        attrs = state.get("attributes", {})
+        entity_picture = attrs.get("entity_picture", "")
+        if not entity_picture:
+            raise FileNotFoundError(f"No cover art for {entity_id}")
+
+        if entity_picture.startswith("/"):
+            image_url = self._ha_url + entity_picture
+        else:
+            image_url = self._ha_url + "/" + entity_picture
+
+        session = self._get_session()
+        try:
+            async with session.get(
+                image_url,
+                timeout=aiohttp.ClientTimeout(total=8),
+            ) as resp:
+                if resp.status != 200:
+                    raise FileNotFoundError(f"HA returned {resp.status} for cover art")
+                data = await resp.read()
+                ct = resp.headers.get("Content-Type", "image/jpeg")
+                return data, ct
+        except aiohttp.ClientConnectorError as exc:
+            raise ConnectionRefusedError(str(exc)) from exc
+        except asyncio.TimeoutError as exc:
+            raise TimeoutError(f"Cover art request for '{entity_id}' timed out") from exc
+
     async def get_camera_proxy(self, entity_id: str) -> tuple[bytes, str]:
         """Fetch camera snapshot from HA. Returns (jpeg_bytes, content_type)."""
         url = f"{self._ha_url}/api/camera_proxy/{entity_id}"

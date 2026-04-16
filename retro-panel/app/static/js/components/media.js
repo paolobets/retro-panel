@@ -474,7 +474,11 @@ window.MediaComponent = (function () {
 
         var info = document.createElement('div');
         info.className = 'mbs-group-item-info';
-        info.innerHTML = _svgIcon(ICO_SPEAKER, 18) + '<span class="mbs-group-item-name">' + (mp.label || mp.entity_id.split('.')[1].replace(/_/g, ' ')) + '</span>';
+        info.innerHTML = _svgIcon(ICO_SPEAKER, 18);
+        var nameSpan = document.createElement('span');
+        nameSpan.className = 'mbs-group-item-name';
+        nameSpan.textContent = mp.label || mp.entity_id.split('.')[1].replace(/_/g, ' ');
+        info.appendChild(nameSpan);
         item.appendChild(info);
 
         if (isMaster) {

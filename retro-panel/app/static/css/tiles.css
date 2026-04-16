@@ -2462,6 +2462,7 @@ body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-
 }
 
 /* Mini transport row on tile */
+/* Base transport row — margin-top handled by .media-info .media-transport (10px) */
 .media-transport {
   display: -webkit-flex;
   display: flex;
@@ -2469,7 +2470,6 @@ body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-
   align-items: center;
   -webkit-justify-content: space-between;
   justify-content: space-between;
-  margin-top: 4px;
 }
 .media-transport-btns {
   display: -webkit-flex;

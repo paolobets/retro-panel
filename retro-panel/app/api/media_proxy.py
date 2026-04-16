@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 
-import aiohttp
 from aiohttp import web
 
 logger = logging.getLogger(__name__)
@@ -31,8 +31,8 @@ async def get_media_cover(request: web.Request) -> web.Response:
 
     GET /api/media-cover/{entity_id}
 
-    Fetches the entity state to get entity_picture URL, then proxies
-    the image from HA. Returns 404 if no cover art available.
+    Uses HAClient.get_media_cover() which reads entity_picture from state
+    and proxies the image. Returns 404 if no cover art available.
     """
     entity_id: str = request.match_info["entity_id"]
     try:
@@ -40,42 +40,26 @@ async def get_media_cover(request: web.Request) -> web.Response:
     except web.HTTPException as exc:
         return web.json_response({"error": exc.reason}, status=exc.status_code)
 
-    # Fetch entity state to get entity_picture URL
     try:
-        state = await ha_client.get_state(entity_id)
-    except Exception as exc:
-        logger.warning("Failed to fetch state for %s: %s", entity_id, exc)
-        return web.json_response({"error": "Failed to fetch entity state"}, status=502)
-
-    attrs = state.get("attributes", {})
-    entity_picture = attrs.get("entity_picture", "")
-    if not entity_picture:
+        data, ct = await ha_client.get_media_cover(entity_id)
+    except FileNotFoundError as exc:
+        logger.info("No cover art for %s: %s", entity_id, exc)
         return web.json_response({"error": "No cover art available"}, status=404)
-
-    # Build absolute URL for the image
-    ha_url = ha_client._ha_url  # noqa: SLF001
-    if entity_picture.startswith("/"):
-        image_url = ha_url + entity_picture
-    else:
-        image_url = ha_url + "/" + entity_picture
-
-    # Proxy the image from HA
-    session = ha_client._get_session()  # noqa: SLF001
-    try:
-        async with session.get(image_url) as resp:
-            if resp.status != 200:
-                logger.warning("HA returned %s for media cover %s", resp.status, entity_id)
-                return web.json_response({"error": "Cover art not available"}, status=404)
-            data = await resp.read()
-            ct = resp.headers.get("Content-Type", "image/jpeg")
-            return web.Response(
-                body=data,
-                content_type=ct,
-                headers={"Cache-Control": "public, max-age=30"},
-            )
-    except aiohttp.ClientConnectorError as exc:
-        logger.warning("Cannot connect to HA for media cover %s: %s", entity_id, exc)
+    except PermissionError as exc:
+        logger.error("HA rejected media cover request: %s", exc)
+        return web.json_response({"error": str(exc)}, status=403)
+    except (ConnectionRefusedError, TimeoutError) as exc:
+        logger.warning("Media cover proxy failed for %s: %s", entity_id, exc)
         return web.json_response({"error": "Cannot connect to HA"}, status=502)
+    except asyncio.TimeoutError as exc:
+        logger.warning("Media cover timed out for %s: %s", entity_id, exc)
+        return web.json_response({"error": "Cover art request timed out"}, status=504)
     except Exception as exc:
         logger.error("Media cover proxy error for %s: %s", entity_id, exc)
         return web.json_response({"error": "Failed to fetch cover art"}, status=502)
+
+    return web.Response(
+        body=data,
+        content_type=ct,
+        headers={"Cache-Control": "public, max-age=30"},
+    )

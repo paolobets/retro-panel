@@ -318,7 +318,12 @@ window.SensorComponent = (function () {
         if (isNaN(pct)) {
           valEl.textContent = '\u2014';
         } else {
-          valEl.innerHTML = Math.round(pct) + '<span class="unit">%</span>';
+          valEl.textContent = '';
+          valEl.appendChild(document.createTextNode(Math.round(pct)));
+          var unitSpan = document.createElement('span');
+          unitSpan.className = 'unit';
+          unitSpan.textContent = '%';
+          valEl.appendChild(unitSpan);
         }
       }
       _renderProgressBar(tile, pct);
