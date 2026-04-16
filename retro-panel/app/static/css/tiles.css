@@ -2049,9 +2049,33 @@ body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-
   flex-direction: column;
 }
 
+.cal-root { position: relative; }
 .cal-root.cal-layout-split .cal-panel {
   width: var(--sidebar-w);
   min-width: var(--sidebar-w);
+  border-left: 1px solid var(--c-surface-2, #333);
+}
+
+/* When opening the panel from week view, cal-body is hidden.
+   This overlay shows only the panel positioned absolutely on the right,
+   overlaying the week grid without restructuring the DOM. */
+.cal-root.cal-week-panel .cal-body {
+  display: -webkit-flex !important;
+  display: flex !important;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  width: var(--sidebar-w);
+  background: var(--c-surface, #1a1a2e);
+}
+.cal-root.cal-week-panel .cal-month {
+  display: none !important;
+}
+.cal-root.cal-week-panel .cal-panel {
+  width: 100% !important;
+  min-width: 100% !important;
   border-left: 1px solid var(--c-surface-2, #333);
 }
 

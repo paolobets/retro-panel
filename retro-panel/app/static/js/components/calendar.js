@@ -587,7 +587,7 @@
     headerEl.innerHTML = headerHtml;
     gridEl.innerHTML = gridHtml;
 
-    /* Attach click handlers on week event cards → open side panel */
+    /* Attach click handlers on week event cards → open side panel as overlay */
     var cols = gridEl.querySelectorAll('.cal-week-col');
     for (var c = 0; c < cols.length; c++) {
       (function (col) {
@@ -600,6 +600,9 @@
             var clickedDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
             var dayEvents = DataLayer.getEventsForDay(clickedDate.getFullYear(), clickedDate.getMonth(), clickedDate.getDate(), State.selectedCalIds);
             State.selectedDay = clickedDate;
+            /* Add week-panel class so CSS overlay kicks in (cal-body is
+               hidden in week view; this shows it as an absolute panel) */
+            State.root.classList.add('cal-week-panel');
             if (!State.isPanelOpen) {
               State.isPanelOpen = true;
               PanelRenderer.open(clickedDate, dayEvents);
@@ -738,6 +741,7 @@
   Controller.closePanel = function () {
     State.isPanelOpen = false;
     State.selectedDay = null;
+    State.root.classList.remove('cal-week-panel');
     PanelRenderer.close();
     MonthRenderer.highlightSelected();
   };
