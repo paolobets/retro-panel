@@ -520,8 +520,11 @@ window.MediaComponent = (function () {
       }
     }
     /* Always try to load via proxy: backend returns 404 if no entity_picture,
-       and onerror hides the img revealing the gradient fallback beneath. */
-    var newSrc = 'api/media-cover/' + entityId + '?_t=' + (attrs.media_content_id || attrs.media_title || '');
+       and onerror hides the img revealing the gradient fallback beneath.
+       Cache key uses media_title (simple string) — media_content_id can be
+       a URL with ?/& characters that corrupt the query string. */
+    var cacheKey = (attrs.media_title || '') + '|' + (attrs.media_artist || '');
+    var newSrc = 'api/media-cover/' + entityId + '?_t=' + encodeURIComponent(cacheKey);
     if (imgEl.dataset.mediaSrc !== newSrc) {
       imgEl.dataset.mediaSrc = newSrc;
       imgEl.style.display = '';

@@ -2287,9 +2287,9 @@ body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-
    iOS 12 safe: -webkit-flex, no grid, no gap, no aspect-ratio
    ============================================================ */
 
-/* ---- Wide column (2 compact slots) for active media player ---- */
+/* ---- Wide column for active media player (50% = between compact and full) ---- */
 .tile-col-media-wide {
-  width: 66.666%;
+  width: 50%;
   padding-right: 12px;
   padding-bottom: 12px;
 }
