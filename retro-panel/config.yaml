@@ -1,5 +1,5 @@
 name: "Retro Panel"
-version: "2.13.0"
+version: "2.14.0"
 slug: "retro_panel"
 description: >-
   Touch-optimized kiosk dashboard for Home Assistant.

@@ -1,5 +1,16 @@
 # Retro Panel — Changelog
 
+## [2.14.0] — 2026-04-16
+
+### Added
+
+### Fixed
+
+### Changed
+
+---
+
+
 ## [2.13.0] — 2026-04-12
 
 ### Added
