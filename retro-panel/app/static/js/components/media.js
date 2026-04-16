@@ -595,21 +595,21 @@ window.MediaComponent = (function () {
     var btnPrev = document.createElement('button');
     btnPrev.type = 'button';
     btnPrev.className = 'media-btn';
-    btnPrev.innerHTML = _svgIcon(ICO_PREV, 18);
+    btnPrev.innerHTML = _svgIcon(ICO_PREV, 22);
     btnPrev.setAttribute('aria-label', 'Precedente');
 
     /* Play/Pause button */
     var btnPlay = document.createElement('button');
     btnPlay.type = 'button';
     btnPlay.className = 'media-btn media-btn-play';
-    btnPlay.innerHTML = _svgIcon(ICO_PLAY, 16);
+    btnPlay.innerHTML = _svgIcon(ICO_PLAY, 20);
     btnPlay.setAttribute('aria-label', 'Play');
 
     /* Next button */
     var btnNext = document.createElement('button');
     btnNext.type = 'button';
     btnNext.className = 'media-btn';
-    btnNext.innerHTML = _svgIcon(ICO_NEXT, 18);
+    btnNext.innerHTML = _svgIcon(ICO_NEXT, 22);
     btnNext.setAttribute('aria-label', 'Successivo');
 
     transBtns.appendChild(btnPrev);
@@ -708,7 +708,7 @@ window.MediaComponent = (function () {
       refs.artistEl.textContent = attrs.media_artist || '';
 
       /* Play/Pause icon */
-      refs.btnPlay.innerHTML = _svgIcon(state === 'playing' ? ICO_PAUSE : ICO_PLAY, 16);
+      refs.btnPlay.innerHTML = _svgIcon(state === 'playing' ? ICO_PAUSE : ICO_PLAY, 20);
       refs.btnPlay.setAttribute('aria-label', state === 'playing' ? 'Pausa' : 'Play');
 
       /* Show/hide prev/next based on features */

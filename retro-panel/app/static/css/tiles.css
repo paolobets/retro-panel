@@ -2424,10 +2424,11 @@ body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-
   border: none;
   background: none;
   color: var(--c-text-sec);
-  padding: 6px;
+  padding: 4px;
+  margin-right: 6px;
   cursor: pointer;
-  min-width: 32px;
-  min-height: 32px;
+  min-width: 40px;
+  min-height: 40px;
   -webkit-flex-shrink: 0;
   flex-shrink: 0;
   display: -webkit-flex;
@@ -2437,15 +2438,17 @@ body.theme-light .s-generic      { border-color: #475569; } body.theme-light .s-
   -webkit-justify-content: center;
   justify-content: center;
 }
+.media-btn:last-child { margin-right: 0; }
 .media-btn svg { fill: currentColor; }
 .media-btn-play {
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
   border-radius: 50%;
   background: var(--c-on);
   color: #fff;
   padding: 0;
+  margin-right: 6px;
 }
 .media-btn-play svg { fill: #fff; }
 .media-vol-pct {
