@@ -7,6 +7,7 @@
 [![Supports amd64][amd64-badge]][amd64-url]
 [![Supports armhf][armhf-badge]][armhf-url]
 [![Supports armv7][armv7-badge]][armv7-url]
+[![Ko-fi][kofi-badge]][kofi-url]
 
 [release-badge]: https://img.shields.io/github/v/release/paolobets/retro-panel?style=flat-square
 [release-url]: https://github.com/paolobets/retro-panel/releases
@@ -21,6 +22,8 @@
 [amd64-url]: https://github.com/paolobets/retro-panel
 [armhf-url]: https://github.com/paolobets/retro-panel
 [armv7-url]: https://github.com/paolobets/retro-panel
+[kofi-badge]: https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20beer%20%F0%9F%8D%BA-FF5E5B?style=flat-square&logo=ko-fi&logoColor=white
+[kofi-url]: https://ko-fi.com/M4M11XX4MS
 
 ---
 
@@ -265,8 +268,17 @@ Enable **2FA** on all administrator accounts.
 | **v2.10.6** | Released | Fix testo notifiche in light mode · toast rimosso su eliminazione (tutti i device) |
 | **v2.10.7** | Released | Versione nell'header (verifica aggiornamenti automatici) |
 | **v2.10.8** | Released | Fix energy card: poll periodico dedicato (refresh_interval) indipendente dal WebSocket |
-| **v2.10.9** | **Current** | Fix critici pre-beta: Ingress notifiche, lazy-load sezioni, 12 fix totali da code review |
+| **v2.10.9** | Released | Fix critici pre-beta: Ingress notifiche, lazy-load sezioni, 12 fix totali da code review |
+| **v2.14.0** | **Current** | Media player · sensor enum/datetime/progress · calendar location/description · Supervisor version API |
 | **v3.0** | Planned | Plugin system · custom themes · history charts · offline-first |
+
+---
+
+## Support this project
+
+If Retro Panel saved your old tablet from the drawer, consider buying me a beer!
+
+[![Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/M4M11XX4MS)
 
 ---
 
