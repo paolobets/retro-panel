@@ -1,5 +1,5 @@
 name: "Retro Panel Beta"
-version: "2.15.0-rc2"
+version: "2.15.0-rc3"
 slug: "retro_panel_beta"
 description: >-
   Beta channel for Retro Panel. Touch-optimized kiosk dashboard for Home Assistant.
