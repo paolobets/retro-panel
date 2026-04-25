@@ -34,6 +34,8 @@ options:
   notification_ttl_days: 7
   allowed_direct_ips:
     - "0.0.0.0/0"
+  hiris_url: "http://hiris:8099"
+  hiris_internal_token: ""
 schema:
   ha_url: url?
   ha_token: password?
@@ -43,3 +45,5 @@ schema:
   notification_ttl_days: "int(1,365)"
   allowed_direct_ips:
     - str
+  hiris_url: str?
+  hiris_internal_token: password?
