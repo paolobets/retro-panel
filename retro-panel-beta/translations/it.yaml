@@ -1,0 +1,32 @@
+configuration:
+  hiris_url:
+    name: Indirizzo HIRIS
+    description: >-
+      URL interno dell'add-on HIRIS sulla rete Docker di Home Assistant.
+      Formato: http://<nome_host>:<porta>
+
+
+      COME TROVARLO:
+
+      1. Apri Impostazioni → Componenti aggiuntivi → HIRIS → tab "Informazioni"
+
+      2. Copia il valore del campo "Nome host" (es. 6354e165_hiris)
+
+      3. IMPORTANTE: nell'URL sostituisci tutti gli underscore (_) con trattini (-).
+         Esempio: "6354e165_hiris" diventa "6354e165-hiris"
+
+      4. Aggiungi ":8099" alla fine (porta interna predefinita di HIRIS)
+
+
+      Esempio finale: http://6354e165-hiris:8099
+
+
+      Lascia il default "http://hiris:8099" solo se lo slug del tuo HIRIS
+      è esattamente "hiris" (raro — accade solo con add-on locali rinominati).
+  hiris_internal_token:
+    name: Token interno HIRIS
+    description: >-
+      Shared secret inviato a HIRIS nell'header X-HIRIS-Internal-Token.
+      Deve corrispondere al valore configurato lato HIRIS.
+      Lascia vuoto se HIRIS è in modalità senza autenticazione.
+      Non viene mai esposto al browser — resta solo lato server di Retro Panel.
