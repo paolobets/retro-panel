@@ -1,5 +1,5 @@
 name: "Retro Panel Beta"
-version: "2.18.0-rc35"
+version: "2.19.1-rc0"
 slug: "retro_panel_beta"
 description: >-
   Beta channel for Retro Panel. Touch-optimized kiosk dashboard for Home Assistant.
@@ -36,6 +36,15 @@ options:
     - "0.0.0.0/0"
   hiris_url: "http://hiris:8099"
   hiris_internal_token: ""
+  layout: "standard"
+  # ingress_supervisor_cidr: list of CIDR networks trusted as HA Supervisor
+  # ingress source. Default 172.30.32.0/23 covers all standard HA Supervised /
+  # HA OS installations. CHANGE ONLY for non-standard Docker bridge setups.
+  # WARNING: setting this to "0.0.0.0/0" or "::/0" disables the CR-1
+  # X-Ingress-Path spoof protection — any client claiming supervisor identity
+  # will be trusted as a legitimate ingress request.
+  ingress_supervisor_cidr:
+    - "172.30.32.0/23"
 schema:
   ha_url: url?
   ha_token: password?
@@ -47,3 +56,6 @@ schema:
     - str
   hiris_url: str?
   hiris_internal_token: password?
+  layout: "list(standard)?"
+  ingress_supervisor_cidr:
+    - str
