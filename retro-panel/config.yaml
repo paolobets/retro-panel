@@ -1,5 +1,5 @@
 name: "Retro Panel"
-version: "2.18.0"
+version: "2.19.0"
 slug: "retro_panel"
 description: >-
   Touch-optimized kiosk dashboard for Home Assistant.
@@ -32,6 +32,17 @@ options:
   notification_ttl_days: 7
   allowed_direct_ips:
     - "0.0.0.0/0"
+  hiris_url: "http://hiris:8099"
+  hiris_internal_token: ""
+  layout: "standard"
+  # ingress_supervisor_cidr: list of CIDR networks trusted as HA Supervisor
+  # ingress source. Default 172.30.32.0/23 covers all standard HA Supervised /
+  # HA OS installations. CHANGE ONLY for non-standard Docker bridge setups.
+  # WARNING: setting this to "0.0.0.0/0" or "::/0" disables the CR-1
+  # X-Ingress-Path spoof protection — any client claiming supervisor identity
+  # will be trusted as a legitimate ingress request.
+  ingress_supervisor_cidr:
+    - "172.30.32.0/23"
 schema:
   ha_url: url?
   ha_token: password?
@@ -40,4 +51,9 @@ schema:
   refresh_interval: "int(5,300)"
   notification_ttl_days: "int(1,365)"
   allowed_direct_ips:
+    - str
+  hiris_url: str?
+  hiris_internal_token: password?
+  layout: "list(standard)?"
+  ingress_supervisor_cidr:
     - str
