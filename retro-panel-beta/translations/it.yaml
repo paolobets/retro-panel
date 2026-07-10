@@ -1,32 +1,76 @@
 configuration:
+  ha_url:
+    name: URL di Home Assistant
+    description: >-
+      L'URL della tua istanza Home Assistant.
+      Usa l'IP locale (es. http://192.168.1.10:8123) per le migliori prestazioni.
+      Non usare homeassistant.local se l'add-on ha problemi a risolvere mDNS.
+  ha_token:
+    name: Token di Accesso a Lunga Durata
+    description: >-
+      Facoltativo: se lasciato vuoto viene rilevato automaticamente dal
+      SUPERVISOR_TOKEN. Per usarne uno tuo, in Home Assistant clicca sulla tua
+      foto profilo (in basso a sinistra), scorri fino a "Token di Accesso a
+      Lunga Durata" e clicca "Crea Token". Copialo subito — viene mostrato una
+      sola volta.
+  panel_title:
+    name: Titolo Pannello
+    description: Il titolo visualizzato nella parte superiore del pannello kiosk.
+  theme:
+    name: Tema
+    description: >-
+      Tema visivo del pannello.
+      "dark" (predefinito) è la scelta migliore per display sempre accesi, riduce il burn-in.
+      "auto" segue le impostazioni di sistema del dispositivo.
+  refresh_interval:
+    name: Intervallo Aggiornamento Fallback (secondi)
+    description: >-
+      Ogni quanti secondi recuperare gli stati da HA se la connessione WebSocket si interrompe.
+      Il pannello tenta sempre prima di riconnettersi via WebSocket. Valore tra 5 e 300 secondi.
+  notification_ttl_days:
+    name: Durata Notifiche (giorni)
+    description: >-
+      Per quanti giorni conservare le notifiche del pannello prima di eliminarle
+      automaticamente. Valore tra 1 e 365 giorni.
+  allowed_direct_ips:
+    name: "White List — Accesso Diretto (porta 7654)"
+    description: >-
+      Indirizzi IP o range CIDR autorizzati ad accedere a Retro Panel direttamente
+      sulla porta 7654, senza passare dall'autenticazione di Home Assistant.
+      Necessario per dispositivi legacy (es. tablet con browser che non supportano
+      la pagina di login di HA).
+
+      Per sicurezza il valore predefinito autorizza solo le reti locali private
+      (192.168.x, 10.x, 172.16–31.x), loopback e link-local — MAI l'intera
+      Internet. I tablet sulla rete di casa sono già coperti.
+
+      COME CONFIGURARE:
+      • Autorizzare un singolo dispositivo:  192.168.1.50
+      • Autorizzare tutta la rete locale:    192.168.1.0/24
+      • Reti VPN/overlay (es. Tailscale):    aggiungere il relativo CIDR (es. 100.64.0.0/10)
+      • Autorizzare tutti (sconsigliato):     0.0.0.0/0
+
+      Nota: l'accesso tramite HA Ingress (pulsante "Apri interfaccia Web") non è mai
+      soggetto a questa lista — è sempre protetto dall'autenticazione di Home Assistant.
   hiris_url:
-    name: Indirizzo HIRIS
+    name: URL di HIRIS (opzionale)
     description: >-
-      URL interno dell'add-on HIRIS sulla rete Docker di Home Assistant.
-      Formato: http://<nome_host>:<porta>
-
-
-      COME TROVARLO:
-
-      1. Apri Impostazioni → Componenti aggiuntivi → HIRIS → tab "Informazioni"
-
-      2. Copia il valore del campo "Nome host" (es. 6354e165_hiris)
-
-      3. IMPORTANTE: nell'URL sostituisci tutti gli underscore (_) con trattini (-).
-         Esempio: "6354e165_hiris" diventa "6354e165-hiris"
-
-      4. Aggiungi ":8099" alla fine (porta interna predefinita di HIRIS)
-
-
-      Esempio finale: http://6354e165-hiris:8099
-
-
-      Lascia il default "http://hiris:8099" solo se lo slug del tuo HIRIS
-      è esattamente "hiris" (raro — accade solo con add-on locali rinominati).
+      URL interno dell'add-on HIRIS per l'integrazione dell'assistente AI.
+      Lasciare il valore predefinito se HIRIS è installato come add-on sullo stesso host.
   hiris_internal_token:
-    name: Token interno HIRIS
+    name: Token Interno HIRIS (opzionale)
     description: >-
-      Shared secret inviato a HIRIS nell'header X-HIRIS-Internal-Token.
-      Deve corrispondere al valore configurato lato HIRIS.
-      Lascia vuoto se HIRIS è in modalità senza autenticazione.
-      Non viene mai esposto al browser — resta solo lato server di Retro Panel.
+      Token di autenticazione per le chiamate interne verso HIRIS.
+      Necessario solo se l'integrazione HIRIS lo richiede.
+  layout:
+    name: Layout
+    description: >-
+      Layout del pannello. Attualmente è disponibile solo "standard".
+  ingress_supervisor_cidr:
+    name: CIDR Supervisor Ingress (avanzato)
+    description: >-
+      Reti CIDR considerate sorgente affidabile dell'Ingress di HA Supervisor.
+      Il valore predefinito 172.30.32.0/23 copre tutte le installazioni HA
+      standard (Supervised / HA OS). MODIFICARE SOLO per bridge Docker non
+      standard. ATTENZIONE: impostarlo a 0.0.0.0/0 disabilita la protezione
+      anti-spoofing dell'header X-Ingress-Path.
