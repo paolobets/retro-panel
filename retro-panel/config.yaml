@@ -1,5 +1,5 @@
 name: "Retro Panel"
-version: "2.19.1"
+version: "2.20.0"
 slug: "retro_panel"
 description: >-
   Touch-optimized kiosk dashboard for Home Assistant.
@@ -30,8 +30,20 @@ options:
   theme: "dark"
   refresh_interval: 30
   notification_ttl_days: 7
+  # Direct-port (7654) allowlist. The direct port bypasses HA login for legacy
+  # browsers and is therefore unauthenticated — it defaults to private LAN,
+  # loopback and link-local ranges only, never the whole internet. Wall tablets
+  # on the home network are covered. Add "0.0.0.0/0" here ONLY if you understand
+  # you are exposing unauthenticated control to every reachable host.
   allowed_direct_ips:
-    - "0.0.0.0/0"
+    - "127.0.0.0/8"
+    - "10.0.0.0/8"
+    - "172.16.0.0/12"
+    - "192.168.0.0/16"
+    - "169.254.0.0/16"
+    - "::1/128"
+    - "fc00::/7"
+    - "fe80::/10"
   hiris_url: "http://hiris:8099"
   hiris_internal_token: ""
   layout: "standard"
