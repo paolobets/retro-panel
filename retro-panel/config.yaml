@@ -1,5 +1,5 @@
 name: "Retro Panel"
-version: "2.22.0"
+version: "2.23.0"
 slug: "retro_panel"
 description: >-
   Touch-optimized kiosk dashboard for Home Assistant.
@@ -46,6 +46,7 @@ options:
     - "fe80::/10"
   hiris_url: "http://hiris:8099"
   hiris_internal_token: ""
+  notify_token: ""  # optional: if set, /api/notify requires X-RP-Notify-Token (or HA Ingress)
   layout: "standard"
   # ingress_supervisor_cidr: list of CIDR networks trusted as HA Supervisor
   # ingress source. Default 172.30.32.0/23 covers all standard HA Supervised /
@@ -66,6 +67,7 @@ schema:
     - str
   hiris_url: str?
   hiris_internal_token: password?
+  notify_token: password?
   layout: "list(standard)?"
   ingress_supervisor_cidr:
     - str
